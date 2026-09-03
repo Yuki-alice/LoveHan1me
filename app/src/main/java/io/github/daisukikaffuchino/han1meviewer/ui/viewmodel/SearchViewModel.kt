@@ -2,7 +2,6 @@ package io.github.daisukikaffuchino.han1meviewer.ui.viewmodel
 
 import android.os.Parcelable
 import io.github.daisukikaffuchino.utils.LogUtil
-import android.util.SparseArray
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -84,8 +83,9 @@ class SearchViewModel(
             state["gridFirstVisibleItemScrollOffset"] = value
         }
 
-    var tagMap = SparseArray<Set<SearchOption>>()
-    var brandMap = SparseArray<Set<SearchOption>>()
+    // P6c：SparseArray → MutableMap（key 仅作占位/分组 id，见 sheet groupSelectedTagOptions）
+    var tagMap = mutableMapOf<Int, Set<SearchOption>>()
+    var brandMap = mutableMapOf<Int, Set<SearchOption>>()
 
     val genres by unsafeLazy {
         loadAssetAs<List<SearchOption>>(if (SettingsRepository.baseUrl == HANIME_URL[3]) "search_options/genre_av.json" else "search_options/genre.json").orEmpty()

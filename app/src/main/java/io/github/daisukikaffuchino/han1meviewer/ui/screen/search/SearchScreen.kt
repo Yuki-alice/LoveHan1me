@@ -1,6 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.search
 
-import android.util.SparseArray
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -183,8 +182,8 @@ fun SearchScreen(
                 viewModel.sort != null ||
                 viewModel.duration != null ||
                 viewModel.getSearchDate() != null ||
-                viewModel.tagMap.size() > 0 ||
-                viewModel.brandMap.size() > 0 ||
+                viewModel.tagMap.isNotEmpty() ||
+                viewModel.brandMap.isNotEmpty() ||
                 viewModel.broad
     }
 
@@ -196,8 +195,8 @@ fun SearchScreen(
         viewModel.duration,
         viewModel.getSearchDate(),
         viewModel.broad,
-        viewModel.tagMap.size(),
-        viewModel.brandMap.size(),
+        viewModel.tagMap.size,
+        viewModel.brandMap.size,
     ) {
         SearchFilter(
             genre = viewModel.genre,
@@ -875,15 +874,15 @@ private fun ActiveSearchCriteria(
 // 辅助
 // ─────────────────────────────────────────────
 
-private fun tagFlatten(map: SparseArray<Set<SearchOption>>): Set<String> {
-    val r = mutableSetOf<String>(); for (i in 0 until map.size()) {
-        map.valueAt(i).mapNotNullTo(r) { it.searchKey }
+private fun tagFlatten(map: Map<Int, Set<SearchOption>>): Set<String> {
+    val r = mutableSetOf<String>(); for (options in map.values) {
+        options.mapNotNullTo(r) { it.searchKey }
     }; return r
 }
 
-private fun brandFlatten(map: SparseArray<Set<SearchOption>>): Set<String> {
-    val r = mutableSetOf<String>(); for (i in 0 until map.size()) {
-        map.valueAt(i).mapNotNullTo(r) { it.searchKey }
+private fun brandFlatten(map: Map<Int, Set<SearchOption>>): Set<String> {
+    val r = mutableSetOf<String>(); for (options in map.values) {
+        options.mapNotNullTo(r) { it.searchKey }
     }; return r
 }
 

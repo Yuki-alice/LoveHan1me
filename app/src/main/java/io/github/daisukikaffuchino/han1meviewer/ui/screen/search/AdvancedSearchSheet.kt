@@ -1,6 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.search
 
-import android.util.SparseArray
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
@@ -43,7 +42,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.core.util.isNotEmpty
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.SEARCH_YEAR_RANGE_END
@@ -53,7 +51,6 @@ import io.github.daisukikaffuchino.han1meviewer.logic.HanimeAdvancedSearchRepo
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.HanimeAdvancedSearchHistoryEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.model.SearchOption
 import io.github.daisukikaffuchino.han1meviewer.logic.model.SearchOption.Companion.flatten
-import io.github.daisukikaffuchino.han1meviewer.logic.model.SearchOption.Companion.get
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SelectableTag
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingChoiceItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyColumn
@@ -63,14 +60,18 @@ import io.github.daisukikaffuchino.han1meviewer.ui.model.SearchScopeSection
 import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.SearchViewModel
 import kotlinx.coroutines.launch
 
-private val advancedSearchTagScopeResIds = listOf(
-    R.string.video_attr,
-    R.string.relationship,
-    R.string.characteristics,
-    R.string.appearance_and_figure,
-    R.string.story_plot,
-    R.string.story_location,
-    R.string.sex_position,
+/**
+ * P6c：R.string 标题 id 与 scope 名（tags Map 的 key）成对；原 SearchOption.Companion.get(Int)
+ * operator 已随模型下沉删除，这里直接以 scope 名索引。
+ */
+private val advancedSearchTagScopes = listOf(
+    R.string.video_attr to "video_attributes",
+    R.string.relationship to "character_relationships",
+    R.string.characteristics to "characteristics",
+    R.string.appearance_and_figure to "appearance_and_figure",
+    R.string.story_plot to "story_plot",
+    R.string.story_location to "story_location",
+    R.string.sex_position to "sex_positions",
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -739,21 +740,21 @@ private fun AdvancedSearchActionSection(
 private fun buildTagScopeSections(
     tags: Map<String, List<SearchOption>>,
 ): List<SearchScopeSection> {
-    return advancedSearchTagScopeResIds.map { scopeRes ->
-        SearchScopeSection(scopeRes, tags[scopeRes])
+    return advancedSearchTagScopes.map { (titleRes, scopeName) ->
+        SearchScopeSection(titleRes, tags[scopeName].orEmpty())
     }
 }
 
 private fun groupSelectedTagOptions(
     selected: Set<SearchOption>,
     tags: Map<String, List<SearchOption>>,
-): SparseArray<Set<SearchOption>> {
-    return SparseArray<Set<SearchOption>>().also { grouped ->
-        advancedSearchTagScopeResIds.forEach { scopeRes ->
-            val selectedInScope = tags[scopeRes].filterTo(mutableSetOf()) { it in selected }
-            if (selectedInScope.isNotEmpty()) {
-                grouped.put(scopeRes, selectedInScope)
-            }
+): MutableMap<Int, Set<SearchOption>> {
+    val grouped = linkedMapOf<Int, Set<SearchOption>>()
+    advancedSearchTagScopes.forEach { (titleRes, scopeName) ->
+        val selectedInScope = tags[scopeName].orEmpty().filterTo(mutableSetOf()) { it in selected }
+        if (selectedInScope.isNotEmpty()) {
+            grouped[titleRes] = selectedInScope
         }
     }
+    return grouped
 }
