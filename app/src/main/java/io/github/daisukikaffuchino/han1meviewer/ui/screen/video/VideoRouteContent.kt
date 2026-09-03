@@ -98,11 +98,8 @@ fun VideoRouteContent(
                     viewModel = commentViewModel,
                     reportMessages = remember { kotlinx.coroutines.flow.MutableSharedFlow() },
                     getMessageText = { message ->
-                        if (message.args.isNotEmpty()) {
-                            application.getString(message.resId, *message.args.toTypedArray())
-                        } else {
-                            application.getString(message.resId)
-                        }
+                        // P6c：VM Message 已携带文本（commonMain 无 R-int）
+                        message.text
                     },
                     pageHost = pageHost,
                 )

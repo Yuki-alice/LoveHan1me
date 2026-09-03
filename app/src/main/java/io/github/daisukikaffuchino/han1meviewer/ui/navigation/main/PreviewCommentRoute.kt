@@ -118,12 +118,8 @@ fun PreviewCommentRouteScreen(
 
     LaunchedEffect(Unit) {
         viewModel.reportMessage.collect { msg ->
-            val text = if (msg.args.isNotEmpty()) {
-                activity.getString(msg.resId, *msg.args.toTypedArray())
-            } else {
-                activity.getString(msg.resId)
-            }
-            reportMessages.emit(CommentMessage(text))
+            // P6c：VM 的 Message 已由 suspend getString 携带文本，不再传 R-int
+            reportMessages.emit(CommentMessage(msg.text))
         }
     }
 
@@ -142,12 +138,8 @@ fun PreviewCommentRouteScreen(
             }
             val mappedReportFlow = remember(viewModel.reportMessage) {
                 viewModel.reportMessage.map { message ->
-                    val text = if (message.args.isNotEmpty()) {
-                        application.getString(message.resId, *message.args.toTypedArray())
-                    } else {
-                        application.getString(message.resId)
-                    }
-                    CommentMessage(text)
+                    // P6c：VM 的 Message 已携带文本
+                    CommentMessage(message.text)
                 }
             }
             ChildCommentScreen(

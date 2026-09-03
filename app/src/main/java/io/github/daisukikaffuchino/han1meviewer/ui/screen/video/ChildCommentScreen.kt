@@ -78,7 +78,8 @@ fun ChildCommentScreen(
     onReport: (VideoComments.VideoComment, ReportReason) -> Unit,
     onThumbUp: (VideoComments.VideoComment) -> Unit,
     onThumbDown: (VideoComments.VideoComment) -> Unit,
-    onCommentLikeSuccess: (VideoCommentArgs) -> Unit,
+    // P6c：VM handleCommentLike 下沉后为 suspend（collect 上下文调用，语义不变）
+    onCommentLikeSuccess: suspend (VideoCommentArgs) -> Unit,
     onReplyStateChange: (Boolean) -> Unit = {},
 ) {
     val comments by commentsFlow.collectAsStateWithLifecycle()

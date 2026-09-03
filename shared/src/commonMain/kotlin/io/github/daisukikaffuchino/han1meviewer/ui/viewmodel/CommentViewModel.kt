@@ -1,22 +1,27 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.viewmodel
 
 import io.github.daisukikaffuchino.utils.LogUtil
-import androidx.annotation.StringRes
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.ViewModel
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.cancel_thumb_down_success
+import io.github.daisukikaffuchino.han1meviewer.cancel_thumb_up_success
 import io.github.daisukikaffuchino.han1meviewer.logic.NetworkRepo
 import io.github.daisukikaffuchino.han1meviewer.logic.model.CommentPlace
 import io.github.daisukikaffuchino.han1meviewer.logic.model.ReportReason
 import io.github.daisukikaffuchino.han1meviewer.logic.model.VideoCommentArgs
 import io.github.daisukikaffuchino.han1meviewer.logic.model.VideoComments
 import io.github.daisukikaffuchino.han1meviewer.logic.state.WebsiteState
+import io.github.daisukikaffuchino.han1meviewer.report_failed
+import io.github.daisukikaffuchino.han1meviewer.report_success
+import io.github.daisukikaffuchino.han1meviewer.thumb_down_success
+import io.github.daisukikaffuchino.han1meviewer.thumb_up_success
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.video.CommentSortType
-import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.AppViewModel.csrfToken
-import io.github.daisukikaffuchino.utils.loadAssetAs
+import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.CsrfTokenProvider.csrfToken
 import io.github.daisukikaffuchino.utils.SonnerToast
-import io.github.daisukikaffuchino.utils.toastText
+import io.github.daisukikaffuchino.utils.decodeComposeAsset
 import io.github.daisukikaffuchino.utils.unsafeLazy
+import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -45,10 +50,8 @@ class CommentViewModel : ViewModel() {
     //reportMessage为点击举报按钮之后的响应及错误信息
     private val _reportMessage = MutableSharedFlow<Message>()
     val reportMessage = _reportMessage.asSharedFlow()
-    data class Message(
-        @param:StringRes val resId: Int,
-        val args: List<Any> = emptyList()
-    )
+    // P6c：原为 (resId: Int=R.string, args)；commonMain 无 R，改为 suspend 内 getString 后直接携带文本
+    data class Message(val text: String)
 
     private val _videoCommentStateFlow =
         MutableStateFlow<WebsiteState<VideoComments>>(WebsiteState.Loading)
@@ -76,7 +79,8 @@ class CommentViewModel : ViewModel() {
         MutableSharedFlow<WebsiteState<VideoCommentArgs>>(replay = 0)
     val commentLikeFlow = _commentLikeFlow.asSharedFlow()
     val reportReason by unsafeLazy {
-        loadAssetAs<List<ReportReason>>("report_reason.json").orEmpty()
+        // P6c：loadAssetAs → decodeComposeAsset（同步；P6a-B 把 report_reason.json 放进 files/）
+        decodeComposeAsset<List<ReportReason>>("files/report_reason.json").orEmpty()
     }
 
     private val _currentSortType = MutableStateFlow(CommentSortType.LATEST)
@@ -251,18 +255,19 @@ class CommentViewModel : ViewModel() {
         this.decLikesCount(cancel = post.unlikeCommentStatus)
     }
 
-    fun handleCommentLike(args: VideoCommentArgs) {
+    // P6c：suspend（调用方在 commentLikeFlow.collect 内，天然 suspend）；文案走 compose getString
+    suspend fun handleCommentLike(args: VideoCommentArgs) {
         if (args.isPositive) {
             if (args.comment.post.likeCommentStatus) {
-                SonnerToast.success(toastText(R.string.cancel_thumb_up_success))
+                SonnerToast.success(getString(Res.string.cancel_thumb_up_success))
             } else {
-                SonnerToast.success(toastText(R.string.thumb_up_success))
+                SonnerToast.success(getString(Res.string.thumb_up_success))
             }
         } else {
             if (args.comment.post.unlikeCommentStatus) {
-                SonnerToast.success(toastText(R.string.cancel_thumb_down_success))
+                SonnerToast.success(getString(Res.string.cancel_thumb_down_success))
             } else {
-                SonnerToast.success(toastText(R.string.thumb_down_success))
+                SonnerToast.success(getString(Res.string.thumb_down_success))
             }
         }
     }
@@ -286,18 +291,16 @@ class CommentViewModel : ViewModel() {
             ).collect { state ->
                 when(state){
                     is WebsiteState.Error -> {
+                        val reason = state.throwable.message ?: "unknown"
                         _reportMessage.emit(
-                            Message(
-                                R.string.report_failed,
-                                listOf(state.throwable.message ?: "unknown")
-                            )
+                            Message(getString(Res.string.report_failed, reason))
                         )
                     }
                     WebsiteState.Loading -> {
 
                     }
                     is WebsiteState.Success<*> -> {
-                        _reportMessage.emit(Message(R.string.report_success))
+                        _reportMessage.emit(Message(getString(Res.string.report_success)))
                     }
                 }
             }

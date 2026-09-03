@@ -1,23 +1,19 @@
 package io.github.daisukikaffuchino.han1meviewer.logic.model
 
-import android.os.Parcelable
 import io.github.daisukikaffuchino.utils.LanguageHelper
-import kotlinx.parcelize.Parcelize
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import java.util.Locale
 
+// P6c：迁自 :app，去 @Parcelize/:Parcelable（nav3 @Serializable 路由不经 Bundle 传 ReportReason）
 @Suppress("EqualsOrHashCode")
 @Serializable
-@Parcelize
 data class ReportReason(
     @SerialName("lang")
     val lang: Language? = null,
     @SerialName("reason_key")
     val reasonKey: String? = null
-) : Parcelable {
+) {
     @Serializable
-    @Parcelize
     data class Language(
         @SerialName("zh-rCN")
         val zhrCN: String? = null,
@@ -27,7 +23,7 @@ data class ReportReason(
         val en: String? = null,
         @SerialName("ja")
         val ja: String? = null,
-    ) : Parcelable
+    )
 
     override fun hashCode(): Int = reasonKey?.hashCode() ?: 0
 
@@ -36,13 +32,14 @@ data class ReportReason(
             if (lang == null) return reasonKey.orEmpty()
 
             val pl = LanguageHelper.preferredLanguage
+            // P6c：java.util.Locale 常量 → 字面量（zh/en/ja + CN 区分简繁）
             return when (pl.language) {
-                Locale.CHINESE.language -> when (pl.country) {
-                    Locale.SIMPLIFIED_CHINESE.country -> lang.zhrCN
+                "zh" -> when (pl.country) {
+                    "CN" -> lang.zhrCN
                     else -> lang.zhrTW
                 }
-                Locale.ENGLISH.language -> lang.en
-                Locale.JAPANESE.language -> lang.ja
+                "en" -> lang.en
+                "ja" -> lang.ja
                 else -> lang.zhrTW
             } ?: lang.zhrTW.orEmpty()
         }
