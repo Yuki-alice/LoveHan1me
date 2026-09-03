@@ -79,6 +79,7 @@ import coil3.compose.AsyncImage
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.ResolutionLinkMap
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.CheckInRecordEntity
+import io.github.daisukikaffuchino.han1meviewer.logic.LocalListRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeInfo
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeVideo
 import io.github.daisukikaffuchino.han1meviewer.logic.state.VideoLoadingState
@@ -697,7 +698,14 @@ private fun MyListDialog(
                                 checked = selectedStates[index],
                                 onCheckedChange = null,
                             )
-                            Text(info.title)
+                            Text(
+                                // P6c：VM 下沉后 watch-later 条目 title 为占位（commonMain 无同步资源读）
+                                text = if (info.code == LocalListRepository.WATCH_LATER_CODE) {
+                                    stringResource(R.string.watch_later)
+                                } else {
+                                    info.title
+                                }
+                            )
                         }
                     }
                 }

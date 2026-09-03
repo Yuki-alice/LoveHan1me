@@ -9,25 +9,28 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewModelScope
 import io.github.daisukikaffuchino.han1meviewer.EMPTY_STRING
 import io.github.daisukikaffuchino.han1meviewer.HanimeResolution
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.add_success
+import io.github.daisukikaffuchino.han1meviewer.delete_success
+import io.github.daisukikaffuchino.han1meviewer.interval_must_greater_than_d
 import io.github.daisukikaffuchino.han1meviewer.logic.DatabaseRepo
 import io.github.daisukikaffuchino.han1meviewer.logic.LocalListRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.NetworkRepo
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
+import io.github.daisukikaffuchino.han1meviewer.logic.ioDispatcher
+import io.github.daisukikaffuchino.han1meviewer.modify_success
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.HKeyframeEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.WatchHistoryEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.HanimeDownloadEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeInfo
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeVideo
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.VideoCacheStore
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.videoCacheStore
 import io.github.daisukikaffuchino.han1meviewer.logic.state.VideoLoadingState
 import io.github.daisukikaffuchino.han1meviewer.logic.state.WebsiteState
-import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.AppViewModel.csrfToken
+import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.CsrfTokenProvider.csrfToken
 import io.github.daisukikaffuchino.han1meviewer.util.TagLocalizer
 import androidx.lifecycle.ViewModel
-import io.github.daisukikaffuchino.han1meviewer.logic.platform.AndroidVideoCacheStore
-import io.github.daisukikaffuchino.han1meviewer.logic.platform.VideoCacheStore
-import io.github.daisukikaffuchino.utils.application
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -46,6 +49,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlin.math.abs
+import org.jetbrains.compose.resources.getString
 
 /**
  * @project Hanime1
@@ -53,7 +57,8 @@ import kotlin.math.abs
  * @time 2022/06/17 017 19:01
  */
 class VideoViewModel(
-    private val videoCacheStore: VideoCacheStore = AndroidVideoCacheStore,
+    // P6c：P6b-F 工厂（android=:app provider 注册；desktop/ios no-op）
+    private val cacheStore: VideoCacheStore = videoCacheStore(),
 ) : ViewModel() {
 
     data class IntroScrollState(
@@ -134,7 +139,8 @@ class VideoViewModel(
                                 add(
                                     HanimeVideo.MyList.MyListInfo(
                                         code = LocalListRepository.WATCH_LATER_CODE,
-                                        title = application.getString(R.string.watch_later),
+                                        // P6c：commonMain 无同步资源读；由 UI 对 WATCH_LATER_CODE 条目特判显示
+                                        title = "", 
                                         isSelected = isWatchLater,
                                     )
                                 )
@@ -274,7 +280,7 @@ class VideoViewModel(
         if (videoIntroUiStateMap[videoCode]?.introRestored == true) return
         viewModelScope.launch {
             val flow = if (fromDownload) {
-                videoCacheStore.load(videoCode).map { hv ->
+                cacheStore.load(videoCode).map { hv ->
                     if (hv == null) {
                         VideoLoadingState.NoContent
                     } else {
@@ -408,7 +414,7 @@ class VideoViewModel(
 
     fun toggleLocalFavorite() {
         val video = _hanimeVideoFlow.value ?: return
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             runCatching {
                 val isFavorite = LocalListRepository.isFavorite(videoCode)
                 if (isFavorite) {
@@ -435,7 +441,7 @@ class VideoViewModel(
             if (info.isSelected == newChecked) null else info to newChecked
         }
         if (changes.isEmpty()) return
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             runCatching {
                 changes.forEach { (info, newChecked) ->
                     if (info.code == LocalListRepository.WATCH_LATER_CODE) {
@@ -458,20 +464,20 @@ class VideoViewModel(
     }
 
     fun insertWatchHistory(history: WatchHistoryEntity) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             DatabaseRepo.WatchHistory.insert(history)
             LogUtil.d("insert_watch_hty", "$history DONE!")
         }
     }
 
     fun insertWatchHistoryWithCover(history: WatchHistoryEntity) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             DatabaseRepo.WatchHistory.insert(history)
         }
     }
 
     fun findDownloadedHanime(videoCode: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val info = DatabaseRepo.HanimeDownload.find(videoCode)
             _loadDownloadedFlow.emit(info)
         }
@@ -513,11 +519,10 @@ class VideoViewModel(
         }
     }
 
-    // boolean: 成功 or 失敗，String: 提示信息
+    // boolean: 成功 or 失敗，String: 提示信息（P6c：原 messageResId=R.int，改携带已本地化文本）
     data class HKeyframeResult(
         val succeeded: Boolean,
-        val messageResId: Int,
-        val args: List<Any> = emptyList(),
+        val message: String,
     )
 
     private val _modifyHKeyframeFlow = MutableSharedFlow<HKeyframeResult>()
@@ -528,11 +533,11 @@ class VideoViewModel(
         return _forceRefresh
             .onStart { emit(Unit) }
             .flatMapLatest {
-                DatabaseRepo.HKeyframe.observe(videoCode).flowOn(Dispatchers.IO)
+                DatabaseRepo.HKeyframe.observe(videoCode).flowOn(ioDispatcher)
             }
     }
     fun appendHKeyframe(videoCode: String, title: String, hKeyframe: HKeyframeEntity.Keyframe) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             run {
                 this@VideoViewModel.hKeyframes?.keyframes?.forEach { keyframeInDb ->
                     if (abs(keyframeInDb.position - hKeyframe.position) < MIN_H_KEYFRAME_SAVE_INTERVAL) {
@@ -540,8 +545,10 @@ class VideoViewModel(
                         _modifyHKeyframeFlow.emit(
                             HKeyframeResult(
                                 succeeded = false,
-                                messageResId = R.string.interval_must_greater_than_d,
-                                args = listOf(MIN_H_KEYFRAME_SAVE_INTERVAL / 1_000L),
+                                message = getString(
+                                    Res.string.interval_must_greater_than_d,
+                                    MIN_H_KEYFRAME_SAVE_INTERVAL / 1_000L,
+                                ),
                             )
                         )
                         return@run
@@ -549,7 +556,7 @@ class VideoViewModel(
                 }
                 DatabaseRepo.HKeyframe.appendKeyframe(videoCode, title, hKeyframe)
                 LogUtil.d("HKeyframe", "append_hkeyframe:$hKeyframe DONE!")
-                _modifyHKeyframeFlow.emit(HKeyframeResult(true, R.string.add_success))
+                _modifyHKeyframeFlow.emit(HKeyframeResult(true, getString(Res.string.add_success)))
                 _forceRefresh.emit(Unit)
             }
         }
@@ -560,17 +567,17 @@ class VideoViewModel(
         oldKeyframe: HKeyframeEntity.Keyframe,
         newKeyframe: HKeyframeEntity.Keyframe,
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             DatabaseRepo.HKeyframe.modifyKeyframe(videoCode, oldKeyframe, newKeyframe)
-            _modifyHKeyframeFlow.emit(HKeyframeResult(true, R.string.modify_success))
+            _modifyHKeyframeFlow.emit(HKeyframeResult(true, getString(Res.string.modify_success)))
             _forceRefresh.emit(Unit)
         }
     }
 
     fun removeHKeyframe(videoCode: String, hKeyframe: HKeyframeEntity.Keyframe) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             DatabaseRepo.HKeyframe.removeKeyframe(videoCode, hKeyframe)
-            _modifyHKeyframeFlow.emit(HKeyframeResult(true, R.string.delete_success))
+            _modifyHKeyframeFlow.emit(HKeyframeResult(true, getString(Res.string.delete_success)))
             _forceRefresh.emit(Unit)
         }
     }
