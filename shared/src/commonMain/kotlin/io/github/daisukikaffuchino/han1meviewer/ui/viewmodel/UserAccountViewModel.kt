@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
-import java.io.File
 
 class UserAccountViewModel : ViewModel() {
 
@@ -89,28 +88,18 @@ class UserAccountViewModel : ViewModel() {
         }
     }
 
-    fun updateAvatar(avatarFile: File) {
+    // P6c：VM 下沉 commonMain，File 参数改 (bytes, name)，:app 调用方拆解
+    fun updateAvatar(avatarBytes: ByteArray, avatarName: String) {
         val account = (_accountState.value as? WebsiteState.Success)?.info ?: return
         if (_submittingState.value != UserAccountSubmittingState.Idle) return
         viewModelScope.launch {
             _submittingState.value = UserAccountSubmittingState.UpdatingAvatar
             _actionFlow.emit(UserAccountActionEvent(UserAccountAction.AvatarUpdated, WebsiteState.Loading))
-            // P4b：Repo 下沉 commonMain 后签名改为 (bytes, name)，File 在调用方拆解
-            val avatarBytes = runCatching { avatarFile.readBytes() }.getOrElse {
-                _submittingState.value = UserAccountSubmittingState.Idle
-                _actionFlow.emit(
-                    UserAccountActionEvent(
-                        UserAccountAction.AvatarUpdated,
-                        WebsiteState.Error(it),
-                    )
-                )
-                return@launch
-            }
             NetworkRepo.updateUserAccountAvatar(
                 userId = account.userId,
                 csrfToken = account.csrfToken,
                 avatarBytes = avatarBytes,
-                avatarName = avatarFile.name,
+                avatarName = avatarName,
             ).collect { state ->
                 _actionFlow.emit(UserAccountActionEvent(UserAccountAction.AvatarUpdated, state))
                 if (state is WebsiteState.Success) {

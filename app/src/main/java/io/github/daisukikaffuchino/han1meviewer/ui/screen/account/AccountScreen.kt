@@ -100,7 +100,12 @@ fun AccountScreen(
 
     LaunchedEffect(pendingAvatarCropResult) {
         val filePath = pendingAvatarCropResult ?: return@LaunchedEffect
-        viewModel.updateAvatar(java.io.File(filePath))
+        // P6c：VM 下沉后 updateAvatar(bytes, name)，File 在调用方拆解（读取失败则消费掉结果并忽略）
+        val file = java.io.File(filePath)
+        val bytes = runCatching { file.readBytes() }.getOrNull()
+        if (bytes != null) {
+            viewModel.updateAvatar(bytes, file.name)
+        }
         onAvatarCropResultConsumed()
     }
 

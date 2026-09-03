@@ -3,10 +3,8 @@ package io.github.daisukikaffuchino.han1meviewer.ui.viewmodel
 import io.github.daisukikaffuchino.utils.LogUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import io.github.daisukikaffuchino.han1meviewer.worker.HanimeDownloadWorker
-import io.github.daisukikaffuchino.han1meviewer.logic.platform.AndroidDownloadWorkController
-import io.github.daisukikaffuchino.han1meviewer.logic.platform.DownloadWorkController
-import kotlinx.coroutines.Dispatchers
+import io.github.daisukikaffuchino.han1meviewer.logic.ioDispatcher
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.downloadWorkController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
@@ -17,7 +15,8 @@ import kotlinx.coroutines.launch
  */
 object AppViewModel : ViewModel(), IHCsrfToken {
 
-    private val downloadWorkController: DownloadWorkController = AndroidDownloadWorkController
+    // P6c：P6b-F 已把 DownloadWorkController 工厂 expect 化（android=:app provider 注册）
+    private val controller = downloadWorkController()
 
     /**
      * csrfToken 全局唯一，只需要在首页拉起或点击视频页时更新一下就可以了。
@@ -31,16 +30,17 @@ object AppViewModel : ViewModel(), IHCsrfToken {
 
     init {
         // 取消，防止每次启动都有残留的更新任务
-        downloadWorkController.prune()
+        controller.prune()
 
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             // HanimeDownloadManager.init()
-            downloadWorkController.initialize()
+            controller.initialize()
         }
 
-        viewModelScope.launch(Dispatchers.IO) {
-            downloadWorkController.runningCount().collect { count ->
-                LogUtil.d(HanimeDownloadWorker.TAG, "getRunningWorkInfoCount: $count")
+        viewModelScope.launch(ioDispatcher) {
+            controller.runningCount().collect { count ->
+                // P6c：原 HanimeDownloadWorker.TAG（:app worker）不可见，日志 tag 用字面量保持一致
+                LogUtil.d("HanimeDownloadWorker", "getRunningWorkInfoCount: $count")
                 runningWorkInfoCountFlow.value = count
             }
         }
