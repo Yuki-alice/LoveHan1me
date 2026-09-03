@@ -1,4 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.viewmodel
+import io.github.daisukikaffuchino.han1meviewer.logic.ioDispatcher
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
@@ -47,7 +48,7 @@ class PreviewViewModel : ViewModel() {
         if (previewCache.containsKey(date)) return
         viewModelScope.launch {
             val preview = runCatching {
-                withContext(Dispatchers.IO) {
+                withContext(ioDispatcher) {
                     NetworkRepo.getHanimePreview(date)
                         .catch { emit(WebsiteState.Error(it)) }
                         .first { it !is WebsiteState.Loading }
