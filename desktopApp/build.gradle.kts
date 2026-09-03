@@ -10,6 +10,8 @@ dependencies {
     implementation(project(":shared"))
     implementation(compose.desktop.currentOs)
     implementation(compose.material)
+    // P6c-D：骨架屏用 shared 同款 CMP material3（与 :shared 版本一致，含 Expressive opt-in）
+    implementation(libs.cmp.material3)
 
     // P3a 验证切片：图片（Coil 3 桌面，网络引擎 ktor3）与 HTML 解析
     implementation(libs.coil.compose.core)

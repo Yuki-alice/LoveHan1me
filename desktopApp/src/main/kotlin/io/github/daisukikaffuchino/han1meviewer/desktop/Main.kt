@@ -52,9 +52,11 @@ fun main() = application {
     LogUtil.d("P3a", "main: Coil singleton ImageLoader(ktor3) registered")
     Window(
         onCloseRequest = ::exitApplication,
-        title = "Han1meViewer P3a 验证",
-        state = rememberWindowState(size = DpSize(420.dp, 900.dp)),
+        title = "Han1meViewer KMP 骨架",
+        state = rememberWindowState(size = DpSize(480.dp, 420.dp)),
     ) {
-        P3aVerificationScreen()
+        // P6c-D：骨架屏（真站回归用 P3aVerificationScreen，临时切换处保留）
+        DesktopScaffold()
+        // P3aVerificationScreen()
     }
 }
