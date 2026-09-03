@@ -1,0 +1,29 @@
+# Build
+.gradle/
+build/
+**/build/
+out/
+**/out/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+.DS_Store
+
+# Kotlin
+*.kotlin_metadata
+
+# Local work files
+.workbuddy/
+*.local
+
+# Reference projects (external repos for study, 214M)
+reference/
+
+# Caches
+.cxx/
+local.properties
+
+# Logs
+*.log

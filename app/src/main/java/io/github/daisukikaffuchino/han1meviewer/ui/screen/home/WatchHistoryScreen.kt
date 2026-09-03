@@ -1,0 +1,786 @@
+package io.github.daisukikaffuchino.han1meviewer.ui.screen.home
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyListState
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyGridState
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
+import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.PrimaryTabRow
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Tab
+import androidx.compose.material3.Text
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.snapshotFlow
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import coil3.compose.AsyncImage
+import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.logic.entity.WatchHistoryEntity
+import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeInfo
+import io.github.daisukikaffuchino.han1meviewer.logic.model.OnlineWatchHistorySort
+import io.github.daisukikaffuchino.han1meviewer.logic.state.PageLoadingState
+import io.github.daisukikaffuchino.han1meviewer.logic.state.WebsiteState
+import io.github.daisukikaffuchino.han1meviewer.ui.component.CardContainerSurface
+import io.github.daisukikaffuchino.han1meviewer.ui.component.ConfirmDialog
+import io.github.daisukikaffuchino.han1meviewer.ui.component.FilledIconButton
+import io.github.daisukikaffuchino.han1meviewer.ui.component.LoadMoreFooter
+import io.github.daisukikaffuchino.han1meviewer.ui.component.PageContent
+import io.github.daisukikaffuchino.han1meviewer.ui.component.VideoCardItem
+import io.github.daisukikaffuchino.han1meviewer.ui.component.appbar.HanimeScaffold
+import io.github.daisukikaffuchino.han1meviewer.ui.component.content.EmptyContent
+import io.github.daisukikaffuchino.han1meviewer.ui.component.content.ErrorContent
+import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyColumn
+import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyVerticalGrid
+import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
+import io.github.daisukikaffuchino.han1meviewer.ui.preview.fakeHomePageVideos
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.rememberVideoGridColumns
+import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
+import io.github.daisukikaffuchino.han1meviewer.ui.theme.SpacingNormal
+import io.github.daisukikaffuchino.han1meviewer.ui.theme.shapeByInteraction
+import io.github.daisukikaffuchino.utils.VibrationUtil
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+@Composable
+fun WatchHistoryTabScreen(
+    localHistoriesFlow: Flow<List<WatchHistoryEntity>>,
+    onlineItems: StateFlow<List<HanimeInfo>>,
+    onlineState: StateFlow<PageLoadingState<*>>,
+    onlineSort: StateFlow<OnlineWatchHistorySort>,
+    onlineLoadedPageCount: StateFlow<Int>,
+    onlineIsLoadingMore: StateFlow<Boolean>,
+    onlineRefreshing: () -> Boolean,
+    onlineDeleteStateFlow: SharedFlow<WebsiteState<Boolean>>,
+    onBack: () -> Unit,
+    onOpenLocalVideo: (WatchHistoryEntity) -> Unit,
+    onDeleteLocalHistory: (WatchHistoryEntity) -> Unit,
+    onDeleteAllLocalHistories: () -> Unit,
+    onOpenOnlineVideo: (HanimeInfo) -> Unit,
+    onDeleteOnlineVideo: (HanimeInfo) -> Unit,
+    onRefreshOnline: (OnlineWatchHistorySort) -> Unit,
+    onLoadMoreOnline: () -> Unit,
+) {
+    val scope = rememberCoroutineScope()
+    val pagerState = rememberPagerState(pageCount = { 2 })
+    val localListState = rememberLazyListState()
+    val showClearFab by rememberWatchHistoryFabVisibility(localListState)
+    val localHistories by localHistoriesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
+    val currentOnlineItems by onlineItems.collectAsState()
+    val currentOnlineState by onlineState.collectAsState()
+    val currentOnlineSort by onlineSort.collectAsState()
+    val currentOnlineLoadedPageCount by onlineLoadedPageCount.collectAsState()
+    val currentOnlineIsLoadingMore by onlineIsLoadingMore.collectAsState()
+    var showDeleteAllLocalDialog by rememberSaveable { mutableStateOf(false) }
+
+    LaunchedEffect(pagerState.currentPage) {
+        if (pagerState.currentPage == 1 && currentOnlineItems.isEmpty() && currentOnlineLoadedPageCount == 0 && currentOnlineState is PageLoadingState.Loading) {
+            onRefreshOnline(currentOnlineSort)
+        }
+    }
+
+    ConfirmDialog(
+        visible = showDeleteAllLocalDialog,
+        title = stringResource(R.string.watch_history_delete_all_title),
+        message = stringResource(R.string.sure_to_delete_all_histories),
+        confirmText = stringResource(R.string.watch_history_clear_all),
+        dismissText = stringResource(R.string.cancel),
+        onConfirm = {
+            onDeleteAllLocalHistories()
+            showDeleteAllLocalDialog = false
+        },
+        onDismiss = { showDeleteAllLocalDialog = false },
+    )
+
+    HanimeScaffold(
+        title = stringResource(R.string.watch_history),
+        onBack = onBack,
+        contentHorizontalPadding = 0.dp,
+        floatingActionButton = {
+            WatchHistoryClearFab(
+                visible = pagerState.currentPage == 0 &&
+                        localHistories.isNotEmpty() &&
+                        showClearFab,
+                onClick = { showDeleteAllLocalDialog = true },
+            )
+        },
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues),
+        ) {
+            PrimaryTabRow(selectedTabIndex = pagerState.currentPage) {
+                Tab(
+                    selected = pagerState.currentPage == 0,
+                    onClick = { scope.launch { pagerState.animateScrollToPage(0) } },
+                    text = { Text(stringResource(R.string.local)) },
+                )
+                Tab(
+                    selected = pagerState.currentPage == 1,
+                    onClick = { scope.launch { pagerState.animateScrollToPage(1) } },
+                    text = { Text(stringResource(R.string.online)) },
+                )
+            }
+
+            HorizontalPager(
+                state = pagerState,
+                modifier = Modifier.fillMaxSize(),
+            ) { page ->
+                when (page) {
+                    0 -> WatchHistoryListContent(
+                        histories = localHistories,
+                        onOpenVideo = onOpenLocalVideo,
+                        onDeleteHistory = onDeleteLocalHistory,
+                        listState = localListState,
+                    )
+
+                    else -> OnlineWatchHistoryScreen(
+                        items = currentOnlineItems,
+                        state = currentOnlineState,
+                        sort = currentOnlineSort,
+                        loadedPageCount = currentOnlineLoadedPageCount,
+                        isLoadingMore = currentOnlineIsLoadingMore,
+                        refreshing = onlineRefreshing(),
+                        deleteStateFlow = onlineDeleteStateFlow,
+                        onOpenVideo = onOpenOnlineVideo,
+                        onDeleteVideo = onDeleteOnlineVideo,
+                        onRefresh = onRefreshOnline,
+                        onLoadMore = onLoadMoreOnline,
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WatchHistoryListContent(
+    histories: List<WatchHistoryEntity>,
+    onOpenVideo: (WatchHistoryEntity) -> Unit,
+    onDeleteHistory: (WatchHistoryEntity) -> Unit,
+    listState: LazyListState = rememberLazyListState(),
+) {
+    var pendingDelete by remember { mutableStateOf<WatchHistoryEntity?>(null) }
+
+    ConfirmDialog(
+        visible = pendingDelete != null,
+        title = stringResource(R.string.delete_history),
+        message = stringResource(R.string.sure_to_delete_s, pendingDelete?.title.orEmpty()),
+        confirmText = stringResource(R.string.delete),
+        dismissText = stringResource(R.string.cancel),
+        onConfirm = {
+            pendingDelete?.let(onDeleteHistory)
+            pendingDelete = null
+        },
+        onDismiss = { pendingDelete = null },
+    )
+
+    if (histories.isEmpty()) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            EmptyContent(
+                hint = stringResource(R.string.watch_history_empty_title),
+                subHint = stringResource(R.string.watch_history_empty_description),
+            )
+        }
+    } else {
+        LazyColumn(
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(16.dp),
+            verticalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            items(histories, key = { it.id }) { history ->
+                WatchHistoryCard(
+                    history = history,
+                    onClick = { onOpenVideo(history) },
+                    onDeleteClick = { pendingDelete = history },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WatchHistoryClearFab(
+    visible: Boolean,
+    onClick: () -> Unit,
+) {
+    val view = LocalView.current
+    AnimatedVisibility(
+        visible = visible,
+        enter = fadeIn() + slideInVertically { it / 2 },
+        exit = fadeOut() + slideOutVertically { it / 2 },
+    ) {
+        Box(
+            modifier = Modifier.padding(8.dp)
+        ) {
+            ExtendedFloatingActionButton(
+                text = { Text(stringResource(R.string.watch_history_clear_all)) },
+                icon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_delete),
+                        contentDescription = null,
+                    )
+                },
+                onClick = {
+                    VibrationUtil.performHapticFeedback(view)
+                    onClick()
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun rememberWatchHistoryFabVisibility(
+    listState: LazyListState,
+): androidx.compose.runtime.State<Boolean> = remember(listState) {
+    derivedStateOf {
+        when {
+            !listState.canScrollBackward -> true
+            listState.lastScrolledBackward -> true
+            listState.lastScrolledForward -> false
+            else -> true
+        }
+    }
+}
+
+@OptIn(
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+    androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class,
+)
+@Composable
+private fun OnlineWatchHistoryScreen(
+    items: List<HanimeInfo>,
+    state: PageLoadingState<*>,
+    sort: OnlineWatchHistorySort,
+    loadedPageCount: Int,
+    isLoadingMore: Boolean,
+    refreshing: Boolean,
+    deleteStateFlow: SharedFlow<WebsiteState<Boolean>>,
+    onOpenVideo: (HanimeInfo) -> Unit,
+    onDeleteVideo: (HanimeInfo) -> Unit,
+    onRefresh: (OnlineWatchHistorySort) -> Unit,
+    onLoadMore: () -> Unit,
+) {
+    val gridState = rememberLazyGridState()
+    val refreshState = rememberPullToRefreshState()
+    val snackbarHostState = remember { androidx.compose.material3.SnackbarHostState() }
+    var pendingDelete by remember { mutableStateOf<HanimeInfo?>(null) }
+    var sortBarVisible by rememberSaveable { mutableStateOf(true) }
+    val deleteFailedText = stringResource(R.string.delete_failed)
+    val deleteSuccessText = stringResource(R.string.delete_success)
+
+    LaunchedEffect(deleteStateFlow, deleteFailedText, deleteSuccessText) {
+        deleteStateFlow.collect { deleteState ->
+            when (deleteState) {
+                is WebsiteState.Error -> snackbarHostState.showSnackbar(message = deleteFailedText)
+                is WebsiteState.Success -> snackbarHostState.showSnackbar(message = deleteSuccessText)
+                WebsiteState.Loading -> Unit
+            }
+        }
+    }
+
+    LaunchedEffect(gridState, items.size, state, isLoadingMore) {
+        if (
+            items.isEmpty() ||
+            isLoadingMore ||
+            state is PageLoadingState.Loading ||
+            state is PageLoadingState.NoMoreData ||
+            state is PageLoadingState.Error
+        ) {
+            return@LaunchedEffect
+        }
+
+        snapshotFlow {
+            val layoutInfo = gridState.layoutInfo
+            val lastVisible = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            lastVisible >= layoutInfo.totalItemsCount - 4
+        }
+            .distinctUntilChanged()
+            .first { it }
+
+        onLoadMore()
+    }
+
+    LaunchedEffect(gridState) {
+        var previousIndex = 0
+        var previousOffset = 0
+        snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
+            .distinctUntilChanged()
+            .collect { (currentIndex, currentOffset) ->
+                sortBarVisible = when {
+                    !gridState.canScrollBackward -> true
+                    currentIndex < previousIndex -> true
+                    currentIndex > previousIndex -> false
+                    currentOffset < previousOffset -> true
+                    currentOffset > previousOffset -> false
+                    else -> sortBarVisible
+                }
+                previousIndex = currentIndex
+                previousOffset = currentOffset
+            }
+    }
+
+    ConfirmDialog(
+        visible = pendingDelete != null,
+        title = stringResource(R.string.delete_history),
+        message = stringResource(R.string.sure_to_delete_s, pendingDelete?.title.orEmpty()),
+        confirmText = stringResource(R.string.delete),
+        dismissText = stringResource(R.string.cancel),
+        onConfirm = {
+            pendingDelete?.let(onDeleteVideo)
+            pendingDelete = null
+        },
+        onDismiss = { pendingDelete = null },
+    )
+
+    Box(modifier = Modifier.fillMaxSize()) {
+        PullToRefreshBox(
+            isRefreshing = refreshing,
+            state = refreshState,
+            onRefresh = { onRefresh(sort) },
+            modifier = Modifier.fillMaxSize(),
+            indicator = {
+                PullToRefreshDefaults.LoadingIndicator(
+                    state = refreshState,
+                    isRefreshing = refreshing,
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = 64.dp),
+                )
+            }
+        ) {
+            PageContent(
+                isLoading = state is PageLoadingState.Loading && items.isEmpty(),
+                isError = state is PageLoadingState.Error,
+                isEmpty = state is PageLoadingState.NoMoreData && items.isEmpty(),
+                onRetry = { onRefresh(sort) },
+                error = {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        ErrorContent(
+                            title = stringResource(R.string.load_failed_retry),
+                            onRetry = { onRefresh(sort) },
+                        )
+                    }
+                },
+                empty = {
+                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                        EmptyContent(
+                            hint = stringResource(R.string.watch_history_empty_title),
+                            subHint = stringResource(R.string.watch_history_empty_description),
+                        )
+                    }
+                },
+            ) {
+                OnlineWatchHistoryGrid(
+                    items = items,
+                    gridState = gridState,
+                    loadedPageCount = loadedPageCount,
+                    state = state,
+                    isLoadingMore = isLoadingMore,
+                    snackbarHostState = snackbarHostState,
+                    onOpenVideo = onOpenVideo,
+                    onDeleteVideo = { pendingDelete = it },
+                )
+            }
+        }
+
+        AnimatedVisibility(
+            visible = sortBarVisible,
+            modifier = Modifier.align(Alignment.TopCenter),
+            enter = fadeIn() + slideInVertically { -it },
+            exit = fadeOut() + slideOutVertically { -it },
+        ) {
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.66f),
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    OnlineHistorySortChip(
+                        text = stringResource(R.string.sort_by_newest),
+                        selected = sort == OnlineWatchHistorySort.Latest,
+                        onClick = { onRefresh(OnlineWatchHistorySort.Latest) },
+                    )
+                    OnlineHistorySortChip(
+                        text = stringResource(R.string.popular),
+                        selected = sort == OnlineWatchHistorySort.Popular,
+                        onClick = { onRefresh(OnlineWatchHistorySort.Popular) },
+                    )
+                    OnlineHistorySortChip(
+                        text = stringResource(R.string.sort_by_oldest),
+                        selected = sort == OnlineWatchHistorySort.Oldest,
+                        onClick = { onRefresh(OnlineWatchHistorySort.Oldest) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OnlineWatchHistoryGrid(
+    items: List<HanimeInfo>,
+    gridState: LazyGridState,
+    loadedPageCount: Int,
+    state: PageLoadingState<*>,
+    isLoadingMore: Boolean,
+    snackbarHostState: androidx.compose.material3.SnackbarHostState,
+    onOpenVideo: (HanimeInfo) -> Unit,
+    onDeleteVideo: (HanimeInfo) -> Unit,
+) {
+    val videoColumns = rememberVideoGridColumns()
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(videoColumns),
+            state = gridState,
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(
+                start = SpacingNormal,
+                top = 64.dp,
+                end = SpacingNormal,
+                bottom = SpacingNormal,
+            ),
+            horizontalArrangement = Arrangement.spacedBy(SpacingNormal),
+            verticalArrangement = Arrangement.spacedBy(SpacingNormal),
+            enableItemAnimation = false,
+        ) {
+            item(
+                key = "online_history_count",
+                span = { GridItemSpan(maxLineSpan) },
+                contentType = "header",
+            ) {
+                Text(
+                    text = stringResource(R.string.watch_history_total_count, items.size),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(horizontal = 4.dp, vertical = 4.dp),
+                )
+            }
+            items(
+                items = items,
+                key = { it.videoCode },
+                contentType = { "video" },
+            ) { item ->
+                VideoCardItem(
+                    videoItem = item,
+                    showDeleteAction = true,
+                    onClickVideosItem = { onOpenVideo(item) },
+                    onLongClickVideosItem = { _, _ -> onDeleteVideo(item) },
+                )
+            }
+            if (items.isNotEmpty()) {
+                item(
+                    key = "online_history_footer",
+                    span = { GridItemSpan(maxLineSpan) },
+                    contentType = "footer",
+                ) {
+                    LoadMoreFooter(
+                        state = state,
+                        loadedPage = loadedPageCount,
+                        isLoadingMore = isLoadingMore,
+                    )
+                }
+            }
+        }
+        androidx.compose.material3.SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier.align(Alignment.BottomCenter),
+        )
+    }
+}
+
+@Composable
+private fun OnlineHistorySortChip(
+    text: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val view = LocalView.current
+    AssistChip(
+        onClick = {
+            VibrationUtil.performHapticFeedback(view)
+            onClick()
+        },
+        label = { Text(text) },
+        colors = AssistChipDefaults.assistChipColors(
+            containerColor = if (selected) {
+                MaterialTheme.colorScheme.primaryContainer
+            } else {
+                MaterialTheme.colorScheme.surfaceContainerLow
+            },
+            labelColor = if (selected) {
+                MaterialTheme.colorScheme.onPrimaryContainer
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+        ),
+    )
+}
+
+@OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+private fun WatchHistoryCard(
+    history: WatchHistoryEntity,
+    onClick: () -> Unit,
+    onDeleteClick: () -> Unit,
+) {
+    val view = LocalView.current
+    val fixTimestamp = { ts: Long -> if (ts < 9999999999L) ts * 1000 else ts }
+    val dateFormatter = remember { SimpleDateFormat("yyyy-MM-dd HH:mm", Locale.getDefault()) }
+    val watchDate =
+        remember(history.watchDate) { dateFormatter.format(Date(fixTimestamp(history.watchDate))) }
+    val releaseDate =
+        remember(history.releaseDate) { dateFormatter.format(Date(fixTimestamp(history.releaseDate))) }
+    val progressMinutes = remember(history.progress) { history.progress / 60_000 }
+    val interactionSource = remember { MutableInteractionSource() }
+    val indication = LocalIndication.current
+    val pressed by interactionSource.collectIsPressedAsState()
+    val cardShape = shapeByInteraction(
+        shapes = HanimeDefaults.cardShapes(),
+        pressed = pressed,
+        animationSpec = HanimeDefaults.shapesDefaultAnimationSpec,
+    )
+    CardContainerSurface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = cardShape,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    interactionSource = interactionSource,
+                    indication = indication,
+                    onClick = {
+                        VibrationUtil.performHapticFeedback(view)
+                        onClick()
+                    },
+                    onLongClick = {},
+                )
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(120.dp)
+                    .height(68.dp)
+                    .clip(RoundedCornerShape(8.dp))
+            ) {
+                AsyncImage(
+                    model = history.coverUrl,
+                    contentDescription = history.title,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
+                )
+                if (progressMinutes > 0) {
+                    Surface(
+                        color = Color.Black.copy(alpha = 0.65f),
+                        contentColor = Color.White,
+                        shape = RoundedCornerShape(topEnd = 4.dp),
+                        modifier = Modifier.align(Alignment.BottomStart)
+                    ) {
+                        Text(
+                            text = stringResource(
+                                R.string.watch_history_minutes_short,
+                                progressMinutes
+                            ),
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
+                        )
+                    }
+                }
+            }
+
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                Text(
+                    text = history.title,
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+                WatchHistoryMeta(
+                    iconRes = R.drawable.ic_access_time,
+                    label = stringResource(R.string.watch_history_watched_at, watchDate),
+                )
+                WatchHistoryMeta(
+                    iconRes = R.drawable.ic_play_circle,
+                    label = stringResource(R.string.watch_history_released_at, releaseDate),
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.End),
+                ) {
+                    AssistChip(
+                        onClick = {
+                            VibrationUtil.performHapticFeedback(view)
+                            onClick()
+                        },
+                        label = {
+                            Text(
+                                stringResource(R.string.watch_history_resume_watch),
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        },
+                        leadingIcon = {
+                            Icon(
+                                painter = painterResource(R.drawable.ic_history),
+                                contentDescription = null,
+                                modifier = Modifier.size(14.dp),
+                            )
+                        },
+                        colors = AssistChipDefaults.assistChipColors(
+                            containerColor = MaterialTheme.colorScheme.primaryContainer, // 改用 primary 强化引导
+                            labelColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                        ),
+                        modifier = Modifier.height(28.dp)
+                    )
+                    FilledIconButton(
+                        onClick = onDeleteClick,
+                        modifier = Modifier.size(25.dp)
+                    ) {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_delete),
+                            contentDescription = stringResource(R.string.delete_history),
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun WatchHistoryMeta(
+    iconRes: Int,
+    label: String,
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(18.dp),
+        )
+        Text(
+            text = label,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+    }
+}
+
+@Preview(showBackground = true, widthDp = 420, heightDp = 900)
+@Composable
+private fun WatchHistoryScreenPreview() {
+    val previews = fakeHomePageVideos.take(3).mapIndexed { index, item ->
+        WatchHistoryEntity(
+            id = index + 1,
+            title = item.title,
+            coverUrl = item.coverUrl,
+            videoCode = item.videoCode,
+            releaseDate = System.currentTimeMillis() - (index + 10) * 86_400_000L,
+            watchDate = System.currentTimeMillis() - index * 3_600_000L,
+            progress = (index + 1) * 12L * 60_000L,
+        )
+    }
+    ComponentPreview {
+        WatchHistoryListContent(
+            histories = previews,
+            onOpenVideo = {},
+            onDeleteHistory = {},
+        )
+    }
+}
+
+@Preview(showBackground = true)
+@Composable
+private fun WatchHistoryEmptyPreview() {
+    ComponentPreview {
+        WatchHistoryListContent(
+            histories = emptyList<WatchHistoryEntity>(),
+            onOpenVideo = {},
+            onDeleteHistory = {},
+        )
+    }
+}

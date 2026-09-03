@@ -1,0 +1,13 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <dimen name="video_cover_width">185dp</dimen>
+    <dimen name="video_cover_simplified_width">120dp</dimen>
+
+    <!-- use for comment align -->
+
+    <dimen name="view_view_and_time_icon_size">14dp</dimen>
+    <dimen name="video_view_and_time_and_duration">12sp</dimen>
+    <!-- Default screen margins, per the Android Design guidelines. -->
+    <dimen name="player_control_bar_margin">15dp</dimen>
+    <!-- 瑕嗗啓Material slider宸﹀彸padding -->
+</resources>

@@ -1,0 +1,50 @@
+# Xcode 工程生成配置（xcodegen）
+#
+# 用法：
+#   brew install xcodegen
+#   cd iosApp && xcodegen generate
+#   open iosApp.xcodeproj
+#
+# 生成后即可 Xcode 直接 Run 到模拟器/真机；
+# 构建时通过脚本阶段先调 Gradle 编译共享框架 :shared（baseName=ComposeApp）。
+name: iosApp
+options:
+  bundleIdPrefix: io.github.daisukikaffuchino
+  deploymentTarget:
+    iOS: "15.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.10"
+    IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+    TARGETED_DEVICE_FAMILY: "1,2"
+targets:
+  iosApp:
+    type: application
+    platform: iOS
+    sources:
+      - path: iosApp
+    info:
+      path: iosApp/Info.plist
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: io.github.daisukikaffuchino.han1meviewer.ios
+        PRODUCT_NAME: Han1meViewer
+        # Kotlin/Native 共享框架的输出目录（Gradle 按 sdk 与架构落盘）
+        FRAMEWORK_SEARCH_PATHS:
+          - "$(inherited)"
+          - "$(PROJECT_DIR)/../shared/build/bin"
+        LD_RUNPATH_SEARCH_PATHS:
+          - "$(inherited)"
+          - "@executable_path/Frameworks"
+        OTHER_LDFLAGS: "$(inherited) -framework ComposeApp"
+    dependencies:
+      # xcodegen 不直接支持 Gradle 框架产物，改由脚本阶段产出并手动链接
+      - sdk: UIKit.framework
+    preBuildScripts:
+      # 构建前先编译共享模块框架（Kotlin 1.9.20+ 提供的集成任务）
+      - name: Build Shared Kotlin Framework
+        script: |
+          cd "$SRCROOT/.."
+          ./gradlew :shared:embedAndSignAppleFrameworkForXcode
+        basedOnDependencyAnalysis: false
