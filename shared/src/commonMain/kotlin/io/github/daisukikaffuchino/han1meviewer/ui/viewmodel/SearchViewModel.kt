@@ -1,8 +1,6 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.viewmodel
 
-import android.os.Parcelable
 import io.github.daisukikaffuchino.utils.LogUtil
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.daisukikaffuchino.han1meviewer.HanimeConstants.HANIME_URL
@@ -13,12 +11,12 @@ import io.github.daisukikaffuchino.han1meviewer.logic.HanimeAdvancedSearchRepo.t
 import io.github.daisukikaffuchino.han1meviewer.logic.NetworkRepo
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.HanimeAdvancedSearchHistoryEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.SearchHistoryEntity
+import io.github.daisukikaffuchino.han1meviewer.logic.ioDispatcher
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeInfo
 import io.github.daisukikaffuchino.han1meviewer.logic.model.SearchOption
 import io.github.daisukikaffuchino.han1meviewer.logic.state.PageLoadingState
-import io.github.daisukikaffuchino.utils.loadAssetAs
+import io.github.daisukikaffuchino.utils.decodeComposeAsset
 import io.github.daisukikaffuchino.utils.unsafeLazy
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,80 +32,48 @@ import kotlinx.coroutines.withContext
  * @author Yenaly Liew
  * @time 2022/06/13 013 22:29
  */
-class SearchViewModel(
-    private val state: SavedStateHandle
-) : ViewModel() {
+// P6c：SavedStateHandle（androidx）不可下沉 commonMain；nav3 @Serializable 路由不依赖它做参数传递，
+// 原 state 持久化（进程死亡恢复查询/滚动）改普通属性，持久化接入推迟 P6d 导航层（债务记录）。
+class SearchViewModel() : ViewModel() {
 
     var page: Int = 1
-    var query: String?
-        get() = state["query"]
-        set(value) { state["query"] = value }
+    var query: String? = null
+    var genre: String? = null
+    var sort: String? = null
+    var year: Int? = null
+    var month: Int? = null
+    var approxTime: String? = null
+    var broad: Boolean = false
+    var duration: String? = null
 
-    var genre: String?
-        get() = state["genre"]
-        set(value) { state["genre"] = value }
-
-    var sort: String?
-        get() = state["sort"]
-        set(value) { state["sort"] = value }
-
-    var year: Int?
-        get() = state["year"]
-        set(value) { state["year"] = value }
-
-    var month: Int?
-        get() = state["month"]
-        set(value) { state["month"] = value }
-
-    var approxTime: String?
-        get() = state["approxTime"]
-        set(value) { state["approxTime"] = value }
-
-    var broad: Boolean
-        get() = state["broad"] ?: false
-        set(value) { state["broad"] = value }
-
-    var duration: String?
-        get() = state["duration"]
-        set(value) { state["duration"] = value }
-
-    var gridFirstVisibleItemIndex: Int
-        get() = state["gridFirstVisibleItemIndex"] ?: 0
-        set(value) {
-            state["gridFirstVisibleItemIndex"] = value
-        }
-
-    var gridFirstVisibleItemScrollOffset: Int
-        get() = state["gridFirstVisibleItemScrollOffset"] ?: 0
-        set(value) {
-            state["gridFirstVisibleItemScrollOffset"] = value
-        }
+    var gridFirstVisibleItemIndex: Int = 0
+    var gridFirstVisibleItemScrollOffset: Int = 0
 
     // P6c：SparseArray → MutableMap（key 仅作占位/分组 id，见 sheet groupSelectedTagOptions）
     var tagMap = mutableMapOf<Int, Set<SearchOption>>()
     var brandMap = mutableMapOf<Int, Set<SearchOption>>()
 
     val genres by unsafeLazy {
-        loadAssetAs<List<SearchOption>>(if (SettingsRepository.baseUrl == HANIME_URL[3]) "search_options/genre_av.json" else "search_options/genre.json").orEmpty()
+        decodeComposeAsset<List<SearchOption>>(if (SettingsRepository.baseUrl == HANIME_URL[3]) "files/search_options/genre_av.json" else "files/search_options/genre.json").orEmpty()
     }
 
     val tags by unsafeLazy {
-        loadAssetAs<Map<String, List<SearchOption>>>("search_options/tags.json").orEmpty()
+        decodeComposeAsset<Map<String, List<SearchOption>>>("files/search_options/tags.json").orEmpty()
     }
 
     val brands by unsafeLazy {
-        loadAssetAs<List<SearchOption>>("search_options/brands.json").orEmpty()
+        decodeComposeAsset<List<SearchOption>>("files/search_options/brands.json").orEmpty()
     }
 
     val sortOptions by unsafeLazy {
-        loadAssetAs<List<SearchOption>>("search_options/sort_option.json").orEmpty()
+        decodeComposeAsset<List<SearchOption>>("files/search_options/sort_option.json").orEmpty()
     }
 
     val durations by unsafeLazy {
-        loadAssetAs<List<SearchOption>>("search_options/duration.json").orEmpty()
+        decodeComposeAsset<List<SearchOption>>("files/search_options/duration.json").orEmpty()
     }
     val timeList by unsafeLazy {
-        loadAssetAs<List<SearchOption>>("search_options/release_date.json").orEmpty()
+        decodeComposeAsset<List<SearchOption>>("files/search_options/release_date.json").orEmpty()
     }
 
     private val _searchStateFlow =
@@ -116,7 +82,6 @@ class SearchViewModel(
 
     private val _searchFlow = MutableStateFlow(emptyList<HanimeInfo>())
     val searchFlow = _searchFlow.asStateFlow()
-    var recyclerViewState: Parcelable? = null
 
     fun clearHanimeSearchResult() {
         _searchFlow.value = emptyList()
@@ -135,7 +100,6 @@ class SearchViewModel(
         duration = null
         tagMap.clear()
         brandMap.clear()
-        recyclerViewState = null
         gridFirstVisibleItemIndex = 0
         gridFirstVisibleItemScrollOffset = 0
         _searchFlow.value = emptyList()
@@ -162,7 +126,7 @@ class SearchViewModel(
                             val list = state.info
                             val updatedList = if (SettingsRepository.showPlayedIndicator) {
                                 val codes = list.map { it.videoCode }
-                                val watchedCodes = withContext(Dispatchers.IO) {
+                                val watchedCodes = withContext(ioDispatcher) {
                                     DatabaseRepo.WatchHistory.getWatched(codes).toSet()
                                 }
                                 list.map { item ->
@@ -182,7 +146,7 @@ class SearchViewModel(
     }
 
     fun insertSearchHistory(history: SearchHistoryEntity) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             DatabaseRepo.SearchHistory.insert(history)
             LogUtil.d("insert_search_hty", "$history DONE!")
         }
@@ -204,7 +168,7 @@ class SearchViewModel(
         sort: String?, broad: Boolean, date: String?,
         duration: String?, tags: Set<SearchOption>, brands: Set<SearchOption>,
     ) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             val histories = HanimeAdvancedSearchRepo.getSearchHistories(limit = 10)
                 .first()
 
@@ -238,18 +202,17 @@ class SearchViewModel(
     }
 
     fun deleteSearchHistory(history: SearchHistoryEntity) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             DatabaseRepo.SearchHistory.delete(history)
             LogUtil.d("delete_search_hty", "$history DONE!")
         }
     }
 
-    @JvmOverloads
     fun loadAllSearchHistories(keyword: String? = null) =
-        DatabaseRepo.SearchHistory.loadAll(keyword).flowOn(Dispatchers.IO)
+        DatabaseRepo.SearchHistory.loadAll(keyword).flowOn(ioDispatcher)
 
     fun deleteSearchHistoryByKeyword(query: String) {
-        viewModelScope.launch(Dispatchers.IO) {
+        viewModelScope.launch(ioDispatcher) {
             DatabaseRepo.SearchHistory.deleteByKeyword(query)
             LogUtil.d("delete_search_hty", "$query DONE!")
         }
