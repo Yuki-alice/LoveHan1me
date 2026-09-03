@@ -1,8 +1,6 @@
 package io.github.daisukikaffuchino.han1meviewer.util
 
 import io.github.daisukikaffuchino.utils.LanguageHelper
-import java.math.BigDecimal
-import java.util.Locale
 
 object DisplayTextLocalizer {
 
@@ -15,17 +13,17 @@ object DisplayTextLocalizer {
         val unit = match.groupValues[2]
 
         return when (language()) {
-            Locale.SIMPLIFIED_CHINESE.language -> when (unit) {
+            "zh" -> when (unit) {
                 "万次", "萬次" -> "${count}万"
                 else -> count
             }
 
-            Locale.ENGLISH.language -> when (unit) {
+            "en" -> when (unit) {
                 "万次", "萬次" -> "${count.toKViews()} views"
                 else -> "$count views"
             }
 
-            Locale.JAPANESE.language -> when (unit) {
+            "ja" -> when (unit) {
                 "万次", "萬次" -> "${count}万"
                 else -> "${count}回"
             }
@@ -43,9 +41,9 @@ object DisplayTextLocalizer {
         val unit = match.groupValues[2]
 
         return when (language()) {
-            Locale.SIMPLIFIED_CHINESE.language -> "$count${unit.toSimplifiedUnit()}前"
-            Locale.ENGLISH.language -> "$count ${unit.toEnglishUnit(count)} ago"
-            Locale.JAPANESE.language -> "$count${unit.toJapaneseUnit()}前"
+            "zh" -> "$count${unit.toSimplifiedUnit()}前"
+            "en" -> "$count ${unit.toEnglishUnit(count)} ago"
+            "ja" -> "$count${unit.toJapaneseUnit()}前"
             else -> "$count${unit.toTraditionalUnit()}前"
         }
     }
@@ -96,11 +94,19 @@ object DisplayTextLocalizer {
     }
 
     private fun String.toKViews(): String {
+        // P6c：java.math.BigDecimal → 纯字符串十进制移位（×10 + 去尾零），语义等价
         return runCatching {
-            BigDecimal(this)
-                .multiply(BigDecimal.TEN)
-                .stripTrailingZeros()
-                .toPlainString() + "K"
-        }.getOrElse { "${this}0K" }
+            val sign = if (startsWith("-")) "-" else ""
+            val body = if (sign.isNotEmpty()) drop(1) else this
+            val dot = body.indexOf('.')
+            val intPart = if (dot < 0) body else body.substring(0, dot)
+            val frac = if (dot < 0) "" else body.substring(dot + 1)
+            val shiftedInt = intPart + (frac.firstOrNull() ?: '0')
+            val shiftedFrac = if (frac.length > 1) frac.drop(1) else ""
+            val normInt = shiftedInt.trimStart('0').ifEmpty { "0" }
+            val normFrac = shiftedFrac.trimEnd('0')
+            val num = if (normFrac.isEmpty()) normInt else "$normInt.$normFrac"
+            sign + num + "K"
+        }.getOrElse { "${'$'}{this}0K" }
     }
 }

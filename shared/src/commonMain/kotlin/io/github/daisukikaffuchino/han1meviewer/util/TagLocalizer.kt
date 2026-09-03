@@ -2,7 +2,8 @@ package io.github.daisukikaffuchino.han1meviewer.util
 
 import io.github.daisukikaffuchino.han1meviewer.logic.model.SearchOption
 import io.github.daisukikaffuchino.utils.LanguageHelper
-import io.github.daisukikaffuchino.utils.loadAssetAs
+import io.github.daisukikaffuchino.utils.readComposeFileSync
+import kotlinx.serialization.json.Json
 
 object TagLocalizer {
 
@@ -13,12 +14,20 @@ object TagLocalizer {
         val searchKeys: Map<String, String>,
     )
 
+    private val json = Json { ignoreUnknownKeys = true }
+
     private val tagOptions: List<SearchOption> by lazy {
-        loadAssetAs<Map<String, List<SearchOption>>>("search_options/tags.json")
+        // P6c：loadAssetAs → readComposeFileSync + Json（同步，维持 by lazy 语义；path 带 files/ 前缀）
+        decodeComposeJson<Map<String, List<SearchOption>>>("files/search_options/tags.json")
             .orEmpty()
             .values
-            .flatten() + loadAssetAs<List<SearchOption>>("search_options/genre.json").orEmpty()
+            .flatten() + decodeComposeJson<List<SearchOption>>("files/search_options/genre.json").orEmpty()
     }
+
+    private inline fun <reified T> decodeComposeJson(path: String): T? = runCatching {
+        val bytes = readComposeFileSync(path) ?: return null
+        json.decodeFromString<T>(bytes.decodeToString())
+    }.getOrNull()
 
     private var cachedLanguageTag: String? = null
     private var cachedMappings: TagMappings? = null
@@ -67,8 +76,8 @@ object TagLocalizer {
                 option.lang?.ja,
             ).forEach { rawTag ->
                 val normalizedTag = rawTag.normalizeTag()
-                labels.putIfAbsent(normalizedTag, label)
-                searchKeys.putIfAbsent(normalizedTag, searchKey)
+                if (!labels.containsKey(normalizedTag)) labels[normalizedTag] = label
+                if (!searchKeys.containsKey(normalizedTag)) searchKeys[normalizedTag] = searchKey
             }
         }
         return TagMappings(labels = labels, searchKeys = searchKeys)
