@@ -682,3 +682,9 @@ export ANDROID_HOME=~/Library/Android/sdk
           :shared:compileKotlinIosSimulatorArm64 :app:compileDebugKotlin
 ```
 
+## P6c 收口完成记录（2026-09-03，git 从 p6c-start 到 p6c-done，8 commits，clean 六端 BUILD SUCCESSFUL）
+- **A** SearchOption 收口下沉（去 Parcelable/Locale，Map.flatten + scope 名索引）+ ui/model（SearchScopeSection/AdvancedSearchDialogState 去 R）迁 shared；Search UI 3 文件 SparseArray→Map 适配
+- **B** TagLocalizer/DisplayTextLocalizer 下沉（新增 internal decodeComposeAsset 同步 JSON 读取；Locale/BigDecimal→纯 Kotlin）
+- **C** 8 VM 下沉（C1 UserAccount C2 App C3 Comment C4 PreviewCommentPrefetcher C5 Preview C6 Video C7 Search；C8 CheckInCalendar **顺延**，java.time 27 处+UI state 跨 8 文件，属 P6d UI 批次）；Comment Message/HKeyframeResult 改字符串化（suspend getString）；VideoViewModel CacheStore→P6b-F 工厂；SearchViewModel 去 SavedStateHandle/Parcelable/recyclerViewState；ReportReason/CommentSortType 随迁；:app viewmodel 目录只剩 CheckInCalendarViewModel.kt（债务）
+- **D** desktopApp 骨架屏 DesktopScaffold（CMP material3 加依赖；shared HanimeDefaults 取色；SonnerToast.Host 冒烟按钮）替代 P3aVerificationScreen 入口（原屏保留）；冒烟：DataStore/Settings/Coil 就绪 + 进程存活 60s 无异常
+- **顺延债务**（P6d/P7）：CheckInCalendarViewModel（java.time+Glance widget）、HanimeTheme.kt（Kyant0 m3color 仅 Android，:app 留存）、dailycheckin UI 8 文件 java.time 类型、SearchViewModel SavedStateHandle 持久化（改普通属性）、VideoViewModel watch-later title 占位（UI 特判显示）、desktop composeResources 同步读（readComposeFileSync 桌面路径待 P6d 资源核查）
