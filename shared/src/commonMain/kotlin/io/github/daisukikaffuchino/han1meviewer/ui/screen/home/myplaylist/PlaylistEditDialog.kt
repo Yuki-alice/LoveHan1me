@@ -13,9 +13,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.playlist_title
+import io.github.daisukikaffuchino.han1meviewer.playlist_description
+import io.github.daisukikaffuchino.han1meviewer.confirm
+import io.github.daisukikaffuchino.han1meviewer.cancel
 
 @Composable
 fun PlaylistEditDialog(
@@ -36,14 +40,14 @@ fun PlaylistEditDialog(
                 OutlinedTextField(
                     value = playlistTitle,
                     onValueChange = { playlistTitle = it },
-                    label = { Text(stringResource(R.string.playlist_title)) },
+                    label = { Text(stringResource(Res.string.playlist_title)) },
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 3,
                 )
                 OutlinedTextField(
                     value = playlistDescription,
                     onValueChange = { playlistDescription = it },
-                    label = { Text(stringResource(R.string.playlist_description)) },
+                    label = { Text(stringResource(Res.string.playlist_description)) },
                     modifier = Modifier.fillMaxWidth(),
                     maxLines = 3,
                 )
@@ -56,12 +60,12 @@ fun PlaylistEditDialog(
                     onDismiss()
                 },
             ) {
-                Text(stringResource(R.string.confirm))
+                Text(stringResource(Res.string.confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
+                Text(stringResource(Res.string.cancel))
             }
         },
     )
