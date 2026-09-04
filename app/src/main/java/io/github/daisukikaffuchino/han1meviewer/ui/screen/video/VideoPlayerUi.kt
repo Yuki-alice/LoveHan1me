@@ -10,8 +10,6 @@ import android.os.SystemClock
 import android.text.format.DateFormat
 import android.util.StateSet
 import android.view.HapticFeedbackConstants
-import android.view.SurfaceHolder
-import android.view.SurfaceView
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -108,6 +106,7 @@ import io.github.daisukikaffuchino.han1meviewer.ui.component.FilledTonalIconButt
 import io.github.daisukikaffuchino.han1meviewer.ui.component.IconButton
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlaybackEngine
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlaybackQuality
+import io.github.daisukikaffuchino.han1meviewer.ui.player.PlatformVideoSurface
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlayerDefaults
 import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
@@ -339,32 +338,13 @@ fun VideoPlayerUi(
                         modifier = videoModifier
                             .background(Color.Black)
                     ) {
-                        AndroidView(
+                        // P5-1：Surface 渲染走 shared 插槽（androidMain 内为原 SurfaceView 代码，
+                        // 含 attach/detach 回调 + Mpv updateSurfaceSize；其余 1900 行零改动）
+                        PlatformVideoSurface(
+                            engine = playbackEngine,
                             modifier = Modifier.fillMaxSize(),
-                            factory = { context ->
-                                SurfaceView(context).apply {
-                                    holder.addCallback(object : SurfaceHolder.Callback {
-                                        override fun surfaceCreated(holder: SurfaceHolder) {
-                                            playbackEngine.attachSurface(holder.surface)
-                                        }
-
-                                        override fun surfaceChanged(
-                                            holder: SurfaceHolder,
-                                            format: Int,
-                                            width: Int,
-                                            height: Int,
-                                        ) {
-                                            if (playbackEngine is io.github.daisukikaffuchino.han1meviewer.ui.player.MpvPlaybackEngine) {
-                                                playbackEngine.updateSurfaceSize(width, height)
-                                            }
-                                        }
-
-                                        override fun surfaceDestroyed(holder: SurfaceHolder) {
-                                            playbackEngine.detachSurface(holder.surface)
-                                        }
-                                    })
-                                }
-                            }
+                            onSurfaceAvailable = { playbackEngine.attachSurface(it) },
+                            onSurfaceDestroyed = { playbackEngine.detachSurface(it) },
                         )
                     }
                 }
