@@ -683,8 +683,23 @@ export ANDROID_HOME=~/Library/Android/sdk
 ```
 
 ## P6c 收口完成记录（2026-09-03，git 从 p6c-start 到 p6c-done，8 commits，clean 六端 BUILD SUCCESSFUL）
+
 - **A** SearchOption 收口下沉（去 Parcelable/Locale，Map.flatten + scope 名索引）+ ui/model（SearchScopeSection/AdvancedSearchDialogState 去 R）迁 shared；Search UI 3 文件 SparseArray→Map 适配
+
 - **B** TagLocalizer/DisplayTextLocalizer 下沉（新增 internal decodeComposeAsset 同步 JSON 读取；Locale/BigDecimal→纯 Kotlin）
+
 - **C** 8 VM 下沉（C1 UserAccount C2 App C3 Comment C4 PreviewCommentPrefetcher C5 Preview C6 Video C7 Search；C8 CheckInCalendar **顺延**，java.time 27 处+UI state 跨 8 文件，属 P6d UI 批次）；Comment Message/HKeyframeResult 改字符串化（suspend getString）；VideoViewModel CacheStore→P6b-F 工厂；SearchViewModel 去 SavedStateHandle/Parcelable/recyclerViewState；ReportReason/CommentSortType 随迁；:app viewmodel 目录只剩 CheckInCalendarViewModel.kt（债务）
+
 - **D** desktopApp 骨架屏 DesktopScaffold（CMP material3 加依赖；shared HanimeDefaults 取色；SonnerToast.Host 冒烟按钮）替代 P3aVerificationScreen 入口（原屏保留）；冒烟：DataStore/Settings/Coil 就绪 + 进程存活 60s 无异常
+
 - **顺延债务**（P6d/P7）：CheckInCalendarViewModel（java.time+Glance widget）、HanimeTheme.kt（Kyant0 m3color 仅 Android，:app 留存）、dailycheckin UI 8 文件 java.time 类型、SearchViewModel SavedStateHandle 持久化（改普通属性）、VideoViewModel watch-later title 占位（UI 特判显示）、desktop composeResources 同步读（readComposeFileSync 桌面路径待 P6d 资源核查）
+
+## P5-1 播放器接口抽象 + 引擎归位完成记录（2026-09-04，git 从 p5-start 到 p5-1-done，4 commits，clean 六端 BUILD SUCCESSFUL）
+
+- **A** 接口层下沉 commonMain（包名不变）：新增 `VideoSurface` expect（androidMain 为 `typealias Surface`，desktop/ios 为空占位类）；`PlaybackEngine`（仅 `Surface→VideoSurface` 两处签名变化，其余零改动，含 `PlayerKernel` typealias）/`PlaybackTime`/`ComposePlaybackController`（删未使用的 `android.view.Surface` import）迁入；`PlaybackTime` 的 `String.format` 改纯 Kotlin（`padStart`，iOS native 无 `format`，行为等价）
+- **B** 引擎归位 androidMain：shared 加 `media3-exoplayer/hls/cast` + `mpv-lib`（:app 坐标照搬；`media3.session` 无此条目且 :app 未用，未加）与编译必需的 `core-ktx`（`toUri`）/`coroutines-android`（`Dispatchers.Main`）；`AnimeShaders` 原样搬迁 + `assets/shaders`（9 个）/`cacert.pem` 挪至 `androidMain/assets`（:app merge 验证 9 shaders + cacert 均在）；4 引擎仅 `Surface→VideoSurface`，`MpvPlaybackEngine` 唯一 :app 依赖 `BuildConfig.DEBUG`（mpv `msg-level` 日志开关）→ `LogUtil.enabled`（:app 启动时已按 `BuildConfig.DEBUG` 覆盖，语义不变）；`PlaybackEngineFactory` 对象照搬 + `expect createPlaybackEngine` 的 android actual（Context 取 `Han1meDatabaseContext.appContext`）；:app 保留 media3/mpv 依赖（`VideoPlayerUi` 用 `media3.cast.R`、`HanimeApplication` 用 `MPVLib.init`，非仅 player 消费）；:app `player/` 目录删除
+- **C** desktop/ios 占位引擎：common 内 `internal PlaceholderPlaybackEngine`（初始即 `Error` + 提示，`load()` 重 post）+ 两端各一个薄 actual（文件数最少方案，共 3 文件）
+- **D** 渲染插槽抽象：commonMain `expect @Composable PlatformVideoSurface`；androidMain actual 为原 SurfaceView 代码原样（含 `SurfaceHolder` 生命周期回调 + Mpv `updateSurfaceSize` 特判内聚）；desktop/ios actual 为占位 `Box`；:app `VideoPlayerUi` 仅替换渲染块 + 删 `SurfaceHolder/SurfaceView` import、加插槽 import（Cast 按钮的 `AndroidView`/`key` 保留，其余 1900 行零改动）
+- **E** 冒烟：桌面 headless 验证 `createPlaybackEngine(ExoPlayer)` → 初态与 `load()` 后均为 `phase=Error, msg=Playback engine not yet available...`（P51SMOKE OK）；`:desktopApp:run` 70s 存活无异常无 ClassNotFound（主题/初始化日志正常）；临时冒烟代码已删除；clean 全量六端一次通过
+- **顺延债务**（P5-2/P6d）：desktop mpv-libmpv / iOS AVPlayer 真引擎、`VideoSurface` 桌面/iOS 充实、`PlatformVideoSurface` 桌面/iOS 真渲染、`VideoPlayerUi` 本体迁移（P6d）、Cast UI（P6d）
+
