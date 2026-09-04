@@ -5,10 +5,14 @@ import android.os.Bundle
 import android.os.Process
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import io.github.daisukikaffuchino.han1meviewer.BuildConfig
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.copy_to_clipboard
 import io.github.daisukikaffuchino.han1meviewer.crash_no_logs
 import io.github.daisukikaffuchino.han1meviewer.ui.crash.CrashHandler
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.crash.CrashScreen
@@ -36,6 +40,8 @@ class CrashActivity : BaseActivity() {
                 )
             }
             val copyTextToClipboard = rememberCopyTextToClipboard()
+            // P6d-3-C3：回调内 toast 转 suspend getString，经 scope 桥接
+            val scope = rememberCoroutineScope()
             val exitApp = {
                 finishAffinity()
                 Process.killProcess(Process.myPid())
@@ -48,7 +54,7 @@ class CrashActivity : BaseActivity() {
                 packageName = packageName,
                 onCopyLog = {
                     copyTextToClipboard(report)
-                    SonnerToast.success(toastText(R.string.copy_to_clipboard))
+                    scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
                 },
                 onRestartApp = { ActivityManager.restart(killProcess = true) },
                 onExitApp = exitApp,

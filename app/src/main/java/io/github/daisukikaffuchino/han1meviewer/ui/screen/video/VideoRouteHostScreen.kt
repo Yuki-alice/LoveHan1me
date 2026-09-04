@@ -51,6 +51,15 @@ import io.github.daisukikaffuchino.han1meviewer.BuildConfig
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.add_failed
+import io.github.daisukikaffuchino.han1meviewer.copy_to_clipboard
+import io.github.daisukikaffuchino.han1meviewer.fail_to_get_video_link
+import io.github.daisukikaffuchino.han1meviewer.large_screen_tablet_mode_hint
+import io.github.daisukikaffuchino.han1meviewer.modify_failed
+import io.github.daisukikaffuchino.han1meviewer.modify_success
+import io.github.daisukikaffuchino.han1meviewer.msg_deny_download_notification
+import io.github.daisukikaffuchino.han1meviewer.pause_then_long_press
+import io.github.daisukikaffuchino.han1meviewer.video_might_not_exist
 import io.github.daisukikaffuchino.han1meviewer.add_to_h_keyframe
 import io.github.daisukikaffuchino.han1meviewer.allow
 import io.github.daisukikaffuchino.han1meviewer.allow_post_notification
@@ -109,6 +118,7 @@ import io.github.daisukikaffuchino.utils.isX86_64Device
 import io.github.daisukikaffuchino.utils.rememberCopyTextToClipboard
 import io.github.daisukikaffuchino.utils.rememberShareText
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
@@ -163,7 +173,7 @@ fun VideoRouteHostScreen(
             SettingsRepository.update {
                 it.copy(largeScreenTabletModeHintShown = true)
             }
-            SonnerToast.info(toastText(R.string.large_screen_tablet_mode_hint))
+            SonnerToast.info(getString(Res.string.large_screen_tablet_mode_hint))
         }
     }
     val stringLongPressShare = stringResource(Res.string.long_press_share_to_copy)
@@ -506,7 +516,7 @@ fun VideoRouteHostScreen(
                             )
                         }
                         if (qualities.isEmpty()) {
-                            SonnerToast.error(toastText(R.string.fail_to_get_video_link))
+                            SonnerToast.error(getString(Res.string.fail_to_get_video_link))
                             uriHandler.openUri(getHanimeVideoLink(route.videoCode))
                         } else {
                             val history = DatabaseRepo.WatchHistory.findBy(route.videoCode)
@@ -549,7 +559,7 @@ fun VideoRouteHostScreen(
                         }
                     }
 
-                    is VideoLoadingState.NoContent -> SonnerToast.error(toastText(R.string.video_might_not_exist))
+                    is VideoLoadingState.NoContent -> SonnerToast.error(getString(Res.string.video_might_not_exist))
                 }
             }
         }
@@ -582,7 +592,7 @@ fun VideoRouteHostScreen(
             launch {
                 viewModel.localFavoriteActionFlow.collect { state ->
                     when (state) {
-                        is WebsiteState.Error -> SonnerToast.error(toastText(R.string.add_failed))
+                        is WebsiteState.Error -> SonnerToast.error(getString(Res.string.add_failed))
                         is WebsiteState.Success -> SonnerToast.success(
                             toastText(
                                 if (state.info) R.string.add_success
@@ -596,8 +606,8 @@ fun VideoRouteHostScreen(
             launch {
                 viewModel.localMyListActionFlow.collect { state ->
                     when (state) {
-                        is WebsiteState.Error -> SonnerToast.error(toastText(R.string.modify_failed))
-                        is WebsiteState.Success -> SonnerToast.success(toastText(R.string.modify_success))
+                        is WebsiteState.Error -> SonnerToast.error(getString(Res.string.modify_failed))
+                        is WebsiteState.Success -> SonnerToast.success(getString(Res.string.modify_success))
                         WebsiteState.Loading -> Unit
                     }
                 }
@@ -766,7 +776,7 @@ fun VideoRouteHostScreen(
         },
         onHKeyframeLongPress = {
             if (playbackState.engine.isPlaying) {
-                SonnerToast.info(toastText(R.string.pause_then_long_press))
+                scope.launch { SonnerToast.info(getString(Res.string.pause_then_long_press)) }
             } else {
                 showAddHKeyframeDialog = playbackState.engine.positionMs to videoTitle.ifBlank {
                     untitledVideoText
@@ -860,7 +870,7 @@ fun VideoRouteHostScreen(
                 onOpenShare = shareText,
                 onCopyText = {
                     copyTextToClipboard(it)
-                    SonnerToast.success(toastText(R.string.copy_to_clipboard))
+                    scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
                 },
                 onIntroductionLinkClick = actions::openIntroductionLink,
                 stringLongPressShare = stringLongPressShare,
@@ -956,7 +966,7 @@ fun VideoRouteHostScreen(
         },
         onDismiss = {
             showNotificationPermissionReason = false
-            SonnerToast.warning(toastText(R.string.msg_deny_download_notification))
+            scope.launch { SonnerToast.warning(getString(Res.string.msg_deny_download_notification)) }
         },
     )
 

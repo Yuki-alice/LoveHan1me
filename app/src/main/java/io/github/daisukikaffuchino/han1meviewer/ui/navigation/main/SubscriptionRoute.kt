@@ -1,8 +1,10 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.navigation.main
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.viewmodel.compose.viewModel
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.copy_to_clipboard
 import io.github.daisukikaffuchino.han1meviewer.getHanimeSearchShareText
 import io.github.daisukikaffuchino.han1meviewer.getHanimeShareText
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.SubscriptionScreen
@@ -10,6 +12,8 @@ import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.MySubscriptionsView
 import io.github.daisukikaffuchino.utils.rememberCopyTextToClipboard
 import io.github.daisukikaffuchino.utils.SonnerToast
 import io.github.daisukikaffuchino.utils.toastText
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 
 @Composable
 fun SubscriptionRouteScreen(
@@ -19,18 +23,20 @@ fun SubscriptionRouteScreen(
 ) {
     val viewModel: MySubscriptionsViewModel = viewModel()
     val copyTextToClipboard = rememberCopyTextToClipboard()
+    // P6d-3-C3：回调内 toast 转 suspend getString，经 scope 桥接
+    val scope = rememberCoroutineScope()
     SubscriptionScreen(
         navigateBack = onBack,
         viewModel = viewModel,
         onClickArtist = { onNavigateToSearch(it) },
         onLongClickArtist = { artistName ->
             copyTextToClipboard(getHanimeSearchShareText(artistName))
-            SonnerToast.success(toastText(R.string.copy_to_clipboard))
+            scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
         },
         onClickVideosItem = onNavigateToVideo,
         onLongClickVideosItem = { videoCode, title ->
             copyTextToClipboard(getHanimeShareText(title, videoCode))
-            SonnerToast.success(toastText(R.string.copy_to_clipboard))
+            scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
         },
     )
 }

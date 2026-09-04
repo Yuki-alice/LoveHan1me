@@ -26,6 +26,7 @@ import io.github.daisukikaffuchino.han1meviewer.HFileManager
 import io.github.daisukikaffuchino.han1meviewer.HFileManager.createVideoName
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.download_error_cancelled
 import io.github.daisukikaffuchino.han1meviewer.download_completed_s
 import io.github.daisukikaffuchino.han1meviewer.download_error_connect
 import io.github.daisukikaffuchino.han1meviewer.download_error_dns
@@ -464,7 +465,7 @@ class HanimeDownloadWorker(
             } catch (e: Exception) {
                 result = if (e is CancellationException || e.isStoppedCancellation()) {
                     cancelDownloadNotification()
-                    mainScope.launch { SonnerToast.info(toastText(R.string.download_error_cancelled)) }
+                    mainScope.launch { SonnerToast.info(getString(Res.string.download_error_cancelled)) }
                     Result.success(
                         workDataOf(DownloadState.STATE to DownloadState.Paused.mask)
                     )

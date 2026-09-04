@@ -34,6 +34,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
@@ -45,6 +46,7 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.saved
 import io.github.daisukikaffuchino.han1meviewer.sure
 import io.github.daisukikaffuchino.han1meviewer.save_image_confirm
 import io.github.daisukikaffuchino.han1meviewer.i_understand
@@ -220,7 +222,7 @@ fun AnnouncementDialog(
                     kotlinx.coroutines.withContext(Dispatchers.Main) {
                         if (ok) {
                             io.github.daisukikaffuchino.utils.SonnerToast.success(
-                                io.github.daisukikaffuchino.utils.toastText(R.string.saved)
+                                getString(Res.string.saved)
                             )
                         }
                     }

@@ -16,6 +16,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.action_not_support
 import io.github.daisukikaffuchino.han1meviewer.cancel
 import io.github.daisukikaffuchino.han1meviewer.confirm
 import io.github.daisukikaffuchino.han1meviewer.create_group_success
@@ -116,7 +117,7 @@ fun DownloadRouteScreen(
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
                     runCatching { context.startActivity(chooser) }
-                        .onFailure { SonnerToast.warning(toastText(R.string.action_not_support)) }
+                        .onFailure { scope.launch { SonnerToast.warning(getString(Res.string.action_not_support)) } }
                 }
             }
 

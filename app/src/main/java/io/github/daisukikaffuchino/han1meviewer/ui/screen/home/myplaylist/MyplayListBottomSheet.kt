@@ -46,6 +46,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -53,9 +54,14 @@ import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.cancel
 import io.github.daisukikaffuchino.han1meviewer.confirm
+import io.github.daisukikaffuchino.han1meviewer.delete_failed
 import io.github.daisukikaffuchino.han1meviewer.delete_playlist
+import io.github.daisukikaffuchino.han1meviewer.delete_success
 import io.github.daisukikaffuchino.han1meviewer.delete_the_playlist
+import io.github.daisukikaffuchino.han1meviewer.modify_failed
+import io.github.daisukikaffuchino.han1meviewer.modify_success
 import io.github.daisukikaffuchino.han1meviewer.modify_title_or_desc
+import io.github.daisukikaffuchino.han1meviewer.unknown_error
 import io.github.daisukikaffuchino.han1meviewer.load_failed_retry
 import io.github.daisukikaffuchino.han1meviewer.load_complete_with_pages
 import io.github.daisukikaffuchino.han1meviewer.empty_content
@@ -134,7 +140,7 @@ fun PlaylistBottomSheet(
                 vm.getPlaylistItems(1, currentCode, true)
             }
         } else {
-            SonnerToast.error(toastText(R.string.unknown_error))
+            SonnerToast.error(getString(Res.string.unknown_error))
         }
     }
 
@@ -186,17 +192,17 @@ fun PlaylistBottomSheet(
     LaunchedEffect(Unit) {
         vm.modifyPlaylistFlow.collect { result ->
             when (result) {
-                is WebsiteState.Error -> SonnerToast.error(toastText(R.string.modify_failed))
+                is WebsiteState.Error -> SonnerToast.error(getString(Res.string.modify_failed))
                 WebsiteState.Loading -> {}
                 is WebsiteState.Success -> {
                     if (result.info.isDeleted) {
                         sheetState.hide()
                         onDismiss()
-                        SonnerToast.success(toastText(R.string.delete_success))
+                        SonnerToast.success(getString(Res.string.delete_success))
                         vm.loadMyPlayList()
                         return@collect
                     }
-                    SonnerToast.success(toastText(R.string.modify_success))
+                    SonnerToast.success(getString(Res.string.modify_success))
                     vm.getPlaylistItems(1, currentCode, true)
                     vm.loadMyPlayList()
                 }
@@ -207,10 +213,10 @@ fun PlaylistBottomSheet(
     LaunchedEffect(Unit) {
         vm.deleteFromPlaylistFlow.collect { result ->
             when (result) {
-                is WebsiteState.Error -> SonnerToast.error(toastText(R.string.delete_failed))
+                is WebsiteState.Error -> SonnerToast.error(getString(Res.string.delete_failed))
                 is WebsiteState.Loading -> {}
                 is WebsiteState.Success -> {
-                    SonnerToast.success(toastText(R.string.delete_success))
+                    SonnerToast.success(getString(Res.string.delete_success))
                     vm.loadMyPlayList()
                 }
             }

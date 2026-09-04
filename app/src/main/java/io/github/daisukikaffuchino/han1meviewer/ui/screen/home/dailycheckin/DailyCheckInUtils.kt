@@ -10,6 +10,7 @@ import android.view.View
 import android.view.WindowInsetsController
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.no_calendar_app
 import io.github.daisukikaffuchino.han1meviewer.calendar_desc
 import io.github.daisukikaffuchino.han1meviewer.calendar_location
 import io.github.daisukikaffuchino.han1meviewer.calendar_title
@@ -58,7 +59,7 @@ suspend fun createCalendarEvent(context: Context, date: LocalDate) {
     try {
         context.startActivity(intent)
     } catch (_: android.content.ActivityNotFoundException) {
-        SonnerToast.warning(toastText(R.string.no_calendar_app))
+        SonnerToast.warning(getString(Res.string.no_calendar_app))
     }
 }
 

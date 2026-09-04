@@ -26,12 +26,15 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.add_failed
+import io.github.daisukikaffuchino.han1meviewer.add_success
 import io.github.daisukikaffuchino.han1meviewer.my_list
 import io.github.daisukikaffuchino.han1meviewer.load_failed_with_reason
 import io.github.daisukikaffuchino.han1meviewer.create_new_playlist
@@ -97,10 +100,10 @@ fun PlaylistScreen(
     LaunchedEffect(Unit) {
         viewModel.createPlaylistFlow.collect { result ->
             when (result) {
-                is WebsiteState.Error -> SonnerToast.error(toastText(R.string.add_failed))
+                is WebsiteState.Error -> SonnerToast.error(getString(Res.string.add_failed))
                 is WebsiteState.Loading -> Unit
                 is WebsiteState.Success -> {
-                    SonnerToast.success(toastText(R.string.add_success))
+                    SonnerToast.success(getString(Res.string.add_success))
                     viewModel.loadMyPlayList()
                 }
             }

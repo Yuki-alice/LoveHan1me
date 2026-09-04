@@ -51,13 +51,30 @@ import io.github.daisukikaffuchino.han1meviewer.HanimeApplication
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.action_app_open_by_default_settings_not_support
+import io.github.daisukikaffuchino.han1meviewer.backup_export_failed
+import io.github.daisukikaffuchino.han1meviewer.backup_export_success
+import io.github.daisukikaffuchino.han1meviewer.backup_import_failed
+import io.github.daisukikaffuchino.han1meviewer.backup_import_success
+import io.github.daisukikaffuchino.han1meviewer.cache_empty
+import io.github.daisukikaffuchino.han1meviewer.clear_failed
+import io.github.daisukikaffuchino.han1meviewer.clear_success
 import io.github.daisukikaffuchino.han1meviewer.current_version
+import io.github.daisukikaffuchino.han1meviewer.fake_icon_hint
 import io.github.daisukikaffuchino.han1meviewer.follow_system
 import io.github.daisukikaffuchino.han1meviewer.local_data_export_failed
+import io.github.daisukikaffuchino.han1meviewer.local_data_export_success
 import io.github.daisukikaffuchino.han1meviewer.local_data_import_failed
+import io.github.daisukikaffuchino.han1meviewer.local_data_import_success
+import io.github.daisukikaffuchino.han1meviewer.login_first
+import io.github.daisukikaffuchino.han1meviewer.not_set_sys_lock
 import io.github.daisukikaffuchino.han1meviewer.online_data_export_failed
+import io.github.daisukikaffuchino.han1meviewer.online_data_export_success
 import io.github.daisukikaffuchino.han1meviewer.online_data_import_failed
+import io.github.daisukikaffuchino.han1meviewer.online_data_import_success
+import io.github.daisukikaffuchino.han1meviewer.request_pip_alert
 import io.github.daisukikaffuchino.han1meviewer.simplified_chinese
+import io.github.daisukikaffuchino.han1meviewer.success_value
 import io.github.daisukikaffuchino.han1meviewer.sure_to_clear_cache
 import io.github.daisukikaffuchino.han1meviewer.traditional_chinese
 import io.github.daisukikaffuchino.han1meviewer.sure_to_clear
@@ -121,6 +138,12 @@ fun HomeSettingsRouteScreen(
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val coroutineScope = rememberCoroutineScope()
+    // P6d-3-C3：回调内非 suspend，固定串在此预解析
+    val loginFirstText = stringResource(Res.string.login_first)
+    val requestPipText = stringResource(Res.string.request_pip_alert)
+    val notSetLockText = stringResource(Res.string.not_set_sys_lock)
+    val deepLinksWarnText = stringResource(Res.string.action_app_open_by_default_settings_not_support)
+    val cacheEmptyText = stringResource(Res.string.cache_empty)
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
     val isLoggedIn by SettingsRepository.loginStateFlow.collectAsStateWithLifecycle()
     var cacheKey by remember { mutableIntStateOf(0) }
@@ -136,8 +159,8 @@ fun HomeSettingsRouteScreen(
         uri ?: return@rememberLauncherForActivityResult
         coroutineScope.launch(Dispatchers.IO) {
             runCatching { BackupManager.exportTo(context, uri) }
-                .onSuccess { withContext(Dispatchers.Main) { SonnerToast.success(toastText(R.string.backup_export_success)) } }
-                .onFailure { withContext(Dispatchers.Main) { SonnerToast.error(toastText(R.string.backup_export_failed)) } }
+                .onSuccess { withContext(Dispatchers.Main) { SonnerToast.success(getString(Res.string.backup_export_success)) } }
+                .onFailure { withContext(Dispatchers.Main) { SonnerToast.error(getString(Res.string.backup_export_failed)) } }
         }
     }
     val importLauncher = rememberLauncherForActivityResult(
@@ -157,7 +180,7 @@ fun HomeSettingsRouteScreen(
                 } ?: error("Unable to open output file")
             }.onSuccess {
                 withContext(Dispatchers.Main) {
-                    SonnerToast.success(toastText(R.string.local_data_export_success))
+                    SonnerToast.success(getString(Res.string.local_data_export_success))
                 }
             }.onFailure {
                 withContext(Dispatchers.Main) {
@@ -180,7 +203,7 @@ fun HomeSettingsRouteScreen(
                 LocalListRepository.importLocalListsJson(jsonText, merge = true)
             }.onSuccess {
                 withContext(Dispatchers.Main) {
-                    SonnerToast.success(toastText(R.string.local_data_import_success))
+                    SonnerToast.success(getString(Res.string.local_data_import_success))
                 }
             }.onFailure {
                 withContext(Dispatchers.Main) {
@@ -203,7 +226,7 @@ fun HomeSettingsRouteScreen(
                 } ?: error("Unable to open output file")
             }.onSuccess {
                 withContext(Dispatchers.Main) {
-                    SonnerToast.success(toastText(R.string.online_data_export_success))
+                    SonnerToast.success(getString(Res.string.online_data_export_success))
                 }
             }.onFailure {
                 withContext(Dispatchers.Main) {
@@ -219,7 +242,7 @@ fun HomeSettingsRouteScreen(
     ) { uri ->
         uri ?: return@rememberLauncherForActivityResult
         if (!SettingsRepository.isAlreadyLogin) {
-            SonnerToast.warning(toastText(R.string.login_first))
+            SonnerToast.warning(loginFirstText)
             return@rememberLauncherForActivityResult
         }
         coroutineScope.launch(Dispatchers.IO) {
@@ -230,7 +253,7 @@ fun HomeSettingsRouteScreen(
                 OnlineListsBackup.importOnlineListsJson(jsonText)
             }.onSuccess {
                 withContext(Dispatchers.Main) {
-                    SonnerToast.success(toastText(R.string.online_data_import_success))
+                    SonnerToast.success(getString(Res.string.online_data_import_success))
                 }
             }.onFailure {
                 withContext(Dispatchers.Main) {
@@ -318,7 +341,7 @@ fun HomeSettingsRouteScreen(
         onVideoQualityChange = { value ->
             coroutineScope.launch {
                 SettingsRepository.update { it.copy(videoQuality = value) }
-                SonnerToast.success(toastText(R.string.success_value, value))
+                SonnerToast.success(getString(Res.string.success_value, value))
             }
         },
         onDarkModeChange = { value ->
@@ -343,7 +366,7 @@ fun HomeSettingsRouteScreen(
         },
         onAllowPipModeChange = { enabled ->
             if (enabled && !isPipPermissionGranted(context)) {
-                SonnerToast.warning(toastText(R.string.request_pip_alert))
+                SonnerToast.warning(requestPipText)
                 openPipPermissionSettings(context)
                 coroutineScope.launch { SettingsRepository.update { it.copy(allowPipMode = false) } }
                 return@HomeSettingsScreen
@@ -399,7 +422,7 @@ fun HomeSettingsRouteScreen(
         onUseLockScreenChange = { value ->
             if (value) {
                 if (!isDeviceSecureCompat(context)) {
-                    SonnerToast.warning(toastText(R.string.not_set_sys_lock))
+                    SonnerToast.warning(notSetLockText)
                     return@HomeSettingsScreen
                 }
             }
@@ -439,7 +462,7 @@ fun HomeSettingsRouteScreen(
         },
         onOpenApplyDeepLinks = {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
-                SonnerToast.warning(toastText(R.string.action_app_open_by_default_settings_not_support))
+                SonnerToast.warning(deepLinksWarnText)
             } else {
                 showApplyDeepLinksDialog = true
             }
@@ -450,7 +473,7 @@ fun HomeSettingsRouteScreen(
             val cacheDir = context.cacheDir
             val folderSize = cacheDir?.folderSize ?: 0L
             if (folderSize == 0L) {
-                SonnerToast.info(toastText(R.string.cache_empty))
+                SonnerToast.info(cacheEmptyText)
                 return@HomeSettingsScreen
             }
             showClearCacheConfirm = true
@@ -471,7 +494,7 @@ fun HomeSettingsRouteScreen(
         },
         onExportOnlineLists = {
             if (!SettingsRepository.isAlreadyLogin) {
-                SonnerToast.warning(toastText(R.string.login_first))
+                SonnerToast.warning(loginFirstText)
                 return@HomeSettingsScreen
             }
             onlineListsExportLauncher.launch(
@@ -480,7 +503,7 @@ fun HomeSettingsRouteScreen(
         },
         onImportOnlineLists = {
             if (!SettingsRepository.isAlreadyLogin) {
-                SonnerToast.warning(toastText(R.string.login_first))
+                SonnerToast.warning(loginFirstText)
                 return@HomeSettingsScreen
             }
             onlineListsImportLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
@@ -502,13 +525,13 @@ fun HomeSettingsRouteScreen(
                 runCatching { BackupManager.importFrom(context, uri) }
                     .onSuccess {
                         withContext(Dispatchers.Main) {
-                            SonnerToast.success(toastText(R.string.backup_import_success))
+                            SonnerToast.success(getString(Res.string.backup_import_success))
                             activity.recreate()
                         }
                     }
                     .onFailure {
                         withContext(Dispatchers.Main) {
-                            SonnerToast.error(toastText(R.string.backup_import_failed))
+                            SonnerToast.error(getString(Res.string.backup_import_failed))
                         }
                     }
             }
@@ -529,7 +552,7 @@ fun HomeSettingsRouteScreen(
                 val success = cacheDir?.deleteRecursively() == true
                 withContext(Dispatchers.Main) {
                     cacheKey++
-                    if (success) SonnerToast.success(toastText(R.string.clear_success)) else SonnerToast.error(toastText(R.string.clear_failed))
+                    if (success) SonnerToast.success(getString(Res.string.clear_success)) else SonnerToast.error(getString(Res.string.clear_failed))
                 }
             }
         },
@@ -560,7 +583,7 @@ fun HomeSettingsRouteScreen(
                     onClick = {
                         showApplyDeepLinksDialog = false
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            openApplyDeepLinksSettings(context, activity)
+                            coroutineScope.launch { openApplyDeepLinksSettings(context, activity) }
                         }
                     },
                 ) {
@@ -610,7 +633,7 @@ fun HomeSettingsRouteScreen(
                                 coroutineScope.launch {
                                     SettingsRepository.setLauncherIcon(item.alias)
                                     (context.applicationContext as? HanimeApplication)?.switchLauncher(item.alias)
-                                    SonnerToast.info(toastText(R.string.fake_icon_hint))
+                                    SonnerToast.info(getString(Res.string.fake_icon_hint))
                                     showLauncherPicker = false
                                 }
                             },

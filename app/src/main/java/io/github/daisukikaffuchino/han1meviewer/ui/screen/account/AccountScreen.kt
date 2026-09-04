@@ -56,6 +56,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.password_not_match
 import io.github.daisukikaffuchino.han1meviewer.username
 import io.github.daisukikaffuchino.han1meviewer.updating
 import io.github.daisukikaffuchino.han1meviewer.update_profile
@@ -240,6 +241,8 @@ private fun AccountContent(
     val isUpdatingProfile = submittingState == UserAccountSubmittingState.UpdatingProfile
     val isUpdatingPassword = submittingState == UserAccountSubmittingState.UpdatingPassword
     val isUpdatingAvatar = submittingState == UserAccountSubmittingState.UpdatingAvatar
+    // P6d-3-C3：回调内固定串预解析
+    val passwordNotMatchText = stringResource(Res.string.password_not_match)
     val isSubmitting = submittingState != UserAccountSubmittingState.Idle
 
     Column(
@@ -527,7 +530,7 @@ private fun AccountContent(
                 Button(
                     onClick = {
                         if (newPassword != newPasswordConfirm) {
-                            SonnerToast.warning(toastText(R.string.password_not_match))
+                            SonnerToast.warning(passwordNotMatchText)
                         } else {
                             onUpdatePassword(oldPassword, newPassword, newPasswordConfirm)
                             oldPassword = ""

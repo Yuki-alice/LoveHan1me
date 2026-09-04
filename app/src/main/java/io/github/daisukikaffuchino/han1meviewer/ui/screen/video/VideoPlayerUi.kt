@@ -100,6 +100,7 @@ import coil3.compose.AsyncImage
 import com.google.android.gms.cast.framework.CastButtonFactory
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.h_keyframes_not_enabled
 import io.github.daisukikaffuchino.han1meviewer.enable_google_cast
 import io.github.daisukikaffuchino.han1meviewer.video_loading_failed
 import io.github.daisukikaffuchino.han1meviewer.sure_to_delete
@@ -242,6 +243,8 @@ fun VideoPlayerUi(
     val view = LocalView.current
     // P6d-3-C2：AndroidView factory 非 @Composable 上下文，描述串外提
     val castButtonDesc = stringResource(Res.string.enable_google_cast)
+    // P6d-3-C3：回调内固定串预解析
+    val hKeyframesDisabledText = stringResource(Res.string.h_keyframes_not_enabled)
     var deviceTime by remember(context) {
         mutableStateOf(DateFormat.getTimeFormat(context).format(Date()))
     }
@@ -742,14 +745,14 @@ fun VideoPlayerUi(
                                 if (isHKeyframesEnabled) {
                                     activeSidePanel = PlayerSidePanel.HKeyframe
                                 } else {
-                                    SonnerToast.info(toastText(R.string.h_keyframes_not_enabled))
+                                    SonnerToast.info(hKeyframesDisabledText)
                                 }
                             },
                             onLongClick = {
                                 if (isHKeyframesEnabled) {
                                     onHKeyframeLongPress()
                                 } else {
-                                    SonnerToast.info(toastText(R.string.h_keyframes_not_enabled))
+                                    SonnerToast.info(hKeyframesDisabledText)
                                 }
                             },
                         )

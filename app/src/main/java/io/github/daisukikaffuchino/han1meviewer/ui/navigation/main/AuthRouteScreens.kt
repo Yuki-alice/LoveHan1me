@@ -26,6 +26,9 @@ import io.github.daisukikaffuchino.han1meviewer.HanimeConstants.HANIME_URL
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.account_or_password_wrong
+import io.github.daisukikaffuchino.han1meviewer.login_failed
+import io.github.daisukikaffuchino.han1meviewer.login_success
 import io.github.daisukikaffuchino.han1meviewer.complete_cloudflare_verification_with_warning
 import io.github.daisukikaffuchino.han1meviewer.current_webview_version
 import io.github.daisukikaffuchino.han1meviewer.version_check_failed
@@ -93,16 +96,16 @@ fun LoginRouteScreen(
                                 isLoggingIn = false
                                 state.throwable.printStackTrace()
                                 if (state.throwable is IllegalStateException) {
-                                    SonnerToast.error(toastText(R.string.account_or_password_wrong))
+                                    SonnerToast.error(getString(Res.string.account_or_password_wrong))
                                 } else {
-                                    SonnerToast.error(toastText(R.string.login_failed))
+                                    SonnerToast.error(getString(Res.string.login_failed))
                                 }
                             }
                             is WebsiteState.Success -> {
                                 login(state.info)
                                 isLoggingIn = false
                                 showLoginDialog = false
-                                SonnerToast.success(toastText(R.string.login_success))
+                                SonnerToast.success(getString(Res.string.login_success))
                                 onLoginSucceeded()
                             }
                         }

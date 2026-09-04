@@ -39,6 +39,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.login_first
 import io.github.daisukikaffuchino.han1meviewer.detect_ha1_related_link_in_clipboard
 import io.github.daisukikaffuchino.han1meviewer.enter
 import org.jetbrains.compose.resources.getString
@@ -217,7 +218,7 @@ fun MainActivityContent(
             val handled = backStack.navigateDrawerDestination(
                 destination = destination,
                 isLoggedIn = isLoggedIn,
-                onRequireLogin = { SonnerToast.warning(toastText(R.string.login_first)) },
+                onRequireLogin = { scope.launch { SonnerToast.warning(getString(Res.string.login_first)) } },
             )
             if (handled) {
                 scope.launch { drawerState.close() }

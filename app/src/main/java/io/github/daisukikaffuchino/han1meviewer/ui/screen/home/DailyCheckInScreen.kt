@@ -26,12 +26,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.suck_back_done
 import io.github.daisukikaffuchino.han1meviewer.suck_back_title
 import io.github.daisukikaffuchino.han1meviewer.suck_back_message
 import io.github.daisukikaffuchino.han1meviewer.suck_back_dismiss
@@ -146,8 +148,10 @@ fun DailyCheckInScreen(
     }
 
     val context = LocalContext.current
-    // P6d-3-C2：createCalendarEvent 转 suspend，回调内 scope 桥接
+    // P6d-3-C3：回调内 toast 转 suspend getString，经 scope 桥接
     val scope = rememberCoroutineScope()
+    // P6d-3-C3：回调内固定串预解析
+    val suckBackDoneText = stringResource(Res.string.suck_back_done)
 
     val handleEvent: (DailyCheckInEvent) -> Unit = { event ->
         when (event) {
@@ -269,7 +273,7 @@ fun DailyCheckInScreen(
         onConfirm = {
             suckBackDialogDate?.let {
                 viewModel.clearCheckIn(it)
-                SonnerToast.success(toastText(R.string.suck_back_done))
+                SonnerToast.success(suckBackDoneText)
             }
             suckBackDialogDate = null
         },

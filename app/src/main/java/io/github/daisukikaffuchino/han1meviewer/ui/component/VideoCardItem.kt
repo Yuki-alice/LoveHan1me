@@ -28,6 +28,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -38,6 +39,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -46,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.copy_to_clipboard
 import io.github.daisukikaffuchino.han1meviewer.played
 import io.github.daisukikaffuchino.han1meviewer.now_playing
 import io.github.daisukikaffuchino.han1meviewer.delete
@@ -68,6 +71,7 @@ import io.github.daisukikaffuchino.han1meviewer.util.DisplayTextLocalizer
 import io.github.daisukikaffuchino.utils.SonnerToast
 import io.github.daisukikaffuchino.utils.toastText
 import io.github.daisukikaffuchino.utils.VibrationUtil
+import kotlinx.coroutines.launch
 
 
 /**
@@ -97,6 +101,8 @@ fun VideoCardItem(
     val context = LocalContext.current
     val view = LocalView.current
     val copyTextToClipboard = rememberCopyTextToClipboard()
+    // P6d-3-C3：回调内 toast 转 suspend getString，经 scope 桥接
+    val scope = rememberCoroutineScope()
     val interactionSource = remember { MutableInteractionSource() }
     val indication = LocalIndication.current
     val pressed by interactionSource.collectIsPressedAsState()
@@ -327,7 +333,7 @@ fun VideoCardItem(
                                 videoItem.videoCode
                             )
                         )
-                        SonnerToast.success(toastText(R.string.copy_to_clipboard))
+                        scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
                     },
                 )
                 if (currentArtist != null) {

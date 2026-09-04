@@ -32,6 +32,9 @@ import androidx.documentfile.provider.DocumentFile
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.directory_saved
+import io.github.daisukikaffuchino.han1meviewer.no_directory_selected
+import io.github.daisukikaffuchino.han1meviewer.default_path_restored
 import io.github.daisukikaffuchino.han1meviewer.import_complete
 import io.github.daisukikaffuchino.han1meviewer.no_exportable_files
 import io.github.daisukikaffuchino.han1meviewer.no_limit
@@ -91,10 +94,10 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             coroutineScope.launch {
                 SafFileManager.persistUriPermission(context, result.data)
-                SonnerToast.success(toastText(R.string.directory_saved, result.data.toString()))
+                SonnerToast.success(getString(Res.string.directory_saved, result.data.toString()))
             }
         } else {
-            SonnerToast.warning(toastText(R.string.no_directory_selected))
+            coroutineScope.launch { SonnerToast.warning(getString(Res.string.no_directory_selected)) }
         }
     }
 
@@ -170,7 +173,7 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
             coroutineScope.launch {
                 SettingsRepository.setDownloadStorage(usePrivate = true, path = null)
                 showRestoreDefaultConfirm = false
-                SonnerToast.success(toastText(R.string.default_path_restored))
+                SonnerToast.success(getString(Res.string.default_path_restored))
             }
         },
         onDismiss = { showRestoreDefaultConfirm = false },

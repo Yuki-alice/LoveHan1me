@@ -6,8 +6,13 @@ import io.github.daisukikaffuchino.han1meviewer.HAdvancedSearch
 import io.github.daisukikaffuchino.han1meviewer.HCacheManager
 import io.github.daisukikaffuchino.han1meviewer.logic.DatabaseRepo
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.checkin_success
+import io.github.daisukikaffuchino.han1meviewer.copy_to_clipboard
+import io.github.daisukikaffuchino.han1meviewer.fault_prompt
 import io.github.daisukikaffuchino.han1meviewer.getHanimeVideoDownloadLink
+import io.github.daisukikaffuchino.han1meviewer.login_first
+import io.github.daisukikaffuchino.han1meviewer.no_video_links_found
 import io.github.daisukikaffuchino.han1meviewer.getHanimeVideoLink
 import io.github.daisukikaffuchino.han1meviewer.logic.dao.CheckInRecordDatabase
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.CheckInRecordEntity
@@ -28,6 +33,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
+import org.jetbrains.compose.resources.getString
 import java.io.Serializable
 
 class VideoRouteActions(
@@ -74,7 +80,7 @@ class VideoRouteActions(
     fun toggleArtistSubscription(artist: HanimeVideo.Artist) {
         val post = artist.post ?: return
         if (!SettingsRepository.isAlreadyLogin) {
-            SonnerToast.warning(toastText(R.string.login_first))
+            scope.launch { SonnerToast.warning(getString(Res.string.login_first)) }
             return
         }
         if (artist.isSubscribed) {
@@ -103,7 +109,7 @@ class VideoRouteActions(
 
     fun rateVideo(video: HanimeVideo, isPositive: Boolean) {
         if (!SettingsRepository.isAlreadyLogin) {
-            SonnerToast.warning(toastText(R.string.login_first))
+            scope.launch { SonnerToast.warning(getString(Res.string.login_first)) }
             return
         }
         viewModel.rateVideo(video, isPositive)
@@ -121,7 +127,7 @@ class VideoRouteActions(
             return
         }
         if (myList == null || myList.myListInfo.isEmpty()) {
-            SonnerToast.warning(toastText(R.string.login_first))
+            scope.launch { SonnerToast.warning(getString(Res.string.login_first)) }
             return
         }
         myList.myListInfo.forEachIndexed { index, info ->
@@ -142,7 +148,7 @@ class VideoRouteActions(
             CheckInRecordDatabase.instance.checkInDao().insert(record)
             runCatching { CheckInWidget().updateAll(context) }
             withContext(Dispatchers.Main) {
-                SonnerToast.success(toastText(R.string.checkin_success))
+                SonnerToast.success(getString(Res.string.checkin_success))
             }
         }
     }
@@ -152,13 +158,13 @@ class VideoRouteActions(
             onOpenUri(link)
         } catch (_: Exception) {
             onCopyText(link)
-            SonnerToast.success(toastText(R.string.copy_to_clipboard))
+            scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
         }
     }
 
     fun openOriginalComic(comicLink: String) {
         runCatching { onOpenUri(comicLink) }
-            .onFailure { SonnerToast.error(toastText(R.string.fault_prompt)) }
+            .onFailure { scope.launch { SonnerToast.error(getString(Res.string.fault_prompt)) } }
     }
 
     fun openVideoWebPage() {
@@ -171,7 +177,7 @@ class VideoRouteActions(
 
     fun startDownloadFlow(videoData: HanimeVideo) {
         if (videoData.videoUrls.isEmpty()) {
-            SonnerToast.warning(toastText(R.string.no_video_links_found))
+            scope.launch { SonnerToast.warning(getString(Res.string.no_video_links_found)) }
             return
         }
         viewModel.findDownloadedHanime(viewModel.videoCode)

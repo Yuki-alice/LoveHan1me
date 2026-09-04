@@ -5,14 +5,18 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalUriHandler
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.getString
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel as composeViewModel
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.copy_to_clipboard
+import io.github.daisukikaffuchino.han1meviewer.update_link_open_failed
 import io.github.daisukikaffuchino.han1meviewer.finished_masturbating
 import io.github.daisukikaffuchino.han1meviewer.exit
 import io.github.daisukikaffuchino.han1meviewer.do_more
@@ -38,6 +42,7 @@ import io.github.daisukikaffuchino.utils.toastText
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.formatHm
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.today
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalTime
 import kotlinx.datetime.TimeZone
@@ -57,6 +62,8 @@ fun HomeRouteScreen(
 ) {
     val viewModel = activity.viewModel
     val checkInEnabled by SettingsRepository.checkInEnabledFlow.collectAsStateWithLifecycle()
+    // P6d-3-C3：回调内 toast 转 suspend getString，经 scope 桥接
+    val scope = rememberCoroutineScope()
     val checkInViewModel: CheckInCalendarViewModel? = if (checkInEnabled) composeViewModel() else null
     val copyTextToClipboard = rememberCopyTextToClipboard()
     val uriHandler = LocalUriHandler.current
@@ -84,13 +91,13 @@ fun HomeRouteScreen(
                     is HomeUiEvent.OpenVideo -> onNavigateToVideo(event.videoCode)
                     is HomeUiEvent.LongPressVideoCopy -> {
                         copyTextToClipboard(getHanimeShareText(event.videoTitle, event.videoCode))
-                        SonnerToast.success(toastText(R.string.copy_to_clipboard))
+                        scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
                     }
                     is HomeUiEvent.ShowAnnouncementDialog -> { announcement = event.announcement }
                     is HomeUiEvent.ShowExitDialog -> { showExitDialog = true }
                     is HomeUiEvent.OpenUpdatePage -> {
                         runCatching { uriHandler.openUri(event.downloadUrl) }
-                            .onFailure { SonnerToast.error(toastText(R.string.update_link_open_failed)) }
+                            .onFailure { scope.launch { SonnerToast.error(getString(Res.string.update_link_open_failed)) } }
                     }
                     is HomeUiEvent.IgnoreUpdate -> viewModel.ignoreUpdate(event.versionCode)
                 }

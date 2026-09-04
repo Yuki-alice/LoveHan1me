@@ -18,9 +18,13 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.copy_to_clipboard
 import io.github.daisukikaffuchino.han1meviewer.default_
+import io.github.daisukikaffuchino.han1meviewer.delete_success
 import io.github.daisukikaffuchino.han1meviewer.h_keyframes_disable_tip
 import io.github.daisukikaffuchino.han1meviewer.h_keyframes_enable_tip
+import io.github.daisukikaffuchino.han1meviewer.h_keyframes_shared_by_other_not_detected
+import io.github.daisukikaffuchino.han1meviewer.modify_success
 import io.github.daisukikaffuchino.han1meviewer.shared_h_keyframe_detected_msg
 import io.github.daisukikaffuchino.han1meviewer.will_remind_before_d_seconds
 import io.github.daisukikaffuchino.han1meviewer.h_keyframes_shared_by_other_detected
@@ -41,6 +45,7 @@ import io.github.daisukikaffuchino.utils.SonnerToast
 import io.github.daisukikaffuchino.utils.toastText
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 
 @Composable
 fun HKeyframesRouteScreen(
@@ -50,6 +55,8 @@ fun HKeyframesRouteScreen(
 ) {
     val viewModel: SettingsViewModel = viewModel()
     val copyTextToClipboard = rememberCopyTextToClipboard()
+    // P6d-3-C3：回调内 toast 转 suspend getString，经 scope 桥接
+    val scope = rememberCoroutineScope()
     val items by viewModel.loadAllHKeyframes()
         .collectAsStateWithLifecycle(initialValue = emptyList())
     var sharedHKeyframeEntity by remember { mutableStateOf<HKeyframeEntity?>(null) }
@@ -63,7 +70,7 @@ fun HKeyframesRouteScreen(
                     sharedHKeyframeEntity = entity
                     onImportDialogDismiss()
                 } else {
-                    SonnerToast.info(toastText(R.string.h_keyframes_shared_by_other_not_detected))
+                    scope.launch { SonnerToast.info(getString(Res.string.h_keyframes_shared_by_other_not_detected)) }
                 }
             },
         )
@@ -77,19 +84,19 @@ fun HKeyframesRouteScreen(
         },
         onUpdateEntityTitle = { entity, newTitle ->
             viewModel.updateHKeyframes(entity.copy(title = newTitle))
-            SonnerToast.success(toastText(R.string.modify_success))
+            scope.launch { SonnerToast.success(getString(Res.string.modify_success)) }
         },
         onDeleteKeyframe = { videoCode, keyframe ->
             viewModel.removeHKeyframe(videoCode, keyframe)
-            SonnerToast.success(toastText(R.string.delete_success))
+            scope.launch { SonnerToast.success(getString(Res.string.delete_success)) }
         },
         onUpdateKeyframe = { videoCode, oldKeyframe, newKeyframe ->
             viewModel.modifyHKeyframe(videoCode, oldKeyframe, newKeyframe)
-            SonnerToast.success(toastText(R.string.modify_success))
+            scope.launch { SonnerToast.success(getString(Res.string.modify_success)) }
         },
         onCopyShareContent = {
             copyTextToClipboard(it)
-            SonnerToast.success(toastText(R.string.copy_to_clipboard))
+            scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
         },
     )
 

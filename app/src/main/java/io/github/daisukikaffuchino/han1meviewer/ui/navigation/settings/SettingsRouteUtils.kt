@@ -17,6 +17,7 @@ import androidx.core.text.parseAsHtml
 import io.github.daisukikaffuchino.han1meviewer.HanimeConstants.HANIME_HOSTNAME
 import io.github.daisukikaffuchino.han1meviewer.HanimeConstants.HANIME_URL
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.action_app_open_by_default_settings_not_support
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.cache_usage_summary
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlayerDefaults
@@ -101,7 +102,7 @@ internal fun openPipPermissionSettings(context: Context) {
 }
 
 @RequiresApi(Build.VERSION_CODES.S)
-internal fun openApplyDeepLinksSettings(context: Context, activity: Activity) {
+internal suspend fun openApplyDeepLinksSettings(context: Context, activity: Activity) {
     try {
         val intent = Intent().apply {
             action = Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS
@@ -111,7 +112,7 @@ internal fun openApplyDeepLinksSettings(context: Context, activity: Activity) {
         }
         activity.startActivity(intent)
     } catch (e: Exception) {
-        SonnerToast.warning(toastText(R.string.action_app_open_by_default_settings_not_support))
+        SonnerToast.warning(getString(Res.string.action_app_open_by_default_settings_not_support))
         e.printStackTrace()
     }
 }
