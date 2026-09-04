@@ -703,3 +703,17 @@ export ANDROID_HOME=~/Library/Android/sdk
 - **E** 冒烟：桌面 headless 验证 `createPlaybackEngine(ExoPlayer)` → 初态与 `load()` 后均为 `phase=Error, msg=Playback engine not yet available...`（P51SMOKE OK）；`:desktopApp:run` 70s 存活无异常无 ClassNotFound（主题/初始化日志正常）；临时冒烟代码已删除；clean 全量六端一次通过
 - **顺延债务**（P5-2/P6d）：desktop mpv-libmpv / iOS AVPlayer 真引擎、`VideoSurface` 桌面/iOS 充实、`PlatformVideoSurface` 桌面/iOS 真渲染、`VideoPlayerUi` 本体迁移（P6d）、Cast UI（P6d）
 
+## P6d-1 资源全量 + 主题收口 + 组件债务回收完成记录（2026-09-04，git 从 p6d1-start 到 p6d1-done，14 commits，clean 六端 BUILD SUCCESSFUL）
+
+- **A0** drawable 全量 164 文件（150 vector XML 根标签普查全 `<vector>`、零 adaptive-icon/selector + 9 png/4 webp/1 jpg）`cp` 进 shared composeResources，`diff -r` 逐字节一致；`Res.drawable.x` 生成姿势确认（`import …han1meviewer.Res` + **逐键 import**，计入坑）
+- **A1~A3** direct-only 35 文件（16/15/5，含 DownloadUtils `downloadStateIcon: Int→DrawableResource` 联动）：安全 sed（`[^.]R.drawable` 保护 `media3.cast.R`）+ `painterResource(id=)` 去命名参数 + CMP painterResource import；:app 加 jetbrains compose 插件 + `compose.components.resources`（编译必需）
+- **A4~A6** 签名子树：SettingItem 6 重载 + SettingRow（9 文件）、MainDrawerDestination（+ MainActivityScaffold 2 文件）、AppearancePickers/WatchHistoryMeta/VideoActionButton/StatsItem+StatItem/LauncherItem（`iconRes/picRes/previewRes: Int→DrawableResource`，`@DrawableRes` 注解去除，`mutableIntStateOf→mutableStateOf`）；`R.raw`（HomeSettingsRoute 全限定保留）与框架 Int（worker `setSmallIcon`、VideoRouteHostScreen `Icon.createWithResource`、media3 R）**留 R**；`title=stringResource` 系 SettingXxxItem 的 `title: String` 参数一处误伤后用 XXX 标记回滚（教训：sed 锚定 API 名）
+- **B0** content/3 + lazy/AnimatedLazy 下沉（`EmptyContent.picRes→DrawableResource` + 3 处 picRes 调用方联动；`LoadingIndicator` expressive 在 CMP 1.12 可用；preview 一律去除，shared 无 preview 惯例）
+- **B1** SettingsSegments 下沉（无 SegmentedButton，Column+clip 实现直接迁；`titleRes: Int?→StringResource?`——lazy scope 非 @Composable 上下文，`stringResource` 只能 shared 内解析；15 标题 P4 字符串集已覆盖，重复追加后去重删除；HKeyframe 透传函数同步改）
+- **B2** LoadMoreFooter/PageContent 下沉（R.string→Res.string，`HapticButton` 已在 shared 直通）
+- **B3** UsageNoticeDialog 下沉（勘察纠正：实际是 `BuildConfig.DEBUG` 非 VERSION_NAME→`isDebugBuild()` expect/actual，android 真检查 `FLAG_DEBUGGABLE`，桌/iOS 恒 false）
+- **C** Theme.kt 下沉 + m3color expect/actual（`provideDynamicColorScheme`/`rememberSystemAccentColorOrNull`/`ConfigureSystemBars`；`LocalView` 不在 CMP common 内，edit-mode 守卫收进 android actual；expect/actual 可空性须一致；桌/iOS 回退 `dark/lightColorScheme`；`expressiveColorScheme` 保留 public common 包装供 AppearancePickers 预览零改动；m3color 依赖 :app→shared；DesktopScaffold 换 HanimeTheme；BaseActivity 零改动）
+- **D** nav3 JetBrains 版验证通过（临时 Nav3Smoke 六端绿后删除；与 :app androidx 版 import/API 零差异，详见 P6d1-D 空提交信息；P6d-4 待核对 decorator 移植包名）
+- **E** 冒烟：桌面 HanimeTheme 版骨架屏 70s 存活无异常无 ClassNotFound；`:app:assembleDebug` 双轨资源无冲突；clean 六端一次通过
+- **顺延债务**（P6d-2/3/4/P7）：SettingItem 等组件随屏幕迁移；:app res/drawable/ 双轨保留至 P7（mipmap-anydpi 引用）；titleRes 系其他导航/首页模型（SettingsRoutes/HomePageModels/VideoTabsContent）随 P6d-3/4；桌面动态取色/系统栏（P7 可选）；`isDebugBuild` 桌/iOS 恒 false（P7 接打包元数据）
+
