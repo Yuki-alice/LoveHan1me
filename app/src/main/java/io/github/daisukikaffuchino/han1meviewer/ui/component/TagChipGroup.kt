@@ -22,11 +22,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_keyboard_arrow_down
 import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.preview.fakeTagList2
 import kotlin.random.Random
@@ -154,7 +155,7 @@ fun TagChipGroup(
             subcompose(TagChipSlot.Toggle) {
                 TextButton(onClick = { expanded = !expanded }) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_keyboard_arrow_down),
+                        painter = painterResource(Res.drawable.ic_keyboard_arrow_down),
                         contentDescription = null,
                         modifier = Modifier.graphicsLayer {
                             rotationZ = arrowRotation

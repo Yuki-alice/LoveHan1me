@@ -23,12 +23,14 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_event_note
 import io.github.daisukikaffuchino.utils.SonnerToast
 import io.github.daisukikaffuchino.utils.toastText
 import io.github.daisukikaffuchino.han1meviewer.ui.component.ConfirmDialog
@@ -179,7 +181,7 @@ fun DailyCheckInScreen(
                 onClick = { showReport = true }
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_event_note),
+                    painter = painterResource(Res.drawable.ic_event_note),
                     contentDescription = null,
                     modifier = Modifier.size(20.dp)
                 )

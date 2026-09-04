@@ -22,10 +22,12 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_help
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeInfo
 import io.github.daisukikaffuchino.han1meviewer.logic.state.PageLoadingState
 import io.github.daisukikaffuchino.han1meviewer.logic.state.WebsiteState
@@ -168,7 +170,7 @@ fun VideoGridScreen(
         actions = {
             IconButton(onClick = { showHelpDialog = true }) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_help),
+                    painter = painterResource(Res.drawable.ic_help),
                     contentDescription = stringResource(R.string.help),
                 )
             }

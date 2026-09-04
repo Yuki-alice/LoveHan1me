@@ -15,11 +15,13 @@ import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_arrow_back
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -83,7 +85,7 @@ fun HanimeTopAppBar(
                     shapes = IconButtonDefaults.shapes(),
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_arrow_back),
+                        painter = painterResource(Res.drawable.ic_arrow_back),
                         contentDescription = stringResource(R.string.back),
                     )
                 }
