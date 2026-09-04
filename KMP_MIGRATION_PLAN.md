@@ -654,9 +654,16 @@ runBlocking 可改为 suspend 消除（调用点全在协程内，非阻塞正�
   - 边界裁定（2026-09-03）：SearchOption/SonnerToast 的 R-int 依赖深嵌 UI，"模型先行下沉"会造成
     27+ 文件两轮返工，裁定 VM 跟随对应 UI 批次下沉
 
+- [x] **P6d-3 横切解锁**：A 路由下沉 / B 通用 ImageLoader / C R→Res 全量收口 ✅（2026-09-04，7 commits，
+      复审独立验证 clean 六端 + assembleDebug 全绿，详见 §9.4.1）
+- [x] **P5-2a 桌面 mpv 绑定可行性 spike** ✅（2026-09-04，4 commits + 收尾；结论：mediamp 引擎核可用
+      / Compose 渲染层与 CMP 1.12 二进制不兼容；`PlaybackEngine` 接口冻结无需改动，P6d-4 可开工，见 §9.4.2）
+- [ ] P6d-4 屏幕下沉：settings → search/home 剩余 → account/preview → **video 三件套（最后）**
+- [ ] P6d-5 导航装配下沉（NavHost / TopNavigation / MainDrawerDestination）
+- [ ] P5-2b 桌面 mpv / iOS AVPlayer 完整实现
 - [ ] P7 平台专属能力收口
-
 - [ ] P8 三端发布
+- [ ] P9 `:shared` 模块拆分（:core / :ui，P8 代码稳定后再做）
 
 **编译验证记录**（2026-09-01，本机 macOS + Xcode + JDK 21 + Android SDK 37）：
 
@@ -730,4 +737,193 @@ export ANDROID_HOME=~/Library/Android/sdk
 - **D** 外部引用 15 文件零改动（包名不变）；**E** 冒烟：assembleDebug 通过 + 桌面骨架屏 70s 存活无异常 + clean 六端一次通过
 - **收口**：`:app` ui/viewmodel/ 目录已空删除（C8 为最后一个 VM）；home/ 剩 37 文件
 - **顺延债务**（P6d-3/4/P7）：home 剩余 37（COIL 需 shared imageLoader 供给模式/RetryableImage 下沉、NAV 路由类型、Screen Activity 参数）；VideoCardItem/ArtistItem/VideoCommentCard 组件；Glance 真刷新（P7）；桌面/iOS 相册写入（P7）；`toSortedMap` commonMain 解析失败根因★；isDebugBuild/桌面动态取色（沿用 P6d-1）
+
+***
+
+## 9. 重排（2026-09-04，基于全量实测数据）
+
+> 本节替代 §6 中 P6d-3 及之后的顺序。重排依据是对 `:app` 剩余 **146 文件 / 34,801 行**的逐文件阻塞点扫描，
+> 不是估算。核心结论：**剩余工作的主要瓶颈不是"架构难题"，而是三个横切阻塞点，且三者的解锁成本都远低于逐个屏幕绕过的成本。**
+
+### 9.1 阻塞点实测分布
+
+按文件统计（一个文件可命中多项）：
+
+| 阻塞项                | 文件数 | 说明                                                |
+| ------------------ | --- | ------------------------------------------------- |
+| **R 资源引用**         | 92  | `R.string` 1134 处 / `R.drawable` 8 处，另有 raw/dimen/array/font 共 7 处 |
+| **Android API**    | 60  | 分散于 Intent/Uri(16 文件)、WebView(4)、SAF(6)、WorkManager(4)、Glance(4) 等 |
+| **Context**        | 40  | `LocalContext`(40)、`getString`(20)                |
+| **导航路由类型**         | 39  | 依赖 `:app` 的 `ui.navigation.*`                      |
+| **Coil AsyncImage** | 16  | shared 无通用 imageLoader 供给                          |
+| **（已纯净）**          | 16  | 可直接搬                                              |
+| 其他                 | 小量  | java.io/time 14、BackHandler 8、播放器 7、WebView 4、Parcelable 4 |
+
+### 9.2 三条关键实测结论
+
+**① 资源层已经铺完，只剩调用点没换——且零缺口。**
+
+`shared/commonMain/composeResources` 现有 **874 个 string 键 / 164 个 drawable**。
+`:app` 侧 717 个唯一 string 键、5 个 drawable 键，**在 shared 中缺失数均为 0**。
+`:app` 自 P6d-1 起已接入 `compose.components.resources`，且已有 54 个文件在用 `Res.string.*`。
+
+→ **1134 处 R→Res 是纯机械替换，不含任何资源创作或语义判断。**
+
+**② 导航路由类型是 2 个文件、208 行、零平台依赖的纯 Kotlin。**
+
+`ui/navigation/main/HanimeScreen.kt`（80 行，17 个 `@Serializable` 路由 + `HanimeScreen : NavKey` 接口）只 import
+`androidx.navigation3.runtime.NavKey` 与 `kotlinx.serialization.Serializable`——两者 shared 均已具备。
+`ui/navigation/settings/SettingsRoutes.kt`（128 行）的 17 个路由 object 同样纯净，
+唯一耦合是 `SettingsDestinationSpec.titleRes: Int`，需改 `StringResource`（P6d-1-B1 已踩过同型坑）。
+
+→ **这 2 个文件原样下沉即可解锁 39 个文件的 NAV 阻塞。**
+
+**③ Coil 缺口有现成模板可以照抄，不是设计问题。**
+
+shared 只依赖 `coil-compose-core`（无单例回退，`AsyncImage` 必须显式传 `imageLoader`），
+但 P6d-2 已为 getchu 建好 `rememberGetchuImageLoader()`（`commonMain` expect + `jvmMain` 真实现 + `iosMain` 默认）。
+通用图片加载器按同一形状补一个即可，jvmMain 复用 `createGetchuImageLoader` 的 OkHttp+HDns+拦截器构造。
+
+### 9.3 重排后的阶段顺序
+
+| 新编号     | 内容                                                              | 相对旧计划的变化                    |
+| ------- | --------------------------------------------------------------- | -------------------------- |
+| **P6d-3** | **横切解锁**：A 路由类型下沉 / B 通用 ImageLoader / C R→Res 全量收口             | **新增**。旧计划无此阶段，这是本次重排的核心    |
+| P5-2a   | 桌面 mpv 绑定**可行性 spike**（只求渲染出画面，不求完整）                             | **新增强调**。必须在 video UI 下沉前定接口 |
+| P6d-4   | 屏幕下沉：settings → search/home 剩余 → account/preview → **video 三件套（最后）** | 顺序按"解锁后残留阻塞"排序，video 压到最后  |
+| P6d-5   | 导航装配下沉：`NavHost` / `TopNavigation` / `MainDrawerDestination` 等    | 从旧 P6 中独立出来；必须在全部 RouteScreen 下沉后 |
+| P5-2b   | 桌面 mpv / iOS AVPlayer 完整实现                                       | 原 P5-2 后半                  |
+| P7      | 平台专属能力收口（下载/小组件/应用锁/存储/自定义 DNS）                                  | 不变                         |
+| P8      | 三端联调与发布                                                         | 不变                         |
+| P9      | `:shared` 模块拆分（:core / :ui）                                     | **新增**，但**刻意排在最后**         |
+
+**为什么横切要前置（旧计划的错误）**：P6c/P6d-1/P6d-2 都是"按屏幕批次"推进，每个批次都要重新处理一遍 R 资源、Coil、导航，
+导致 P6c 边界裁定里记的"27+ 文件两轮返工"。三个横切项合计解锁约 96 个文件的阻塞，成本约等于现有一个批次。
+
+**为什么 video 三件套压到最后**：`VideoPlayerUi`(1933) / `VideoIntroductionScreen`(1602) / `VideoRouteHostScreen`(1062)
+合计占剩余代码 13%，且同时命中 COIL+R+CTX+ANDROID+PLAYER 五类阻塞。P5-2a 的 spike 结论可能反过来修改
+`PlaybackEngine` 接口——接口必须在 UI 下沉前冻结，否则 1900 行要改两遍。
+
+**为什么 `:shared` 拆分排到最后**：单一胖模块确实会拖慢编译（commonMain 改动触发 4 个 target 重编），
+但拆分需要重新接线 Gradle 与源集，且会让每个文件被移动两次。**迁移期保持单模块的收益大于拆分的收益**，
+等 P8 代码稳定后再拆，代价低一个量级。
+
+### 9.4 `:app` 的最终形态澄清
+
+旧计划写的是"P8 末移除 `:app`"，**这个表述有误导**。正确目标是：
+
+> `:app` 退化为 **Android 平台壳**，与 `desktopApp`（JVM 壳）、`iosApp`（Xcode 壳）对等，而不是消失。
+
+预计**永久常驻 `:app`** 的部分（约 35–45 文件）：
+`HanimeApplication` / `MainActivity` / `BaseActivity` / `CrashActivity` / `CrashHandler`、
+5 个 `*DatabaseInstance`（Context 注入点）、`logic/platform/Android*`（平台实现注册）、
+`worker/*`（WorkManager 3 文件）、`cast/HanimeCastOptionsProvider`（Cast）、
+`ui/widget/CheckInWidgetProvider`（Glance，无桌面/iOS 对应物）、`util/SafFileManager`。
+
+需要下沉但**属于平台能力**的（走 expect/actual，不整体搬）：
+`BackupManager` / `AppUpdateChecker` / `HCacheManager` / `HFileManager` / `Networks` / `HImageMeower`。
+
+据此，**真正要下沉的约 100 文件 / 31k 行**，而非 146 文件 / 35k 行。
+
+### 9.4.1 P6d-3 完成记录（2026-09-04，git 从 p6d3-start 到 p6d3-done，7 commits）
+
+**A 路由下沉**：`HanimeScreen.kt` git 判定 `similarity index 100%`（纯 rename，零改动）；
+`SettingsRoutes.kt` 的 17 个路由 object 下沉，`SettingsDestinationSpec.titleRes: Int → StringResource`，
+16 个值改 `Res.string.*` + 逐键 import（P6d-1-B1 同型）。`:app` 侧 `git mv` 删除原文件，
+因包名不变，调用点仅 `SettingsNavHost` 一处需换 CMP `stringResource` import，`TopNavigation` 传 enum 值零改动。
+
+**B 通用 ImageLoader**：`commonMain/ui/component/HanimeImageLoader.kt`（expect + `HanimeAsyncImage` 包装，
+参数并集取自 16 个 AsyncImage 调用点实测）+ jvmMain/iosMain 两个 actual，共 3 文件，未新增依赖。
+jvmMain **确已复用 `HDns()` + `HProxySelector()` + OkHttp**（对照 `createGetchuImageLoader` 结构一致，仅去掉 getchu 域名特化头）。
+
+> **顺带查清的一件事**：`:app` 从未调用过 `setSingletonImageLoaderFactory`，
+> 旧 `AsyncImage` 走的是 Coil 默认客户端（**无 HDns、无代理**）。
+> 新实现反而让图片与用户配置的 DNS/代理对齐——这是**行为改进**，不是回归；
+> 且 CDN 无 UA 要求（否则 :app 早已挂）。
+
+**C R→Res 收口**：96 文件，+2537 / −1629（净增 908，主要来自 CMP 要求的**逐键 import**，非异常）。
+C1 脚本 825 + 条件分支手工 8；C2 166（21 文件）；C3 72（23 文件）；C4 44 字面处 + 传参链。
+C1' 为 0——P6d-1 已完成 painterResource 批次，剩余均为白名单（空提交记录）。
+
+**剩余 R 引用 7 条，逐条核对属白名单**：PiP `Icon.createWithResource` ×2、
+worker `setSmallIcon` ×4、`android.R.string.ok` ×1。另有 raw×3 / dimen×2 / array×1 / font×1 /
+mipmap×1 / `media3.cast.R`×3。
+
+**复审独立验证（主模型亲跑，非采信自述）**：
+
+| 项 | 结果 |
+| -- | -- |
+| clean 后六端全量 | ✅ BUILD SUCCESSFUL 1m 9s（仅 4 条 kotlinx-datetime `monthNumber/dayOfMonth` 弃用警告，P6d-2 遗留） |
+| `:app:assembleDebug` | ✅ 34s，双轨资源无冲突 |
+| 假完成扫描 | 新增行中文字符串字面量**仅 1 条**，且为 `title.contains("商品紹介")` 业务匹配逻辑，非硬编码文案 |
+| 替换对账 | `Res.string` 新增 1103 / `R.string` 删除 1131，差额 28 由白名单 + C4 参数化解释 |
+| Worker suspend 风险 | `HanimeDownloadWorker : CoroutineWorker` + `suspend doWork()`，12 个 suspend fun 全在协程上下文，WorkManager 超时语义不变 → **排除** |
+
+**顺延债务**：
+
+1. `MainActivity.authenticate` 转 suspend（`lifecycleScope.launch` 包一层），Biometric prompt 晚一帧出现，
+   回调时序不变——**待真机复核**。
+2. `tagFlatten` 签名放宽为 `Map<*, Set<SearchOption>>`（星投影）。已核对上游原为 `SparseArray` 且只读
+   `values`，键类型 Int→String 不影响语义；但星投影是类型安全退让，**P6d-4 应收紧为 `Map<String, …>`**。
+   （`brandFlatten` 仍为 `Map<Int, …>`，两者不一致。）
+3. `toNetworkErrorMessageRes()` 顺手从 `Int` 改为 `StringResource`（计划未单列，归入 C4，正确）。
+4. 桌面 `DataStoreManager.initialize()` 已在 `desktopApp/.../Main.kt:43` 接线——P2b 复审记的"未接线"债务**已结清**。
+
+### 9.4.2 P5-2a 完成记录（2026-09-04，git 从 p5-2a-start 起 4 commits + 收尾 commit）
+
+**做了什么**：桌面端接 animeko 同款 `org.openani.mediamp:mediamp-mpv` 0.3.2（Maven 最新 release，
+2026-08-20 更新），写了 `DesktopMpvPlaybackEngine`（状态映射 + PlaybackSpeed/AudioLevelController +
+MPVHandle 选项注入）与 `MpvMediampPlayerSurface` 渲染分支，临时 spike 屏（播片 + 控制台逐秒打点 + 手动控制）。
+**收尾按 spike 纪律撤除了全部临时代码与依赖**（spike 屏 / engine / mediamp 依赖全部回退，
+回退态六端编译 ✅ 39s），仓库回到 P5-1 占位状态。
+
+**亲跑验证结果（主模型重跑 spike 并留存日志 /tmp/mpv_spike.log，非采信自述）**：
+
+| 验证点 | 结果 |
+| -- | -- |
+| mpv native 库（macOS arm64） | ✅ libmpv v0.41.0 + libplacebo 7.351.0 + FFmpeg 8.0.1 加载成功，event_loop 启动，coreaudio/videotoolbox/cocoa 全启用 |
+| mpv 选项注入 | ✅ `user-agent`、`hwdec=auto` 均 `applied=true`（经 `MPVHandle`，animeko 同款姿势） |
+| 引擎状态机映射 | ✅（代码审查：MediaStatus→PlaybackPhase 全覆盖，含 Error 通道） |
+| **桌面渲染出画面** | ❌ **`MpvMediampPlayerSurface` 组合即崩**：`NoClassDefFoundError: androidx/compose/ui/window/LocalWindowKt` |
+
+**❌ 的证据链（三环闭合，非猜测）**：
+
+1. mediamp 0.3.2 POM 声明 `org.jetbrains.compose.*:1.10.1`（runtime classpath 被 Gradle 升到 1.12.0）；
+2. **本机缓存 `ui-desktop-1.12.0.jar` 内 grep `window/LocalWindow` = 0**——CMP 1.12 已移除该 API（1.10.1 尚有）；
+3. Maven Central 上 mediamp 最新 release 即 0.3.2，**无适配 CMP 1.12 的版本**。
+
+**结论：mediamp 的"引擎核心"与本项目 CMP 栈兼容，但"Compose 渲染层"不兼容。**
+
+**接口冻结裁定（本 spike 的主要目的，P6d-4 依赖此结论开工）**：
+
+- **`PlaybackEngine` 现有接口无需任何修改**——mediamp 的能力面（play/pause/seek/speed/volume/状态流）
+  全部映射得进现有方法与 `PlaybackEngineState`，高级特性（H 帧/着色器/Cast）本来就是 P5-2b 的平台扩展。
+- **Q1 裁定**：桌面 `attachSurface/detachSurface` 为 no-op 是**正确设计**——桌面渲染由
+  `PlatformVideoSurface` 的 actual 直接持有引擎渲染，不走 surface 回调。Android 的 SurfaceView 模式不受影响。
+- **P6d-4 可以开工**，video 三件套下沉时按现接口写，不需要为桌面预留任何接口改动。
+
+**P5-2b 的路径决策（已定，不再摇摆）**：
+
+- 桌面渲染**自实现**：参考 `mediamp-mpv-compose` 的 desktop 源码（开源，核心是把 mpv 渲染嵌进
+  Compose Desktop 的窗口层级，1.10.1 版实现可内联后适配 1.12 的 window API），
+  不再等待 mediamp 上游出 1.12 适配（时间不可控）。
+- 引擎层代码（B commit 的 `DesktopMpvPlaybackEngine`，177 行）经审查可直接在 P5-2b 复用，
+  从 git 历史 `86d5809` 取回即可。
+- Android 侧不动（Exo/MPV/Cast 四引擎已归位 androidMain）。
+
+**顺带记录**：spike 验证期间 `:desktopApp:run` 长跑 12 分钟无异常（mpv 与骨架屏并存）；
+mediamp 的 `prepareLibraries()` + `MPVHandle.setLogHandler` 接管 mpv 日志进 LogUtil 的姿势已在 B commit 验证可用。
+
+### 9.5 执行纪律（P6b 事故的直接教训）
+
+P6b 期间脚本失误一次性破坏 121 个文件的括号（209 编译错误，且当时无 git、无备份）。
+P6d-3 的 C 步涉及 92 个文件，是本轮风险最高的操作，必须遵守：
+
+1. **开工前 `git tag p6d3-start`**，每个子批次结束各打一个 commit，异常可回滚到任意子批次。
+2. **脚本必须 dry-run 先行**，输出替换清单给人过目，再落盘。
+3. **每子批次结束即编译验证**，不允许攒到全部改完再编。
+4. **`stringResource` 之外的上下文（`getString` 164 处、`toastText` 76 处、构造函数 Int 参数约 60 处）禁止批量 sed**，
+   逐处按已建立的"字符串化 / suspend getString"（P6c 先例）与 `Int → StringResource`（P6d-1-B1 先例）两种模式人工处理。
+5. **保留项白名单**：`R.raw.*`（3）、`R.dimen.*`（2）、`R.array.loading_hints`（1）、`R.font.roboto`（1）
+   以及框架强制要求的 Int（worker `setSmallIcon`、`Icon.createWithResource`、`media3.cast.R`）不动。
 

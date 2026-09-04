@@ -21,10 +21,6 @@ dependencies {
     implementation("io.coil-kt.coil3:coil-compose:3.6.1")
     // P4：ksoup 统一走版本目录（P3a 曾硬编码同坐标）
     implementation(libs.ksoup)
-
-    // P5-2a：mpv native（spike 仅本机 macos-arm64；P5-2b 按 triple 补全 win/linux。
-    // 若报 UnsatisfiedLinkError，先加 mediamp-ffmpeg-runtime-macos-arm64 再报）
-    runtimeOnly(libs.mediamp.mpv.runtime.macos.arm64)
 }
 
 compose.desktop {
