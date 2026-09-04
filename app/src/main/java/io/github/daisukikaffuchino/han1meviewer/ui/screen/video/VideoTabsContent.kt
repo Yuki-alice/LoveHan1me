@@ -1,6 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.video
 
-import androidx.annotation.StringRes
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,9 +17,11 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 data class VideoTabItem(
-    @param:StringRes val titleRes: Int,
+    val titleRes: StringResource,
     val badgeCount: Int = 0,
 )
 
@@ -74,13 +75,13 @@ fun VideoTabsContent(
                                     }
                                 ) {
                                     Text(
-                                        text = androidx.compose.ui.res.stringResource(item.titleRes),
+                                        text = stringResource(item.titleRes),
                                         color = MaterialTheme.colorScheme.onSurface,
                                     )
                                 }
                             } else {
                                 Text(
-                                    text = androidx.compose.ui.res.stringResource(item.titleRes),
+                                    text = stringResource(item.titleRes),
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
                             }

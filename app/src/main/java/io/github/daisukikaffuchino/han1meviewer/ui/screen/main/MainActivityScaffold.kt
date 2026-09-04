@@ -42,11 +42,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.StringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.my_list
+import io.github.daisukikaffuchino.han1meviewer.video
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.MainDrawerDestination
 import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
@@ -186,7 +189,7 @@ private fun MainDrawerContent(
             checkInEnabled = checkInEnabled,
         )
         MainDrawerSection(
-            titleRes = R.string.my_list,
+            titleRes = Res.string.my_list,
             items = listOf(
                 MainDrawerDestination.WatchLater,
                 MainDrawerDestination.FavVideo,
@@ -197,7 +200,7 @@ private fun MainDrawerContent(
             onItemClick = { onDrawerItemSelected(it) },
         )
         MainDrawerSection(
-            titleRes = R.string.video,
+            titleRes = Res.string.video,
             items = listOf(
                 MainDrawerDestination.WatchHistory,
                 MainDrawerDestination.Download,
@@ -276,7 +279,7 @@ private fun MainDrawerPrimaryItems(
 
 @Composable
 private fun MainDrawerSection(
-    titleRes: Int,
+    titleRes: StringResource,
     items: List<MainDrawerDestination>,
     selectedDestination: MainDrawerDestination?,
     onItemClick: (MainDrawerDestination) -> Unit,

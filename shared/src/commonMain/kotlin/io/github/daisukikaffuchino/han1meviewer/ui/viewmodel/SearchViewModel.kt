@@ -50,7 +50,8 @@ class SearchViewModel() : ViewModel() {
     var gridFirstVisibleItemScrollOffset: Int = 0
 
     // P6c：SparseArray → MutableMap（key 仅作占位/分组 id，见 sheet groupSelectedTagOptions）
-    var tagMap = mutableMapOf<Int, Set<SearchOption>>()
+    // P6d-3-C4：tagMap key 改 String（scope 名；原 titleRes Int 已改为 StringResource）
+    var tagMap = mutableMapOf<String, Set<SearchOption>>()
     var brandMap = mutableMapOf<Int, Set<SearchOption>>()
 
     val genres by unsafeLazy {
@@ -239,7 +240,7 @@ class SearchViewModel() : ViewModel() {
 
             history.tags?.takeIf { it.isNotBlank() }?.let { tagsString ->
                 val tagOptions = tagsString.toSearchOptionSet()
-                tagMap.put(0, tagOptions)
+                tagMap.put("history", tagOptions)
             }
 
             history.brands?.takeIf { it.isNotBlank() }?.let { brandsString ->

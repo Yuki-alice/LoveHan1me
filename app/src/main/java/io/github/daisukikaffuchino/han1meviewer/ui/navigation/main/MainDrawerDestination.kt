@@ -1,9 +1,17 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.navigation.main
 
-import androidx.annotation.StringRes
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.check_in_feature_name
+import io.github.daisukikaffuchino.han1meviewer.download
+import io.github.daisukikaffuchino.han1meviewer.fav_video
+import io.github.daisukikaffuchino.han1meviewer.home_page
 import io.github.daisukikaffuchino.han1meviewer.ic_access_time
+import io.github.daisukikaffuchino.han1meviewer.my_subscribe
+import io.github.daisukikaffuchino.han1meviewer.play_list
+import io.github.daisukikaffuchino.han1meviewer.settings
+import io.github.daisukikaffuchino.han1meviewer.watch_history
+import io.github.daisukikaffuchino.han1meviewer.watch_later
+import org.jetbrains.compose.resources.StringResource
 import io.github.daisukikaffuchino.han1meviewer.ic_download
 import io.github.daisukikaffuchino.han1meviewer.ic_favorite_border
 import io.github.daisukikaffuchino.han1meviewer.ic_format_list_bulleted
@@ -18,52 +26,52 @@ import org.jetbrains.compose.resources.DrawableResource
 enum class MainDrawerDestination(
     val route: HanimeScreen,
     val iconRes: DrawableResource,
-    @param:StringRes val titleRes: Int,
+    val titleRes: StringResource,
 ) {
     Home(
         route = HomeRoute,
         iconRes = Res.drawable.ic_home,
-        titleRes = R.string.home_page,
+        titleRes = Res.string.home_page,
     ),
     Settings(
         route = HomeSettingsRoute,
         iconRes = Res.drawable.ic_settings,
-        titleRes = R.string.settings,
+        titleRes = Res.string.settings,
     ),
     DailyCheckIn(
         route = DailyCheckInRoute,
         iconRes = Res.drawable.ic_thumb_up_off_alt,
-        titleRes = R.string.check_in_feature_name,
+        titleRes = Res.string.check_in_feature_name,
     ),
     WatchLater(
         route = MyWatchLaterRoute,
         iconRes = Res.drawable.ic_access_time,
-        titleRes = R.string.watch_later,
+        titleRes = Res.string.watch_later,
     ),
     FavVideo(
         route = MyFavVideoRoute,
         iconRes = Res.drawable.ic_favorite_border,
-        titleRes = R.string.fav_video,
+        titleRes = Res.string.fav_video,
     ),
     Playlist(
         route = MyPlaylistRoute,
         iconRes = Res.drawable.ic_format_list_bulleted,
-        titleRes = R.string.play_list,
+        titleRes = Res.string.play_list,
     ),
     Subscription(
         route = SubscriptionRoute,
         iconRes = Res.drawable.ic_subscribtion,
-        titleRes = R.string.my_subscribe,
+        titleRes = Res.string.my_subscribe,
     ),
     WatchHistory(
         route = WatchHistoryRoute,
         iconRes = Res.drawable.ic_history,
-        titleRes = R.string.watch_history,
+        titleRes = Res.string.watch_history,
     ),
     Download(
         route = DownloadRoute,
         iconRes = Res.drawable.ic_download,
-        titleRes = R.string.download,
+        titleRes = Res.string.download,
     );
 
     companion object {

@@ -1,7 +1,18 @@
 package io.github.daisukikaffuchino.han1meviewer.util
 
 import com.google.common.util.concurrent.ListenableFuture
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.home_error_connect
+import io.github.daisukikaffuchino.han1meviewer.home_error_connection_interrupted
+import io.github.daisukikaffuchino.han1meviewer.home_error_connection_reset
+import io.github.daisukikaffuchino.han1meviewer.home_error_dns
+import io.github.daisukikaffuchino.han1meviewer.home_error_forbidden
+import io.github.daisukikaffuchino.han1meviewer.home_error_generic
+import io.github.daisukikaffuchino.han1meviewer.home_error_not_found
+import io.github.daisukikaffuchino.han1meviewer.home_error_server_unavailable
+import io.github.daisukikaffuchino.han1meviewer.home_error_ssl
+import io.github.daisukikaffuchino.han1meviewer.home_error_timeout
+import org.jetbrains.compose.resources.StringResource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import okhttp3.Call
@@ -100,52 +111,52 @@ private data object DirectExecutor : Executor {
  * @receiver 首页加载过程中抛出的异常
  * @return 错误提示的字符串资源 ID
  */
-fun Throwable.toNetworkErrorMessageRes(): Int {
+fun Throwable.toNetworkErrorMessageRes(): StringResource {
     val rawMessage = message.orEmpty().lowercase()
     return when {
         this is UnknownHostException ||
                 rawMessage.contains("unable to resolve host") ||
                 rawMessage.contains("no address associated with hostname") -> {
-            R.string.home_error_dns
+            Res.string.home_error_dns
         }
 
         this is SocketTimeoutException || rawMessage.contains("timeout") -> {
-            R.string.home_error_timeout
+            Res.string.home_error_timeout
         }
 
         this is SSLHandshakeException ||
                 rawMessage.contains("ssl") ||
                 rawMessage.contains("certificate") -> {
-            R.string.home_error_ssl
+            Res.string.home_error_ssl
         }
 
         this is ConnectException || rawMessage.contains("failed to connect") -> {
-            R.string.home_error_connect
+            Res.string.home_error_connect
         }
 
         this is SocketException && rawMessage.contains("connection reset") -> {
-            R.string.home_error_connection_interrupted
+            Res.string.home_error_connection_interrupted
         }
 
         rawMessage.contains("connection reset") -> {
-            R.string.home_error_connection_reset
+            Res.string.home_error_connection_reset
         }
 
         rawMessage.contains("403") -> {
-            R.string.home_error_forbidden
+            Res.string.home_error_forbidden
         }
 
         rawMessage.contains("404") -> {
-            R.string.home_error_not_found
+            Res.string.home_error_not_found
         }
 
         rawMessage.contains("500") || rawMessage.contains("502") ||
                 rawMessage.contains("503") || rawMessage.contains("504") -> {
-            R.string.home_error_server_unavailable
+            Res.string.home_error_server_unavailable
         }
 
         else -> {
-            R.string.home_error_generic
+            Res.string.home_error_generic
         }
     }
 }

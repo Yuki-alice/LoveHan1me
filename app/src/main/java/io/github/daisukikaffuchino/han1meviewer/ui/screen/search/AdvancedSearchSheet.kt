@@ -45,6 +45,17 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.appearance_and_figure
+import io.github.daisukikaffuchino.han1meviewer.characteristics
+import io.github.daisukikaffuchino.han1meviewer.duration
+import io.github.daisukikaffuchino.han1meviewer.relationship
+import io.github.daisukikaffuchino.han1meviewer.sex_position
+import io.github.daisukikaffuchino.han1meviewer.sort_option
+import io.github.daisukikaffuchino.han1meviewer.story_location
+import io.github.daisukikaffuchino.han1meviewer.story_plot
+import io.github.daisukikaffuchino.han1meviewer.tag
+import io.github.daisukikaffuchino.han1meviewer.type
+import io.github.daisukikaffuchino.han1meviewer.video_attr
 import io.github.daisukikaffuchino.han1meviewer.switch_to_year
 import io.github.daisukikaffuchino.han1meviewer.switch_to_year_month
 import io.github.daisukikaffuchino.han1meviewer.type
@@ -85,13 +96,13 @@ import kotlinx.coroutines.launch
  * operator 已随模型下沉删除，这里直接以 scope 名索引。
  */
 private val advancedSearchTagScopes = listOf(
-    R.string.video_attr to "video_attributes",
-    R.string.relationship to "character_relationships",
-    R.string.characteristics to "characteristics",
-    R.string.appearance_and_figure to "appearance_and_figure",
-    R.string.story_plot to "story_plot",
-    R.string.story_location to "story_location",
-    R.string.sex_position to "sex_positions",
+    Res.string.video_attr to "video_attributes",
+    Res.string.relationship to "character_relationships",
+    Res.string.characteristics to "characteristics",
+    Res.string.appearance_and_figure to "appearance_and_figure",
+    Res.string.story_plot to "story_plot",
+    Res.string.story_location to "story_location",
+    Res.string.sex_position to "sex_positions",
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -210,7 +221,7 @@ fun AdvancedSearchSheet(
                         onOpenGenre = {
                             dialogState = AdvancedSearchDialogState.SingleChoice(
                                 key = "genre",
-                                titleRes = R.string.type,
+                                titleRes = Res.string.type,
                                 options = viewModel.genres,
                                 selectedIndex = viewModel.genres.indexOfFirst { it.searchKey == viewModel.genre },
                                 onSelect = { option -> viewModel.genre = option.searchKey },
@@ -223,7 +234,7 @@ fun AdvancedSearchSheet(
                         onOpenSort = {
                             dialogState = AdvancedSearchDialogState.SingleChoice(
                                 key = "sort",
-                                titleRes = R.string.sort_option,
+                                titleRes = Res.string.sort_option,
                                 options = viewModel.sortOptions,
                                 selectedIndex = viewModel.sortOptions.indexOfFirst { it.searchKey == viewModel.sort },
                                 onSelect = { option -> viewModel.sort = option.searchKey },
@@ -236,7 +247,7 @@ fun AdvancedSearchSheet(
                         onOpenTag = {
                             dialogState = AdvancedSearchDialogState.MultiChoice(
                                 key = "tag",
-                                titleRes = R.string.tag,
+                                titleRes = Res.string.tag,
                                 scopes = tagScopes,
                                 selected = selectedTagOptions,
                                 broad = viewModel.broad,
@@ -288,7 +299,7 @@ fun AdvancedSearchSheet(
                         onOpenDuration = {
                             dialogState = AdvancedSearchDialogState.SingleChoice(
                                 key = "duration",
-                                titleRes = R.string.duration,
+                                titleRes = Res.string.duration,
                                 options = viewModel.durations,
                                 selectedIndex = viewModel.durations.indexOfFirst { it.searchKey == viewModel.duration },
                                 onSelect = { option -> viewModel.duration = option.searchKey },
@@ -358,7 +369,7 @@ private fun AdvancedSearchSingleChoiceDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(androidx.compose.ui.res.stringResource(state.titleRes)) },
+        title = { Text(stringResource(state.titleRes)) },
         text = {
             LazyColumn(
                 modifier = Modifier.heightIn(max = 360.dp),
@@ -404,7 +415,7 @@ private fun AdvancedSearchMultiChoiceDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(androidx.compose.ui.res.stringResource(state.titleRes)) },
+        title = { Text(stringResource(state.titleRes)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(
@@ -441,7 +452,7 @@ private fun AdvancedSearchMultiChoiceDialog(
                             },
                             text = {
                                 Text(
-                                    text = androidx.compose.ui.res.stringResource(scopeSection.titleRes),
+                                    text = stringResource(scopeSection.titleRes),
                                     softWrap = false,
                                 )
                             },
@@ -768,12 +779,14 @@ private fun buildTagScopeSections(
 private fun groupSelectedTagOptions(
     selected: Set<SearchOption>,
     tags: Map<String, List<SearchOption>>,
-): MutableMap<Int, Set<SearchOption>> {
-    val grouped = linkedMapOf<Int, Set<SearchOption>>()
-    advancedSearchTagScopes.forEach { (titleRes, scopeName) ->
+): MutableMap<String, Set<SearchOption>> {
+    // P6d-3-C4：key 原为 titleRes Int（P6c 占位分组 id，语义从未被读取）；
+    // titleRes 改 StringResource 后改用 scopeName 作 key（同样仅占位）
+    val grouped = linkedMapOf<String, Set<SearchOption>>()
+    advancedSearchTagScopes.forEach { (_, scopeName) ->
         val selectedInScope = tags[scopeName].orEmpty().filterTo(mutableSetOf()) { it in selected }
         if (selectedInScope.isNotEmpty()) {
-            grouped[titleRes] = selectedInScope
+            grouped[scopeName] = selectedInScope
         }
     }
     return grouped

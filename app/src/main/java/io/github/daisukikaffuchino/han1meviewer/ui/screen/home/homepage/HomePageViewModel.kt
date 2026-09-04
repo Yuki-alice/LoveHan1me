@@ -1,11 +1,12 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage
 
 import io.github.daisukikaffuchino.utils.LogUtil
-import androidx.annotation.StringRes
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.login_state_expired
+import org.jetbrains.compose.resources.StringResource
 import io.github.daisukikaffuchino.han1meviewer.logic.AppUpdateChecker
 import io.github.daisukikaffuchino.han1meviewer.logic.AppUpdateState
 import io.github.daisukikaffuchino.han1meviewer.logic.DatabaseRepo
@@ -35,7 +36,7 @@ class HomePageViewModel: ViewModel() {
 
     data class SessionExpiredMessage(
         val message: String?,
-        @param:StringRes val fallbackResId: Int,
+        val fallbackResId: StringResource,
     )
 
     private val _homePageFlow = MutableStateFlow<PageState<HomeData>>(PageState.Loading)
@@ -114,7 +115,7 @@ class HomePageViewModel: ViewModel() {
                             _sessionExpiredMessage.emit(
                                 SessionExpiredMessage(
                                     message = networkState.throwable.message,
-                                    fallbackResId = R.string.login_state_expired,
+                                    fallbackResId = Res.string.login_state_expired,
                                 )
                             )
                         }

@@ -27,7 +27,11 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.delete_fav
+import io.github.daisukikaffuchino.han1meviewer.fav_video
+import io.github.daisukikaffuchino.han1meviewer.long_press_to_cancel_fav
 import io.github.daisukikaffuchino.han1meviewer.video_count
+import org.jetbrains.compose.resources.StringResource
 import io.github.daisukikaffuchino.han1meviewer.sure_to_delete_s
 import io.github.daisukikaffuchino.han1meviewer.ok
 import io.github.daisukikaffuchino.han1meviewer.load_failed_retry
@@ -83,9 +87,9 @@ fun VideoGridScreen(
     deleteStateFlow: Flow<WebsiteState<Boolean>>,
     loadedPageCount: Int,
     isLoadingMore: Boolean,
-    titleRes: Int,
-    helpMessageRes: Int,
-    deleteTitleRes: Int,
+    titleRes: StringResource,
+    helpMessageRes: StringResource,
+    deleteTitleRes: StringResource,
     onBack: () -> Unit,
     onOpenVideo: (HanimeInfo) -> Unit,
     onDeleteItem: (HanimeInfo) -> Unit,
@@ -137,7 +141,7 @@ fun VideoGridScreen(
 
     ConfirmDialog(
         visible = pendingDelete != null,
-        title = androidx.compose.ui.res.stringResource(deleteTitleRes),
+        title = stringResource(deleteTitleRes),
         message = stringResource(Res.string.sure_to_delete_s, pendingDelete?.title.orEmpty()),
         confirmText = stringResource(Res.string.delete),
         dismissText = stringResource(Res.string.cancel),
@@ -151,7 +155,7 @@ fun VideoGridScreen(
     ConfirmDialog(
         visible = showHelpDialog,
         title = stringResource(Res.string.help),
-        message = androidx.compose.ui.res.stringResource(helpMessageRes),
+        message = stringResource(helpMessageRes),
         confirmText = stringResource(Res.string.ok),
         dismissText = stringResource(Res.string.close),
         onConfirm = { showHelpDialog = false },
@@ -169,7 +173,7 @@ fun VideoGridScreen(
     )
 
     HanimeScaffold(
-        title = androidx.compose.ui.res.stringResource(titleRes),
+        title = stringResource(titleRes),
         subtitle = {
             Text(
                 text = stringResource(Res.string.video_count, items.size),
@@ -249,9 +253,9 @@ private fun VideoGridScreenPreview() {
             deleteStateFlow = flowOf(WebsiteState.Success(true)),
             loadedPageCount = 2,
             isLoadingMore = false,
-            titleRes = R.string.fav_video,
-            helpMessageRes = R.string.long_press_to_cancel_fav,
-            deleteTitleRes = R.string.delete_fav,
+            titleRes = Res.string.fav_video,
+            helpMessageRes = Res.string.long_press_to_cancel_fav,
+            deleteTitleRes = Res.string.delete_fav,
             onBack = {},
             onOpenVideo = {},
             onDeleteItem = {},

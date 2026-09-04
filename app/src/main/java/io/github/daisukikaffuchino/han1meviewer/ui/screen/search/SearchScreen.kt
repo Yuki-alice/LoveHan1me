@@ -895,7 +895,7 @@ private fun ActiveSearchCriteria(
 // 辅助
 // ─────────────────────────────────────────────
 
-private fun tagFlatten(map: Map<Int, Set<SearchOption>>): Set<String> {
+private fun tagFlatten(map: Map<*, Set<SearchOption>>): Set<String> {
     val r = mutableSetOf<String>(); for (options in map.values) {
         options.mapNotNullTo(r) { it.searchKey }
     }; return r

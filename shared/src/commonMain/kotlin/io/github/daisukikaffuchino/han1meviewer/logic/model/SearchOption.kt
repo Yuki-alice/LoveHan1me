@@ -24,7 +24,8 @@ data class SearchOption(
 ) {
 
     companion object {
-        fun Map<Int, Set<SearchOption>>.flatten(): Set<String> = buildSet {
+        // P6d-3-C4：key 类型放宽（tagMap key 由 Int 改为 scope 名 String；只读 values，行为不变）
+        fun Map<*, Set<SearchOption>>.flatten(): Set<String> = buildSet {
             values.forEach { options ->
                 val res = options.mapNotNullTo(mutableSetOf()) { it.searchKey }
                 addAll(res)

@@ -32,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalDensity
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.getString
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.HanimeConstants
@@ -133,7 +134,7 @@ fun HomePageScreen(
     LaunchedEffect(pageState) {
         val errorState = pageState as? PageState.Error
         if (wasRefreshing && errorState?.cachedInfo != null) {
-            SonnerToast.error(toastText(errorState.throwable.toNetworkErrorMessageRes()))
+            SonnerToast.error(getString(errorState.throwable.toNetworkErrorMessageRes()))
         }
         wasRefreshing = isCurrentlyRefreshing
     }
@@ -195,7 +196,7 @@ fun HomePageScreen(
                         isEmpty = pageState.isFirstPageError || pageState.isFirstPageEmpty,
                         errorMessage = (pageState as? PageState.Error)?.throwable
                             ?.toNetworkErrorMessageRes()
-                            ?.let { androidx.compose.ui.res.stringResource(it) }
+                            ?.let { stringResource(it) }
                             ?: "",
                         onRetry = { viewModel.getHomePage(isRefresh = false) },
                         loadingMessage = if (!showSimulatedUpdate && updateState is AppUpdateState.Checking) {

@@ -5,7 +5,13 @@ import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.delete_fav
+import io.github.daisukikaffuchino.han1meviewer.delete_watch_later
+import io.github.daisukikaffuchino.han1meviewer.fav_video
+import io.github.daisukikaffuchino.han1meviewer.long_press_to_cancel_fav
+import io.github.daisukikaffuchino.han1meviewer.long_press_to_cancel_watch_later
+import io.github.daisukikaffuchino.han1meviewer.watch_later
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.VideoGridScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.MyListViewModel
 import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.mylist.FavVideoListController
@@ -30,9 +36,9 @@ fun FavVideoRouteScreen(
         deleteStateFlow = fav.deleteMyFavVideoFlow,
         loadedPageCount = loadedPageCount,
         isLoadingMore = isLoadingMore,
-        titleRes = R.string.fav_video,
-        helpMessageRes = R.string.long_press_to_cancel_fav,
-        deleteTitleRes = R.string.delete_fav,
+        titleRes = Res.string.fav_video,
+        helpMessageRes = Res.string.long_press_to_cancel_fav,
+        deleteTitleRes = Res.string.delete_fav,
         onBack = onBack,
         onOpenVideo = { onNavigateToVideo(it.videoCode) },
         onDeleteItem = { item ->
@@ -73,9 +79,9 @@ fun WatchLaterRouteScreen(
         deleteStateFlow = wl.deleteMyWatchLaterFlow,
         loadedPageCount = loadedPageCount,
         isLoadingMore = isLoadingMore,
-        titleRes = R.string.watch_later,
-        helpMessageRes = R.string.long_press_to_cancel_watch_later,
-        deleteTitleRes = R.string.delete_watch_later,
+        titleRes = Res.string.watch_later,
+        helpMessageRes = Res.string.long_press_to_cancel_watch_later,
+        deleteTitleRes = Res.string.delete_watch_later,
         onBack = onBack,
         onOpenVideo = { onNavigateToVideo(it.videoCode) },
         onDeleteItem = { item ->

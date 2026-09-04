@@ -52,9 +52,11 @@ import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.add_failed
+import io.github.daisukikaffuchino.han1meviewer.add_success
 import io.github.daisukikaffuchino.han1meviewer.copy_to_clipboard
 import io.github.daisukikaffuchino.han1meviewer.fail_to_get_video_link
 import io.github.daisukikaffuchino.han1meviewer.large_screen_tablet_mode_hint
+import io.github.daisukikaffuchino.han1meviewer.local_favorite_cancelled
 import io.github.daisukikaffuchino.han1meviewer.modify_failed
 import io.github.daisukikaffuchino.han1meviewer.modify_success
 import io.github.daisukikaffuchino.han1meviewer.msg_deny_download_notification
@@ -594,9 +596,9 @@ fun VideoRouteHostScreen(
                     when (state) {
                         is WebsiteState.Error -> SonnerToast.error(getString(Res.string.add_failed))
                         is WebsiteState.Success -> SonnerToast.success(
-                            toastText(
-                                if (state.info) R.string.add_success
-                                else R.string.local_favorite_cancelled
+                            getString(
+                                if (state.info) Res.string.add_success
+                                else Res.string.local_favorite_cancelled
                             )
                         )
                         WebsiteState.Loading -> Unit

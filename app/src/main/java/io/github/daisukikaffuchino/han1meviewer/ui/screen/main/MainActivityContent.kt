@@ -176,7 +176,7 @@ fun MainActivityContent(
     }
     LaunchedEffect(viewModel) {
         viewModel.sessionExpiredMessage.collect { event ->
-            event.message?.let(SonnerToast::error) ?: SonnerToast.error(toastText(event.fallbackResId))
+            event.message?.let(SonnerToast::error) ?: SonnerToast.error(getString(event.fallbackResId))
         }
     }
     LaunchedEffect(homeState) {
