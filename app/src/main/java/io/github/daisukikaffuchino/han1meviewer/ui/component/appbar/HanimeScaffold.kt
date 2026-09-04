@@ -14,11 +14,14 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_pause
+import io.github.daisukikaffuchino.han1meviewer.ic_play_arrow
 import io.github.daisukikaffuchino.han1meviewer.ui.component.content.EmptyContent
 import io.github.daisukikaffuchino.han1meviewer.ui.component.verticalBounce
 import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
@@ -136,13 +139,13 @@ private fun HanimeScaffoldPreview() {
             actions = {
                 FilledIconButton(onClick = { }, enabled = true) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_play_arrow),
+                        painter = painterResource(Res.drawable.ic_play_arrow),
                         contentDescription = stringResource(R.string.start_all),
                     )
                 }
                 FilledIconButton(onClick = { }, enabled = false) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_pause),
+                        painter = painterResource(Res.drawable.ic_pause),
                         contentDescription = stringResource(R.string.pause_all),
                     )
                 }

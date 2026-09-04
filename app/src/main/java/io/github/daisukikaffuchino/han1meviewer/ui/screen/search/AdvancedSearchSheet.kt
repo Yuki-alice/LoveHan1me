@@ -39,11 +39,13 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_search
 import io.github.daisukikaffuchino.han1meviewer.SEARCH_YEAR_RANGE_END
 import io.github.daisukikaffuchino.han1meviewer.SEARCH_YEAR_RANGE_START
 import io.github.daisukikaffuchino.han1meviewer.logic.DatabaseRepo
@@ -730,7 +732,7 @@ private fun AdvancedSearchActionSection(
             modifier = Modifier.size(60.dp),
         ) {
             Icon(
-                painter = painterResource(R.drawable.ic_search),
+                painter = painterResource(Res.drawable.ic_search),
                 contentDescription = stringResource(R.string.search),
             )
         }
