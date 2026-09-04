@@ -118,6 +118,9 @@ kotlin {
             // core-ktx（androidx.core.net.toUri）+ coroutines-android（Dispatchers.Main）
             implementation(libs.core.ktx)
             implementation(libs.coroutines.android)
+
+            // P6d-1-C：动态取色（Kyant0 m3color，无 KMP 坐标，仅 androidMain；坐标从 :app 照搬）
+            implementation(libs.kyant.m3color)
         }
 
         // jvm("desktop") 是自定义目标名，Gradle 不生成类型化访问器，需用 by getting

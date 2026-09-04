@@ -1,21 +1,19 @@
 package io.github.daisukikaffuchino.han1meviewer.desktop
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.lightColorScheme
 import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
+import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeTheme
 import io.github.daisukikaffuchino.utils.SonnerToast
 
 /**
@@ -24,15 +22,11 @@ import io.github.daisukikaffuchino.utils.SonnerToast
  * 目的：验证 P6b 下沉的 theme/组件/SonnerToast 的 commonMain 化在桌面端真实可渲染
  * （无 ClassNotFound / 链接错误）。P3aVerificationScreen 保留，真站回归仍需用。
  *
- * 说明：真实 HanimeTheme（:app Theme.kt）依赖 Kyant0 m3color（Android-only），桌面暂以
- * Material3 亮/暗 scheme + shared HanimeDefaults 呈现；完整桌面主题化待 P6d/P7。
+ * P6d-1-C：改用 shared HanimeTheme 真跑验证（桌面动态取色回退固定色板，见 DynamicSchemeProvider）。
  */
 @Composable
 fun DesktopScaffold() {
-    val dark = isSystemInDarkTheme()
-    MaterialTheme(
-        colorScheme = if (dark) darkColorScheme() else lightColorScheme(),
-    ) {
+    HanimeTheme {
         SonnerToast.Host()
         Column(
             modifier = Modifier
