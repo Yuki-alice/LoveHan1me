@@ -128,6 +128,10 @@ kotlin {
             dependencies {
                 // 桌面端是 JVM，同样可用 OkHttp 引擎复用现有拦截器链
                 implementation(libs.ktor.client.okhttp)
+
+                // P5-2a：桌面 mpv 内核（animeko 同款 mediamp-mpv；仅 desktopMain，
+                // 不进 commonMain/jvmMain，native 由 desktopApp 按 OS triple 声明）
+                implementation(libs.mediamp.mpv)
             }
         }
 

@@ -40,6 +40,8 @@ desugarJdkLibs = "2.1.5"
 composeBom = "2026.06.01"
 compose-material3 = "1.5.0-alpha25"
 mpv = "v0.1.7"
+# P5-2a：桌面 mpv 走 animeko 同款 mediamp（pin 0.3.2 = 最新 release，与 animeko 对齐，P5-2b 再评估升级）
+mediamp = "0.3.2"
 m3color = "2026.1"
 
 # ---- Kotlin Multiplatform / Compose Multiplatform ----
@@ -170,6 +172,10 @@ coil-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.r
 coil-compose-core = { module = "io.coil-kt.coil3:coil-compose-core", version.ref = "coil3Kmp" }
 # P6d-2：getchu 特化加载器走 OkHttp（jvmMain 专用，与 core 同版本 3.6.1）
 coil-network-okhttp-kmp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil3Kmp" }
+
+# P5-2a：桌面 mpv 内核（animeko 同款；runtime 按 OS triple 在 desktopApp 侧声明，spike 仅 macos-arm64）
+mediamp-mpv = { module = "org.openani.mediamp:mediamp-mpv", version.ref = "mediamp" }
+mediamp-mpv-runtime-macos-arm64 = { module = "org.openani.mediamp:mediamp-mpv-runtime-macos-arm64", version.ref = "mediamp" }
 
 [bundles]
 
