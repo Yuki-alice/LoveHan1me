@@ -1,58 +1,23 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.home.preview.getchupreview
 
-import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalInspectionMode
 import coil3.ImageLoader
+import coil3.compose.LocalPlatformContext
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
-import coil3.request.ImageRequest
 import io.github.daisukikaffuchino.han1meviewer.DESKTOP_USER_AGENT
 import io.github.daisukikaffuchino.han1meviewer.logic.network.HDns
 import io.github.daisukikaffuchino.han1meviewer.logic.network.HProxySelector
 import okhttp3.OkHttpClient
-import java.time.LocalDate
 import java.util.concurrent.TimeUnit
 
-internal fun currentGetchuDateCode(): String {
-    val now = LocalDate.now()
-    return "%04d%02d".format(now.year, now.monthValue)
-}
-
-internal fun shiftGetchuMonthCode(code: String, delta: Int): String {
-    var year = code.substring(0, 4).toInt()
-    var month = code.substring(4, 6).toInt() + delta
-    while (month < 1) {
-        month += 12
-        year -= 1
-    }
-    while (month > 12) {
-        month -= 12
-        year += 1
-    }
-    return "%04d%02d".format(year, month)
-}
-
-internal fun getchuDateLabel(code: String): String {
-    return "${code.substring(0, 4)}/${code.substring(4, 6).toInt()}"
-}
-
-internal fun getchuMonthOptions(centerCode: String): List<String> {
-    return (-12..12).map { delta -> shiftGetchuMonthCode(centerCode, delta) }
-}
+// P6d-2：jvmMain 真实现（:app 原 rememberGetchuImageLoader + createGetchuImageLoader 照搬）。
+// HDns/HProxySelector/拦截器链全在 jvmMain 可用；LocalInspectionMode 分支保留。
 
 @Composable
-internal fun getchuImageRequest(url: String?): ImageRequest {
-    val context = LocalContext.current
-    return ImageRequest.Builder(context)
-        .data(url)
-        .build()
-}
-
-@Composable
-internal fun rememberGetchuImageLoader(): ImageLoader {
-    val context = LocalContext.current
+actual fun rememberGetchuImageLoader(): ImageLoader {
+    val context = LocalPlatformContext.current
     val isInspectionMode = LocalInspectionMode.current
     return remember(context, isInspectionMode) {
         if (isInspectionMode) {
@@ -63,7 +28,7 @@ internal fun rememberGetchuImageLoader(): ImageLoader {
     }
 }
 
-internal fun createGetchuImageLoader(context: Context): ImageLoader {
+fun createGetchuImageLoader(context: coil3.PlatformContext): ImageLoader {
     val imageClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
         .dns(HDns())

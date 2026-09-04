@@ -168,6 +168,8 @@ sqlite-bundled = { module = "androidx.sqlite:sqlite-bundled", version.ref = "sql
 # 图片：Coil 3 本就多平台，网络层换用 ktor3 实现
 coil-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.ref = "coil3Kmp" }
 coil-compose-core = { module = "io.coil-kt.coil3:coil-compose-core", version.ref = "coil3Kmp" }
+# P6d-2：getchu 特化加载器走 OkHttp（jvmMain 专用，与 core 同版本 3.6.1）
+coil-network-okhttp-kmp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil3Kmp" }
 
 [bundles]
 

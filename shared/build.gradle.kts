@@ -137,6 +137,8 @@ kotlin {
                 // 拦截器链直接使用 OkHttp（Ktor OkHttp 引擎 preconfigured 复用同一批 client）
                 implementation(libs.okhttp)
                 implementation(libs.okhttp.dns.over.https)
+                // P6d-2：getchu 特化图片加载器（OkHttpNetworkFetcherFactory，jvm 专用）
+                implementation(libs.coil.network.okhttp.kmp)
             }
         }
 

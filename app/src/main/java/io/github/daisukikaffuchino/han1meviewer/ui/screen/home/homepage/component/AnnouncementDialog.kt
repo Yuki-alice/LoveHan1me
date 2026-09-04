@@ -211,7 +211,15 @@ fun AnnouncementDialog(
             onConfirm = {
                 showSaveImageConfirm = false
                 scope.launch(Dispatchers.IO) {
-                    saveImageToGallery(context, imageUrl)
+                    // P6d-2：saveImageToGallery 已下沉 shared（签名变无 context + Boolean 结果驱动 toast）
+                    val ok = saveImageToGallery(imageUrl)
+                    kotlinx.coroutines.withContext(Dispatchers.Main) {
+                        if (ok) {
+                            io.github.daisukikaffuchino.utils.SonnerToast.success(
+                                io.github.daisukikaffuchino.utils.toastText(R.string.saved)
+                            )
+                        }
+                    }
                 }
             },
             onDismiss = { showSaveImageConfirm = false },
