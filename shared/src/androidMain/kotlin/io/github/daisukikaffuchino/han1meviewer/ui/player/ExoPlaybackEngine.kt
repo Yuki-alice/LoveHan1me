@@ -1,7 +1,6 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.player
 
 import android.content.Context
-import android.view.Surface
 import androidx.annotation.OptIn
 import androidx.core.net.toUri
 import androidx.media3.common.C
@@ -94,12 +93,12 @@ class ExoPlaybackEngine(
         player.volume = volume.coerceIn(0f, 1f)
     }
 
-    override fun attachSurface(surface: Surface) {
+    override fun attachSurface(surface: VideoSurface) {
         if (released) return
         player.setVideoSurface(surface)
     }
 
-    override fun detachSurface(surface: Surface) {
+    override fun detachSurface(surface: VideoSurface) {
         if (released) return
         player.clearVideoSurface(surface)
     }

@@ -1,7 +1,6 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.player
 
 import android.content.Context
-import android.view.Surface
 import androidx.annotation.OptIn
 import androidx.core.net.toUri
 import androidx.media3.cast.CastPlayer
@@ -41,7 +40,7 @@ class CastPlaybackEngine private constructor(
     private var localStateJob: Job? = null
     private var progressJob: Job? = null
     private var latestRequest: PlaybackRequest? = null
-    private var attachedSurface: Surface? = null
+    private var attachedSurface: VideoSurface? = null
     private var requestedPlaybackSpeed = PlayerDefaults.DEFAULT_SPEED
     private var lastCastPositionMs = 0L
     private var lastCastPlayWhenReady = false
@@ -108,12 +107,12 @@ class CastPlaybackEngine private constructor(
         }
     }
 
-    override fun attachSurface(surface: Surface) {
+    override fun attachSurface(surface: VideoSurface) {
         attachedSurface = surface
         if (!isCasting) localEngine.attachSurface(surface)
     }
 
-    override fun detachSurface(surface: Surface) {
+    override fun detachSurface(surface: VideoSurface) {
         if (!isCasting) localEngine.detachSurface(surface)
         if (attachedSurface == surface) attachedSurface = null
     }

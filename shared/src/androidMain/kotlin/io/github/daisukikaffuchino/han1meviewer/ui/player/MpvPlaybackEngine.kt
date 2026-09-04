@@ -3,14 +3,13 @@ package io.github.daisukikaffuchino.han1meviewer.ui.player
 import android.content.Context
 import android.net.Uri
 import android.os.ParcelFileDescriptor
-import android.view.Surface
 import androidx.core.net.toUri
-import io.github.daisukikaffuchino.han1meviewer.BuildConfig
-import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.USER_AGENT
+import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.network.HProxySelector
 import io.github.daisukikaffuchino.han1meviewer.util.AnimeShaders
 import io.github.daisukikaffuchino.han1meviewer.util.AnimeShaders.getCert
+import io.github.daisukikaffuchino.utils.LogUtil
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -29,7 +28,7 @@ class MpvPlaybackEngine(
 ) : PlaybackEngine {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutableState = MutableStateFlow(PlaybackEngineState())
-    private var currentSurface: Surface? = null
+    private var currentSurface: VideoSurface? = null
     private var currentPfd: ParcelFileDescriptor? = null
     private var detachedFd: Int? = null
     private var pendingRequest: PlaybackRequest? = null
@@ -161,7 +160,7 @@ class MpvPlaybackEngine(
         MPVLib.setPropertyDouble("volume", (volume.coerceIn(0f, 1f) * 100f).toDouble())
     }
 
-    override fun attachSurface(surface: Surface) {
+    override fun attachSurface(surface: VideoSurface) {
         if (released) return
         currentSurface = surface
         if (initialized) {
@@ -172,7 +171,7 @@ class MpvPlaybackEngine(
         }
     }
 
-    override fun detachSurface(surface: Surface) {
+    override fun detachSurface(surface: VideoSurface) {
         if (released) return
         if (currentSurface == surface) {
             currentSurface = null
@@ -308,7 +307,9 @@ class MpvPlaybackEngine(
             "SW" -> "no"
             else -> "auto"
         })
-        put("msg-level", "all=" + if (BuildConfig.DEBUG) "debug" else "warn")
+        // P5-1：原 BuildConfig.DEBUG（:app 构建产物，shared 拿不到）→ shared LogUtil.enabled
+        // （:app 启动时按 BuildConfig.DEBUG 覆盖，语义不变）
+        put("msg-level", "all=" + if (LogUtil.enabled) "debug" else "warn")
         put("cache", "yes")
         put("cache-secs", SettingsRepository.mpvCacheSecs.toString())
         put("vd-lavc-threads", Runtime.getRuntime().availableProcessors().toString())

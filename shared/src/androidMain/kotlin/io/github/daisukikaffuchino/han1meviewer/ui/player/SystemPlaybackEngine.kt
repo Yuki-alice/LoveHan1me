@@ -4,7 +4,6 @@ import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
 import android.media.PlaybackParams
-import android.view.Surface
 import androidx.core.net.toUri
 import io.github.daisukikaffuchino.utils.LogUtil
 import kotlinx.coroutines.CoroutineScope
@@ -30,7 +29,7 @@ class SystemPlaybackEngine(
     MediaPlayer.OnErrorListener {
     private val mutableState = MutableStateFlow(PlaybackEngineState())
     private var mediaPlayer: MediaPlayer? = null
-    private var currentSurface: Surface? = null
+    private var currentSurface: VideoSurface? = null
     private var pendingRequest: PlaybackRequest? = null
     private var released = false
     private var requestedSpeed = PlayerDefaults.DEFAULT_SPEED
@@ -97,12 +96,12 @@ class SystemPlaybackEngine(
         mediaPlayer?.setVolume(volume.coerceIn(0f, 1f), volume.coerceIn(0f, 1f))
     }
 
-    override fun attachSurface(surface: Surface) {
+    override fun attachSurface(surface: VideoSurface) {
         currentSurface = surface
         mediaPlayer?.setSurface(surface)
     }
 
-    override fun detachSurface(surface: Surface) {
+    override fun detachSurface(surface: VideoSurface) {
         if (currentSurface == surface) currentSurface = null
         if (mediaPlayer != null && mediaPlayer?.isPlaying == true) {
             mediaPlayer?.setSurface(null)
