@@ -27,7 +27,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,6 +35,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_thumb_up_off_alt
+import io.github.daisukikaffuchino.han1meviewer.ic_thumb_up_alt
+import io.github.daisukikaffuchino.han1meviewer.ic_thumb_down_off_alt
+import io.github.daisukikaffuchino.han1meviewer.ic_thumb_down_alt
+import io.github.daisukikaffuchino.han1meviewer.ic_report
+import io.github.daisukikaffuchino.han1meviewer.ic_reply
 import io.github.daisukikaffuchino.han1meviewer.logic.model.VideoComments
 import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
@@ -123,7 +130,7 @@ fun VideoCommentCard(
 
                 IconButton(onClick = onReport, modifier = Modifier.size(36.dp)) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_report),
+                        painter = painterResource(Res.drawable.ic_report),
                         contentDescription = stringResource(R.string.report_reason_hint),
                         tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f)
                     )
@@ -147,9 +154,9 @@ fun VideoCommentCard(
                     Icon(
                         painter = painterResource(
                             if (comment.post.likeCommentStatus) {
-                                R.drawable.ic_thumb_up_alt
+                                Res.drawable.ic_thumb_up_alt
                             } else {
-                                R.drawable.ic_thumb_up_off_alt
+                                Res.drawable.ic_thumb_up_off_alt
                             }
                         ),
                         contentDescription = null,
@@ -164,9 +171,9 @@ fun VideoCommentCard(
                     Icon(
                         painter = painterResource(
                             if (comment.post.unlikeCommentStatus) {
-                                R.drawable.ic_thumb_down_alt
+                                Res.drawable.ic_thumb_down_alt
                             } else {
-                                R.drawable.ic_thumb_down_off_alt
+                                Res.drawable.ic_thumb_down_off_alt
                             }
                         ),
                         contentDescription = null,
@@ -177,7 +184,7 @@ fun VideoCommentCard(
                     onClick = onReply,
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_reply),
+                        painter = painterResource(Res.drawable.ic_reply),
                         contentDescription = null,
                     )
                     Text(stringResource(R.string.reply))

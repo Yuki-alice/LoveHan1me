@@ -27,12 +27,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_remove_circle
+import io.github.daisukikaffuchino.han1meviewer.ic_check_circle
+import io.github.daisukikaffuchino.han1meviewer.ic_send
 import io.github.daisukikaffuchino.han1meviewer.logic.model.ReportReason
 import io.github.daisukikaffuchino.han1meviewer.ui.component.HapticTextButton as TextButton
 
@@ -107,7 +111,7 @@ internal fun CommentReplyBar(
                     modifier = Modifier.size(48.dp),
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_send),
+                        painter = painterResource(Res.drawable.ic_send),
                         contentDescription = stringResource(R.string.submit),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp),
@@ -156,9 +160,9 @@ internal fun CommentReportDialog(
                             Icon(
                                 painter = painterResource(
                                     if (selectedReasonIndex == index) {
-                                        R.drawable.ic_check_circle
+                                        Res.drawable.ic_check_circle
                                     } else {
-                                        R.drawable.ic_remove_circle
+                                        Res.drawable.ic_remove_circle
                                     }
                                 ),
                                 contentDescription = null,

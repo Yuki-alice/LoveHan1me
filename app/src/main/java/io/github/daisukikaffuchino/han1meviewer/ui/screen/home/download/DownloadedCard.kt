@@ -40,7 +40,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -49,6 +49,14 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.daisukikaffuchino.han1meviewer.LOCAL_DATE_TIME_FORMAT
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_play_arrow
+import io.github.daisukikaffuchino.han1meviewer.ic_format_list_bulleted
+import io.github.daisukikaffuchino.han1meviewer.ic_fold
+import io.github.daisukikaffuchino.han1meviewer.ic_ext_link
+import io.github.daisukikaffuchino.han1meviewer.ic_delete
+import io.github.daisukikaffuchino.han1meviewer.h_chan_loading
+import io.github.daisukikaffuchino.han1meviewer.h_chan_load_failed
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.VideoWithCategories
 import io.github.daisukikaffuchino.han1meviewer.logic.model.DownloadHeaderNode
 import io.github.daisukikaffuchino.han1meviewer.ui.component.CardContainerSurface
@@ -112,8 +120,8 @@ fun DownloadGroupHeader(
             FilledIconButton(onClick = onToggle, modifier = Modifier.size(36.dp)) {
                 Icon(
                     painter = painterResource(
-                        if (header.isExpanded) R.drawable.ic_fold
-                        else R.drawable.ic_format_list_bulleted
+                        if (header.isExpanded) Res.drawable.ic_fold
+                        else Res.drawable.ic_format_list_bulleted
                     ),
                     contentDescription = null,
                 )
@@ -233,8 +241,8 @@ fun DownloadedVideoCard(
                     AsyncImage(
                         model = item.video.coverUri ?: item.video.coverUrl,
                         contentDescription = item.video.title,
-                        placeholder = painterResource(R.drawable.h_chan_loading),
-                        error = painterResource(R.drawable.h_chan_load_failed),
+                        placeholder = painterResource(Res.drawable.h_chan_loading),
+                        error = painterResource(Res.drawable.h_chan_load_failed),
                         modifier = Modifier
                             .width(136.dp)
                             .fillMaxHeight()
@@ -330,7 +338,7 @@ fun DownloadedVideoCard(
                     modifier = Modifier.padding(8.dp)
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_delete),
+                        painter = painterResource(Res.drawable.ic_delete),
                         contentDescription = stringResource(R.string.delete)
                     )
                 }
@@ -346,7 +354,7 @@ fun DownloadedVideoCard(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_ext_link),
+                            painter = painterResource(Res.drawable.ic_ext_link),
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                         )
@@ -365,7 +373,7 @@ fun DownloadedVideoCard(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_play_arrow),
+                            painter = painterResource(Res.drawable.ic_play_arrow),
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                         )

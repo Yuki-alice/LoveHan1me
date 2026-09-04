@@ -60,7 +60,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.DrawableResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -69,6 +70,11 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_play_circle
+import io.github.daisukikaffuchino.han1meviewer.ic_history
+import io.github.daisukikaffuchino.han1meviewer.ic_delete
+import io.github.daisukikaffuchino.han1meviewer.ic_access_time
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.WatchHistoryEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeInfo
 import io.github.daisukikaffuchino.han1meviewer.logic.model.OnlineWatchHistorySort
@@ -282,7 +288,7 @@ private fun WatchHistoryClearFab(
                 text = { Text(stringResource(R.string.watch_history_clear_all)) },
                 icon = {
                     Icon(
-                        painter = painterResource(R.drawable.ic_delete),
+                        painter = painterResource(Res.drawable.ic_delete),
                         contentDescription = null,
                     )
                 },
@@ -672,11 +678,11 @@ private fun WatchHistoryCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 WatchHistoryMeta(
-                    iconRes = R.drawable.ic_access_time,
+                    iconRes = Res.drawable.ic_access_time,
                     label = stringResource(R.string.watch_history_watched_at, watchDate),
                 )
                 WatchHistoryMeta(
-                    iconRes = R.drawable.ic_play_circle,
+                    iconRes = Res.drawable.ic_play_circle,
                     label = stringResource(R.string.watch_history_released_at, releaseDate),
                 )
                 Row(
@@ -698,7 +704,7 @@ private fun WatchHistoryCard(
                         },
                         leadingIcon = {
                             Icon(
-                                painter = painterResource(R.drawable.ic_history),
+                                painter = painterResource(Res.drawable.ic_history),
                                 contentDescription = null,
                                 modifier = Modifier.size(14.dp),
                             )
@@ -714,7 +720,7 @@ private fun WatchHistoryCard(
                         modifier = Modifier.size(25.dp)
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_delete),
+                            painter = painterResource(Res.drawable.ic_delete),
                             contentDescription = stringResource(R.string.delete_history),
                             modifier = Modifier.size(16.dp)
                         )
@@ -727,7 +733,7 @@ private fun WatchHistoryCard(
 
 @Composable
 private fun WatchHistoryMeta(
-    iconRes: Int,
+    iconRes: DrawableResource,
     label: String,
 ) {
     Row(

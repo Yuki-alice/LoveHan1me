@@ -46,13 +46,20 @@ import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.DrawableResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_lightbulb
+import io.github.daisukikaffuchino.han1meviewer.ic_light_mode
+import io.github.daisukikaffuchino.han1meviewer.ic_dark_mode
+import io.github.daisukikaffuchino.han1meviewer.bg_settings_pad_new
+import io.github.daisukikaffuchino.han1meviewer.bg_settings_pad_classic
 import io.github.daisukikaffuchino.han1meviewer.ui.component.immediateClickable
 import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.AppPaletteStyle
@@ -95,12 +102,12 @@ fun VideoLandscapeLayoutStylePicker(
         VideoLandscapeLayoutOption(
             value = "classic",
             title = stringResource(R.string.layout_style_classic),
-            previewRes = R.drawable.bg_settings_pad_classic,
+            previewRes = Res.drawable.bg_settings_pad_classic,
         ),
         VideoLandscapeLayoutOption(
             value = "dual_pane",
             title = stringResource(R.string.layout_style_dual_pane),
-            previewRes = R.drawable.bg_settings_pad_new,
+            previewRes = Res.drawable.bg_settings_pad_new,
         ),
     )
     PickerContainer(
@@ -129,19 +136,19 @@ fun DarkModePicker(
         DarkModeOption(
             value = "follow_system",
             title = stringResource(R.string.follow_system),
-            iconRes = R.drawable.ic_lightbulb,
+            iconRes = Res.drawable.ic_lightbulb,
             dark = systemDark,
         ),
         DarkModeOption(
             value = "always_off",
             title = stringResource(R.string.always_off),
-            iconRes = R.drawable.ic_light_mode,
+            iconRes = Res.drawable.ic_light_mode,
             dark = false,
         ),
         DarkModeOption(
             value = "always_on",
             title = stringResource(R.string.always_on),
-            iconRes = R.drawable.ic_dark_mode,
+            iconRes = Res.drawable.ic_dark_mode,
             dark = true,
         ),
     )
@@ -447,14 +454,14 @@ private fun PickerOption(
 private data class DarkModeOption(
     val value: String,
     val title: String,
-    val iconRes: Int,
+    val iconRes: DrawableResource,
     val dark: Boolean,
 )
 
 private data class VideoLandscapeLayoutOption(
     val value: String,
     val title: String,
-    val previewRes: Int,
+    val previewRes: DrawableResource,
 )
 
 private fun ContentDrawScope.drawFadedEdge(

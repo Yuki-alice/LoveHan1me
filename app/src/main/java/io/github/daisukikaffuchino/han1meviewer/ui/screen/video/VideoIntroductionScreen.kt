@@ -68,7 +68,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.DrawableResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -77,6 +78,21 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_thumb_up_off_alt
+import io.github.daisukikaffuchino.han1meviewer.ic_thumb_up_alt
+import io.github.daisukikaffuchino.han1meviewer.ic_thumb_down_off_alt
+import io.github.daisukikaffuchino.han1meviewer.ic_thumb_down_alt
+import io.github.daisukikaffuchino.han1meviewer.ic_share
+import io.github.daisukikaffuchino.han1meviewer.ic_play_arrow
+import io.github.daisukikaffuchino.han1meviewer.ic_language
+import io.github.daisukikaffuchino.han1meviewer.ic_format_list_bulleted_add
+import io.github.daisukikaffuchino.han1meviewer.ic_favorite_border
+import io.github.daisukikaffuchino.han1meviewer.ic_favorite
+import io.github.daisukikaffuchino.han1meviewer.ic_download
+import io.github.daisukikaffuchino.han1meviewer.ic_check_circle
+import io.github.daisukikaffuchino.han1meviewer.ic_book
+import io.github.daisukikaffuchino.han1meviewer.ic_access_time
 import io.github.daisukikaffuchino.han1meviewer.ResolutionLinkMap
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.CheckInRecordEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.LocalListRepository
@@ -851,7 +867,7 @@ private fun PlaylistBottomSheet(
                                     horizontalArrangement = Arrangement.spacedBy(3.dp),
                                 ) {
                                     Icon(
-                                        painter = painterResource(id = R.drawable.ic_access_time),
+                                        painter = painterResource(Res.drawable.ic_access_time),
                                         contentDescription = null,
                                         tint = metaColor,
                                         modifier = Modifier.size(13.dp),
@@ -1035,7 +1051,7 @@ private fun MetaSection(
         MetaInfoItem(
             icon = {
                 Icon(
-                    painter = painterResource(R.drawable.ic_play_arrow),
+                    painter = painterResource(Res.drawable.ic_play_arrow),
                     contentDescription = null,
                     modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
@@ -1047,7 +1063,7 @@ private fun MetaSection(
         MetaInfoItem(
             icon = {
                 Icon(
-                    painter = painterResource(R.drawable.ic_access_time),
+                    painter = painterResource(Res.drawable.ic_access_time),
                     contentDescription = null,
                     modifier = Modifier.size(14.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
@@ -1131,8 +1147,8 @@ private fun VideoRatingButtons(
         ) {
             Icon(
                 painter =
-                    if (video.isFav) painterResource(R.drawable.ic_thumb_up_alt)
-                    else painterResource(R.drawable.ic_thumb_up_off_alt),
+                    if (video.isFav) painterResource(Res.drawable.ic_thumb_up_alt)
+                    else painterResource(Res.drawable.ic_thumb_up_off_alt),
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
                 tint = likeContentColor,
@@ -1167,8 +1183,8 @@ private fun VideoRatingButtons(
         ) {
             Icon(
                 painter =
-                    if (video.isUnlike) painterResource(R.drawable.ic_thumb_down_alt)
-                    else painterResource(R.drawable.ic_thumb_down_off_alt),
+                    if (video.isUnlike) painterResource(Res.drawable.ic_thumb_down_alt)
+                    else painterResource(Res.drawable.ic_thumb_down_off_alt),
                 contentDescription = null,
                 modifier = Modifier.size(16.dp),
                 tint = dislikeContentColor
@@ -1214,41 +1230,41 @@ private fun ActionSection(
     ) {
         if (checkInEnabled) {
             VideoActionButton(
-                iconRes = R.drawable.ic_check_circle,
+                iconRes = Res.drawable.ic_check_circle,
                 label = stringResource(R.string.quick_checkin),
                 onClick = onQuickCheckIn,
             )
         }
         if (hasOriginalComic && onOpenOriginalComic != null) {
             VideoActionButton(
-                iconRes = R.drawable.ic_book,
+                iconRes = Res.drawable.ic_book,
                 label = stringResource(R.string.original_comic),
                 onClick = onOpenOriginalComic,
             )
         }
         VideoActionButton(
-            iconRes = if (isFav) R.drawable.ic_favorite else R.drawable.ic_favorite_border,
+            iconRes = if (isFav) Res.drawable.ic_favorite else Res.drawable.ic_favorite_border,
             label = if (isFav) stringResource(R.string.liked) else stringResource(R.string.add_to_fav),
             onClick = onToggleFavorite,
         )
         VideoActionButton(
-            iconRes = R.drawable.ic_format_list_bulleted_add,
+            iconRes = Res.drawable.ic_format_list_bulleted_add,
             label = stringResource(R.string.add_to_playlist),
             onClick = onManageMyList,
         )
         VideoActionButton(
-            iconRes = R.drawable.ic_download,
+            iconRes = Res.drawable.ic_download,
             label = stringResource(R.string.download),
             onClick = onDownload,
         )
         VideoActionButton(
-            iconRes = R.drawable.ic_share,
+            iconRes = Res.drawable.ic_share,
             label = stringResource(R.string.share),
             onClick = onShare,
             onLongClick = onCopyShareText,
         )
         VideoActionButton(
-            iconRes = R.drawable.ic_language,
+            iconRes = Res.drawable.ic_language,
             label = stringResource(R.string.jump_to_webpage),
             onClick = onOpenWebPage,
         )
@@ -1258,7 +1274,7 @@ private fun ActionSection(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun VideoActionButton(
-    iconRes: Int,
+    iconRes: DrawableResource,
     label: String,
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
