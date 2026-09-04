@@ -1,6 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.player
 
-import android.view.Surface
 import kotlinx.coroutines.flow.StateFlow
 
 typealias PlayerKernel = io.github.daisukikaffuchino.han1meviewer.logic.model.PlayerKernel
@@ -75,7 +74,7 @@ interface PlaybackEngine {
     fun seekTo(positionMs: Long)
     fun setPlaybackSpeed(speed: Float)
     fun setVolume(volume: Float)
-    fun attachSurface(surface: Surface)
-    fun detachSurface(surface: Surface)
+    fun attachSurface(surface: VideoSurface)
+    fun detachSurface(surface: VideoSurface)
     fun release()
 }

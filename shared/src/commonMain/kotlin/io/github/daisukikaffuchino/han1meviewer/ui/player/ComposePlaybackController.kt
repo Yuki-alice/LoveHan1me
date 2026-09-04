@@ -1,6 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.player
 
-import android.view.Surface
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job

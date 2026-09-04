@@ -6,8 +6,9 @@ fun formatPlaybackTime(positionMs: Long): String {
     val minutes = (totalSeconds % 3600L) / 60L
     val seconds = totalSeconds % 60L
     return if (hours > 0L) {
-        "%d:%02d:%02d".format(hours, minutes, seconds)
+        // P5-1：String.format 为 JVM 专属，commonMain 改纯 Kotlin 等价实现（%02d ≡ padStart(2, '0')）
+        "$hours:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
     } else {
-        "%02d:%02d".format(minutes, seconds)
+        "${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
     }
 }
