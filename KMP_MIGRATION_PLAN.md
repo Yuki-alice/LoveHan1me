@@ -717,3 +717,17 @@ export ANDROID_HOME=~/Library/Android/sdk
 - **E** 冒烟：桌面 HanimeTheme 版骨架屏 70s 存活无异常无 ClassNotFound；`:app:assembleDebug` 双轨资源无冲突；clean 六端一次通过
 - **顺延债务**（P6d-2/3/4/P7）：SettingItem 等组件随屏幕迁移；:app res/drawable/ 双轨保留至 P7（mipmap-anydpi 引用）；titleRes 系其他导航/首页模型（SettingsRoutes/HomePageModels/VideoTabsContent）随 P6d-3/4；桌面动态取色/系统栏（P7 可选）；`isDebugBuild` 桌/iOS 恒 false（P7 接打包元数据）
 
+## P6d-2 screen/home 批次下沉完成记录（2026-09-04，git 从 p6d2-start 到 p6d2-done，6 commits，clean 六端 BUILD SUCCESSFUL）
+
+- **范围修正**：勘察"41 纯净"误判——home 屏依赖的 ui.component 多数仍在 :app（VideoCardItem 重依赖 MainActivity/SearchRoute/RetryableImage 不可迁；AsyncImage 在 shared 无 imageLoader 供给模式）。实际下沉 23 文件（home 22 + CheckInType/C8），剩余 37 文件多为 COIL（AsyncImage/RetryableImage）/NAV（路由类型）/CTX（Activity）阻塞，随 P6d-3/4（组件先行、屏幕随后）
+- **A1** 4 真纯净文件（PlaylistEditDialog/SubscriptionUiState/VideoGridUiState/VideoGridUtils；11 误分类回退：PreviewScreen-coil导航/SubscriptionContent等-coil组件/PreviewTourRow+UiState+Utils-时间链）
+- **A2** 7 叶子（DownloadUtils/UiState/HomeCategoryConfig/Mappers/Models/HomeUiState/GetchuPreviewViewModel；DownloadUtils `toSortedMap()` 在 commonMain 解析失败→entries 排序等价改写★；HomeCategory/HomeCategoryPreferenceItem `titleRes→StringResource` + dialog/Content/PreviewData 3 处适配；AchievementModels 退回 B 批——依赖 Report 的 MonthlyStats）
+- **A3** 7 可迁组件（PlainBox/SettingItem/TagChip/CommentDialog/Scaffold/TopAppBar/PageSurface；CommentReplyBar/ReportDialog 去 internal——video 屏跨模块调用；VideoCommentCard-AsyncImage/ArtistItem-RetryableImage/VideoCardItem-重依赖留 :app）
+- **A4** 0 文件（AnnouncementListDialog 引 AnnouncementDialog-coil/TopBar 用 R.font 平台资源；教训：阻塞检查须含 R.font/R.raw/R.dimen/同包 sibling 引用）
+- **B** C8 + dailycheckin 9 + PreviewUtils + CheckInType（YearMonth 手写：now/of/atDay/atEndOfMonth/lengthOfMonth/plusMinusMonths/isBefore/isAfter/formatYm/Comparable + today/monthsBetween/formatMd/formatYmd/formatHm/formatMdWeek/ymCode/plusDays；`kotlin.time.Clock` 非 kotlinx-datetime-Clock★；0.8.0 DayOfWeek 无 isoDayNumber→ordinal+1★；DAO 经 Han1meDatabases.checkInRecord；Glance widget→expect三端 no-op+P7 TODO；CheckInType displayNameRes→StringResource；PreviewUtils internal 全去——PreviewScreen 跨模块调用；:app Screen/HomeRoute/PreviewContent/Utils-calendar 适配kotlinx；跨模块 public 属性不可 smart cast→取局部量★）
+- **C** 平台件（HomePageUtils：toAdvancedSearchParams 进 common + `saveImageToGallery(url): Boolean` expect三端——android MediaStore 原逻辑/SingletonImageLoader 改直建 ImageLoader★/桌面 Ktor+ImageIO 写 ~/.han1meviewer/pictures/iOS false + AnnouncementDialog 结果驱动 toast；Getchu：日期函数进 common + getchuImageRequest 改 LocalPlatformContext + rememberGetchuImageLoader expect——jvmMain 真实现/OkHttp+HDns+拦截器/iOS 默认 + coil-network-okhttp-kmp(3.6.1) 新条目；DailyCheckInUtils 纯函数进 shared、createCalendarEvent/updateReportWindowMode 留 :app——Screen 仍在 :app，零签名 churn；GetchuPreviewScreen 留 :app——SuppressLint 随 Preview 走）
+- **C2** 删 :app 旧 HomePageUtils（与 shared 双实现去重）
+- **D** 外部引用 15 文件零改动（包名不变）；**E** 冒烟：assembleDebug 通过 + 桌面骨架屏 70s 存活无异常 + clean 六端一次通过
+- **收口**：`:app` ui/viewmodel/ 目录已空删除（C8 为最后一个 VM）；home/ 剩 37 文件
+- **顺延债务**（P6d-3/4/P7）：home 剩余 37（COIL 需 shared imageLoader 供给模式/RetryableImage 下沉、NAV 路由类型、Screen Activity 参数）；VideoCardItem/ArtistItem/VideoCommentCard 组件；Glance 真刷新（P7）；桌面/iOS 相册写入（P7）；`toSortedMap` commonMain 解析失败根因★；isDebugBuild/桌面动态取色（沿用 P6d-1）
+
