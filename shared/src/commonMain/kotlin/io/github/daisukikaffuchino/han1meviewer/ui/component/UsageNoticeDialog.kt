@@ -16,17 +16,20 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import io.github.daisukikaffuchino.han1meviewer.R
-import io.github.daisukikaffuchino.han1meviewer.BuildConfig
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.usage_notice_accept
+import io.github.daisukikaffuchino.han1meviewer.usage_notice_accept_countdown
+import io.github.daisukikaffuchino.han1meviewer.usage_notice_content
+import io.github.daisukikaffuchino.han1meviewer.usage_notice_decline
+import io.github.daisukikaffuchino.han1meviewer.usage_notice_title
+import io.github.daisukikaffuchino.utils.isDebugBuild
 import kotlinx.coroutines.delay
+import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Duration.Companion.milliseconds
 
 @Composable
@@ -37,7 +40,7 @@ fun UsageNoticeDialog(
 ) {
     if (!visible) return
 
-    val requiredSeconds = if (BuildConfig.DEBUG) 5 else 20
+    val requiredSeconds = if (isDebugBuild()) 5 else 20
     var remainingSeconds by remember { mutableIntStateOf(requiredSeconds) }
     var isResumed by remember { mutableStateOf(true) }
     var resetVersion by remember { mutableIntStateOf(0) }
@@ -75,10 +78,10 @@ fun UsageNoticeDialog(
 
     AlertDialog(
         onDismissRequest = {},
-        title = { Text(stringResource(R.string.usage_notice_title)) },
+        title = { Text(stringResource(Res.string.usage_notice_title)) },
         text = {
             Text(
-                text = stringResource(R.string.usage_notice_content),
+                text = stringResource(Res.string.usage_notice_content),
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(max = 360.dp)
@@ -93,29 +96,17 @@ fun UsageNoticeDialog(
             ) {
                 Text(
                     text = if (remainingSeconds == 0) {
-                        stringResource(R.string.usage_notice_accept)
+                        stringResource(Res.string.usage_notice_accept)
                     } else {
-                        stringResource(R.string.usage_notice_accept_countdown, remainingSeconds)
+                        stringResource(Res.string.usage_notice_accept_countdown, remainingSeconds)
                     }
                 )
             }
         },
         dismissButton = {
             TextButton(onClick = onDeclined) {
-                Text(stringResource(R.string.usage_notice_decline))
+                Text(stringResource(Res.string.usage_notice_decline))
             }
         },
     )
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-private fun UsageNoticeDialogPreview(){
-    ComponentPreview {
-        UsageNoticeDialog(
-            visible = true,
-            onAccepted = { },
-            onDeclined = { }
-        )
-    }
 }
