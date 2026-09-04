@@ -34,7 +34,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -44,6 +44,13 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_screen_rotation
+import io.github.daisukikaffuchino.han1meviewer.ic_chevron_right
+import io.github.daisukikaffuchino.han1meviewer.ic_chevron_left
+import io.github.daisukikaffuchino.han1meviewer.ic_calendar_view_week
+import io.github.daisukikaffuchino.han1meviewer.ic_calendar_month
+import io.github.daisukikaffuchino.han1meviewer.ic_alarm
 import io.github.daisukikaffuchino.han1meviewer.ui.component.appbar.HanimeScaffold
 import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.MonthlyStats
 import java.time.LocalDate
@@ -113,7 +120,7 @@ fun ContributionReportDialog(
                 }
                 FilledIconButton(onClick = onToggleFullscreen) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_screen_rotation),
+                        painter = painterResource(Res.drawable.ic_screen_rotation),
                         contentDescription = if (isFullscreen)
                             stringResource(R.string.report_portrait)
                         else
@@ -162,17 +169,17 @@ fun ContributionReportDialog(
                     StatsCard(
                         items = listOf(
                             StatsItem(
-                                R.drawable.ic_calendar_month,
+                                Res.drawable.ic_calendar_month,
                                 stringResource(R.string.report_total),
                                 totalCount.toString(),
                             ),
                             StatsItem(
-                                R.drawable.ic_alarm,
+                                Res.drawable.ic_alarm,
                                 stringResource(R.string.report_days),
                                 totalDays.toString(),
                             ),
                             StatsItem(
-                                R.drawable.ic_calendar_view_week,
+                                Res.drawable.ic_calendar_view_week,
                                 stringResource(R.string.report_max_day),
                                 maxDay.toString(),
                             ),
@@ -273,7 +280,7 @@ fun YearContributionView(
         ) {
             IconButton(onClick = { onYearChange(year - 1) }) {
                 Icon(
-                    painterResource(R.drawable.ic_chevron_left),
+                    painterResource(Res.drawable.ic_chevron_left),
                     stringResource(R.string.previous_year)
                 )
             }
@@ -287,7 +294,7 @@ fun YearContributionView(
                 enabled = year < today.year
             ) {
                 Icon(
-                    painterResource(R.drawable.ic_chevron_right),
+                    painterResource(Res.drawable.ic_chevron_right),
                     stringResource(R.string.next_year)
                 )
             }
@@ -400,7 +407,7 @@ fun MonthContributionView(
                 }
             }) {
                 Icon(
-                    painterResource(R.drawable.ic_chevron_left),
+                    painterResource(Res.drawable.ic_chevron_left),
                     stringResource(R.string.previous_month)
                 )
             }
@@ -425,7 +432,7 @@ fun MonthContributionView(
                 enabled = YearMonth.of(year, month).isBefore(YearMonth.now())
             ) {
                 Icon(
-                    painterResource(R.drawable.ic_chevron_right),
+                    painterResource(Res.drawable.ic_chevron_right),
                     stringResource(R.string.next_month)
                 )
             }

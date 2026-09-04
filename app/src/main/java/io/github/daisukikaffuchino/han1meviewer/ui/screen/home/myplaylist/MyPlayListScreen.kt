@@ -25,12 +25,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_add
 import io.github.daisukikaffuchino.han1meviewer.logic.state.WebsiteState
 import io.github.daisukikaffuchino.han1meviewer.ui.component.PullRefreshOverlay
 import io.github.daisukikaffuchino.han1meviewer.ui.component.appbar.HanimeScaffold
@@ -136,7 +138,7 @@ fun PlaylistScreen(
                 },
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_add),
+                    painter = painterResource(Res.drawable.ic_add),
                     contentDescription = stringResource(R.string.create_new_playlist)
                 )
             }

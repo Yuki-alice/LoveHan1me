@@ -45,7 +45,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
@@ -55,6 +55,16 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_visibility_off
+import io.github.daisukikaffuchino.han1meviewer.ic_visibility
+import io.github.daisukikaffuchino.han1meviewer.ic_person
+import io.github.daisukikaffuchino.han1meviewer.ic_mail
+import io.github.daisukikaffuchino.han1meviewer.ic_lock
+import io.github.daisukikaffuchino.han1meviewer.ic_info
+import io.github.daisukikaffuchino.han1meviewer.ic_exit_to_app
+import io.github.daisukikaffuchino.han1meviewer.ic_edit
+import io.github.daisukikaffuchino.han1meviewer.h_chan_default_avatar
 import io.github.daisukikaffuchino.han1meviewer.logic.model.UserAccount
 import io.github.daisukikaffuchino.han1meviewer.logic.model.UserAccountAction
 import io.github.daisukikaffuchino.han1meviewer.logic.model.UserAccountSubmittingState
@@ -233,7 +243,7 @@ private fun AccountContent(
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    val defaultPlaceholder = painterResource(R.drawable.h_chan_default_avatar)
+                    val defaultPlaceholder = painterResource(Res.drawable.h_chan_default_avatar)
                     AsyncImage(
                         model = account.avatarUrl,
                         contentDescription = account.username,
@@ -264,7 +274,7 @@ private fun AccountContent(
                             LoadingIndicator(modifier = Modifier.size(16.dp))
                         } else {
                             Icon(
-                                painter = painterResource(R.drawable.ic_edit),
+                                painter = painterResource(Res.drawable.ic_edit),
                                 contentDescription = stringResource(R.string.change_avatar),
                                 modifier = Modifier.size(18.dp)
                             )
@@ -342,7 +352,7 @@ private fun AccountContent(
                     label = { Text(stringResource(R.string.username)) },
                     leadingIcon = {
                         Icon(
-                            painter = painterResource(R.drawable.ic_person),
+                            painter = painterResource(Res.drawable.ic_person),
                             contentDescription = null
                         )
                     },
@@ -357,7 +367,7 @@ private fun AccountContent(
                     label = { Text(stringResource(R.string.email)) },
                     leadingIcon = {
                         Icon(
-                            painter = painterResource(R.drawable.ic_mail),
+                            painter = painterResource(Res.drawable.ic_mail),
                             contentDescription = null
                         )
                     },
@@ -408,15 +418,15 @@ private fun AccountContent(
                     label = { Text(stringResource(R.string.old_password)) },
                     leadingIcon = {
                         Icon(
-                            painter = painterResource(R.drawable.ic_lock),
+                            painter = painterResource(Res.drawable.ic_lock),
                             contentDescription = null
                         )
                     },
                     trailingIcon = {
                         IconButton(onClick = { oldPasswordVisible = !oldPasswordVisible }) {
                             Icon(
-                                painter = if (oldPasswordVisible) painterResource(R.drawable.ic_visibility) else painterResource(
-                                    R.drawable.ic_visibility_off
+                                painter = if (oldPasswordVisible) painterResource(Res.drawable.ic_visibility) else painterResource(
+                                    Res.drawable.ic_visibility_off
                                 ),
                                 contentDescription = null
                             )
@@ -434,15 +444,15 @@ private fun AccountContent(
                     label = { Text(stringResource(R.string.new_password)) },
                     leadingIcon = {
                         Icon(
-                            painter = painterResource(R.drawable.ic_lock),
+                            painter = painterResource(Res.drawable.ic_lock),
                             contentDescription = null
                         )
                     },
                     trailingIcon = {
                         IconButton(onClick = { newPasswordVisible = !newPasswordVisible }) {
                             Icon(
-                                painter = if (oldPasswordVisible) painterResource(R.drawable.ic_visibility) else painterResource(
-                                    R.drawable.ic_visibility_off
+                                painter = if (oldPasswordVisible) painterResource(Res.drawable.ic_visibility) else painterResource(
+                                    Res.drawable.ic_visibility_off
                                 ),
                                 contentDescription = null
                             )
@@ -460,15 +470,15 @@ private fun AccountContent(
                     label = { Text(stringResource(R.string.confirm_new_password)) },
                     leadingIcon = {
                         Icon(
-                            painter = painterResource(R.drawable.ic_lock),
+                            painter = painterResource(Res.drawable.ic_lock),
                             contentDescription = null
                         )
                     },
                     trailingIcon = {
                         IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                             Icon(
-                                painter = if (oldPasswordVisible) painterResource(R.drawable.ic_visibility) else painterResource(
-                                    R.drawable.ic_visibility_off
+                                painter = if (oldPasswordVisible) painterResource(Res.drawable.ic_visibility) else painterResource(
+                                    Res.drawable.ic_visibility_off
                                 ),
                                 contentDescription = null
                             )
@@ -486,7 +496,7 @@ private fun AccountContent(
                     contentPadding = PaddingValues(horizontal = 0.dp)
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_info),
+                        painter = painterResource(Res.drawable.ic_info),
                         contentDescription = null,
                         modifier = Modifier.size(16.dp)
                     )
@@ -535,7 +545,7 @@ private fun AccountContent(
             shape = MaterialTheme.shapes.medium
         ) {
             Icon(
-                painter = painterResource(R.drawable.ic_exit_to_app),
+                painter = painterResource(Res.drawable.ic_exit_to_app),
                 contentDescription = null,
                 modifier = Modifier.size(18.dp)
             )

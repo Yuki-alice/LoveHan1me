@@ -61,7 +61,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.fromHtml
@@ -75,6 +75,11 @@ import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.util.author
 import com.mikepenz.aboutlibraries.ui.compose.util.htmlReadyLicenseContent
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_search_not_found
+import io.github.daisukikaffuchino.han1meviewer.ic_search
+import io.github.daisukikaffuchino.han1meviewer.ic_list_no_item
+import io.github.daisukikaffuchino.han1meviewer.ic_close
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.animatedShape
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.fadeScale
@@ -296,7 +301,7 @@ private fun LicenseSearchTextField(
         ),
         leadingIcon = {
             Icon(
-                painter = painterResource(R.drawable.ic_search),
+                painter = painterResource(Res.drawable.ic_search),
                 contentDescription = null
             )
         },
@@ -308,7 +313,7 @@ private fun LicenseSearchTextField(
             ) {
                 IconButton(onClick = { textFieldState.setTextAndPlaceCursorAtEnd("") }) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_close),
+                        painter = painterResource(Res.drawable.ic_close),
                         contentDescription = stringResource(R.string.clear),
                     )
                 }
@@ -401,9 +406,9 @@ private fun LicenseEmptyTip(
         Icon(
             painter = painterResource(
                 if (searchMode) {
-                    R.drawable.ic_search_not_found
+                    Res.drawable.ic_search_not_found
                 } else {
-                    R.drawable.ic_list_no_item
+                    Res.drawable.ic_list_no_item
                 },
             ),
             contentDescription = null,

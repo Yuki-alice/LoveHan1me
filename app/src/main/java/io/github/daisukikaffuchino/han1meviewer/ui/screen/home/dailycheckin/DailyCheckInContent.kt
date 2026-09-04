@@ -28,13 +28,19 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_chevron_right
+import io.github.daisukikaffuchino.han1meviewer.ic_chevron_left
+import io.github.daisukikaffuchino.han1meviewer.ic_calendar_view_week
+import io.github.daisukikaffuchino.han1meviewer.ic_calendar_month
+import io.github.daisukikaffuchino.han1meviewer.ic_alarm
 import java.time.YearMonth
 import java.time.format.DateTimeFormatter
 
@@ -94,17 +100,17 @@ fun DailyCheckInContent(
         StatsCard(
             items = listOf(
                 StatsItem(
-                    R.drawable.ic_calendar_month,
+                    Res.drawable.ic_calendar_month,
                     stringResource(R.string.this_month_checkin),
                     stringResource(R.string.days, animatedCheckedDays),
                 ),
                 StatsItem(
-                    R.drawable.ic_alarm,
+                    Res.drawable.ic_alarm,
                     stringResource(R.string.has_cum_days),
                     stringResource(R.string.counts, animatedMonthlyTotal),
                 ),
                 StatsItem(
-                    R.drawable.ic_calendar_view_week,
+                    Res.drawable.ic_calendar_view_week,
                     stringResource(R.string.best_streak),
                     "${animatedBestStreak}${stringResource(R.string.day_unit)}",
                 ),
@@ -125,14 +131,14 @@ fun DailyCheckInContent(
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { onEvent(DailyCheckInEvent.OnPreviousMonth) }) {
-                    Icon(painterResource(R.drawable.ic_chevron_left), "previous")
+                    Icon(painterResource(Res.drawable.ic_chevron_left), "previous")
                 }
                 Text(
                     text = uiState.currentMonth.format(DateTimeFormatter.ofPattern("yyyy-MM")),
                     style = MaterialTheme.typography.titleMedium
                 )
                 IconButton(onClick = { onEvent(DailyCheckInEvent.OnNextMonth) }) {
-                    Icon(painterResource(R.drawable.ic_chevron_right), "next")
+                    Icon(painterResource(Res.drawable.ic_chevron_right), "next")
                 }
             }
         }

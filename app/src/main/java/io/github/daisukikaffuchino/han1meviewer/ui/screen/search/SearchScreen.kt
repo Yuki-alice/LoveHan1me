@@ -72,7 +72,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
@@ -84,6 +84,11 @@ import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_search
+import io.github.daisukikaffuchino.han1meviewer.ic_filter_list
+import io.github.daisukikaffuchino.han1meviewer.ic_close
+import io.github.daisukikaffuchino.han1meviewer.ic_arrow_back
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.SearchHistoryEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeInfo
@@ -476,7 +481,7 @@ fun SearchAppBar(
             ) {
                 IconButton(onClick = onBack) {
                     Icon(
-                        painterResource(R.drawable.ic_arrow_back),
+                        painterResource(Res.drawable.ic_arrow_back),
                         contentDescription = stringResource(R.string.back),
                         tint = MaterialTheme.colorScheme.onSurface
                     )
@@ -521,7 +526,7 @@ fun SearchAppBar(
                 if (query.isNotEmpty()) {
                     IconButton(onClick = { onQueryChange("") }) {
                         Icon(
-                            painterResource(R.drawable.ic_close),
+                            painterResource(Res.drawable.ic_close),
                             contentDescription = stringResource(R.string.clear_checkin),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -529,7 +534,7 @@ fun SearchAppBar(
                 }
                 FilledIconButton(onClick = onOpenAdvancedSearch) {
                     Icon(
-                        painterResource(R.drawable.ic_filter_list),
+                        painterResource(Res.drawable.ic_filter_list),
                         contentDescription = stringResource(R.string.advanced_search)
                     )
                 }
@@ -568,7 +573,7 @@ fun SearchHistoryList(
                         .padding(horizontal = 16.dp, vertical = 10.dp)
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_search),
+                        painter = painterResource(Res.drawable.ic_search),
                         null,
                         Modifier.size(18.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
@@ -587,7 +592,7 @@ fun SearchHistoryList(
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_close),
+                            painter = painterResource(Res.drawable.ic_close),
                             stringResource(R.string.delete),
                             Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant

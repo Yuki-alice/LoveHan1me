@@ -5,7 +5,6 @@ import android.content.Context
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -36,7 +35,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.DrawableResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
@@ -49,6 +49,11 @@ import io.github.daisukikaffuchino.han1meviewer.HA1_GITHUB_ISSUE_URL
 import io.github.daisukikaffuchino.han1meviewer.HanimeApplication
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_launcher_xxt
+import io.github.daisukikaffuchino.han1meviewer.ic_launcher_new
+import io.github.daisukikaffuchino.han1meviewer.ic_launcher_cornhub
+import io.github.daisukikaffuchino.han1meviewer.ic_launcher_calc
 import io.github.daisukikaffuchino.han1meviewer.logic.BackupManager
 import io.github.daisukikaffuchino.han1meviewer.logic.LocalListRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.OnlineListsBackup
@@ -219,22 +224,22 @@ fun HomeSettingsRouteScreen(
         listOf(
             LauncherItem(
                 name = hanimeAppName,
-                iconRes = R.drawable.ic_launcher_new,
+                iconRes = Res.drawable.ic_launcher_new,
                 alias = "io.github.daisukikaffuchino.han1meviewer.LauncherAliasDefault",
             ),
             LauncherItem(
                 name = fakeNameCalc,
-                iconRes = R.drawable.ic_launcher_calc,
+                iconRes = Res.drawable.ic_launcher_calc,
                 alias = "io.github.daisukikaffuchino.han1meviewer.LauncherFakeCalc",
             ),
             LauncherItem(
                 name = fakeNameCornhub,
-                iconRes = R.drawable.ic_launcher_cornhub,
+                iconRes = Res.drawable.ic_launcher_cornhub,
                 alias = "io.github.daisukikaffuchino.han1meviewer.LauncherFakeCornhub",
             ),
             LauncherItem(
                 name = fakeNameXXT,
-                iconRes = R.drawable.ic_launcher_xxt,
+                iconRes = Res.drawable.ic_launcher_xxt,
                 alias = "io.github.daisukikaffuchino.han1meviewer.LauncherFakeXxt",
             ),
         )
@@ -500,7 +505,8 @@ fun HomeSettingsRouteScreen(
                     Text(stringResource(R.string.apply_deep_links_summary))
                     Text(stringResource(R.string.apply_deep_links_tips))
                     Image(
-                        painter = painterResource(R.raw.apply_deep_links),
+                        // P6d-1：R.raw 留 :app（范围红线），此处保留 androidx Int 重载，全限定避免与 CMP 同名 import 冲突
+                        painter = androidx.compose.ui.res.painterResource(R.raw.apply_deep_links),
                         contentDescription = null,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -590,7 +596,7 @@ fun HomeSettingsRouteScreen(
 
 private data class LauncherItem(
     val name: String,
-    @param:DrawableRes val iconRes: Int,
+    val iconRes: DrawableResource,
     val alias: String,
 )
 

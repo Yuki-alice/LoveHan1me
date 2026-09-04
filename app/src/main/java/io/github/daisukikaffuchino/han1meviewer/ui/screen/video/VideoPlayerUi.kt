@@ -84,7 +84,7 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
@@ -99,6 +99,21 @@ import androidx.mediarouter.app.MediaRouteButton
 import coil3.compose.AsyncImage
 import com.google.android.gms.cast.framework.CastButtonFactory
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_volume_up
+import io.github.daisukikaffuchino.han1meviewer.ic_unlock
+import io.github.daisukikaffuchino.han1meviewer.ic_refresh
+import io.github.daisukikaffuchino.han1meviewer.ic_play_arrow
+import io.github.daisukikaffuchino.han1meviewer.ic_pause
+import io.github.daisukikaffuchino.han1meviewer.ic_lock
+import io.github.daisukikaffuchino.han1meviewer.ic_light_mode
+import io.github.daisukikaffuchino.han1meviewer.ic_home
+import io.github.daisukikaffuchino.han1meviewer.ic_fullscreen
+import io.github.daisukikaffuchino.han1meviewer.ic_fast_rewind
+import io.github.daisukikaffuchino.han1meviewer.ic_fast_forward
+import io.github.daisukikaffuchino.han1meviewer.ic_edit
+import io.github.daisukikaffuchino.han1meviewer.ic_delete
+import io.github.daisukikaffuchino.han1meviewer.ic_arrow_back_ios
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.HKeyframeEntity
 import io.github.daisukikaffuchino.han1meviewer.ui.component.FilledIconButton
 import io.github.daisukikaffuchino.han1meviewer.ui.component.FilledTonalButton
@@ -632,7 +647,7 @@ fun VideoPlayerUi(
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_arrow_back_ios),
+                            painter = painterResource(Res.drawable.ic_arrow_back_ios),
                             contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
@@ -649,7 +664,7 @@ fun VideoPlayerUi(
                         modifier = Modifier.size(32.dp)
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_home),
+                            painter = painterResource(Res.drawable.ic_home),
                             contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(20.dp)
@@ -748,7 +763,7 @@ fun VideoPlayerUi(
                 color = Color.Black.copy(alpha = 0.46f),
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_fast_forward),
+                    painter = painterResource(Res.drawable.ic_fast_forward),
                     contentDescription = null,
                     tint = Color.White,
                     modifier = Modifier
@@ -783,7 +798,7 @@ fun VideoPlayerUi(
                         modifier = Modifier.size(72.dp)
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_play_arrow),
+                            painter = painterResource(Res.drawable.ic_play_arrow),
                             contentDescription = null,
                             modifier = Modifier.size(42.dp)
                         )
@@ -795,7 +810,7 @@ fun VideoPlayerUi(
                         modifier = Modifier.size(72.dp)
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_pause),
+                            painter = painterResource(Res.drawable.ic_pause),
                             contentDescription = null,
                             tint = Color.White,
                             modifier = Modifier.size(42.dp)
@@ -825,9 +840,9 @@ fun VideoPlayerUi(
             ) {
                 Icon(
                     painter = if (isLocked)
-                        painterResource(R.drawable.ic_lock)
+                        painterResource(Res.drawable.ic_lock)
                     else
-                        painterResource(R.drawable.ic_unlock),
+                        painterResource(Res.drawable.ic_unlock),
                     contentDescription = null,
                     tint = Color.White
                 )
@@ -937,9 +952,9 @@ fun VideoPlayerUi(
                         ) {
                             Icon(
                                 painter = if (isPlaying)
-                                    painterResource(R.drawable.ic_pause)
+                                    painterResource(Res.drawable.ic_pause)
                                 else
-                                    painterResource(R.drawable.ic_play_arrow),
+                                    painterResource(Res.drawable.ic_play_arrow),
                                 contentDescription = null,
                                 tint = Color.White,
                                 modifier = Modifier.size(18.dp)
@@ -985,7 +1000,7 @@ fun VideoPlayerUi(
                             modifier = Modifier.size(26.dp)
                         ) {
                             Icon(
-                                painter = painterResource(R.drawable.ic_fullscreen),
+                                painter = painterResource(Res.drawable.ic_fullscreen),
                                 contentDescription = null,
                                 tint = Color.White,
                                 modifier = Modifier.size(18.dp)
@@ -1041,7 +1056,7 @@ fun VideoPlayerUi(
 
                     FilledTonalButton(onClick = onReplay) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_refresh),
+                            painter = painterResource(Res.drawable.ic_refresh),
                             contentDescription = null,
                         )
 
@@ -1086,7 +1101,7 @@ fun VideoPlayerUi(
                         onClick = onRetry
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_refresh),
+                            painter = painterResource(Res.drawable.ic_refresh),
                             contentDescription = null
                         )
 
@@ -1364,7 +1379,7 @@ private fun BoxScope.PlayerSidePanelSheet(
                                     ),
                                 ) {
                                     Icon(
-                                        painter = painterResource(R.drawable.ic_edit),
+                                        painter = painterResource(Res.drawable.ic_edit),
                                         contentDescription = stringResource(R.string.edit),
                                         modifier = Modifier.size(16.dp),
                                     )
@@ -1377,7 +1392,7 @@ private fun BoxScope.PlayerSidePanelSheet(
                                     ),
                                 ) {
                                     Icon(
-                                        painter = painterResource(R.drawable.ic_delete),
+                                        painter = painterResource(Res.drawable.ic_delete),
                                         contentDescription = stringResource(R.string.delete),
                                         modifier = Modifier.size(16.dp),
                                     )
@@ -1749,11 +1764,11 @@ private fun GestureIndicatorOverlay(
 
                     Icon(
                         painter = when (type) {
-                            GestureIndicatorType.Brightness -> painterResource(R.drawable.ic_light_mode)
-                            GestureIndicatorType.Volume -> painterResource(R.drawable.ic_volume_up)
+                            GestureIndicatorType.Brightness -> painterResource(Res.drawable.ic_light_mode)
+                            GestureIndicatorType.Volume -> painterResource(Res.drawable.ic_volume_up)
                             GestureIndicatorType.Progress -> when (progressDirection) {
-                                ProgressGestureDirection.Backward -> painterResource(R.drawable.ic_fast_rewind)
-                                else -> painterResource(R.drawable.ic_fast_forward)
+                                ProgressGestureDirection.Backward -> painterResource(Res.drawable.ic_fast_rewind)
+                                else -> painterResource(Res.drawable.ic_fast_forward)
                             }
                         },
                         contentDescription = null,
