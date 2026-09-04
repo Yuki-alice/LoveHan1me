@@ -41,13 +41,14 @@ import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.Dail
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.DailyCheckInEvent
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.DailyCheckInUiState
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.createCalendarEvent
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.formatMd
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.monthsBetween
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.today
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.updateReportWindowMode
 import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.CheckInCalendarViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
-import java.time.LocalDate
-import java.time.YearMonth
-import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
+import kotlinx.datetime.LocalDate
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.YearMonth
 import kotlin.time.Duration.Companion.milliseconds
 
 /**
@@ -83,7 +84,7 @@ fun DailyCheckInScreen(
     val yearRecords by viewModel.yearRecords.collectAsStateWithLifecycle()
     val yearStats by viewModel.yearStats.collectAsStateWithLifecycle()
 
-    val today = remember { LocalDate.now() }
+    val today = remember { today() }
 
     var forgotDialogDate by remember { mutableStateOf<LocalDate?>(null) }
     var suckBackDialogDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -94,14 +95,14 @@ fun DailyCheckInScreen(
 
     var reportSelectedYear by remember { mutableIntStateOf(today.year) }
     var reportViewMode by remember { mutableStateOf("year") }
-    var reportSelectedMonth by remember { mutableIntStateOf(today.monthValue) }
+    var reportSelectedMonth by remember { mutableIntStateOf(today.monthNumber) }
 
     val anchorMonth = remember { YearMonth.now() }
     val initialPage = Int.MAX_VALUE / 2
     val pagerState = rememberPagerState(initialPage = initialPage) { Int.MAX_VALUE }
 
     LaunchedEffect(uiState.currentMonth) {
-        val monthsDiff = ChronoUnit.MONTHS.between(anchorMonth, uiState.currentMonth).toInt()
+        val monthsDiff = monthsBetween(anchorMonth, uiState.currentMonth)
         val targetPage = initialPage + monthsDiff
         if (pagerState.currentPage != targetPage) {
             pagerState.animateScrollToPage(targetPage)
@@ -114,7 +115,7 @@ fun DailyCheckInScreen(
             .collect { page ->
                 val pageMonth = anchorMonth.plusMonths((page - initialPage).toLong())
                 if (pageMonth != uiState.currentMonth) {
-                    if (pageMonth.isAfter(uiState.currentMonth)) viewModel.nextMonth()
+                    if (pageMonth > uiState.currentMonth) viewModel.nextMonth()
                     else viewModel.previousMonth()
                 }
             }
@@ -134,11 +135,11 @@ fun DailyCheckInScreen(
         when (event) {
             is DailyCheckInEvent.OnDateClick -> {
                 when {
-                    event.date.isAfter(today) -> {
+                    event.date > today -> {
                         calendarDialogDate = event.date
                     }
 
-                    event.date.isBefore(today) && (uiState.records[event.date] ?: 0) == 0 -> {
+                    event.date < today && (uiState.records[event.date] ?: 0) == 0 -> {
                         forgotDialogDate = event.date
                     }
 
@@ -150,7 +151,7 @@ fun DailyCheckInScreen(
 
             is DailyCheckInEvent.OnDateLongClick -> {
                 val count = uiState.records[event.date] ?: 0
-                if (count > 0 && event.date.isBefore(today)) {
+                if (count > 0 && event.date < today) {
                     suckBackDialogDate = event.date
                 } else if (count > 0) {
                     viewModel.clearCheckIn(event.date)
@@ -208,7 +209,7 @@ fun DailyCheckInScreen(
         message = forgotDialogDate?.let {
             stringResource(
                 R.string.forgot_message,
-                it.format(DateTimeFormatter.ofPattern("MM月dd日"))
+                it.formatMd()
             )
         } ?: "",
         confirmText = stringResource(R.string.forgot_confirm),
@@ -226,7 +227,7 @@ fun DailyCheckInScreen(
         message = calendarDialogDate?.let {
             stringResource(
                 R.string.calendar_dialog_message,
-                it.format(DateTimeFormatter.ofPattern("MM月dd日"))
+                it.formatMd()
             )
         } ?: "",
         confirmText = stringResource(R.string.calendar_dialog_confirm),
@@ -244,7 +245,7 @@ fun DailyCheckInScreen(
         message = suckBackDialogDate?.let {
             stringResource(
                 R.string.suck_back_message,
-                it.format(DateTimeFormatter.ofPattern("MM月dd日")),
+                it.formatMd(),
                 uiState.records[it] ?: 0
             )
         } ?: "",

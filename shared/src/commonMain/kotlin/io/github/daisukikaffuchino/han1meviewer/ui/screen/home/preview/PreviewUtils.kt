@@ -1,6 +1,8 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.home.preview
 
 import androidx.compose.foundation.lazy.LazyListState
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.today
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.ymCode
 
 /**
  * 根据年份和月份生成日期码（yyyyMM 格式）。
@@ -9,16 +11,16 @@ import androidx.compose.foundation.lazy.LazyListState
  * @param month 月份 (1-12)
  * @return 日期码字符串，如 "202401"
  */
-internal fun currentCodeFrom(year: Int, month: Int): String = "%04d%02d".format(year, month)
+fun currentCodeFrom(year: Int, month: Int): String = ymCode(year, month)
 
 /**
  * 获取当前月份对应的日期码。
  *
  * @return 本月日期码字符串
  */
-internal fun currentDateCode(): String {
-    val now = java.time.LocalDate.now()
-    return currentCodeFrom(now.year, now.monthValue)
+fun currentDateCode(): String {
+    val now = today()
+    return currentCodeFrom(now.year, now.monthNumber)
 }
 
 /**
@@ -27,7 +29,7 @@ internal fun currentDateCode(): String {
  * @param code 日期码，如 "202401"
  * @return 标签字符串，如 "2024/1"
  */
-internal fun toNormalDateLabel(code: String): String {
+fun toNormalDateLabel(code: String): String {
     val year = code.substring(0, 4).toInt()
     val month = code.substring(4, 6).toInt()
     return "$year/$month"
@@ -40,7 +42,7 @@ internal fun toNormalDateLabel(code: String): String {
  * @param delta 偏移月数（负数表示向前）
  * @return 新日期码
  */
-internal fun shiftMonthCode(code: String, delta: Int): String {
+fun shiftMonthCode(code: String, delta: Int): String {
     var year = code.substring(0, 4).toInt()
     var month = code.substring(4, 6).toInt() + delta
     while (month < 1) {
@@ -60,7 +62,7 @@ internal fun shiftMonthCode(code: String, delta: Int): String {
  * @param listState LazyList 状态
  * @param index 目标索引
  */
-internal suspend fun centerPreviewTourItem(
+suspend fun centerPreviewTourItem(
     listState: LazyListState,
     index: Int,
 ) {

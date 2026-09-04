@@ -18,15 +18,34 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.week_streak_title
+import io.github.daisukikaffuchino.han1meviewer.streak_title
+import io.github.daisukikaffuchino.han1meviewer.sex_times
+import io.github.daisukikaffuchino.han1meviewer.on_fire_title
+import io.github.daisukikaffuchino.han1meviewer.nice_title
+import io.github.daisukikaffuchino.han1meviewer.legend_title
+import io.github.daisukikaffuchino.han1meviewer.keep_going_title
+import io.github.daisukikaffuchino.han1meviewer.great_title
+import io.github.daisukikaffuchino.han1meviewer.egg_singles
+import io.github.daisukikaffuchino.han1meviewer.egg_nice
+import io.github.daisukikaffuchino.han1meviewer.egg_god
+import io.github.daisukikaffuchino.han1meviewer.champion_title
+import io.github.daisukikaffuchino.han1meviewer.achievement_desc_top
+import io.github.daisukikaffuchino.han1meviewer.achievement_desc_streak
+import io.github.daisukikaffuchino.han1meviewer.achievement_desc_keep
+import io.github.daisukikaffuchino.han1meviewer.achievement_desc_days
+import io.github.daisukikaffuchino.han1meviewer.ach_scholar
+import io.github.daisukikaffuchino.han1meviewer.ach_night_owl
+import io.github.daisukikaffuchino.han1meviewer.ach_multi_type
+import io.github.daisukikaffuchino.han1meviewer.ach_morning
 import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.MonthlyStats
-import java.time.LocalDate
+import kotlinx.datetime.LocalDate
 
 /**
  * 成就展示区域。
@@ -47,11 +66,11 @@ fun AchievementSection(
     bestStreak: Int,
     stats: MonthlyStats,
     todayCount: Int = 0,
-    yearMonth: java.time.YearMonth = java.time.YearMonth.now(),
+    yearMonth: YearMonth = YearMonth.now(),
 ) {
-    val today = LocalDate.now()
+    val today = today()
     val isSinglesDay =
-        today.monthValue == 11 && today.dayOfMonth == 11 && yearMonth.monthValue == 11 && todayCount == 0
+        today.monthNumber == 11 && today.dayOfMonth == 11 && yearMonth.month == 11 && todayCount == 0
 
     AnimatedVisibility(
         visible = checkedDays > 0 || isSinglesDay,
@@ -66,7 +85,7 @@ fun AchievementSection(
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.tertiaryContainer)
                 ) {
                     Text(
-                        text = stringResource(R.string.egg_singles),
+                        text = stringResource(Res.string.egg_singles),
                         modifier = Modifier.padding(16.dp),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onTertiaryContainer.copy(alpha = 0.8f),
@@ -87,21 +106,21 @@ fun AchievementSection(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     val formattedTitles = mapOf(
-                        "legend" to stringResource(R.string.legend_title),
-                        "champion" to stringResource(R.string.champion_title),
-                        "nice" to stringResource(R.string.nice_title),
-                        "onFire" to stringResource(R.string.on_fire_title),
-                        "great" to stringResource(R.string.great_title),
-                        "weekStreak" to stringResource(R.string.week_streak_title),
-                        "streak" to stringResource(R.string.streak_title),
+                        "legend" to stringResource(Res.string.legend_title),
+                        "champion" to stringResource(Res.string.champion_title),
+                        "nice" to stringResource(Res.string.nice_title),
+                        "onFire" to stringResource(Res.string.on_fire_title),
+                        "great" to stringResource(Res.string.great_title),
+                        "weekStreak" to stringResource(Res.string.week_streak_title),
+                        "streak" to stringResource(Res.string.streak_title),
                     )
 
                     val formattedSubs = mapOf(
-                        "god" to stringResource(R.string.egg_god, monthlyTotal),
-                        "top" to stringResource(R.string.achievement_desc_top, monthlyTotal),
-                        "nice" to stringResource(R.string.egg_nice, monthlyTotal),
-                        "days" to stringResource(R.string.achievement_desc_days, checkedDays),
-                        "streak" to stringResource(R.string.achievement_desc_streak, bestStreak),
+                        "god" to stringResource(Res.string.egg_god, monthlyTotal),
+                        "top" to stringResource(Res.string.achievement_desc_top, monthlyTotal),
+                        "nice" to stringResource(Res.string.egg_nice, monthlyTotal),
+                        "days" to stringResource(Res.string.achievement_desc_days, checkedDays),
+                        "streak" to stringResource(Res.string.achievement_desc_streak, bestStreak),
                     )
 
                     val mainRules = buildMainAchievementRules(
@@ -117,8 +136,8 @@ fun AchievementSection(
                         checkedDays = checkedDays,
                         monthlyTotal = monthlyTotal,
                         bestStreak = bestStreak,
-                        defaultTitle = stringResource(R.string.keep_going_title),
-                        defaultSubtitle = stringResource(R.string.achievement_desc_keep),
+                        defaultTitle = stringResource(Res.string.keep_going_title),
+                        defaultSubtitle = stringResource(Res.string.achievement_desc_keep),
                     )
 
                     mainAchievements.forEach { achievement ->
@@ -161,11 +180,11 @@ fun AchievementSection(
             }
 
             val formattedLabels = mapOf(
-                "multiType" to stringResource(R.string.ach_multi_type),
-                "nightOwl" to stringResource(R.string.ach_night_owl),
-                "morning" to stringResource(R.string.ach_morning),
-                "scholar" to stringResource(R.string.ach_scholar),
-                "sixTimes" to stringResource(R.string.sex_times)
+                "multiType" to stringResource(Res.string.ach_multi_type),
+                "nightOwl" to stringResource(Res.string.ach_night_owl),
+                "morning" to stringResource(Res.string.ach_morning),
+                "scholar" to stringResource(Res.string.ach_scholar),
+                "sixTimes" to stringResource(Res.string.sex_times)
             )
             val extraRules = buildExtraAchievementRules(
                 stats = stats,
@@ -238,13 +257,3 @@ fun AchievementMiniCard(
     }
 }
 
-@Preview
-@Composable
-private fun PreviewAchievementSection() {
-    AchievementSection(
-        checkedDays = 10,
-        monthlyTotal = 50,
-        bestStreak = 5,
-        stats = MonthlyStats(),
-    )
-}

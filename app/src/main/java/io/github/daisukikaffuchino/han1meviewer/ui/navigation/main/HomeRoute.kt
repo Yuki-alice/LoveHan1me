@@ -27,10 +27,14 @@ import io.github.daisukikaffuchino.utils.rememberCopyTextToClipboard
 import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.CheckInCalendarViewModel
 import io.github.daisukikaffuchino.utils.SonnerToast
 import io.github.daisukikaffuchino.utils.toastText
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.formatHm
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.today
 import kotlinx.coroutines.flow.first
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.LocalTime
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
 
 @Composable
 fun HomeRouteScreen(
@@ -97,8 +101,8 @@ fun HomeRouteScreen(
             onNegative = { showExitDialog = false },
             onNeutral = {
                 checkInViewModel?.addRecord(
-                    LocalDate.now(),
-                    LocalTime.now().format(DateTimeFormatter.ofPattern("HH:mm")),
+                    today(),
+                    Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time.formatHm(),
                     CheckInType.MASTURBATION.storeName,
                     "",
                 )

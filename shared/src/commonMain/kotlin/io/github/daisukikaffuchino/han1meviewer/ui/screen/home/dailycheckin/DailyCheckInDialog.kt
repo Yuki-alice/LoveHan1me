@@ -37,20 +37,32 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.delete
+import io.github.daisukikaffuchino.han1meviewer.dialog_cancel
+import io.github.daisukikaffuchino.han1meviewer.dialog_confirm
+import io.github.daisukikaffuchino.han1meviewer.dialog_existing_records
+import io.github.daisukikaffuchino.han1meviewer.dialog_feeling_hint
+import io.github.daisukikaffuchino.han1meviewer.dialog_feeling_label
+import io.github.daisukikaffuchino.han1meviewer.dialog_max_reached
+import io.github.daisukikaffuchino.han1meviewer.dialog_type_label
+import io.github.daisukikaffuchino.han1meviewer.egg_four
+import io.github.daisukikaffuchino.han1meviewer.egg_god
+import io.github.daisukikaffuchino.han1meviewer.egg_round
+import io.github.daisukikaffuchino.han1meviewer.egg_three
 import io.github.daisukikaffuchino.han1meviewer.ic_close
 import io.github.daisukikaffuchino.han1meviewer.ic_delete
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.CheckInRecordEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.CheckInType
-import java.time.LocalDate
-import java.time.LocalTime
-import java.time.format.DateTimeFormatter
+import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.Clock
 
 /**
  * 打卡弹窗。展示历史记录、添加新记录的表单。
@@ -113,7 +125,7 @@ fun CheckInDialog(
                 ) {
                     Column {
                         Text(
-                            text = date.format(DateTimeFormatter.ofPattern("yyyy\u5E74MM\u6708dd\u65E5")),
+                            text = date.formatYmd(),
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold
                         )
@@ -127,7 +139,7 @@ fun CheckInDialog(
 
                 if (existingRecords.isNotEmpty()) {
                     Text(
-                        text = stringResource(R.string.dialog_existing_records),
+                        text = stringResource(Res.string.dialog_existing_records),
                         style = MaterialTheme.typography.titleSmall,
                         fontWeight = FontWeight.Bold,
                         modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp)
@@ -155,10 +167,10 @@ fun CheckInDialog(
                 }
 
                 if (canAddMore) {
-                    val eggSex = stringResource(R.string.egg_three)
-                    val eggNine = stringResource(R.string.egg_four)
-                    val eggGod = stringResource(R.string.egg_god, 6)
-                    val eggRoundTemplate = stringResource(R.string.egg_round)
+                    val eggSex = stringResource(Res.string.egg_three)
+                    val eggNine = stringResource(Res.string.egg_four)
+                    val eggGod = stringResource(Res.string.egg_god, 6)
+                    val eggRoundTemplate = stringResource(Res.string.egg_round)
                     AddCheckInForm(
                         onAddRecord = { time, type, feeling ->
                             onAddRecord(date, time, type, feeling)
@@ -168,9 +180,8 @@ fun CheckInDialog(
                                     newCount + 1 == 4 -> onEasterEgg(eggNine)
                                     newCount + 1 == 6 -> onEasterEgg(eggGod)
                                     newCount + 1 % 10 == 0 -> onEasterEgg(
-                                        eggRoundTemplate.format(
-                                            newCount
-                                        )
+                                        // P6d-2：commonMain 无 String.format；模板仅含 %1$d，直接替换
+                                        eggRoundTemplate.replace("%1\$d", newCount.toString())
                                     )
                                 }
                                 onDismiss()
@@ -180,7 +191,7 @@ fun CheckInDialog(
                     )
                 } else if (todayCount >= 20) {
                     Text(
-                        text = stringResource(R.string.dialog_max_reached),
+                        text = stringResource(Res.string.dialog_max_reached),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.error,
                         modifier = Modifier.padding(16.dp)
@@ -208,7 +219,7 @@ fun AddCheckInForm(
 
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Text(
-            text = stringResource(R.string.dialog_type_label),
+            text = stringResource(Res.string.dialog_type_label),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(vertical = 4.dp)
@@ -229,7 +240,7 @@ fun AddCheckInForm(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = stringResource(R.string.dialog_feeling_label),
+            text = stringResource(Res.string.dialog_feeling_label),
             style = MaterialTheme.typography.titleSmall,
             fontWeight = FontWeight.Bold,
             modifier = Modifier.padding(bottom = 4.dp)
@@ -240,7 +251,7 @@ fun AddCheckInForm(
             modifier = Modifier
                 .fillMaxWidth()
                 .height(80.dp),
-            placeholder = { Text(stringResource(R.string.dialog_feeling_hint)) },
+            placeholder = { Text(stringResource(Res.string.dialog_feeling_hint)) },
             maxLines = 3
         )
 
@@ -251,20 +262,20 @@ fun AddCheckInForm(
             horizontalArrangement = Arrangement.End
         ) {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.dialog_cancel))
+                Text(stringResource(Res.string.dialog_cancel))
             }
             Spacer(modifier = Modifier.width(8.dp))
             Button(
                 onClick = {
-                    val now = LocalTime.now()
+                    val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault()).time
                     onAddRecord(
-                        now.format(DateTimeFormatter.ofPattern("HH:mm")),
+                        now.formatHm(),
                         selectedType.storeName,
                         feeling
                     )
                 }
             ) {
-                Text(stringResource(R.string.dialog_confirm))
+                Text(stringResource(Res.string.dialog_confirm))
             }
         }
 
@@ -349,7 +360,7 @@ fun ExistingRecordItem(
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_delete),
-                        contentDescription = stringResource(R.string.delete),
+                        contentDescription = stringResource(Res.string.delete),
                         modifier = Modifier.size(16.dp),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f)
                     )

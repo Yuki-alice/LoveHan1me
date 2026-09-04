@@ -29,22 +29,25 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.DrawableResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.clear_checkin
+import io.github.daisukikaffuchino.han1meviewer.view_checkin
+import io.github.daisukikaffuchino.han1meviewer.today_checked
+import io.github.daisukikaffuchino.han1meviewer.times
+import io.github.daisukikaffuchino.han1meviewer.not_checked_yet
+import io.github.daisukikaffuchino.han1meviewer.checkin
 import io.github.daisukikaffuchino.han1meviewer.ic_thumb_up_off_alt
 import io.github.daisukikaffuchino.han1meviewer.ic_delete
 import io.github.daisukikaffuchino.han1meviewer.ic_check
 import io.github.daisukikaffuchino.han1meviewer.ic_calendar_view_week
 import io.github.daisukikaffuchino.han1meviewer.ic_calendar_month
 import io.github.daisukikaffuchino.han1meviewer.ic_alarm
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import kotlinx.datetime.LocalDate
 
 /**
  * 今日打卡卡片。
@@ -108,20 +111,18 @@ fun TodayCheckInCard(
                     modifier = Modifier.weight(1f)
                 ) {
                     Text(
-                        text = today.format(
-                            DateTimeFormatter.ofPattern("MM月dd日 EEEE")
-                        ),
+                        text = today.formatMdWeek(),
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer
                     )
 
                     Text(
                         text = if (count > 0) {
-                            "${stringResource(R.string.today_checked)} $count/$maxCount ${
-                                stringResource(R.string.times)
+                            "${stringResource(Res.string.today_checked)} $count/$maxCount ${
+                                stringResource(Res.string.times)
                             }"
                         } else {
-                            stringResource(R.string.not_checked_yet)
+                            stringResource(Res.string.not_checked_yet)
                         },
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onPrimaryContainer.copy(
@@ -165,9 +166,9 @@ fun TodayCheckInCard(
 
                         Text(
                             if (count > 0)
-                                stringResource(R.string.view_checkin)
+                                stringResource(Res.string.view_checkin)
                             else
-                                stringResource(R.string.checkin)
+                                stringResource(Res.string.checkin)
                         )
                     }
 
@@ -201,7 +202,7 @@ fun TodayCheckInCard(
                                 painter = painterResource(Res.drawable.ic_delete),
                                 modifier = Modifier.size(width = 20.dp, height = 20.dp),
                                 contentDescription = stringResource(
-                                    R.string.clear_checkin
+                                    Res.string.clear_checkin
                                 ),
                                 tint = MaterialTheme.colorScheme.onPrimary
                             )
@@ -287,25 +288,3 @@ fun RowScope.StatItem(
     }
 }
 
-@Preview
-@Composable
-private fun PreviewTodayCheckInCard() {
-    TodayCheckInCard(
-        today = LocalDate.now(),
-        count = 3,
-        onCheckIn = {},
-        onClear = {},
-    )
-}
-
-@Preview
-@Composable
-private fun PreviewStatsCard() {
-    StatsCard(
-        items = listOf(
-            StatsItem(Res.drawable.ic_calendar_month, "Monthly", "15 days"),
-            StatsItem(Res.drawable.ic_alarm, "Total", "42 times"),
-            StatsItem(Res.drawable.ic_calendar_view_week, "Streak", "7 days"),
-        ),
-    )
-}

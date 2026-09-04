@@ -24,17 +24,21 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.daisukikaffuchino.han1meviewer.R
-import io.github.daisukikaffuchino.utils.VibrationUtil
-import java.time.LocalDate
-import java.time.YearMonth
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.fri
+import io.github.daisukikaffuchino.han1meviewer.mon
+import io.github.daisukikaffuchino.han1meviewer.sat
+import io.github.daisukikaffuchino.han1meviewer.sun
+import io.github.daisukikaffuchino.han1meviewer.thu
+import io.github.daisukikaffuchino.han1meviewer.tue
+import io.github.daisukikaffuchino.han1meviewer.wed
+import io.github.daisukikaffuchino.han1meviewer.ui.component.rememberHapticFeedback
+import kotlinx.datetime.LocalDate
 
 /**
  * 月历网格组件。展示指定月份的日期格，区分已打卡/今天/未来三种状态。
@@ -55,10 +59,11 @@ fun CalendarGrid(
     onDateLongClick: (LocalDate) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val view = LocalView.current
+    val hapticFeedback = rememberHapticFeedback()
     val firstDayOfMonth = yearMonth.atDay(1)
     val daysInMonth = yearMonth.lengthOfMonth()
-    val firstDayOfWeek = firstDayOfMonth.dayOfWeek.value
+    // java DayOfWeek.value（周一=1..周日=7）≡ kotlinx ordinal+1
+    val firstDayOfWeek = firstDayOfMonth.dayOfWeek.ordinal + 1
 
     LazyVerticalGrid(
         columns = GridCells.Fixed(7),
@@ -71,10 +76,10 @@ fun CalendarGrid(
                 horizontalArrangement = Arrangement.SpaceAround
             ) {
                 listOf(
-                    stringResource(R.string.mon), stringResource(R.string.tue),
-                    stringResource(R.string.wed), stringResource(R.string.thu),
-                    stringResource(R.string.fri), stringResource(R.string.sat),
-                    stringResource(R.string.sun)
+                    stringResource(Res.string.mon), stringResource(Res.string.tue),
+                    stringResource(Res.string.wed), stringResource(Res.string.thu),
+                    stringResource(Res.string.fri), stringResource(Res.string.sat),
+                    stringResource(Res.string.sun)
                 ).forEach { day ->
                     Text(
                         text = day,
@@ -125,11 +130,11 @@ fun CalendarGrid(
                     )
                     .combinedClickable(
                         onClick = {
-                            VibrationUtil.performHapticFeedback(view)
+                            hapticFeedback()
                             onDateClick(date)
                         },
                         onLongClick = {
-                            VibrationUtil.performHapticFeedback(view)
+                            hapticFeedback()
                             onDateLongClick(date)
                         },
                     ),
@@ -159,14 +164,3 @@ fun CalendarGrid(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-private fun PreviewCalendarGrid() {
-    CalendarGrid(
-        yearMonth = YearMonth.now(),
-        records = mapOf(LocalDate.now() to 3),
-        today = LocalDate.now(),
-        onDateClick = {},
-        onDateLongClick = {},
-    )
-}

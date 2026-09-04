@@ -1,8 +1,7 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin
 
 import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.MonthlyStats
-import java.time.LocalDate
-import java.time.YearMonth
+import kotlinx.datetime.LocalDate
 
 /**
  * 打卡日历页面的 UI 状态。
@@ -25,7 +24,7 @@ data class DailyCheckInUiState(
     val monthlyTotal: Int = 0,
     val bestStreakThisMonth: Int = 0,
     val monthlyStats: MonthlyStats = MonthlyStats(),
-    val today: LocalDate = LocalDate.now(),
+    val today: LocalDate = today(),
     val todayCount: Int = 0,
 )
 

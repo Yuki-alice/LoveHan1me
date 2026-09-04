@@ -29,20 +29,24 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.this_month_checkin
+import io.github.daisukikaffuchino.han1meviewer.has_cum_days
+import io.github.daisukikaffuchino.han1meviewer.days
+import io.github.daisukikaffuchino.han1meviewer.day_unit
+import io.github.daisukikaffuchino.han1meviewer.counts
+import io.github.daisukikaffuchino.han1meviewer.checkin_tip
+import io.github.daisukikaffuchino.han1meviewer.checkin_calendar
+import io.github.daisukikaffuchino.han1meviewer.best_streak
 import io.github.daisukikaffuchino.han1meviewer.ic_chevron_right
 import io.github.daisukikaffuchino.han1meviewer.ic_chevron_left
 import io.github.daisukikaffuchino.han1meviewer.ic_calendar_view_week
 import io.github.daisukikaffuchino.han1meviewer.ic_calendar_month
 import io.github.daisukikaffuchino.han1meviewer.ic_alarm
-import java.time.YearMonth
-import java.time.format.DateTimeFormatter
 
 /**
  * 打卡日历页面的纯 UI Content 层。
@@ -101,18 +105,18 @@ fun DailyCheckInContent(
             items = listOf(
                 StatsItem(
                     Res.drawable.ic_calendar_month,
-                    stringResource(R.string.this_month_checkin),
-                    stringResource(R.string.days, animatedCheckedDays),
+                    stringResource(Res.string.this_month_checkin),
+                    stringResource(Res.string.days, animatedCheckedDays),
                 ),
                 StatsItem(
                     Res.drawable.ic_alarm,
-                    stringResource(R.string.has_cum_days),
-                    stringResource(R.string.counts, animatedMonthlyTotal),
+                    stringResource(Res.string.has_cum_days),
+                    stringResource(Res.string.counts, animatedMonthlyTotal),
                 ),
                 StatsItem(
                     Res.drawable.ic_calendar_view_week,
-                    stringResource(R.string.best_streak),
-                    "${animatedBestStreak}${stringResource(R.string.day_unit)}",
+                    stringResource(Res.string.best_streak),
+                    "${animatedBestStreak}${stringResource(Res.string.day_unit)}",
                 ),
             ),
         )
@@ -125,7 +129,7 @@ fun DailyCheckInContent(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                text = stringResource(R.string.checkin_calendar),
+                text = stringResource(Res.string.checkin_calendar),
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
@@ -134,7 +138,7 @@ fun DailyCheckInContent(
                     Icon(painterResource(Res.drawable.ic_chevron_left), "previous")
                 }
                 Text(
-                    text = uiState.currentMonth.format(DateTimeFormatter.ofPattern("yyyy-MM")),
+                    text = uiState.currentMonth.formatYm(),
                     style = MaterialTheme.typography.titleMedium
                 )
                 IconButton(onClick = { onEvent(DailyCheckInEvent.OnNextMonth) }) {
@@ -201,7 +205,7 @@ fun DailyCheckInContent(
         Spacer(modifier = Modifier.height(8.dp))
 
         Text(
-            text = stringResource(R.string.checkin_tip),
+            text = stringResource(Res.string.checkin_tip),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.fillMaxWidth(),
@@ -215,15 +219,3 @@ fun DailyCheckInContent(
 /**
  * 预览用 Content 样例。
  */
-@Preview
-@Composable
-private fun PreviewDailyCheckInContent() {
-    DailyCheckInContent(
-        paddingValues = PaddingValues(0.dp),
-        uiState = DailyCheckInUiState(),
-        onEvent = {},
-        pagerState = androidx.compose.foundation.pager.rememberPagerState { 1 },
-        anchorMonth = YearMonth.now(),
-        initialPage = 0,
-    )
-}

@@ -196,7 +196,8 @@ fun PreviewContent(
                     }
                 }
 
-                when (uiState.displayState) {
+                // P6d-2：displayState 来自 shared 模块，跨模块 public 属性不可智能转换，先取局部量
+                when (val displayState = uiState.displayState) {
                     is WebsiteState.Loading -> item {
                         LoadingContent(
                             modifier = Modifier.padding(horizontal = 16.dp),
@@ -206,13 +207,13 @@ fun PreviewContent(
 
                     is WebsiteState.Error -> item {
                         val isPreviewEmpty =
-                            uiState.displayState.throwable is HanimeNotFoundException
+                            displayState.throwable is HanimeNotFoundException
                         ErrorContent(
                             title = stringResource(R.string.hanime_list),
                             message = if (isPreviewEmpty) {
                                 stringResource(R.string.preview_month_not_updated)
                             } else {
-                                uiState.displayState.throwable.pienization.toString()
+                                displayState.throwable.pienization.toString()
                             },
                             onRetry = if (isPreviewEmpty) null else {
                                 { onEvent(PreviewEvent.OnRetryLoad) }
@@ -224,7 +225,7 @@ fun PreviewContent(
                     is WebsiteState.Success -> {
                         item {
                             PreviewTourRow(
-                                latestHanime = uiState.displayState.info.latestHanime,
+                                latestHanime = displayState.info.latestHanime,
                                 selectedIndex = uiState.routeState.selectedIndex,
                                 onSelect = { onEvent(PreviewEvent.OnSelectTourItem(it)) },
                             )
