@@ -1,10 +1,10 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage
 
-import androidx.annotation.StringRes
 import androidx.compose.runtime.staticCompositionLocalOf
 import io.github.daisukikaffuchino.han1meviewer.logic.model.Announcement
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeInfo
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HomePage
+import org.jetbrains.compose.resources.StringResource
 
 /**
  * 首页主要数据源
@@ -34,7 +34,7 @@ val LocalSearchHistoryQuery = staticCompositionLocalOf<suspend (String) -> List<
  */
 data class HomeCategory(
     val key: String,
-    @param:StringRes val titleRes: Int,
+    val titleRes: StringResource,
     val genre: String? = null,
     val sort: String? = null,
     val tags: String? = null,

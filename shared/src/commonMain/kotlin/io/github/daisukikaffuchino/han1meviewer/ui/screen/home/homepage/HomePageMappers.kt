@@ -1,7 +1,28 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage
 
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ai_decensored
+import io.github.daisukikaffuchino.han1meviewer.ai_generated
+import io.github.daisukikaffuchino.han1meviewer.amateur_nomask
+import io.github.daisukikaffuchino.han1meviewer.animation_2_5d
+import io.github.daisukikaffuchino.han1meviewer.animation_2d
+import io.github.daisukikaffuchino.han1meviewer.category_3d_animation
+import io.github.daisukikaffuchino.han1meviewer.category_cosplay
+import io.github.daisukikaffuchino.han1meviewer.category_instant_noodle
+import io.github.daisukikaffuchino.han1meviewer.category_motion_anime
+import io.github.daisukikaffuchino.han1meviewer.china_av
+import io.github.daisukikaffuchino.han1meviewer.chinese_amateur
+import io.github.daisukikaffuchino.han1meviewer.chinese_subtitle
+import io.github.daisukikaffuchino.han1meviewer.hd_uncensored
+import io.github.daisukikaffuchino.han1meviewer.latest_av
+import io.github.daisukikaffuchino.han1meviewer.latest_hanime
+import io.github.daisukikaffuchino.han1meviewer.latest_release
+import io.github.daisukikaffuchino.han1meviewer.latest_upload
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HomePage
+import io.github.daisukikaffuchino.han1meviewer.mmd
+import io.github.daisukikaffuchino.han1meviewer.ranking_this_month
+import io.github.daisukikaffuchino.han1meviewer.ranking_today
+import io.github.daisukikaffuchino.han1meviewer.they_watched
 
 /**
  * 将首页原始数据转换为 UI 可直接展示的分类行数据。
@@ -13,66 +34,66 @@ fun buildCategoryList(homePage: HomePage, isAVSite: Boolean): List<HomeCategory>
     return listOfNotNull(
         HomeCategory(
             key = HOME_CATEGORY_LATEST_HANIME,
-            titleRes = if (isAVSite) R.string.latest_av else R.string.latest_hanime,
+            titleRes = if (isAVSite) Res.string.latest_av else Res.string.latest_hanime,
             genre = if (isAVSite) "日本AV" else "裏番",
             videos = homePage.ecchiAnime
         ),
         HomeCategory(
             key = HOME_CATEGORY_LATEST_RELEASE,
-            titleRes = R.string.latest_release,
+            titleRes = Res.string.latest_release,
             sort = "最新上市",
             videos = homePage.latestRelease
         ),
         HomeCategory(
             key = HOME_CATEGORY_LATEST_UPLOAD,
-            titleRes = R.string.latest_upload,
+            titleRes = Res.string.latest_upload,
             sort = "最新上傳",
             videos = homePage.latestHanime
         ),
         HomeCategory(
             key = HOME_CATEGORY_WATCHING_NOW,
-            titleRes = R.string.they_watched,
+            titleRes = Res.string.they_watched,
             sort = "他們在看",
             videos = homePage.watchingNow
         ),
         HomeCategory(
             key = HOME_CATEGORY_SHORT_EPISODE,
-            titleRes = if (isAVSite) R.string.amateur_nomask else R.string.category_instant_noodle,
+            titleRes = if (isAVSite) Res.string.amateur_nomask else Res.string.category_instant_noodle,
             genre = if (isAVSite) "素人業餘" else "泡麵番",
             sort = "最新上傳",
             videos = homePage.shortEpisodeAnime
         ),
         HomeCategory(
             key = HOME_CATEGORY_MOTION_ANIME,
-            titleRes = if (isAVSite) R.string.hd_uncensored else R.string.category_motion_anime,
+            titleRes = if (isAVSite) Res.string.hd_uncensored else Res.string.category_motion_anime,
             genre = if (isAVSite) "高清無碼" else "Motion Anime",
             sort = "最新上傳",
             videos = homePage.motionAnime
         ),
         HomeCategory(
             key = HOME_CATEGORY_3D_CG,
-            titleRes = if (isAVSite) R.string.ai_decensored else R.string.category_3d_animation,
+            titleRes = if (isAVSite) Res.string.ai_decensored else Res.string.category_3d_animation,
             genre = if (isAVSite) "AI解碼" else "3DCG",
             sort = "最新上傳",
             videos = homePage.threeDCG
         ),
         HomeCategory(
             key = HOME_CATEGORY_2_5D,
-            titleRes = if (isAVSite) R.string.china_av else R.string.animation_2_5d,
+            titleRes = if (isAVSite) Res.string.china_av else Res.string.animation_2_5d,
             genre = if (isAVSite) "國產AV" else "2.5D",
             sort = "最新上傳",
             videos = homePage.twoPointFiveDAnime
         ),
         HomeCategory(
             key = HOME_CATEGORY_2D_ANIME,
-            titleRes = if (isAVSite) R.string.chinese_amateur else R.string.animation_2d,
+            titleRes = if (isAVSite) Res.string.chinese_amateur else Res.string.animation_2d,
             genre = if (isAVSite) "國產素人" else "2D動畫",
             sort = "最新上傳",
             videos = homePage.twoDAnime
         ),
         HomeCategory(
             key = HOME_CATEGORY_AI_GENERATED,
-            titleRes = if (isAVSite) R.string.chinese_subtitle else R.string.ai_generated,
+            titleRes = if (isAVSite) Res.string.chinese_subtitle else Res.string.ai_generated,
             genre = if (isAVSite) null else "AI生成",
             tags = if (isAVSite) "中文字幕" else null,
             sort = "最新上傳",
@@ -80,14 +101,14 @@ fun buildCategoryList(homePage: HomePage, isAVSite: Boolean): List<HomeCategory>
         ),
         HomeCategory(
             key = HOME_CATEGORY_MMD,
-            titleRes = if (isAVSite) R.string.ranking_today else R.string.mmd,
+            titleRes = if (isAVSite) Res.string.ranking_today else Res.string.mmd,
             genre = if (isAVSite) null else "MMD",
             sort = if (isAVSite) "本日排行" else "最新上傳",
             videos = homePage.mmd
         ),
         HomeCategory(
             key = HOME_CATEGORY_COSPLAY,
-            titleRes = if (isAVSite) R.string.ranking_this_month else R.string.category_cosplay,
+            titleRes = if (isAVSite) Res.string.ranking_this_month else Res.string.category_cosplay,
             genre = if (isAVSite) null else "Cosplay",
             sort = if (isAVSite) "本月排行" else "最新上傳",
             videos = homePage.cosplay

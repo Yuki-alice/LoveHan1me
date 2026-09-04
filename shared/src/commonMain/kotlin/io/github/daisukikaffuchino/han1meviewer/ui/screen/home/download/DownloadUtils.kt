@@ -1,9 +1,15 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.home.download
 
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
-import io.github.daisukikaffuchino.han1meviewer.R
+import org.jetbrains.compose.resources.stringResource
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ungrouped
+import io.github.daisukikaffuchino.han1meviewer.paused
+import io.github.daisukikaffuchino.han1meviewer.loading
+import io.github.daisukikaffuchino.han1meviewer.download_progress_percent
+import io.github.daisukikaffuchino.han1meviewer.download_failed_tap_retry
+import io.github.daisukikaffuchino.han1meviewer.download_complete
+import io.github.daisukikaffuchino.han1meviewer.already_in_queue
 import io.github.daisukikaffuchino.han1meviewer.ic_check_circle
 import io.github.daisukikaffuchino.han1meviewer.ic_download
 import io.github.daisukikaffuchino.han1meviewer.ic_error_outline
@@ -28,7 +34,9 @@ fun List<VideoWithCategories>.toNodeList(
     groupIdToNameMap: Map<Int, String>,
     collapseDownloadedGroup: Boolean,
 ): List<DownloadHeaderNode> {
-    val groupedData = this.groupBy { it.video.groupId }.toSortedMap()
+    // P6d-2：原 Map.toSortedMap() 在 commonMain 解析失败（同工具链 desktop 可用，
+    // 疑似 commonizer 可见性 quirk，待人工复核）；等价改写为 entries 排序（迭代有序性一致）。
+    val groupedData = this.groupBy { it.video.groupId }.toList().sortedBy { it.first }.toMap()
     return buildList {
         for ((groupId, videos) in groupedData) {
             add(
@@ -69,7 +77,7 @@ fun List<DownloadHeaderNode>.toFlatNodeList(): List<DownloadedNode> {
 @Composable
 fun List<DownloadGroupEntity>.toDisplayGroups(): List<DownloadGroupEntity> = map { group ->
     if (group.id == DownloadGroupEntity.DEFAULT_GROUP_ID) {
-        group.copy(name = stringResource(R.string.ungrouped))
+        group.copy(name = stringResource(Res.string.ungrouped))
     } else {
         group
     }
@@ -84,12 +92,12 @@ fun List<DownloadGroupEntity>.toDisplayGroups(): List<DownloadGroupEntity> = map
  */
 @Composable
 fun downloadStateText(state: DownloadState, progress: Int): String = when (state) {
-    DownloadState.Queued -> stringResource(R.string.already_in_queue)
-    DownloadState.Downloading -> stringResource(R.string.download_progress_percent, progress)
-    DownloadState.Paused -> stringResource(R.string.paused)
-    DownloadState.Failed -> stringResource(R.string.download_failed_tap_retry)
-    DownloadState.Finished -> stringResource(R.string.download_complete)
-    DownloadState.Unknown -> stringResource(R.string.loading)
+    DownloadState.Queued -> stringResource(Res.string.already_in_queue)
+    DownloadState.Downloading -> stringResource(Res.string.download_progress_percent, progress)
+    DownloadState.Paused -> stringResource(Res.string.paused)
+    DownloadState.Failed -> stringResource(Res.string.download_failed_tap_retry)
+    DownloadState.Finished -> stringResource(Res.string.download_complete)
+    DownloadState.Unknown -> stringResource(Res.string.loading)
 }
 
 /**

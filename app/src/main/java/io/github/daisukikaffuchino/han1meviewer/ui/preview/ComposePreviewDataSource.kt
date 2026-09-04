@@ -1,7 +1,9 @@
 @file:Suppress("UNUSED")
 package io.github.daisukikaffuchino.han1meviewer.ui.preview
 
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.latest_hanime
+import io.github.daisukikaffuchino.han1meviewer.latest_release
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.DownloadGroupEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.HanimeDownloadEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.VideoWithCategories
@@ -18,6 +20,7 @@ import io.github.daisukikaffuchino.han1meviewer.logic.model.Playlists
 import io.github.daisukikaffuchino.han1meviewer.logic.model.SubscriptionItem
 import io.github.daisukikaffuchino.han1meviewer.logic.model.SubscriptionVideosItem
 import io.github.daisukikaffuchino.han1meviewer.logic.model.VideoComments
+import io.github.daisukikaffuchino.han1meviewer.they_watched
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage.HomeCategory
 import kotlinx.datetime.LocalDate
 
@@ -254,19 +257,19 @@ val fakeHomePageVideos = listOf(
 val fakeCategories = listOf(
     HomeCategory(
         key = "preview_latest",
-        titleRes = R.string.latest_hanime,
+        titleRes = Res.string.latest_hanime,
         genre = "裏番",
         videos = fakeHomePageVideos,
     ),
     HomeCategory(
         key = "preview_release",
-        titleRes = R.string.latest_release,
+        titleRes = Res.string.latest_release,
         sort = "最新上市",
         videos = fakeHomePageVideos.shuffled().take(4),
     ),
     HomeCategory(
         key = "preview_watched",
-        titleRes = R.string.they_watched,
+        titleRes = Res.string.they_watched,
         sort = "他們在看",
         videos = fakeHomePageVideos.shuffled().take(5),
     ),
