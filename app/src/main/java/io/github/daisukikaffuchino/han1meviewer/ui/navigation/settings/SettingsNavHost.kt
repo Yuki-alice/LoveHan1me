@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.ui.component.appbar.HanimeTopAppBar
 import io.github.daisukikaffuchino.han1meviewer.ui.component.appbar.HanimeScaffold
