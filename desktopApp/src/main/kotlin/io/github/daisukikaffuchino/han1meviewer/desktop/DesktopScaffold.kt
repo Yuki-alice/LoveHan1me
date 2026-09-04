@@ -9,6 +9,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.Button
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -26,6 +30,12 @@ import io.github.daisukikaffuchino.utils.SonnerToast
  */
 @Composable
 fun DesktopScaffold() {
+    // P5-2a 临时入口（收尾删除）：spike 屏
+    var showSpike by remember { mutableStateOf(false) }
+    if (showSpike) {
+        HanimeTheme { MpvSpikeScreen(onBack = { showSpike = false }) }
+        return
+    }
     HanimeTheme {
         SonnerToast.Host()
         Column(
@@ -50,6 +60,13 @@ fun DesktopScaffold() {
                 modifier = Modifier.padding(top = 16.dp),
             ) {
                 Text("Toast 冒烟（shared SonnerToast）")
+            }
+            // P5-2a 临时入口（收尾删除）
+            Button(
+                onClick = { showSpike = true },
+                modifier = Modifier.padding(top = 16.dp),
+            ) {
+                Text("mpv spike（P5-2a 临时）")
             }
         }
     }
