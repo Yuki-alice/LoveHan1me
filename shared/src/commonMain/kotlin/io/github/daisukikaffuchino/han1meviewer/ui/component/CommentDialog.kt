@@ -28,12 +28,13 @@ import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.whats_wrong_with_him
+import io.github.daisukikaffuchino.han1meviewer.submit
+import io.github.daisukikaffuchino.han1meviewer.cancel
 import io.github.daisukikaffuchino.han1meviewer.ic_remove_circle
 import io.github.daisukikaffuchino.han1meviewer.ic_check_circle
 import io.github.daisukikaffuchino.han1meviewer.ic_send
@@ -55,7 +56,7 @@ import io.github.daisukikaffuchino.han1meviewer.ui.component.HapticTextButton as
  */
 
 @Composable
-internal fun CommentReplyBar(
+fun CommentReplyBar(
     text: TextFieldValue,
     onTextChange: (TextFieldValue) -> Unit,
     onSend: () -> Unit,
@@ -112,7 +113,7 @@ internal fun CommentReplyBar(
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_send),
-                        contentDescription = stringResource(R.string.submit),
+                        contentDescription = stringResource(Res.string.submit),
                         tint = MaterialTheme.colorScheme.primary,
                         modifier = Modifier.size(24.dp),
                     )
@@ -123,7 +124,7 @@ internal fun CommentReplyBar(
 }
 
 @Composable
-internal fun CommentReportDialog(
+fun CommentReportDialog(
     reportReasons: List<ReportReason>,
     selectedReasonIndex: Int,
     onSelectReason: (Int) -> Unit,
@@ -132,7 +133,7 @@ internal fun CommentReportDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.whats_wrong_with_him)) },
+        title = { Text(stringResource(Res.string.whats_wrong_with_him)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 reportReasons.forEachIndexed { index, reason ->
@@ -190,25 +191,14 @@ internal fun CommentReportDialog(
                 enabled = selectedReasonIndex >= 0,
                 onClick = onConfirm,
             ) {
-                Text(stringResource(R.string.submit))
+                Text(stringResource(Res.string.submit))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
+                Text(stringResource(Res.string.cancel))
             }
         },
     )
 }
 
-@Preview
-@Composable
-fun CommentReplyBarPreview() {
-    CommentReplyBar(
-        text = TextFieldValue("文本"),
-        onTextChange = { },
-        onSend = { },
-        placeholder = "这是hint",
-        modifier = Modifier
-    )
-}

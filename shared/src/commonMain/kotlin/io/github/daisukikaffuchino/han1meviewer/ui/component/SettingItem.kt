@@ -26,14 +26,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.ic_check
 import io.github.daisukikaffuchino.han1meviewer.ic_check_circle
 import io.github.daisukikaffuchino.han1meviewer.ic_close
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.animatedShape
 import org.jetbrains.compose.resources.DrawableResource
@@ -296,41 +294,3 @@ fun SettingChoiceItem(
     }
 }
 
-@Preview(showBackground = true)
-@Composable
-private fun SettingSwitchItemPreview() {
-    ComponentPreview {
-        SettingSwitchItem("启用动态取色", true, {}, summary = "Android 12 及以上可使用系统取色")
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun SettingNavigationItemPreview() {
-    ComponentPreview {
-        SettingNavigationItem(
-            "播放器内核",
-            {},
-            summary = "当前使用 ExoPlayer",
-            valueText = "ExoPlayer"
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun SettingInfoItemPreview() {
-    ComponentPreview { SettingInfoItem("当前版本", summary = "Han1meViewer", valueText = "v1.0.0") }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun SettingSliderItemPreview() {
-    ComponentPreview { SettingSliderItem("更新间隔", 7, 0..30, {}, summary = "7 天") }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun SettingChoiceItemPreview() {
-    ComponentPreview { SettingChoiceItem("跟随系统", true, {}) }
-}

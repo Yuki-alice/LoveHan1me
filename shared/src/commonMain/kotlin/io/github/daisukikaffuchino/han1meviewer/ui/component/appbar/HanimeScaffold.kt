@@ -15,16 +15,13 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.Dp
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.ic_pause
 import io.github.daisukikaffuchino.han1meviewer.ic_play_arrow
 import io.github.daisukikaffuchino.han1meviewer.ui.component.content.EmptyContent
 import io.github.daisukikaffuchino.han1meviewer.ui.component.verticalBounce
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -122,36 +119,3 @@ fun HanimeScaffold(
     }
 }
 
-@Preview
-@Composable
-private fun HanimeScaffoldPreview() {
-    ComponentPreview {
-        HanimeScaffold(
-            title = "组件标题",
-            subtitle = {
-                Text(
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    text = "副标题"
-                )
-            },
-            onBack = {},
-            actions = {
-                FilledIconButton(onClick = { }, enabled = true) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_play_arrow),
-                        contentDescription = stringResource(R.string.start_all),
-                    )
-                }
-                FilledIconButton(onClick = { }, enabled = false) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_pause),
-                        contentDescription = stringResource(R.string.pause_all),
-                    )
-                }
-            }
-        ) {
-            EmptyContent("空空的")
-        }
-    }
-}

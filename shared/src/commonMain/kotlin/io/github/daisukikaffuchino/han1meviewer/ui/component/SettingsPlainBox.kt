@@ -12,11 +12,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.settings_tip
 import io.github.daisukikaffuchino.han1meviewer.ic_info
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
 
@@ -25,7 +25,7 @@ fun SettingsPlainBox(
     text: String,
     modifier: Modifier = Modifier,
 ) {
-    val tipText = stringResource(R.string.settings_tip)
+    val tipText = stringResource(Res.string.settings_tip)
     Column(
         modifier = modifier
             .fillMaxWidth()

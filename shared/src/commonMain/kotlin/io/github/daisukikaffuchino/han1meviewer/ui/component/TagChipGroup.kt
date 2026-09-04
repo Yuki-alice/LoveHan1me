@@ -23,13 +23,10 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.Placeable
 import androidx.compose.ui.layout.SubcomposeLayout
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Constraints
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.ic_keyboard_arrow_down
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.fakeTagList2
 import kotlin.random.Random
 import io.github.daisukikaffuchino.han1meviewer.ui.component.HapticTextButton as TextButton
 
@@ -314,14 +311,3 @@ private fun assignPaletteWithoutAdjacentRepeats(
     return result
 }
 
-@Preview(showSystemUi = true, showBackground = true)
-@Composable
-fun TagChipGroupPreview() {
-    ComponentPreview {
-        TagChipGroup(
-            tags = fakeTagList2,
-            collapsible = true,
-            headerTitle = "TAGs",
-        )
-    }
-}

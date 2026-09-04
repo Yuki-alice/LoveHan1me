@@ -16,11 +16,11 @@ import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.back
 import io.github.daisukikaffuchino.han1meviewer.ic_arrow_back
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
 
@@ -86,7 +86,7 @@ fun HanimeTopAppBar(
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_arrow_back),
-                        contentDescription = stringResource(R.string.back),
+                        contentDescription = stringResource(Res.string.back),
                     )
                 }
             }
