@@ -32,6 +32,7 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.h_chan_sad
 import io.github.daisukikaffuchino.han1meviewer.ic_add
 import io.github.daisukikaffuchino.han1meviewer.logic.state.WebsiteState
 import io.github.daisukikaffuchino.han1meviewer.ui.component.PullRefreshOverlay
@@ -179,7 +180,7 @@ fun PlaylistScreen(
                                 R.string.load_failed_with_reason,
                                 (state as WebsiteState.Error).throwable.message.orEmpty()
                             ),
-                            picRes = R.drawable.h_chan_sad
+                            picRes = Res.drawable.h_chan_sad
                         )
                     } else {
                         PlaylistContent(uiState = uiState, onEvent = handleEvent, rawState = state)

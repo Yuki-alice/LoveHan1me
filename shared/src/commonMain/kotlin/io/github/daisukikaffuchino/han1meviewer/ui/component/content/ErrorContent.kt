@@ -12,13 +12,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.h_chan_sad
+import io.github.daisukikaffuchino.han1meviewer.load_failed_retry
+import io.github.daisukikaffuchino.han1meviewer.retry
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * 错误状态内容组件。
@@ -36,9 +37,9 @@ fun ErrorContent(
     title: String? = null,
     message: String? = null,
     onRetry: (() -> Unit)? = null,
-    retryText: String = stringResource(R.string.retry),
+    retryText: String = stringResource(Res.string.retry),
 ) {
-    val resolvedTitle = title ?: stringResource(R.string.load_failed_retry)
+    val resolvedTitle = title ?: stringResource(Res.string.load_failed_retry)
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -48,7 +49,7 @@ fun ErrorContent(
     ) {
         Image(
             modifier = Modifier.size(150.dp),
-            painter = painterResource(R.drawable.h_chan_sad),
+            painter = painterResource(Res.drawable.h_chan_sad),
             contentDescription = resolvedTitle
         )
         Text(
@@ -68,13 +69,5 @@ fun ErrorContent(
                 Text(retryText)
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun ErrorContentPreview() {
-    ComponentPreview {
-        ErrorContent(message = "network error", onRetry = {})
     }
 }

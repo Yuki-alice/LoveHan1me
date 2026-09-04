@@ -85,6 +85,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.h_chan_speechless
+import io.github.daisukikaffuchino.han1meviewer.h_chan_sad
 import io.github.daisukikaffuchino.han1meviewer.ic_search
 import io.github.daisukikaffuchino.han1meviewer.ic_filter_list
 import io.github.daisukikaffuchino.han1meviewer.ic_close
@@ -710,7 +712,7 @@ fun SearchStateIndicator(
 
         is PageLoadingState.NoMoreData -> if (resultCount == 0) EmptyContent(
             hint = stringResource(R.string.search_no_results),
-            picRes = R.drawable.h_chan_speechless
+            picRes = Res.drawable.h_chan_speechless
         )
 
         is PageLoadingState.Error -> EmptyContent(
@@ -718,12 +720,12 @@ fun SearchStateIndicator(
                 R.string.search_load_failed_with_reason,
                 state.throwable.message.orEmpty()
             ),
-            picRes = R.drawable.h_chan_sad
+            picRes = Res.drawable.h_chan_sad
         )
 
         is PageLoadingState.Success -> if (resultCount == 0) EmptyContent(
             hint = stringResource(R.string.search_no_results),
-            picRes = R.drawable.h_chan_speechless
+            picRes = Res.drawable.h_chan_speechless
         )
     }
 }

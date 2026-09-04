@@ -12,13 +12,14 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.h_chan_speechless
+import io.github.daisukikaffuchino.han1meviewer.here_is_empty
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * 空状态视图组件。
@@ -27,13 +28,13 @@ import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
  *
  * @param hint 主提示文本
  * @param subHint 副提示文本，默认为空
- * @param picRes 占位图片资源 ID，默认为 h_chan_speechless
+ * @param picRes 占位图片资源，默认为 h_chan_speechless
  */
 @Composable
 fun EmptyContent(
     hint: String,
     subHint: String = "",
-    picRes: Int = R.drawable.h_chan_speechless,
+    picRes: DrawableResource = Res.drawable.h_chan_speechless,
 ) {
     Box(
         modifier = Modifier
@@ -50,7 +51,7 @@ fun EmptyContent(
                     .padding(16.dp)
                     .width(150.dp),
                 painter = painterResource(picRes),
-                contentDescription = stringResource(R.string.here_is_empty),
+                contentDescription = stringResource(Res.string.here_is_empty),
             )
             Text(
                 text = hint,
@@ -63,13 +64,5 @@ fun EmptyContent(
                 textAlign = TextAlign.Center,
             )
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun EmptyViewPreview() {
-    ComponentPreview {
-        EmptyContent(hint = "发生了一些事情", subHint = "reason: 404 Not Found")
     }
 }

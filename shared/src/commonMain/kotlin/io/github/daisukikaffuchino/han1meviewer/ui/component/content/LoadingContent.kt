@@ -12,9 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 
 /**
  * 加载状态内容组件。
@@ -44,13 +42,5 @@ fun LoadingContent(
             color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun LoadingContentPreview() {
-    ComponentPreview {
-        LoadingContent()
     }
 }

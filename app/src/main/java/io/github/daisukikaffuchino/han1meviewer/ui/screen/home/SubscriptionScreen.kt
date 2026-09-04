@@ -28,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.h_chan_sad
 import io.github.daisukikaffuchino.han1meviewer.ic_table_rows
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.model.SubscriptionItem
@@ -193,7 +194,7 @@ fun SubscriptionScreen(
                                 R.string.load_failed_with_reason,
                                 (state as WebsiteState.Error).throwable.message.orEmpty()
                             ),
-                            picRes = R.drawable.h_chan_sad
+                            picRes = Res.drawable.h_chan_sad
                         )
                     } else {
                         SubscriptionContent(
