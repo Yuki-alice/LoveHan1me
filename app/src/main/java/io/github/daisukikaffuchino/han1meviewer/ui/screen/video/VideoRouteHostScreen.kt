@@ -51,6 +51,27 @@ import io.github.daisukikaffuchino.han1meviewer.BuildConfig
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.add_to_h_keyframe
+import io.github.daisukikaffuchino.han1meviewer.allow
+import io.github.daisukikaffuchino.han1meviewer.allow_post_notification
+import io.github.daisukikaffuchino.han1meviewer.cancel
+import io.github.daisukikaffuchino.han1meviewer.confirm
+import io.github.daisukikaffuchino.han1meviewer.current_position_d_ms
+import io.github.daisukikaffuchino.han1meviewer.deny
+import io.github.daisukikaffuchino.han1meviewer.long_press_share_to_copy
+import io.github.daisukikaffuchino.han1meviewer.mobile_data_playback_warning
+import io.github.daisukikaffuchino.han1meviewer.no
+import io.github.daisukikaffuchino.han1meviewer.play_pause
+import io.github.daisukikaffuchino.han1meviewer.player_untitled_video
+import io.github.daisukikaffuchino.han1meviewer.reason_for_download_notification
+import io.github.daisukikaffuchino.han1meviewer.super_resolution_off
+import io.github.daisukikaffuchino.han1meviewer.super_resolution_performance
+import io.github.daisukikaffuchino.han1meviewer.super_resolution_quality
+import io.github.daisukikaffuchino.han1meviewer.sure
+import io.github.daisukikaffuchino.han1meviewer.sure_to_add_to_h_keyframe
+import io.github.daisukikaffuchino.han1meviewer.sure_to_unsubscribe
+import io.github.daisukikaffuchino.han1meviewer.unsubscribe_artist
+import io.github.daisukikaffuchino.han1meviewer.warning
 import io.github.daisukikaffuchino.han1meviewer.player_keyframe_option
 import io.github.daisukikaffuchino.han1meviewer.player_h_keyframe
 import io.github.daisukikaffuchino.han1meviewer.player_anime4k_label
@@ -145,9 +166,10 @@ fun VideoRouteHostScreen(
             SonnerToast.info(toastText(R.string.large_screen_tablet_mode_hint))
         }
     }
-    val stringLongPressShare = remember(activity) {
-        activity.getString(R.string.long_press_share_to_copy)
-    }
+    val stringLongPressShare = stringResource(Res.string.long_press_share_to_copy)
+    // P6d-3-C2：非 @Composable 上下文（PiP 回调/事件回调）用的字符串，外提到 composable 层
+    val pipPlayPauseText = stringResource(Res.string.play_pause)
+    val untitledVideoText = stringResource(Res.string.player_untitled_video)
     val genres = remember(SettingsRepository.baseUrl) {
         loadAssetAs<List<SearchOption>>(
             if (SettingsRepository.baseUrl == io.github.daisukikaffuchino.han1meviewer.HanimeConstants.HANIME_URL[3]) {
@@ -308,8 +330,8 @@ fun VideoRouteHostScreen(
                     listOf(
                         RemoteAction(
                             icon,
-                            activity.getString(R.string.play_pause),
-                            activity.getString(R.string.play_pause),
+                            pipPlayPauseText,
+                            pipPlayPauseText,
                             intent,
                         )
                     )
@@ -348,8 +370,8 @@ fun VideoRouteHostScreen(
                                         activity,
                                         if (state.isPlaying) R.drawable.ic_pause else R.drawable.ic_play_arrow,
                                     ),
-                                    activity.getString(R.string.play_pause),
-                                    activity.getString(R.string.play_pause),
+                                    pipPlayPauseText,
+                                    pipPlayPauseText,
                                     intent,
                                 )
                             )
@@ -710,9 +732,9 @@ fun VideoRouteHostScreen(
         superResolutionLabel = stringResource(Res.string.player_anime4k_label),
         superResolutionOptions = if (kernel == PlayerKernel.MpvPlayer && !playbackState.engine.isCasting) {
             listOf(
-                activity.getString(R.string.super_resolution_off),
-                activity.getString(R.string.super_resolution_performance),
-                activity.getString(R.string.super_resolution_quality),
+                stringResource(Res.string.super_resolution_off),
+                stringResource(Res.string.super_resolution_performance),
+                stringResource(Res.string.super_resolution_quality),
             )
         } else {
             emptyList()
@@ -747,7 +769,7 @@ fun VideoRouteHostScreen(
                 SonnerToast.info(toastText(R.string.pause_then_long_press))
             } else {
                 showAddHKeyframeDialog = playbackState.engine.positionMs to videoTitle.ifBlank {
-                    activity.getString(R.string.player_untitled_video)
+                    untitledVideoText
                 }
             }
         },
@@ -864,13 +886,13 @@ fun VideoRouteHostScreen(
     showAddHKeyframeDialog?.let { (currentPosition, title) ->
         ConfirmDialog(
             visible = true,
-            title = activity.getString(R.string.add_to_h_keyframe),
+            title = stringResource(Res.string.add_to_h_keyframe),
             message = buildString {
-                appendLine(activity.getString(R.string.sure_to_add_to_h_keyframe))
-                append(activity.getString(R.string.current_position_d_ms, currentPosition))
+                appendLine(stringResource(Res.string.sure_to_add_to_h_keyframe))
+                append(stringResource(Res.string.current_position_d_ms, currentPosition))
             },
-            confirmText = activity.getString(R.string.confirm),
-            dismissText = activity.getString(R.string.cancel),
+            confirmText = stringResource(Res.string.confirm),
+            dismissText = stringResource(Res.string.cancel),
             onConfirm = {
                 viewModel.appendHKeyframe(
                     route.videoCode,
@@ -886,10 +908,10 @@ fun VideoRouteHostScreen(
     pendingUnsubscribeArtist?.let { artist ->
         ConfirmDialog(
             visible = true,
-            title = activity.getString(R.string.unsubscribe_artist),
-            message = activity.getString(R.string.sure_to_unsubscribe),
-            confirmText = activity.getString(R.string.sure),
-            dismissText = activity.getString(R.string.no),
+            title = stringResource(Res.string.unsubscribe_artist),
+            message = stringResource(Res.string.sure_to_unsubscribe),
+            confirmText = stringResource(Res.string.sure),
+            dismissText = stringResource(Res.string.no),
             onConfirm = {
                 actions.confirmUnsubscribe(artist)
                 pendingUnsubscribeArtist = null
@@ -922,10 +944,10 @@ fun VideoRouteHostScreen(
 
     ConfirmDialog(
         visible = showNotificationPermissionReason,
-        title = activity.getString(R.string.allow_post_notification),
-        message = activity.getString(R.string.reason_for_download_notification),
-        confirmText = activity.getString(R.string.allow),
-        dismissText = activity.getString(R.string.deny),
+        title = stringResource(Res.string.allow_post_notification),
+        message = stringResource(Res.string.reason_for_download_notification),
+        confirmText = stringResource(Res.string.allow),
+        dismissText = stringResource(Res.string.deny),
         onConfirm = {
             showNotificationPermissionReason = false
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -940,10 +962,10 @@ fun VideoRouteHostScreen(
 
     ConfirmDialog(
         visible = pendingPlayback != null,
-        title = activity.getString(R.string.warning),
-        message = activity.getString(R.string.mobile_data_playback_warning),
-        confirmText = activity.getString(R.string.confirm),
-        dismissText = activity.getString(R.string.cancel),
+        title = stringResource(Res.string.warning),
+        message = stringResource(Res.string.mobile_data_playback_warning),
+        confirmText = stringResource(Res.string.confirm),
+        dismissText = stringResource(Res.string.cancel),
         onConfirm = {
             val request = pendingPlayback
             pendingPlayback = null

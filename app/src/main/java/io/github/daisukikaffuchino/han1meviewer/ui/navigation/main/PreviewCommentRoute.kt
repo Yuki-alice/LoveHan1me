@@ -23,8 +23,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.PREVIEW_COMMENT_PREFIX
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.there_is_a_small_issue
 import io.github.daisukikaffuchino.han1meviewer.latest_hanime_comment
 import io.github.daisukikaffuchino.han1meviewer.logic.state.WebsiteState
 import io.github.daisukikaffuchino.han1meviewer.ui.activity.MainActivity
@@ -38,6 +38,7 @@ import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.PreviewCommentPrefe
 import io.github.daisukikaffuchino.utils.application
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -205,7 +206,7 @@ fun PreviewCommentRouteScreen(
                 val replyTargetId = comment.replyTargetIdOrNull
                 if (replyTargetId == null) {
                     scope.launch {
-                        reportMessages.emit(CommentMessage(activity.getString(R.string.there_is_a_small_issue)))
+                        reportMessages.emit(CommentMessage(getString(Res.string.there_is_a_small_issue)))
                     }
                     return@CommentScreen
                 }
@@ -267,7 +268,7 @@ fun PreviewCommentRouteScreen(
                 viewModel.currentUserId?.let { id ->
                     viewModel.postComment(id, viewModel.code, PREVIEW_COMMENT_PREFIX, text)
                 } ?: scope.launch {
-                    reportMessages.emit(CommentMessage(activity.getString(R.string.there_is_a_small_issue)))
+                    reportMessages.emit(CommentMessage(getString(Res.string.there_is_a_small_issue)))
                 }
             },
             listContentPadding = PaddingValues(vertical = 8.dp),

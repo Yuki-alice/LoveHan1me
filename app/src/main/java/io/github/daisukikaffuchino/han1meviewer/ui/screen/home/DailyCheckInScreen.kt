@@ -17,9 +17,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
@@ -144,6 +146,8 @@ fun DailyCheckInScreen(
     }
 
     val context = LocalContext.current
+    // P6d-3-C2：createCalendarEvent 转 suspend，回调内 scope 桥接
+    val scope = rememberCoroutineScope()
 
     val handleEvent: (DailyCheckInEvent) -> Unit = { event ->
         when (event) {
@@ -245,7 +249,7 @@ fun DailyCheckInScreen(
         confirmText = stringResource(Res.string.calendar_dialog_confirm),
         dismissText = stringResource(Res.string.cancel),
         onConfirm = {
-            calendarDialogDate?.let { createCalendarEvent(context, it) }
+            calendarDialogDate?.let { scope.launch { createCalendarEvent(context, it) } }
             calendarDialogDate = null
         },
         onDismiss = { calendarDialogDate = null },

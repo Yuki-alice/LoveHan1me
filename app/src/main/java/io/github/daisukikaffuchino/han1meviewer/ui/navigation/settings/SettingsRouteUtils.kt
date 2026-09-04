@@ -16,63 +16,64 @@ import androidx.core.net.toUri
 import androidx.core.text.parseAsHtml
 import io.github.daisukikaffuchino.han1meviewer.HanimeConstants.HANIME_HOSTNAME
 import io.github.daisukikaffuchino.han1meviewer.HanimeConstants.HANIME_URL
+import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.cache_usage_summary
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlayerDefaults
 import io.github.daisukikaffuchino.utils.formatBytesPerSecond
 import io.github.daisukikaffuchino.utils.formatFileSize
 import io.github.daisukikaffuchino.utils.SonnerToast
 import io.github.daisukikaffuchino.utils.toastText
+import org.jetbrains.compose.resources.getString
 
-internal fun buildDomainOptions(context: Context): List<Pair<String, String>> = listOf(
-    "${HANIME_HOSTNAME[0]} (${context.getString(R.string.default_)})" to HANIME_URL[0],
-    "${HANIME_HOSTNAME[1]} (${context.getString(R.string.alternative)})" to HANIME_URL[1],
-    "${HANIME_HOSTNAME[2]} (${context.getString(R.string.alternative)})" to HANIME_URL[2],
+// P6d-3-C2：context.getString→边界预解析。调用方（remember{} 内 plain builder）
+// 无法调 @Composable/suspend，故字符串在 composable 层 stringResource 解析后以 String 传入。
+
+internal fun buildDomainOptions(defaultLabel: String, alternativeLabel: String): List<Pair<String, String>> = listOf(
+    "${HANIME_HOSTNAME[0]} ($defaultLabel)" to HANIME_URL[0],
+    "${HANIME_HOSTNAME[1]} ($alternativeLabel)" to HANIME_URL[1],
+    "${HANIME_HOSTNAME[2]} ($alternativeLabel)" to HANIME_URL[2],
     "${HANIME_HOSTNAME[3]} (av)" to HANIME_URL[3],
 )
 
-internal fun generateClearCacheSummary(context: Context, size: Long): CharSequence {
-    return context.getString(R.string.cache_usage_summary, size.formatFileSize()).parseAsHtml()
+internal suspend fun generateClearCacheSummary(size: Long): CharSequence {
+    return getString(Res.string.cache_usage_summary, size.formatFileSize()).parseAsHtml()
 }
 
 internal fun toPrettySensitivityString(
-    context: Context,
-    @IntRange(from = 1, to = 7) value: Int
+    @IntRange(from = 1, to = 7) value: Int,
+    levelNames: List<String>,
+    currentTemplate: String,
 ): String {
-    val pretty = when (value) {
-        1 -> context.getString(R.string.extremely_low)
-        2 -> context.getString(R.string.low)
-        3 -> context.getString(R.string.slightly_low)
-        4 -> context.getString(R.string.moderate)
-        5 -> context.getString(R.string.slightly_high)
-        6 -> context.getString(R.string.high)
-        7 -> context.getString(R.string.extremely_high)
-        else -> error("Invalid sensitivity value: $value")
-    }
-    return context.getString(R.string.current_slide_sensitivity, pretty)
+    val pretty = levelNames.getOrNull(value - 1) ?: error("Invalid sensitivity value: $value")
+    // 模板 "Current Sensitivity: %s"，commonMain 外可用 replace（:app 侧）
+    return currentTemplate.replace("%s", pretty)
 }
 
 internal fun toPrettyCountdownRemindString(
-    context: Context,
-    @IntRange(from = 5, to = 30) value: Int
+    @IntRange(from = 5, to = 30) value: Int,
+    remindTemplate: String,
+    defaultLabel: String,
 ): String {
     return buildString {
-        append(context.getString(R.string.will_remind_before_d_seconds, value))
+        // 模板 "Will remind %d seconds before countdown"
+        append(remindTemplate.replace("%d", value.toString()))
         if (value == PlayerDefaults.DEFAULT_COUNTDOWN_SECONDS) {
-            append(" (${context.getString(R.string.default_)})")
+            append(" ($defaultLabel)")
         }
     }
 }
 
-internal fun Long.toDownloadSpeedPrettyString(context: Context): String {
+internal fun Long.toDownloadSpeedPrettyString(noLimitText: String): String {
     return if (this == 0L) {
-        context.getString(R.string.no_limit)
+        noLimitText
     } else {
         formatBytesPerSecond()
     }
 }
 
-internal fun toDownloadCountLimitPrettyString(context: Context, value: Int): String {
-    return if (value == 0) context.getString(R.string.no_limit) else value.toString()
+internal fun toDownloadCountLimitPrettyString(noLimitText: String, value: Int): String {
+    return if (value == 0) noLimitText else value.toString()
 }
 
 internal fun isDeviceSecureCompat(context: Context): Boolean {

@@ -100,6 +100,7 @@ import coil3.compose.AsyncImage
 import com.google.android.gms.cast.framework.CastButtonFactory
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.enable_google_cast
 import io.github.daisukikaffuchino.han1meviewer.video_loading_failed
 import io.github.daisukikaffuchino.han1meviewer.sure_to_delete
 import io.github.daisukikaffuchino.han1meviewer.super_resolution_quality
@@ -239,6 +240,8 @@ fun VideoPlayerUi(
     var unlockButtonTimeoutToken by remember { mutableIntStateOf(0) }
     val context = LocalContext.current
     val view = LocalView.current
+    // P6d-3-C2：AndroidView factory 非 @Composable 上下文，描述串外提
+    val castButtonDesc = stringResource(Res.string.enable_google_cast)
     var deviceTime by remember(context) {
         mutableStateOf(DateFormat.getTimeFormat(context).format(Date()))
     }
@@ -723,7 +726,7 @@ fun VideoPlayerUi(
                                 MediaRouteButton(context).also { button ->
                                     button.minimumWidth = 0
                                     button.minimumHeight = 0
-                                    button.contentDescription = context.getString(R.string.enable_google_cast)
+                                    button.contentDescription = castButtonDesc
                                     CastButtonFactory.setUpMediaRouteButton(context, button)
                                     button.setRemoteIndicatorDrawable(createGoogleCastIndicator(context))
                                 }

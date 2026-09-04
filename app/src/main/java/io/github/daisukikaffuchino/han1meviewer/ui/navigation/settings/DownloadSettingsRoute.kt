@@ -32,7 +32,12 @@ import androidx.documentfile.provider.DocumentFile
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.import_complete
+import io.github.daisukikaffuchino.han1meviewer.no_exportable_files
+import io.github.daisukikaffuchino.han1meviewer.no_limit
+import io.github.daisukikaffuchino.han1meviewer.permission_error
 import io.github.daisukikaffuchino.han1meviewer.understood
+import io.github.daisukikaffuchino.han1meviewer.unknown_error
 import io.github.daisukikaffuchino.han1meviewer.specify_path_first
 import io.github.daisukikaffuchino.han1meviewer.select_folder_message
 import io.github.daisukikaffuchino.han1meviewer.select_download_folder
@@ -59,6 +64,7 @@ import io.github.daisukikaffuchino.han1meviewer.worker.HanimeDownloadManager
 import io.github.daisukikaffuchino.utils.SonnerToast
 import io.github.daisukikaffuchino.utils.toastText
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 
 @SuppressLint("LocalContextGetResourceValueCall")
 @Composable
@@ -72,7 +78,12 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
     var showSpecifyPathDialog by remember { mutableStateOf(false) }
     var importProgress by remember { mutableStateOf<ImportProgress?>(null) }
     val dao = remember { DownloadDatabase.instance.hanimeDownloadDao }
-    val uiState = remember(settings, context) { buildDownloadSettingsUiState(context) }
+    // P6d-3-C2：builder 在 remember{} 内无法调资源，字符串在外层预解析后传入
+    val unknownErrorTop = stringResource(Res.string.unknown_error)
+    val noLimitTop = stringResource(Res.string.no_limit)
+    val uiState = remember(settings, context, unknownErrorTop, noLimitTop) {
+        buildDownloadSettingsUiState(context, unknownErrorTop, noLimitTop)
+    }
 
     val openDirectoryPicker = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -178,19 +189,25 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
                 when (total) {
                     0 -> {
                         importProgress = null
-                        SonnerToast.info(context.getString(R.string.no_exportable_files))
+                        coroutineScope.launch {
+                            SonnerToast.info(getString(Res.string.no_exportable_files))
+                        }
                     }
 
                     -1 -> {
                         importProgress = null
-                        SonnerToast.error(context.getString(R.string.permission_error))
+                        coroutineScope.launch {
+                            SonnerToast.error(getString(Res.string.permission_error))
+                        }
                     }
 
                     else -> {
                         importProgress = ImportProgress(migrated, total)
                         if (migrated == total) {
                             importProgress = null
-                            SonnerToast.success(context.getString(R.string.import_complete, total))
+                            coroutineScope.launch {
+                                SonnerToast.success(getString(Res.string.import_complete, total))
+                            }
                         }
                     }
                 }
@@ -265,7 +282,7 @@ private fun ImportProgressDialog(progress: ImportProgress) {
     }
 }
 
-private fun buildDownloadSettingsUiState(context: Context): DownloadSettingsUiState {
+private fun buildDownloadSettingsUiState(context: Context, unknownError: String, noLimit: String): DownloadSettingsUiState {
     val uri = SafFileManager.getSavedUri()
     val pathSummary = if (SettingsRepository.isUsePrivateStorage) {
         context.getExternalFilesDir(null)?.absolutePath.orEmpty()
@@ -273,16 +290,16 @@ private fun buildDownloadSettingsUiState(context: Context): DownloadSettingsUiSt
         DocumentFile.fromTreeUri(
             context,
             uri ?: return DownloadSettingsUiState(
-                downloadPathSummary = context.getString(R.string.unknown_error),
+                downloadPathSummary = unknownError,
                 downloadCountLimit = SettingsRepository.downloadCountLimit,
                 downloadCountLimitSummary = toDownloadCountLimitPrettyString(
-                    context,
+                    noLimit,
                     SettingsRepository.downloadCountLimit
                 ),
                 downloadSpeedLimitIndex = SettingsRepository.current.downloadSpeedLimitIndex,
                 downloadSpeedLimitSummary = SpeedLimitInterceptor.SPEED_BYTES[
                     SettingsRepository.current.downloadSpeedLimitIndex
-                ].toDownloadSpeedPrettyString(context),
+                ].toDownloadSpeedPrettyString(noLimit),
             )
         )?.name ?: uri.toString()
     }
@@ -291,11 +308,11 @@ private fun buildDownloadSettingsUiState(context: Context): DownloadSettingsUiSt
         downloadPathSummary = pathSummary,
         downloadCountLimit = SettingsRepository.downloadCountLimit,
         downloadCountLimitSummary = toDownloadCountLimitPrettyString(
-            context,
+            noLimit,
             SettingsRepository.downloadCountLimit
         ),
         downloadSpeedLimitIndex = speedIndex,
         downloadSpeedLimitSummary = SpeedLimitInterceptor.SPEED_BYTES[speedIndex]
-            .toDownloadSpeedPrettyString(context),
+            .toDownloadSpeedPrettyString(noLimit),
     )
 }

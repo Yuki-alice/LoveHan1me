@@ -18,11 +18,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import org.jetbrains.compose.resources.getString
+import org.jetbrains.compose.resources.stringResource
 import androidx.core.net.toUri
 import io.github.daisukikaffuchino.han1meviewer.HANIME_LOGIN_URL
 import io.github.daisukikaffuchino.han1meviewer.HanimeConstants.HANIME_URL
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.complete_cloudflare_verification_with_warning
+import io.github.daisukikaffuchino.han1meviewer.current_webview_version
+import io.github.daisukikaffuchino.han1meviewer.version_check_failed
+import io.github.daisukikaffuchino.han1meviewer.webview_version_too_low
+import io.github.daisukikaffuchino.han1meviewer.webview_version_unknown
 import io.github.daisukikaffuchino.han1meviewer.USER_AGENT
 import io.github.daisukikaffuchino.han1meviewer.logic.NetworkRepo
 import io.github.daisukikaffuchino.han1meviewer.logic.network.CloudflareVerificationCoordinator
@@ -162,8 +170,10 @@ fun CloudflareRouteScreen(
 ) {
     val scope = rememberCoroutineScope()
     var progress by remember(route.host) { mutableIntStateOf(0) }
+    // P6d-3-C2：remember 计算 lambda 非 @Composable 上下文，初始串在外层解析后传入
+    val tipInitial = stringResource(Res.string.complete_cloudflare_verification_with_warning)
     var tipText by remember(route.host) {
-        mutableStateOf(activity.getString(R.string.complete_cloudflare_verification_with_warning))
+        mutableStateOf(tipInitial)
     }
     val webViewState = remember(route.host) { mutableStateOf<WebView?>(null) }
     val finalizedState = remember(route.host) { mutableStateOf(false) }
@@ -185,7 +195,7 @@ fun CloudflareRouteScreen(
                 url = route.url,
                 onCreated = { webViewState.value = it },
                 onProgressChanged = { progress = it },
-                onUserAgent = { tipText = buildWebViewVersionTip(activity, it) },
+                onUserAgent = { scope.launch { tipText = buildWebViewVersionTip(it) } },
                 onVerificationReady = { completedUrl, cookieManager ->
                     scope.launch {
                         if (persistCloudflareCookies(completedUrl, route.host, cookieManager)) {
@@ -316,7 +326,8 @@ private suspend fun persistCloudflareCookies(
     return true
 }
 
-private fun buildWebViewVersionTip(context: Context, output: String): String {
+// P6d-3-C2：转 suspend + CMP getString（调用方在 scope.launch 内）；context 参数去除
+private suspend fun buildWebViewVersionTip(output: String): String {
     val userAgent = output
         .removeSurrounding("\"")
         .replace("\\\"", "\"")
@@ -326,17 +337,17 @@ private fun buildWebViewVersionTip(context: Context, output: String): String {
         ?.groupValues
         ?.getOrNull(1)
         ?: userAgent
-    var text = context.getString(R.string.complete_cloudflare_verification_with_warning)
-    text += context.getString(R.string.current_webview_version, versionCode)
+    var text = getString(Res.string.complete_cloudflare_verification_with_warning)
+    text += getString(Res.string.current_webview_version, versionCode)
     text += try {
         val parts = versionCode.split(".").map { it.toIntOrNull() ?: 0 }
         when {
-            parts.size < 4 -> context.getString(R.string.webview_version_unknown)
-            parts[0] < 120 -> context.getString(R.string.webview_version_too_low)
+            parts.size < 4 -> getString(Res.string.webview_version_unknown)
+            parts[0] < 120 -> getString(Res.string.webview_version_too_low)
             else -> ""
         }
     } catch (_: Exception) {
-        context.getString(R.string.version_check_failed)
+        getString(Res.string.version_check_failed)
     }
     return text
 }

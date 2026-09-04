@@ -3,9 +3,9 @@ package io.github.daisukikaffuchino.han1meviewer.logic
 import android.util.Base64
 import io.github.daisukikaffuchino.utils.LogUtil
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.logic.model.Announcement
-import io.github.daisukikaffuchino.utils.applicationContext
+import io.github.daisukikaffuchino.han1meviewer.update_announcement_title
 import io.github.daisukikaffuchino.utils.decodeFromStringByBase64
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -15,6 +15,7 @@ import kotlinx.serialization.json.Json
 import okhttp3.HttpUrl.Companion.toHttpUrlOrNull
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import org.jetbrains.compose.resources.getString
 import java.util.concurrent.TimeUnit
 
 @Serializable
@@ -104,7 +105,7 @@ object AppUpdateChecker {
         }
     }
 
-    private fun String?.toUpdateCheckResult(): AppUpdateCheckResult {
+    private suspend fun String?.toUpdateCheckResult(): AppUpdateCheckResult {
         if (this.isNullOrBlank()) return AppUpdateCheckResult()
         return runCatching {
             val payload = jsonParser.decodeFromString<AppUpdatePayload>(this)
@@ -140,11 +141,11 @@ object AppUpdateChecker {
         }
     }
 
-    private fun AppUpdatePayload.toAnnouncementOrNull(): Announcement? {
+    private suspend fun AppUpdatePayload.toAnnouncementOrNull(): Announcement? {
         val content = announcement.trim()
         if (!isShowAnnouncement || content.isBlank()) return null
         return Announcement(
-            title = applicationContext.getString(R.string.update_announcement_title),
+            title = getString(Res.string.update_announcement_title),
             content = content,
             isActive = true,
         )

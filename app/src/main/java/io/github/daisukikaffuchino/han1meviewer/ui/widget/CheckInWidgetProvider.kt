@@ -33,7 +33,14 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.check_in_feature_name
+import io.github.daisukikaffuchino.han1meviewer.checkin
+import io.github.daisukikaffuchino.han1meviewer.counts
+import io.github.daisukikaffuchino.han1meviewer.widget_best_streak_format
+import io.github.daisukikaffuchino.han1meviewer.widget_feature_disabled
+import io.github.daisukikaffuchino.han1meviewer.widget_month_stats_format
+import io.github.daisukikaffuchino.han1meviewer.widget_today_label
 import io.github.daisukikaffuchino.han1meviewer.logic.dao.CheckInRecordDatabase
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.CheckInRecordEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.CheckInType
@@ -42,6 +49,7 @@ import io.github.daisukikaffuchino.han1meviewer.ui.activity.MainActivity
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.EXTRA_OPEN_DAILY_CHECK_IN
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import org.jetbrains.compose.resources.getString
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.YearMonth
@@ -55,17 +63,17 @@ class CheckInWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val stats = loadStats(context)
         val strings = CheckInWidgetStrings(
-            title = context.getString(R.string.check_in_feature_name),
-            today = context.getString(R.string.widget_today_label),
-            todayCount = context.getString(R.string.counts, stats.todayCount),
-            monthStats = context.getString(
-                R.string.widget_month_stats_format,
+            title = getString(Res.string.check_in_feature_name),
+            today = getString(Res.string.widget_today_label),
+            todayCount = getString(Res.string.counts, stats.todayCount),
+            monthStats = getString(
+                Res.string.widget_month_stats_format,
                 stats.checkedDays,
                 stats.monthlyTotal,
             ),
-            bestStreak = context.getString(R.string.widget_best_streak_format, stats.bestStreak),
-            checkIn = context.getString(R.string.checkin),
-            disabled = context.getString(R.string.widget_feature_disabled),
+            bestStreak = getString(Res.string.widget_best_streak_format, stats.bestStreak),
+            checkIn = getString(Res.string.checkin),
+            disabled = getString(Res.string.widget_feature_disabled),
         )
         val enabled = SettingsRepository.isCheckInEnabled
         val openCheckInAction = actionStartActivity(

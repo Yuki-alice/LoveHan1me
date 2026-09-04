@@ -27,6 +27,10 @@ import io.github.daisukikaffuchino.han1meviewer.HanimeConstants.HANIME_URL
 import io.github.daisukikaffuchino.han1meviewer.BuildConfig
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.auth_request
+import io.github.daisukikaffuchino.han1meviewer.unlock_desc
+import io.github.daisukikaffuchino.han1meviewer.unlock_method
 import io.github.daisukikaffuchino.han1meviewer.logout
 import io.github.daisukikaffuchino.han1meviewer.ui.bridge.VideoPageHost
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.AccountRoute
@@ -41,6 +45,7 @@ import io.github.daisukikaffuchino.utils.isX86_64Device
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 
 class MainActivity : BaseActivity() {
 
@@ -108,17 +113,21 @@ class MainActivity : BaseActivity() {
         val useLock = SettingsRepository.current.useLockScreen
 
         if (useLock && isDeviceSecureCompat(this)) {
-            authenticate(
-                this,
-                onSuccess = {
-                    hasAuthenticated = true
-                    showAuthGuard = false
-                    initData()
-                },
-                onFailed = {
-                    finish()
-                }
-            )
+            // P6d-3-C2：authenticate 转 suspend（CMP getString），launch 包一层；
+            // prompt 晚一帧出现，回调时序不变
+            lifecycleScope.launch {
+                authenticate(
+                    this@MainActivity,
+                    onSuccess = {
+                        hasAuthenticated = true
+                        showAuthGuard = false
+                        initData()
+                    },
+                    onFailed = {
+                        finish()
+                    }
+                )
+            }
         } else {
             hasAuthenticated = true
             showAuthGuard = false
@@ -138,7 +147,7 @@ class MainActivity : BaseActivity() {
         return km.isDeviceSecure
     }
 
-    private fun authenticate(
+    private suspend fun authenticate(
         activity: FragmentActivity,
         onSuccess: () -> Unit,
         onFailed: () -> Unit
@@ -164,9 +173,9 @@ class MainActivity : BaseActivity() {
         )
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle(getString(R.string.auth_request))
-            .setSubtitle(getString(R.string.unlock_method))
-            .setDescription(getString(R.string.unlock_desc))
+            .setTitle(getString(Res.string.auth_request))
+            .setSubtitle(getString(Res.string.unlock_method))
+            .setDescription(getString(Res.string.unlock_desc))
             .setAllowedAuthenticators(
                 BiometricManager.Authenticators.BIOMETRIC_WEAK or
                         BiometricManager.Authenticators.DEVICE_CREDENTIAL

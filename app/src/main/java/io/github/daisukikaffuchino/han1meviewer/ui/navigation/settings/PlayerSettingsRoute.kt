@@ -13,8 +13,20 @@ import com.google.android.gms.common.GoogleApiAvailability
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.current_slide_sensitivity
 import io.github.daisukikaffuchino.han1meviewer.default_
 import io.github.daisukikaffuchino.han1meviewer.d_speed_times
+import io.github.daisukikaffuchino.han1meviewer.enable_google_cast_summary
+import io.github.daisukikaffuchino.han1meviewer.extremely_high
+import io.github.daisukikaffuchino.han1meviewer.extremely_low
+import io.github.daisukikaffuchino.han1meviewer.google_cast_unavailable_summary
+import io.github.daisukikaffuchino.han1meviewer.high
+import io.github.daisukikaffuchino.han1meviewer.low
+import io.github.daisukikaffuchino.han1meviewer.moderate
+import io.github.daisukikaffuchino.han1meviewer.mpv_advanced_settings_summary
+import io.github.daisukikaffuchino.han1meviewer.mpv_settings_disabled_summary
+import io.github.daisukikaffuchino.han1meviewer.slightly_high
+import io.github.daisukikaffuchino.han1meviewer.slightly_low
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlayerDefaults
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlayerKernel
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.PlayerSettingsScreen
@@ -28,7 +40,34 @@ fun PlayerSettingsRouteScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
-    val uiState = remember(settings, context) { buildPlayerSettingsUiState(context) }
+    // P6d-3-C2：builder 在 remember{} 内无法调 stringResource，字符串在外层预解析后传入
+    val kernelForSummary = SettingsRepository.switchPlayerKernel
+    val longPressDisplayTop = stringResource(
+        Res.string.d_speed_times,
+        SettingsRepository.longPressSpeedTime
+    )
+    val mpvSummaryTop =
+        if (kernelForSummary == PlayerKernel.MpvPlayer.name) {
+            stringResource(Res.string.mpv_advanced_settings_summary)
+        } else {
+            stringResource(Res.string.mpv_settings_disabled_summary)
+        }
+    val sensitivitySummaryTop = toPrettySensitivityString(
+        SettingsRepository.slideSensitivity,
+        listOf(
+            stringResource(Res.string.extremely_low),
+            stringResource(Res.string.low),
+            stringResource(Res.string.slightly_low),
+            stringResource(Res.string.moderate),
+            stringResource(Res.string.slightly_high),
+            stringResource(Res.string.high),
+            stringResource(Res.string.extremely_high),
+        ),
+        stringResource(Res.string.current_slide_sensitivity),
+    )
+    val uiState = remember(settings, context, longPressDisplayTop, mpvSummaryTop, sensitivitySummaryTop) {
+        buildPlayerSettingsUiState(context, longPressDisplayTop, mpvSummaryTop, sensitivitySummaryTop)
+    }
 
     PlayerSettingsScreen(
         state = uiState,
@@ -72,7 +111,12 @@ fun PlayerSettingsRouteScreen(
     )
 }
 
-private fun buildPlayerSettingsUiState(context: Context): PlayerSettingsUiState {
+private fun buildPlayerSettingsUiState(
+    context: Context,
+    longPressDisplay: String,
+    mpvSettingsSummary: String,
+    slideSensitivitySummary: String,
+): PlayerSettingsUiState {
     val kernel = SettingsRepository.switchPlayerKernel
     val isMpvPlayer = kernel == PlayerKernel.MpvPlayer.name
     val currentSpeed = SettingsRepository.playerSpeed
@@ -82,18 +126,13 @@ private fun buildPlayerSettingsUiState(context: Context): PlayerSettingsUiState 
         PlayerDefaults.speeds.indexOfFirst { it == currentSpeed }.takeIf { it >= 0 }
             ?: PlayerDefaults.DEFAULT_SPEED_INDEX
     ) { speedLabels[PlayerDefaults.DEFAULT_SPEED_INDEX] }
-    val longPressDisplay = context.getString(R.string.d_speed_times, currentLongPressSpeed)
     val googleCastAvailable = GoogleApiAvailability.getInstance()
         .isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS
     return PlayerSettingsUiState(
         kernel = kernel,
         kernelDisplay = kernel,
         mpvSettingsEnabled = isMpvPlayer,
-        mpvSettingsSummary = if (isMpvPlayer) {
-            context.getString(R.string.mpv_advanced_settings_summary)
-        } else {
-            context.getString(R.string.mpv_settings_disabled_summary)
-        },
+        mpvSettingsSummary = mpvSettingsSummary,
         enableGoogleCast = SettingsRepository.enableGoogleCast,
         googleCastAvailable = googleCastAvailable,
         showBottomProgress = SettingsRepository.showBottomProgress,
@@ -102,6 +141,6 @@ private fun buildPlayerSettingsUiState(context: Context): PlayerSettingsUiState 
         longPressSpeedTimes = currentLongPressSpeed.toString(),
         longPressSpeedTimesLabel = longPressDisplay,
         slideSensitivity = SettingsRepository.slideSensitivity,
-        slideSensitivitySummary = toPrettySensitivityString(context, SettingsRepository.slideSensitivity),
+        slideSensitivitySummary = slideSensitivitySummary,
     )
 }

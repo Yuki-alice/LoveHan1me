@@ -15,6 +15,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository.isAlreadyLogin
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.there_is_a_small_issue
 import io.github.daisukikaffuchino.han1meviewer.VIDEO_COMMENT_PREFIX
 import io.github.daisukikaffuchino.han1meviewer.getHanimeShareText
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.CheckInRecordEntity
@@ -30,6 +32,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 
 @Composable
 fun RenderVideoIntroductionContent(
@@ -248,7 +251,7 @@ fun RenderVideoCommentContent(
                 val replyTargetId = comment.replyTargetIdOrNull
                 if (replyTargetId == null) {
                     scope.launch {
-                        reportMessages.emit(CommentMessage(getMessageText(CommentViewModel.Message(io.github.daisukikaffuchino.utils.application.getString(R.string.there_is_a_small_issue)))))
+                        reportMessages.emit(CommentMessage(getMessageText(CommentViewModel.Message(getString(Res.string.there_is_a_small_issue)))))
                     }
                     return@CommentScreen
                 }
@@ -303,7 +306,7 @@ fun RenderVideoCommentContent(
                 val replyTargetId = comment.replyTargetIdOrNull
                 if (replyTargetId == null) {
                     scope.launch {
-                        reportMessages.emit(CommentMessage(getMessageText(CommentViewModel.Message(io.github.daisukikaffuchino.utils.application.getString(R.string.there_is_a_small_issue)))))
+                        reportMessages.emit(CommentMessage(getMessageText(CommentViewModel.Message(getString(Res.string.there_is_a_small_issue)))))
                     }
                     return@CommentScreen
                 }
@@ -315,7 +318,7 @@ fun RenderVideoCommentContent(
                 viewModel.currentUserId?.let { id ->
                     viewModel.postComment(id, videoCode, VIDEO_COMMENT_PREFIX, it)
                 } ?: scope.launch {
-                    reportMessages.emit(CommentMessage(getMessageText(CommentViewModel.Message(io.github.daisukikaffuchino.utils.application.getString(R.string.there_is_a_small_issue)))))
+                    reportMessages.emit(CommentMessage(getMessageText(CommentViewModel.Message(getString(Res.string.there_is_a_small_issue)))))
                 }
             },
             initialFirstVisibleItemIndex = commentUiState.firstVisibleItemIndex,

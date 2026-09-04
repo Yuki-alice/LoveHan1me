@@ -11,11 +11,29 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.getString
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.cancel
+import io.github.daisukikaffuchino.han1meviewer.confirm
+import io.github.daisukikaffuchino.han1meviewer.create_group_success
+import io.github.daisukikaffuchino.han1meviewer.delete
+import io.github.daisukikaffuchino.han1meviewer.delete_success
 import io.github.daisukikaffuchino.han1meviewer.ext_player
+import io.github.daisukikaffuchino.han1meviewer.group_name_empty
+import io.github.daisukikaffuchino.han1meviewer.group_renamed
+import io.github.daisukikaffuchino.han1meviewer.ok
+import io.github.daisukikaffuchino.han1meviewer.permission_error
+import io.github.daisukikaffuchino.han1meviewer.prepare_to_delete_s
+import io.github.daisukikaffuchino.han1meviewer.read_download_dir_message
+import io.github.daisukikaffuchino.han1meviewer.read_download_dir_title
+import io.github.daisukikaffuchino.han1meviewer.read_success
+import io.github.daisukikaffuchino.han1meviewer.select_custom_directory
+import io.github.daisukikaffuchino.han1meviewer.sure_to_delete
+import io.github.daisukikaffuchino.han1meviewer.video_deleted_sure_to_delete_item
+import io.github.daisukikaffuchino.han1meviewer.video_not_exist
 import io.github.daisukikaffuchino.han1meviewer.logic.dao.DownloadDatabase
 import io.github.daisukikaffuchino.han1meviewer.logic.instance
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.HanimeDownloadEntity
@@ -72,7 +90,7 @@ fun DownloadRouteScreen(
                 ) {
                     showImportDownloadedConfirm = true
                 } else {
-                    SonnerToast.warning(application.getString(R.string.select_custom_directory))
+                    scope.launch { SonnerToast.warning(getString(Res.string.select_custom_directory)) }
                 }
             }
 
@@ -110,26 +128,28 @@ fun DownloadRouteScreen(
 
             is DownloadEvent.OnRenameGroup -> {
                 viewModel.updateGroupName(event.groupId, event.newName)
-                SonnerToast.success(application.getString(R.string.group_renamed, event.newName))
+                scope.launch { SonnerToast.success(getString(Res.string.group_renamed, event.newName)) }
             }
 
             is DownloadEvent.OnCreateGroup -> {
                 if (event.name.isBlank()) {
-                    SonnerToast.warning(application.getString(R.string.group_name_empty))
+                    scope.launch { SonnerToast.warning(getString(Res.string.group_name_empty)) }
                 } else {
                     viewModel.createNewGroup(event.name)
-                    SonnerToast.success(
-                        application.getString(
-                            R.string.create_group_success,
-                            event.name
+                    scope.launch {
+                        SonnerToast.success(
+                            getString(
+                                Res.string.create_group_success,
+                                event.name
+                            )
                         )
-                    )
+                    }
                 }
             }
 
             is DownloadEvent.OnDeleteGroup -> {
                 viewModel.deleteGroup(event.group)
-                SonnerToast.success(application.getString(R.string.delete_success))
+                scope.launch { SonnerToast.success(getString(Res.string.delete_success)) }
             }
 
             is DownloadEvent.OnBatchDelete -> event.videos.forEach { video ->
@@ -169,10 +189,10 @@ fun DownloadRouteScreen(
 
     ConfirmDialog(
         visible = showImportDownloadedConfirm,
-        title = application.getString(R.string.read_download_dir_title),
-        message = application.getString(R.string.read_download_dir_message),
-        confirmText = application.getString(R.string.ok),
-        dismissText = application.getString(R.string.cancel),
+        title = stringResource(Res.string.read_download_dir_title),
+        message = stringResource(Res.string.read_download_dir_message),
+        confirmText = stringResource(Res.string.ok),
+        dismissText = stringResource(Res.string.cancel),
         onConfirm = {
             showImportDownloadedConfirm = false
             isImportingDownloaded = true
@@ -193,9 +213,9 @@ fun DownloadRouteScreen(
                         sortedBy = HanimeDownloadEntity.SortedBy.ID,
                         ascending = false,
                     )
-                    SonnerToast.success(application.getString(R.string.read_success))
+                    SonnerToast.success(getString(Res.string.read_success))
                 } else {
-                    SonnerToast.error(application.getString(R.string.permission_error))
+                    SonnerToast.error(getString(Res.string.permission_error))
                 }
             }
         },
@@ -205,10 +225,10 @@ fun DownloadRouteScreen(
     showVideoNotExistConfirm?.let { video ->
         ConfirmDialog(
             visible = true,
-            title = application.getString(R.string.video_not_exist),
-            message = application.getString(R.string.video_deleted_sure_to_delete_item),
-            confirmText = application.getString(R.string.delete),
-            dismissText = application.getString(R.string.cancel),
+            title = stringResource(Res.string.video_not_exist),
+            message = stringResource(Res.string.video_deleted_sure_to_delete_item),
+            confirmText = stringResource(Res.string.delete),
+            dismissText = stringResource(Res.string.cancel),
             onConfirm = {
                 viewModel.deleteDownloadHanimeBy(video.video.videoCode, video.video.quality)
                 showVideoNotExistConfirm = null
@@ -220,10 +240,10 @@ fun DownloadRouteScreen(
     showDeleteVideoConfirm?.let { video ->
         ConfirmDialog(
             visible = true,
-            title = application.getString(R.string.sure_to_delete),
-            message = application.getString(R.string.prepare_to_delete_s, video.video.title),
-            confirmText = application.getString(R.string.confirm),
-            dismissText = application.getString(R.string.cancel),
+            title = stringResource(Res.string.sure_to_delete),
+            message = stringResource(Res.string.prepare_to_delete_s, video.video.title),
+            confirmText = stringResource(Res.string.confirm),
+            dismissText = stringResource(Res.string.cancel),
             onConfirm = {
                 SafFileManager.deleteDownloadVideoFolder(context, video.video.videoCode)
                 viewModel.deleteDownloadHanimeBy(video.video.videoCode, video.video.quality)

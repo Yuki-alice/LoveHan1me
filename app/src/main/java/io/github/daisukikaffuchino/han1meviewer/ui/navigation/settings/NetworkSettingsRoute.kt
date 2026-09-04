@@ -22,8 +22,27 @@ import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.EMPTY_STRING
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.alternative
+import io.github.daisukikaffuchino.han1meviewer.custom
+import io.github.daisukikaffuchino.han1meviewer.custom_mirror_site_test_failed
+import io.github.daisukikaffuchino.han1meviewer.custom_mirror_site_test_failed_http
+import io.github.daisukikaffuchino.han1meviewer.custom_mirror_site_test_parse_failed
+import io.github.daisukikaffuchino.han1meviewer.custom_mirror_site_test_partial_success
+import io.github.daisukikaffuchino.han1meviewer.custom_mirror_site_test_success
+import io.github.daisukikaffuchino.han1meviewer.custom_mirror_site_watch_test_failed
+import io.github.daisukikaffuchino.han1meviewer.custom_mirror_site_watch_test_failed_http
+import io.github.daisukikaffuchino.han1meviewer.default_
+import io.github.daisukikaffuchino.han1meviewer.direct
+import io.github.daisukikaffuchino.han1meviewer.doh_conflict_message
+import io.github.daisukikaffuchino.han1meviewer.doh_disabled_summary
+import io.github.daisukikaffuchino.han1meviewer.http_proxy
+import io.github.daisukikaffuchino.han1meviewer.invalid_ip_or_port
+import io.github.daisukikaffuchino.han1meviewer.loading
+import io.github.daisukikaffuchino.han1meviewer.node_latency_sum
+import io.github.daisukikaffuchino.han1meviewer.socks_proxy
+import io.github.daisukikaffuchino.han1meviewer.system_proxy
+import io.github.daisukikaffuchino.han1meviewer.unknow
 import io.github.daisukikaffuchino.han1meviewer.warning
 import io.github.daisukikaffuchino.han1meviewer.restart_or_not_working
 import io.github.daisukikaffuchino.han1meviewer.network_timeout_text
@@ -57,6 +76,7 @@ import okhttp3.Request
 import java.net.InetAddress
 import java.util.concurrent.Executors
 import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.runBlocking
 
 private enum class DohConflictTarget {
@@ -96,8 +116,38 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
     val delayHandler = remember { Handler(Looper.getMainLooper()) }
     val dohHandler = remember { Handler(Looper.getMainLooper()) }
     val executor = remember { Executors.newCachedThreadPool() }
-    val uiState = remember(settings, context) { buildNetworkSettingsUiState(context) }
     val networkTimeoutText = stringResource(Res.string.network_timeout_text)
+    // P6d-3-C2：以下 builder/后台回调在非 @Composable 上下文（remember{}/executor），字符串在此预解析后传入
+    val unknownText = stringResource(Res.string.unknow)
+    val domainDefaultText = stringResource(Res.string.default_)
+    val domainAlternativeText = stringResource(Res.string.alternative)
+    val directText = stringResource(Res.string.direct)
+    val systemProxyText = stringResource(Res.string.system_proxy)
+    val httpProxyTemplate = stringResource(Res.string.http_proxy)
+    val socksProxyTemplate = stringResource(Res.string.socks_proxy)
+    val nodeLatencyText = stringResource(Res.string.node_latency_sum)
+    val dohDisabledText = stringResource(Res.string.doh_disabled_summary)
+    val dohConflictText = stringResource(Res.string.doh_conflict_message)
+    val customText = stringResource(Res.string.custom)
+    val failedHttpTemplate = stringResource(Res.string.custom_mirror_site_test_failed_http)
+    val successTemplate = stringResource(Res.string.custom_mirror_site_test_success)
+    val partialTemplate = stringResource(Res.string.custom_mirror_site_test_partial_success)
+    val parseFailedTemplate = stringResource(Res.string.custom_mirror_site_test_parse_failed)
+    val failedTemplate = stringResource(Res.string.custom_mirror_site_test_failed)
+    val watchFailedHttpTemplate = stringResource(Res.string.custom_mirror_site_watch_test_failed_http)
+    val watchFailedTemplate = stringResource(Res.string.custom_mirror_site_watch_test_failed)
+    val loadingText = stringResource(Res.string.loading)
+    val uiState = remember(
+        settings, unknownText, domainDefaultText, domainAlternativeText, directText,
+        systemProxyText, httpProxyTemplate, socksProxyTemplate, nodeLatencyText,
+        dohDisabledText, dohConflictText, customText,
+    ) {
+        buildNetworkSettingsUiState(
+            domainDefaultText, domainAlternativeText, directText, systemProxyText,
+            httpProxyTemplate, socksProxyTemplate, nodeLatencyText,
+            dohDisabledText, dohConflictText, customText,
+        )
+    }
     val customMirrorInvalidText = stringResource(Res.string.custom_mirror_site_invalid)
     val customMirrorTestingText = stringResource(Res.string.custom_mirror_site_testing)
     fun stopDelayTest() {
@@ -142,7 +192,7 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
 
     fun runDohTest() {
         if (isDohTesting) return
-        val host = SettingsRepository.baseUrl.toUri().host ?: applicationContext.getString(R.string.unknow)
+        val host = SettingsRepository.baseUrl.toUri().host ?: unknownText
         currentHost = SettingsRepository.baseUrl
         dohTestResults.clear()
         isDohTesting = true
@@ -187,7 +237,7 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
 
     NetworkSettingsScreen(
         state = uiState,
-        domainOptions = buildDomainOptions(context),
+        domainOptions = buildDomainOptions(domainDefaultText, domainAlternativeText),
         currentHost = currentHost,
         delayResults = delayResults,
         dohTestResults = dohTestResults,
@@ -247,7 +297,18 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
             isCustomMirrorTesting = true
             customMirrorTestResult = customMirrorTestingText
             executor.execute {
-                val result = testCustomMirrorSite(context, normalizedUrl, appendPath)
+                val result = testCustomMirrorSite(
+                    normalizedUrl,
+                    appendPath,
+                    failedHttpTemplate,
+                    successTemplate,
+                    partialTemplate,
+                    parseFailedTemplate,
+                    failedTemplate,
+                    watchFailedHttpTemplate,
+                    watchFailedTemplate,
+                    loadingText,
+                )
                 Handler(Looper.getMainLooper()).post {
                     customMirrorTestResult = result
                     isCustomMirrorTesting = false
@@ -296,7 +357,7 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
         },
         onOpenDelayTest = {
             val host =
-                SettingsRepository.baseUrl.toUri().host ?: applicationContext.getString(R.string.unknow)
+                SettingsRepository.baseUrl.toUri().host ?: unknownText
             currentHost = SettingsRepository.baseUrl
             delayResults.clear()
             isDelayTesting = true
@@ -323,7 +384,8 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
                 else -> false
             }
             if (!valid) {
-                SonnerToast.warning(toastText(R.string.invalid_ip_or_port))
+                // P6d-3-C2 附带：回调内非 suspend，用 scope 桥 CMP getString（C3 同模式先行一处）
+                coroutineScope.launch { SonnerToast.warning(getString(Res.string.invalid_ip_or_port)) }
                 return@NetworkSettingsScreen
             }
             if (type == HProxySelector.TYPE_SOCKS) {
@@ -459,35 +521,42 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
     )
 }
 
-private fun buildNetworkSettingsUiState(context: Context): NetworkSettingsUiState {
+private fun buildNetworkSettingsUiState(
+    domainDefault: String,
+    domainAlternative: String,
+    direct: String,
+    systemProxy: String,
+    httpProxyTemplate: String,
+    socksProxyTemplate: String,
+    nodeLatency: String,
+    dohDisabled: String,
+    dohConflict: String,
+    custom: String,
+): NetworkSettingsUiState {
     return NetworkSettingsUiState(
         domainName = SettingsRepository.baseUrl,
-        domainDisplay = buildDomainOptions(context).firstOrNull { it.second == SettingsRepository.baseUrl }?.first
+        domainDisplay = buildDomainOptions(domainDefault, domainAlternative).firstOrNull { it.second == SettingsRepository.baseUrl }?.first
             ?: SettingsRepository.baseUrl,
         proxySummary = when (SettingsRepository.proxyType) {
-            HProxySelector.TYPE_DIRECT -> context.getString(R.string.direct)
-            HProxySelector.TYPE_SYSTEM -> context.getString(R.string.system_proxy)
-            HProxySelector.TYPE_HTTP -> context.getString(
-                R.string.http_proxy,
-                SettingsRepository.proxyIp,
-                SettingsRepository.proxyPort
-            )
+            HProxySelector.TYPE_DIRECT -> direct
+            HProxySelector.TYPE_SYSTEM -> systemProxy
+            HProxySelector.TYPE_HTTP -> httpProxyTemplate
+                .replace("%1\$s", SettingsRepository.proxyIp)
+                .replace("%2\$d", SettingsRepository.proxyPort.toString())
 
-            HProxySelector.TYPE_SOCKS -> context.getString(
-                R.string.socks_proxy,
-                SettingsRepository.proxyIp,
-                SettingsRepository.proxyPort
-            )
+            HProxySelector.TYPE_SOCKS -> socksProxyTemplate
+                .replace("%1\$s", SettingsRepository.proxyIp)
+                .replace("%2\$d", SettingsRepository.proxyPort.toString())
 
-            else -> context.getString(R.string.direct)
+            else -> direct
         },
         useBuiltInHosts = SettingsRepository.useBuiltInHosts,
         useCustomMirrorSite = SettingsRepository.useCustomMirrorSite,
         customMirrorSite = SettingsRepository.customMirrorSite,
         appendCustomMirrorPath = SettingsRepository.appendCustomMirrorPath,
         useDoH = SettingsRepository.useDoH,
-        dohSummary = buildDohSummary(context),
-        delaySummary = context.getString(R.string.node_latency_sum),
+        dohSummary = buildDohSummary(dohDisabled, dohConflict, custom),
+        delaySummary = nodeLatency,
     )
 }
 
@@ -499,62 +568,68 @@ private fun normalizeCustomMirrorSite(url: String): String? {
     return url.trim()
 }
 
-private fun testCustomMirrorSite(context: Context, homeUrl: String, appendPath: Boolean): String {
+private fun testCustomMirrorSite(
+    homeUrl: String,
+    appendPath: Boolean,
+    failedHttpTemplate: String,
+    successTemplate: String,
+    partialTemplate: String,
+    parseFailedTemplate: String,
+    failedTemplate: String,
+    watchFailedHttpTemplate: String,
+    watchFailedTemplate: String,
+    loadingText: String,
+): String {
     return runCatching {
         val request = Request.Builder().url(homeUrl).get().build()
         ServiceCreator.hClient.newCall(request).execute().use { response ->
             val finalUrl = response.request.url.toString()
             val body = response.body.string()
             if (!response.isSuccessful) {
-                return context.getString(
-                    R.string.custom_mirror_site_test_failed_http,
-                    response.code,
-                    finalUrl,
-                )
+                return failedHttpTemplate
+                    .replace("%1\$d", response.code.toString())
+                    .replace("%2\$s", finalUrl)
             }
 
             val apiBaseUrl = buildCustomMirrorApiBaseUrl(homeUrl, appendPath)
-            val watchTestResult = testCustomMirrorWatchUrl(context, apiBaseUrl)
+            val watchTestResult = testCustomMirrorWatchUrl(apiBaseUrl, watchFailedHttpTemplate, watchFailedTemplate)
             // P4：homePageVer2 因 composeResources getString 变为 suspend，此处同步桥接
             val parseResult = runBlocking { Parser.homePageVer2(body) }
             when (parseResult) {
                 is WebsiteState.Success -> if (watchTestResult == null) {
-                    context.getString(
-                        R.string.custom_mirror_site_test_success,
-                        finalUrl,
-                        apiBaseUrl,
-                    )
+                    successTemplate
+                        .replace("%1\$s", finalUrl)
+                        .replace("%2\$s", apiBaseUrl)
                 } else {
-                    context.getString(
-                        R.string.custom_mirror_site_test_partial_success,
-                        finalUrl,
-                        apiBaseUrl,
-                        watchTestResult,
-                    )
+                    partialTemplate
+                        .replace("%1\$s", finalUrl)
+                        .replace("%2\$s", apiBaseUrl)
+                        .replace("%3\$s", watchTestResult)
                 }
 
-                is WebsiteState.Error -> context.getString(
-                    R.string.custom_mirror_site_test_parse_failed,
-                    finalUrl,
-                    parseResult.throwable.message ?: parseResult.throwable::class.java.simpleName,
-                )
+                is WebsiteState.Error -> parseFailedTemplate
+                    .replace("%1\$s", finalUrl)
+                    .replace(
+                        "%2\$s",
+                        parseResult.throwable.message ?: parseResult.throwable::class.java.simpleName,
+                    )
 
-                WebsiteState.Loading -> context.getString(
-                    R.string.custom_mirror_site_test_parse_failed,
-                    finalUrl,
-                    context.getString(R.string.loading),
-                )
+                WebsiteState.Loading -> parseFailedTemplate
+                    .replace("%1\$s", finalUrl)
+                    .replace("%2\$s", loadingText)
             }
         }
     }.getOrElse { throwable ->
-        context.getString(
-            R.string.custom_mirror_site_test_failed,
-            throwable.message ?: throwable::class.java.simpleName,
-        )
+        failedTemplate
+            .replace("%1\$s", throwable.message ?: throwable::class.java.simpleName)
     }
 }
 
-private fun testCustomMirrorWatchUrl(context: Context, apiBaseUrl: String): String? {
+private fun testCustomMirrorWatchUrl(
+    apiBaseUrl: String,
+    failedHttpTemplate: String,
+    failedTemplate: String,
+): String? {
     return runCatching {
         val url = apiBaseUrl + "search"
         val request = Request.Builder().url(url).get().build()
@@ -562,18 +637,14 @@ private fun testCustomMirrorWatchUrl(context: Context, apiBaseUrl: String): Stri
             if (response.isSuccessful) {
                 null
             } else {
-                context.getString(
-                    R.string.custom_mirror_site_watch_test_failed_http,
-                    response.code,
-                    response.request.url.toString(),
-                )
+                failedHttpTemplate
+                    .replace("%1\$d", response.code.toString())
+                    .replace("%2\$s", response.request.url.toString())
             }
         }
     }.getOrElse { throwable ->
-        context.getString(
-            R.string.custom_mirror_site_watch_test_failed,
-            throwable.message ?: throwable::class.java.simpleName,
-        )
+        failedTemplate
+            .replace("%1\$s", throwable.message ?: throwable::class.java.simpleName)
     }
 }
 
@@ -585,11 +656,11 @@ private fun buildCustomMirrorApiBaseUrl(homeUrl: String, appendPath: Boolean): S
     return if (url.endsWith('/')) url else "$url/"
 }
 
-private fun buildDohSummary(context: Context): String {
-    if (!SettingsRepository.useDoH) return context.getString(R.string.doh_disabled_summary)
-    if (SettingsRepository.useBuiltInHosts) return context.getString(R.string.doh_conflict_message)
+private fun buildDohSummary(dohDisabled: String, dohConflict: String, custom: String): String {
+    if (!SettingsRepository.useDoH) return dohDisabled
+    if (SettingsRepository.useBuiltInHosts) return dohConflict
     val core = if (SettingsRepository.dohPreset == "custom") {
-        SettingsRepository.dohCustomUrl.ifBlank { context.getString(R.string.custom) }
+        SettingsRepository.dohCustomUrl.ifBlank { custom }
     } else {
         DohConfig.selectedPreset().title
     }

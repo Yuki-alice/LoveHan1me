@@ -11,8 +11,10 @@ import androidx.compose.ui.platform.LocalContext
 import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.mpv_cache_secs_summary
+import io.github.daisukikaffuchino.han1meviewer.mpv_hwdec_summary
+import io.github.daisukikaffuchino.han1meviewer.mpv_network_timeout_summary
 import io.github.daisukikaffuchino.han1meviewer.profile_gpu_hq
 import io.github.daisukikaffuchino.han1meviewer.profile_fast
 import io.github.daisukikaffuchino.han1meviewer.decoding_vulkan_copy
@@ -32,7 +34,21 @@ fun MpvPlayerSettingsRouteScreen() {
     val coroutineScope = rememberCoroutineScope()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
     var activeDialog by remember { mutableStateOf<MpvChoiceDialog?>(null) }
-    val uiState = remember(settings, context) { buildMpvPlayerSettingsUiState(context) }
+    // P6d-3-C2：builder 在 remember{} 内无法调资源，字符串在外层预解析后传入
+    val profileFastTop = stringResource(Res.string.profile_fast)
+    val profileGpuHqTop = stringResource(Res.string.profile_gpu_hq)
+    val hwdecSummaryTemplate = stringResource(Res.string.mpv_hwdec_summary)
+    val cacheSecsTemplate = stringResource(Res.string.mpv_cache_secs_summary)
+    val networkTimeoutTemplate = stringResource(Res.string.mpv_network_timeout_summary)
+    val uiState = remember(
+        settings, context, profileFastTop, profileGpuHqTop,
+        hwdecSummaryTemplate, cacheSecsTemplate, networkTimeoutTemplate,
+    ) {
+        buildMpvPlayerSettingsUiState(
+            profileFastTop, profileGpuHqTop,
+            hwdecSummaryTemplate, cacheSecsTemplate, networkTimeoutTemplate,
+        )
+    }
 
     MpvPlayerSettingsScreen(
         state = uiState,
@@ -86,14 +102,20 @@ fun MpvPlayerSettingsRouteScreen() {
     )
 }
 
-private fun buildMpvPlayerSettingsUiState(context: Context): MpvPlayerSettingsUiState {
+private fun buildMpvPlayerSettingsUiState(
+    profileFast: String,
+    profileGpuHq: String,
+    hwdecTemplate: String,
+    cacheSecsTemplate: String,
+    networkTimeoutTemplate: String,
+): MpvPlayerSettingsUiState {
     val profile = SettingsRepository.mpvProfile
     val hwdec = SettingsRepository.mpvHwdec
     return MpvPlayerSettingsUiState(
         profile = profile,
         profileDisplay = when (profile) {
-            "fast" -> context.getString(R.string.profile_fast)
-            "gpu-hq" -> context.getString(R.string.profile_gpu_hq)
+            "fast" -> profileFast
+            "gpu-hq" -> profileGpuHq
             else -> profile
         },
         enableGpuNextRenderer = SettingsRepository.enableGPUNextRenderer,
@@ -101,12 +123,12 @@ private fun buildMpvPlayerSettingsUiState(context: Context): MpvPlayerSettingsUi
         deband = SettingsRepository.mpvDeband,
         framedrop = SettingsRepository.mpvFramedrop,
         hwdec = hwdec,
-        hwdecDisplay = "${context.getString(R.string.mpv_hwdec_summary)} ($hwdec)",
+        hwdecDisplay = "$hwdecTemplate ($hwdec)",
         cacheSecs = SettingsRepository.mpvCacheSecs,
-        cacheSecsSummary = "${context.getString(R.string.mpv_cache_secs_summary)} (${SettingsRepository.mpvCacheSecs} S)",
+        cacheSecsSummary = "$cacheSecsTemplate (${SettingsRepository.mpvCacheSecs} S)",
         tlsVerify = SettingsRepository.mpvTlsVerify,
         networkTimeout = SettingsRepository.mpvNetworkTimeout,
-        networkTimeoutSummary = "${context.getString(R.string.mpv_network_timeout_summary)} (${SettingsRepository.mpvNetworkTimeout} S)",
+        networkTimeoutSummary = "$networkTimeoutTemplate (${SettingsRepository.mpvNetworkTimeout} S)",
         customParams = SettingsRepository.customMpvParams,
     )
 }

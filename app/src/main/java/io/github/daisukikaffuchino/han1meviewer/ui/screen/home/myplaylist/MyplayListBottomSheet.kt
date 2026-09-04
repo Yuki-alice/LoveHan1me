@@ -51,6 +51,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.cancel
+import io.github.daisukikaffuchino.han1meviewer.confirm
+import io.github.daisukikaffuchino.han1meviewer.delete_playlist
+import io.github.daisukikaffuchino.han1meviewer.delete_the_playlist
 import io.github.daisukikaffuchino.han1meviewer.modify_title_or_desc
 import io.github.daisukikaffuchino.han1meviewer.load_failed_retry
 import io.github.daisukikaffuchino.han1meviewer.load_complete_with_pages
@@ -58,6 +62,8 @@ import io.github.daisukikaffuchino.han1meviewer.empty_content
 import io.github.daisukikaffuchino.han1meviewer.edit
 import io.github.daisukikaffuchino.han1meviewer.delete
 import io.github.daisukikaffuchino.han1meviewer.h_chan_load_failed
+import io.github.daisukikaffuchino.han1meviewer.sure_to_delete
+import io.github.daisukikaffuchino.han1meviewer.sure_to_delete_s
 import io.github.daisukikaffuchino.han1meviewer.h_chan_loading
 import io.github.daisukikaffuchino.han1meviewer.ic_delete
 import io.github.daisukikaffuchino.han1meviewer.ic_edit_square
@@ -399,10 +405,10 @@ private fun PlaylistSheetContent(
                 val item = playlist.find { it.videoCode == videoCode }
                 ConfirmDialog(
                     visible = true,
-                    title = context.getString(R.string.delete_playlist),
-                    message = context.getString(R.string.sure_to_delete_s, item?.title ?: ""),
-                    confirmText = context.getString(R.string.confirm),
-                    dismissText = context.getString(R.string.cancel),
+                    title = stringResource(Res.string.delete_playlist),
+                    message = stringResource(Res.string.sure_to_delete_s, item?.title ?: ""),
+                    confirmText = stringResource(Res.string.confirm),
+                    dismissText = stringResource(Res.string.cancel),
                     onConfirm = {
                         viewModel.deleteFromPlaylist(
                             code,
@@ -416,10 +422,10 @@ private fun PlaylistSheetContent(
 
             ConfirmDialog(
                 visible = showDeletePlaylistConfirm,
-                title = context.getString(R.string.delete_the_playlist),
-                message = context.getString(R.string.sure_to_delete),
-                confirmText = context.getString(R.string.confirm),
-                dismissText = context.getString(R.string.cancel),
+                title = stringResource(Res.string.delete_the_playlist),
+                message = stringResource(Res.string.sure_to_delete),
+                confirmText = stringResource(Res.string.confirm),
+                dismissText = stringResource(Res.string.cancel),
                 onConfirm = {
                     viewModel.modifyPlaylist(
                         listCode,

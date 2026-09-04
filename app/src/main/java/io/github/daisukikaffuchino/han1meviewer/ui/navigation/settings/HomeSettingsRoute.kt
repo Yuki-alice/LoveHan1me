@@ -38,6 +38,7 @@ import androidx.compose.ui.platform.LocalUriHandler
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.stringResource
+import org.jetbrains.compose.resources.getString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,7 +51,15 @@ import io.github.daisukikaffuchino.han1meviewer.HanimeApplication
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.current_version
+import io.github.daisukikaffuchino.han1meviewer.follow_system
+import io.github.daisukikaffuchino.han1meviewer.local_data_export_failed
+import io.github.daisukikaffuchino.han1meviewer.local_data_import_failed
+import io.github.daisukikaffuchino.han1meviewer.online_data_export_failed
+import io.github.daisukikaffuchino.han1meviewer.online_data_import_failed
+import io.github.daisukikaffuchino.han1meviewer.simplified_chinese
 import io.github.daisukikaffuchino.han1meviewer.sure_to_clear_cache
+import io.github.daisukikaffuchino.han1meviewer.traditional_chinese
 import io.github.daisukikaffuchino.han1meviewer.sure_to_clear
 import io.github.daisukikaffuchino.han1meviewer.restart_needed
 import io.github.daisukikaffuchino.han1meviewer.hanime_app_name
@@ -153,7 +162,7 @@ fun HomeSettingsRouteScreen(
             }.onFailure {
                 withContext(Dispatchers.Main) {
                     SonnerToast.error(
-                        it.message ?: context.getString(R.string.local_data_export_failed)
+                        it.message ?: getString(Res.string.local_data_export_failed)
                     )
                 }
             }
@@ -176,7 +185,7 @@ fun HomeSettingsRouteScreen(
             }.onFailure {
                 withContext(Dispatchers.Main) {
                     SonnerToast.error(
-                        it.message ?: context.getString(R.string.local_data_import_failed)
+                        it.message ?: getString(Res.string.local_data_import_failed)
                     )
                 }
             }
@@ -199,7 +208,7 @@ fun HomeSettingsRouteScreen(
             }.onFailure {
                 withContext(Dispatchers.Main) {
                     SonnerToast.error(
-                        it.message ?: context.getString(R.string.online_data_export_failed)
+                        it.message ?: getString(Res.string.online_data_export_failed)
                     )
                 }
             }
@@ -226,7 +235,7 @@ fun HomeSettingsRouteScreen(
             }.onFailure {
                 withContext(Dispatchers.Main) {
                     SonnerToast.error(
-                        it.message ?: context.getString(R.string.online_data_import_failed)
+                        it.message ?: getString(Res.string.online_data_import_failed)
                     )
                 }
             }
@@ -266,14 +275,31 @@ fun HomeSettingsRouteScreen(
 
     LaunchedEffect(cacheKey) {
         cacheSummary = withContext(Dispatchers.IO) {
-            generateClearCacheSummary(context, context.cacheDir?.folderSize ?: 0L).toString()
+            generateClearCacheSummary(context.cacheDir?.folderSize ?: 0L).toString()
         }
     }
-    val uiState = remember(settings, cacheSummary, launcherItems, context) {
+    // P6d-3-C2：builder 在 remember{} 内无法调资源，标签在外层预解析后传入
+    val traditionalChineseLabel = stringResource(Res.string.traditional_chinese)
+    val simplifiedChineseLabel = stringResource(Res.string.simplified_chinese)
+    val followSystemLabel = stringResource(Res.string.follow_system)
+    val versionSummaryTop = stringResource(
+        Res.string.current_version,
+        "${BuildConfig.VERSION_NAME}(${BuildConfig.VERSION_CODE})"
+    )
+    val uiState = remember(
+        settings, cacheSummary, launcherItems, context,
+        traditionalChineseLabel, simplifiedChineseLabel, followSystemLabel, versionSummaryTop,
+    ) {
         buildHomeSettingsUiState(
             context = context,
+            videoLanguageLabels = mapOf(
+                "zht" to traditionalChineseLabel,
+                "zhs" to simplifiedChineseLabel,
+            ),
+            followSystemLabel = followSystemLabel,
             launcherItems = launcherItems,
             cacheSummary = cacheSummary,
+            versionSummary = versionSummaryTop,
         )
     }
 
@@ -619,19 +645,19 @@ private data class LauncherItem(
 
 private fun buildHomeSettingsUiState(
     context: Context,
+    videoLanguageLabels: Map<String, String>,
+    followSystemLabel: String,
     launcherItems: List<LauncherItem>,
     cacheSummary: String,
+    versionSummary: String,
 ): HomeSettingsUiState {
     val currentAlias = SettingsRepository.fakeLauncherIcon
     val currentItem = launcherItems.find { it.alias == currentAlias } ?: launcherItems.first()
-    val videoLanguageLabel = when (SettingsRepository.videoLanguage) {
-        "zht" -> context.getString(R.string.traditional_chinese)
-        "zhs" -> context.getString(R.string.simplified_chinese)
-        else -> SettingsRepository.videoLanguage
-    }
+    val videoLanguageLabel = videoLanguageLabels[SettingsRepository.videoLanguage]
+        ?: SettingsRepository.videoLanguage
     val appLanguage = AppLanguageManager.current(context)
     val appLanguageLabel = when (appLanguage) {
-        AppLanguage.SYSTEM -> context.getString(R.string.follow_system)
+        AppLanguage.SYSTEM -> followSystemLabel
         AppLanguage.ENGLISH -> "English"
         AppLanguage.CHINESE_SIMPLIFIED -> "简体中文"
         AppLanguage.CHINESE_TRADITIONAL -> "繁體中文"
@@ -662,10 +688,7 @@ private fun buildHomeSettingsUiState(
         secureMode = SettingsRepository.secureMode,
         fakeLauncherIconName = currentItem.name,
         cacheSummary = cacheSummary,
-        versionSummary = context.getString(
-            R.string.current_version,
-            "${BuildConfig.VERSION_NAME}(${BuildConfig.VERSION_CODE})"
-        ),
+        versionSummary = versionSummary,
         dynamicColorEnabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
         themeAccentColorId = SettingsRepository.current.themeAccent.id,
         appPaletteStyleId = SettingsRepository.current.paletteStyle.id,

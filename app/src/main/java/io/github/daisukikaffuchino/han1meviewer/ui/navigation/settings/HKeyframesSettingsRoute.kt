@@ -18,7 +18,11 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.default_
+import io.github.daisukikaffuchino.han1meviewer.h_keyframes_disable_tip
+import io.github.daisukikaffuchino.han1meviewer.h_keyframes_enable_tip
 import io.github.daisukikaffuchino.han1meviewer.shared_h_keyframe_detected_msg
+import io.github.daisukikaffuchino.han1meviewer.will_remind_before_d_seconds
 import io.github.daisukikaffuchino.han1meviewer.h_keyframes_shared_by_other_detected
 import io.github.daisukikaffuchino.han1meviewer.h_keyframes_import_shared_hint
 import io.github.daisukikaffuchino.han1meviewer.h_keyframes_import_shared
@@ -172,7 +176,17 @@ fun HKeyframeSettingsRouteScreen(
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
-    val uiState = remember(settings, context) { buildHKeyframeSettingsUiState(context) }
+    // P6d-3-C2：builder 在 remember{} 内无法调 stringResource，字符串在外层预解析后传入
+    val enableTipTop = stringResource(Res.string.h_keyframes_enable_tip)
+    val disableTipTop = stringResource(Res.string.h_keyframes_disable_tip)
+    val countdownSummaryTop = toPrettyCountdownRemindString(
+        SettingsRepository.whenCountdownRemind / 1000,
+        stringResource(Res.string.will_remind_before_d_seconds),
+        stringResource(Res.string.default_),
+    )
+    val uiState = remember(settings, context, enableTipTop, disableTipTop, countdownSummaryTop) {
+        buildHKeyframeSettingsUiState(enableTipTop, disableTipTop, countdownSummaryTop)
+    }
 
     HKeyframeSettingsScreen(
         state = uiState,
@@ -197,21 +211,22 @@ fun HKeyframeSettingsRouteScreen(
     )
 }
 
-private fun buildHKeyframeSettingsUiState(context: Context): HKeyframeSettingsUiState {
+private fun buildHKeyframeSettingsUiState(
+    enableTip: String,
+    disableTip: String,
+    countdownSummary: String,
+): HKeyframeSettingsUiState {
     return HKeyframeSettingsUiState(
         hKeyframesEnable = SettingsRepository.hKeyframesEnable,
         hKeyframesSummary = if (SettingsRepository.hKeyframesEnable) {
-            context.getString(R.string.h_keyframes_enable_tip)
+            enableTip
         } else {
-            context.getString(R.string.h_keyframes_disable_tip)
+            disableTip
         },
         sharedHKeyframesEnable = SettingsRepository.sharedHKeyframesEnable,
         sharedHKeyframesUseFirst = SettingsRepository.sharedHKeyframesUseFirst,
         showCommentWhenCountdown = SettingsRepository.showCommentWhenCountdown,
         whenCountdownRemind = SettingsRepository.whenCountdownRemind / 1000,
-        whenCountdownRemindSummary = toPrettyCountdownRemindString(
-            context,
-            SettingsRepository.whenCountdownRemind / 1000
-        ),
+        whenCountdownRemindSummary = countdownSummary,
     )
 }

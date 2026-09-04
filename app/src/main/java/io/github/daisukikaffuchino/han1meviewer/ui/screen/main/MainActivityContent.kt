@@ -39,6 +39,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.detect_ha1_related_link_in_clipboard
+import io.github.daisukikaffuchino.han1meviewer.enter
+import org.jetbrains.compose.resources.getString
 import io.github.daisukikaffuchino.han1meviewer.understood
 import io.github.daisukikaffuchino.han1meviewer.sure_to_logout
 import io.github.daisukikaffuchino.han1meviewer.sure
@@ -156,8 +159,8 @@ fun MainActivityContent(
         val videoCode = clipboardText?.let { videoUrlRegex.find(it)?.groupValues?.get(1) }
         if (videoCode != null) {
             val result = snackbarHostState.showSnackbar(
-                message = activity.getString(R.string.detect_ha1_related_link_in_clipboard),
-                actionLabel = activity.getString(R.string.enter),
+                message = getString(Res.string.detect_ha1_related_link_in_clipboard),
+                actionLabel = getString(Res.string.enter),
                 withDismissAction = true,
             )
             if (result == SnackbarResult.ActionPerformed) {

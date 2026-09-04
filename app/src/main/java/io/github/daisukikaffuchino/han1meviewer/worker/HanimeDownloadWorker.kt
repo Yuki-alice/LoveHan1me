@@ -25,6 +25,24 @@ import io.github.daisukikaffuchino.han1meviewer.EMPTY_STRING
 import io.github.daisukikaffuchino.han1meviewer.HFileManager
 import io.github.daisukikaffuchino.han1meviewer.HFileManager.createVideoName
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.download_completed_s
+import io.github.daisukikaffuchino.han1meviewer.download_error_connect
+import io.github.daisukikaffuchino.han1meviewer.download_error_dns
+import io.github.daisukikaffuchino.han1meviewer.download_error_file_info
+import io.github.daisukikaffuchino.han1meviewer.download_error_network
+import io.github.daisukikaffuchino.han1meviewer.download_error_range_not_supported
+import io.github.daisukikaffuchino.han1meviewer.download_error_storage
+import io.github.daisukikaffuchino.han1meviewer.download_error_timeout
+import io.github.daisukikaffuchino.han1meviewer.download_failed_s_exists
+import io.github.daisukikaffuchino.han1meviewer.download_task_completed
+import io.github.daisukikaffuchino.han1meviewer.download_task_failed
+import io.github.daisukikaffuchino.han1meviewer.download_task_failed_s_reason_s
+import io.github.daisukikaffuchino.han1meviewer.download_task_retrying
+import io.github.daisukikaffuchino.han1meviewer.download_task_retrying_s_reason_s
+import io.github.daisukikaffuchino.han1meviewer.downloading_s
+import io.github.daisukikaffuchino.han1meviewer.this_data_exists
+import io.github.daisukikaffuchino.han1meviewer.unknown_download_error
 import io.github.daisukikaffuchino.han1meviewer.logic.DatabaseRepo
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.DownloadGroupEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.HanimeDownloadEntity
@@ -48,6 +66,7 @@ import okhttp3.Request
 import okhttp3.Response
 import okhttp3.ResponseBody
 import okhttp3.internal.closeQuietly
+import org.jetbrains.compose.resources.getString
 import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
@@ -298,11 +317,11 @@ class HanimeDownloadWorker(
                     DatabaseRepo.HanimeDownload.find(videoCode, quality)
                         ?: return@withContext run {
                             LogUtil.d(TAG, "entity is null, create new raf failed")
-                            val reason = context.getString(R.string.download_error_file_info)
+                            val reason = getString(Res.string.download_error_file_info)
                             showFailureNotification(reason)
                             mainScope.launch {
                                 SonnerToast.error(
-                                    context.getString(R.string.download_task_failed_s_reason_s, hanimeName, reason)
+                                    getString(Res.string.download_task_failed_s_reason_s, hanimeName, reason)
                                 )
                             }
                             Result.failure(workDataOf(DownloadState.STATE to DownloadState.Failed.mask))
@@ -383,7 +402,7 @@ class HanimeDownloadWorker(
                         val reason = response.toDownloadErrorMessage(requestNeedRange)
                         showFailureNotification(reason)
                         mainScope.launch {
-                            SonnerToast.error(context.getString(R.string.download_task_failed_s_reason_s, hanimeName, reason))
+                            SonnerToast.error(getString(Res.string.download_task_failed_s_reason_s, hanimeName, reason))
                         }
                         result = Result.failure(workDataOf(DownloadState.STATE to DownloadState.Failed.mask))
                         return@withContext result
@@ -453,7 +472,7 @@ class HanimeDownloadWorker(
                     val reason = e.toDownloadErrorMessage()
                     showRetryNotification(reason)
                     mainScope.launch {
-                        SonnerToast.warning(context.getString(R.string.download_task_retrying_s_reason_s, hanimeName, reason))
+                        SonnerToast.warning(getString(Res.string.download_task_retrying_s_reason_s, hanimeName, reason))
                     }
                     shouldRetry = true
                     Result.retry()
@@ -462,7 +481,7 @@ class HanimeDownloadWorker(
                     showFailureNotification(reason)
                     e.printStackTrace()
                     mainScope.launch {
-                        SonnerToast.error(context.getString(R.string.download_task_failed_s_reason_s, hanimeName, reason))
+                        SonnerToast.error(getString(Res.string.download_task_failed_s_reason_s, hanimeName, reason))
                     }
                     Result.failure(
                         workDataOf(DownloadState.STATE to DownloadState.Failed.mask)
@@ -505,39 +524,39 @@ class HanimeDownloadWorker(
                 (this is IOException && message.equals("Canceled", ignoreCase = true).not())
     }
 
-    private fun Exception.toDownloadErrorMessage(): String {
+    private suspend fun Exception.toDownloadErrorMessage(): String {
         return when (this) {
-            is UnknownHostException -> context.getString(R.string.download_error_dns)
-            is SocketTimeoutException -> context.getString(R.string.download_error_timeout)
-            is ConnectException -> context.getString(R.string.download_error_connect)
-            is SocketException -> context.getString(R.string.download_error_network)
+            is UnknownHostException -> getString(Res.string.download_error_dns)
+            is SocketTimeoutException -> getString(Res.string.download_error_timeout)
+            is ConnectException -> getString(Res.string.download_error_connect)
+            is SocketException -> getString(Res.string.download_error_network)
             is IOException -> {
                 val rawMessage = message.orEmpty()
                 when {
                     rawMessage.contains("No space", ignoreCase = true) ||
                             rawMessage.contains("Permission", ignoreCase = true) ||
                             rawMessage.contains("Open SAF file failed", ignoreCase = true) -> {
-                        context.getString(R.string.download_error_storage)
+                        getString(Res.string.download_error_storage)
                     }
                     rawMessage.contains("Download incomplete", ignoreCase = true) -> {
-                        context.getString(R.string.download_error_network)
+                        getString(Res.string.download_error_network)
                     }
-                    else -> context.getString(R.string.download_error_network)
+                    else -> getString(Res.string.download_error_network)
                 }
             }
             else -> localizedMessage?.takeIf { it.isNotBlank() }
-                ?: context.getString(R.string.unknown_download_error)
+                ?: getString(Res.string.unknown_download_error)
         }
     }
 
-    private fun Response.toDownloadErrorMessage(requestNeedRange: Boolean): String {
+    private suspend fun Response.toDownloadErrorMessage(requestNeedRange: Boolean): String {
         return when {
             requestNeedRange && code == 416 -> {
-                context.getString(R.string.download_error_range_not_supported)
+                getString(Res.string.download_error_range_not_supported)
             }
-            requestNeedRange -> context.getString(R.string.download_error_range_not_supported)
-            code in 500..599 -> context.getString(R.string.download_error_network)
-            else -> message.takeIf { it.isNotBlank() } ?: context.getString(R.string.unknown_download_error)
+            requestNeedRange -> getString(Res.string.download_error_range_not_supported)
+            code in 500..599 -> getString(Res.string.download_error_network)
+            else -> message.takeIf { it.isNotBlank() } ?: getString(Res.string.unknown_download_error)
         }
     }
 
@@ -567,12 +586,12 @@ class HanimeDownloadWorker(
         }
     }
 
-    private fun createDownloadNotification(progress: Int = 0): Notification {
+    private suspend fun createDownloadNotification(progress: Int = 0): Notification {
         return NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
             .setSmallIcon(R.mipmap.ic_launcher_new)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
-            .setContentTitle(context.getString(R.string.downloading_s, hanimeName))
+            .setContentTitle(getString(Res.string.downloading_s, hanimeName))
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentText("$progress%")
             .setProgress(100, progress, false)
@@ -584,11 +603,11 @@ class HanimeDownloadWorker(
     }
 
     @SuppressLint("MissingPermission")
-    private fun updateDownloadNotification(progress: Int) {
+    private suspend fun updateDownloadNotification(progress: Int) {
         notificationManager.notify(downloadId, createDownloadNotification(progress))
     }
 
-    private fun createForegroundInfo(progress: Int = 0): ForegroundInfo {
+    private suspend fun createForegroundInfo(progress: Int = 0): ForegroundInfo {
         val notification = createDownloadNotification(progress)
         return ForegroundInfo(
             downloadId, notification,
@@ -598,42 +617,42 @@ class HanimeDownloadWorker(
     }
 
     @SuppressLint("MissingPermission")
-    private fun showSuccessNotification() {
+    private suspend fun showSuccessNotification() {
         notificationManager.notify(
             downloadId, NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
                 .setSmallIcon(R.drawable.ic_check_circle)
-                .setContentTitle(context.getString(R.string.download_task_completed))
+                .setContentTitle(getString(Res.string.download_task_completed))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
-                .setContentText(context.getString(R.string.download_completed_s, hanimeName))
+                .setContentText(getString(Res.string.download_completed_s, hanimeName))
                 .build()
         )
     }
 
     @SuppressLint("MissingPermission")
-    private fun showFileExistsFailureNotification(fileName: String) {
+    private suspend fun showFileExistsFailureNotification(fileName: String) {
         notificationManager.notify(
             downloadId, NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
                 .setSmallIcon(R.drawable.ic_cancel_circle)
-                .setContentTitle(context.getString(R.string.this_data_exists))
+                .setContentTitle(getString(Res.string.this_data_exists))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setContentText(context.getString(R.string.download_failed_s_exists, fileName))
+                .setContentText(getString(Res.string.download_failed_s_exists, fileName))
                 .build()
         )
     }
 
     @SuppressLint("MissingPermission")
-    private fun showFailureNotification(errMsg: String? = null) {
+    private suspend fun showFailureNotification(errMsg: String? = null) {
         notificationManager.notify(
             downloadId, NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
                 .setSmallIcon(R.drawable.ic_cancel_circle)
-                .setContentTitle(context.getString(R.string.download_task_failed))
+                .setContentTitle(getString(Res.string.download_task_failed))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .setContentText(
-                    context.getString(
-                        R.string.download_task_failed_s_reason_s,
-                        hanimeName, errMsg ?: context.getString(R.string.unknown_download_error)
+                    getString(
+                        Res.string.download_task_failed_s_reason_s,
+                        hanimeName, errMsg ?: getString(Res.string.unknown_download_error)
                     )
                 )
                 .build()
@@ -641,16 +660,16 @@ class HanimeDownloadWorker(
     }
 
     @SuppressLint("MissingPermission")
-    private fun showRetryNotification(reason: String) {
+    private suspend fun showRetryNotification(reason: String) {
         notificationManager.notify(
             downloadId, NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
                 .setSmallIcon(R.drawable.ic_download)
-                .setContentTitle(context.getString(R.string.download_task_retrying))
+                .setContentTitle(getString(Res.string.download_task_retrying))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setAutoCancel(true)
                 .setContentText(
-                    context.getString(
-                        R.string.download_task_retrying_s_reason_s,
+                    getString(
+                        Res.string.download_task_retrying_s_reason_s,
                         hanimeName, reason
                     )
                 )

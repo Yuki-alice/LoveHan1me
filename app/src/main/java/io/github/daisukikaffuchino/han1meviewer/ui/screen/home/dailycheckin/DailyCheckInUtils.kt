@@ -9,9 +9,14 @@ import android.provider.CalendarContract
 import android.view.View
 import android.view.WindowInsetsController
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.calendar_desc
+import io.github.daisukikaffuchino.han1meviewer.calendar_location
+import io.github.daisukikaffuchino.han1meviewer.calendar_title
 import io.github.daisukikaffuchino.utils.SonnerToast
 import io.github.daisukikaffuchino.utils.toastText
 import kotlinx.datetime.LocalDate
+import org.jetbrains.compose.resources.getString
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.atStartOfDayIn
 import kotlinx.datetime.plus
@@ -21,21 +26,22 @@ import kotlinx.datetime.DateTimeUnit
  * 创建日历事件，用于向系统日历添加未来打卡提醒。
  *
  * P6d-2：date 改 kotlinx（调用方 DailyCheckInScreen 已切 shared 类型）。
+ * P6d-3-C2：转 suspend + CMP getString（调用方 scope.launch）。
  *
  * @param context Android Context
  * @param date 提醒日期
  */
-fun createCalendarEvent(context: Context, date: LocalDate) {
+suspend fun createCalendarEvent(context: Context, date: LocalDate) {
     val intent = Intent(Intent.ACTION_INSERT).apply {
         setDataAndType(CalendarContract.Events.CONTENT_URI, "vnd.android.cursor.dir/event")
         putExtra(
             CalendarContract.Events.TITLE,
-            context.getString(R.string.calendar_title, date.monthNumber, date.dayOfMonth)
+            getString(Res.string.calendar_title, date.monthNumber, date.dayOfMonth)
         )
-        putExtra(CalendarContract.Events.DESCRIPTION, context.getString(R.string.calendar_desc))
+        putExtra(CalendarContract.Events.DESCRIPTION, getString(Res.string.calendar_desc))
         putExtra(
             CalendarContract.Events.EVENT_LOCATION,
-            context.getString(R.string.calendar_location)
+            getString(Res.string.calendar_location)
         )
         putExtra(
             CalendarContract.EXTRA_EVENT_BEGIN_TIME,
