@@ -14,6 +14,8 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.player_settings_controls
+import io.github.daisukikaffuchino.han1meviewer.player_settings_casting
 import io.github.daisukikaffuchino.han1meviewer.ic_cast
 import io.github.daisukikaffuchino.han1meviewer.ic_player_setting
 import io.github.daisukikaffuchino.han1meviewer.ic_seek_bar
@@ -110,7 +112,7 @@ fun PlayerSettingsScreen(
         contentPadding = PaddingValues(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        segmentedSection(titleRes = R.string.player_settings_controls) {
+        segmentedSection(titleRes = Res.string.player_settings_controls) {
             segmentedGroup {
                 SettingNavigationItem(
                     title = stringResource(R.string.switch_player_kernel),
@@ -159,7 +161,7 @@ fun PlayerSettingsScreen(
             }
         }
 
-        segmentedSection(titleRes = R.string.player_settings_casting) {
+        segmentedSection(titleRes = Res.string.player_settings_casting) {
             segmentedGroup {
                 SettingSwitchItem(
                     title = stringResource(R.string.enable_google_cast),

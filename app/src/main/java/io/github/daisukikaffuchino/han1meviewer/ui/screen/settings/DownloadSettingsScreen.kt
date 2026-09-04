@@ -8,6 +8,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.download
 import io.github.daisukikaffuchino.han1meviewer.ic_count
 import io.github.daisukikaffuchino.han1meviewer.ic_export
 import io.github.daisukikaffuchino.han1meviewer.ic_file_path
@@ -42,7 +43,7 @@ fun DownloadSettingsScreen(
     val content: @Composable () -> Unit = {
         Column {
             if (embedded) {
-                SettingsSectionTitle(titleRes = R.string.download)
+                SettingsSectionTitle(titleRes = Res.string.download)
             }
             SettingsSegmentedGroup {
                 SettingNavigationItem(

@@ -9,12 +9,17 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
+import org.jetbrains.compose.resources.StringResource
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.shared
+import io.github.daisukikaffuchino.han1meviewer.manage
+import io.github.daisukikaffuchino.han1meviewer.h_keyframe_settings
+import io.github.daisukikaffuchino.han1meviewer.custom
 import io.github.daisukikaffuchino.han1meviewer.ic_alert
 import io.github.daisukikaffuchino.han1meviewer.ic_count_down
 import io.github.daisukikaffuchino.han1meviewer.ic_format_list_bulleted
@@ -93,7 +98,7 @@ private fun HKeyframeSettingsContent(
 ) {
     Column(modifier = Modifier.fillMaxWidth()) {
         if (showTitle) {
-            SettingsSectionTitle(titleRes = R.string.h_keyframe_settings)
+            SettingsSectionTitle(titleRes = Res.string.h_keyframe_settings)
         }
         SettingsSegmentedGroup {
             SettingSwitchItem(
@@ -108,7 +113,7 @@ private fun HKeyframeSettingsContent(
 
         HKeyframeAnimatedSection(
             visible = state.hKeyframesEnable,
-            titleRes = R.string.manage,
+            titleRes = Res.string.manage,
         ) {
             SettingNavigationItem(
                 title = stringResource(R.string.h_keyframe_manage),
@@ -119,7 +124,7 @@ private fun HKeyframeSettingsContent(
 
         HKeyframeAnimatedSection(
             visible = state.hKeyframesEnable,
-            titleRes = R.string.shared,
+            titleRes = Res.string.shared,
         ) {
             SettingSwitchItem(
                 title = stringResource(R.string.shared_h_keyframes_enable),
@@ -153,7 +158,7 @@ private fun HKeyframeSettingsContent(
 
         HKeyframeAnimatedSection(
             visible = state.hKeyframesEnable,
-            titleRes = R.string.custom,
+            titleRes = Res.string.custom,
         ) {
             SettingSwitchItem(
                 title = stringResource(R.string.show_prompt_when_countdown),
@@ -176,7 +181,7 @@ private fun HKeyframeSettingsContent(
 @Composable
 private fun HKeyframeAnimatedSection(
     visible: Boolean,
-    titleRes: Int,
+    titleRes: StringResource,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     SettingsAnimatedVisibility(visible = visible) {

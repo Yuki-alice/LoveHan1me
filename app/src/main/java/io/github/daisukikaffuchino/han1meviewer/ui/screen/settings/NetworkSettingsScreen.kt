@@ -33,6 +33,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.network
+import io.github.daisukikaffuchino.han1meviewer.debug
+import io.github.daisukikaffuchino.han1meviewer.builtin_dns
 import io.github.daisukikaffuchino.han1meviewer.ic_delay
 import io.github.daisukikaffuchino.han1meviewer.ic_dns
 import io.github.daisukikaffuchino.han1meviewer.ic_domain
@@ -211,7 +214,7 @@ fun NetworkSettingsScreen(
     val content: @Composable () -> Unit = {
         Column(modifier = Modifier.fillMaxWidth()) {
             if (embedded) {
-                SettingsSectionTitle(titleRes = R.string.network)
+                SettingsSectionTitle(titleRes = Res.string.network)
             }
             SettingsSegmentedGroup {
                 SettingNavigationItem(
@@ -234,7 +237,7 @@ fun NetworkSettingsScreen(
                 )
             }
 
-            SettingsSectionTitle(titleRes = R.string.builtin_dns)
+            SettingsSectionTitle(titleRes = Res.string.builtin_dns)
             SettingsSegmentedGroup {
                 SettingSwitchItem(
                     title = stringResource(R.string.use_built_in_hosts),
@@ -257,7 +260,7 @@ fun NetworkSettingsScreen(
                 )
             }
 
-            SettingsSectionTitle(titleRes = R.string.debug)
+            SettingsSectionTitle(titleRes = Res.string.debug)
             SettingsSegmentedGroup {
                 SettingNavigationItem(
                     title = stringResource(R.string.view_node_latency),

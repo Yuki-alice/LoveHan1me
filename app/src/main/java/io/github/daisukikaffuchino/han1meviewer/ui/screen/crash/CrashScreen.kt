@@ -35,6 +35,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.crash_log_title
+import io.github.daisukikaffuchino.han1meviewer.crash_actions
 import io.github.daisukikaffuchino.han1meviewer.ic_bug_report
 import io.github.daisukikaffuchino.han1meviewer.ic_error_outline
 import io.github.daisukikaffuchino.han1meviewer.ic_exit_to_app
@@ -139,7 +141,7 @@ fun CrashScreen(
                     }
                 }
 
-                SettingsSectionTitle(titleRes = R.string.crash_actions)
+                SettingsSectionTitle(titleRes = Res.string.crash_actions)
                 SettingsSegmentedGroup {
                     SettingNavigationItem(
                         title = stringResource(R.string.crash_copy_log),
@@ -161,7 +163,7 @@ fun CrashScreen(
                     )
                 }
 
-                SettingsSectionTitle(titleRes = R.string.crash_log_title)
+                SettingsSectionTitle(titleRes = Res.string.crash_log_title)
                 Surface(
                     modifier = Modifier.fillMaxWidth(),
                     color = MaterialTheme.colorScheme.surfaceContainerLow,

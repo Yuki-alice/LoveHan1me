@@ -16,6 +16,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.player_settings_quality_performance
+import io.github.daisukikaffuchino.han1meviewer.player_settings_network_cache
+import io.github.daisukikaffuchino.han1meviewer.advanced
 import io.github.daisukikaffuchino.han1meviewer.ic_cache
 import io.github.daisukikaffuchino.han1meviewer.ic_cert
 import io.github.daisukikaffuchino.han1meviewer.ic_chip
@@ -110,7 +113,7 @@ fun MpvPlayerSettingsScreen(
         contentPadding = PaddingValues(vertical = 8.dp),
         verticalArrangement = Arrangement.spacedBy(2.dp),
     ) {
-        segmentedSection(titleRes = R.string.player_settings_quality_performance) {
+        segmentedSection(titleRes = Res.string.player_settings_quality_performance) {
             segmentedGroup {
                 SettingNavigationItem(
                     title = stringResource(R.string.mpv_profile),
@@ -155,7 +158,7 @@ fun MpvPlayerSettingsScreen(
             }
         }
 
-        segmentedSection(titleRes = R.string.player_settings_network_cache) {
+        segmentedSection(titleRes = Res.string.player_settings_network_cache) {
             segmentedGroup {
                 SettingSliderItem(
                     title = stringResource(R.string.mpv_cache_secs),
@@ -184,7 +187,7 @@ fun MpvPlayerSettingsScreen(
             }
         }
 
-        segmentedSection(titleRes = R.string.advanced) {
+        segmentedSection(titleRes = Res.string.advanced) {
             segmentedGroup {
                 SettingNavigationItem(
                     title = stringResource(R.string.custom_parameters),

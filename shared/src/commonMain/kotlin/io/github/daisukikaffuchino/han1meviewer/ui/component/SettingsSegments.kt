@@ -1,6 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.component
 
-import androidx.annotation.StringRes
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateContentSize
 import androidx.compose.animation.fadeIn
@@ -20,13 +19,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.AnimatedLazyListScope
-import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyColumn
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
+import org.jetbrains.compose.resources.StringResource
+import org.jetbrains.compose.resources.stringResource
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 fun AnimatedLazyListScope.segmentedGroup(
@@ -73,13 +70,15 @@ fun SettingsAnimatedVisibility(
     }
 }
 
+// P6d-1：原 @StringRes titleRes: Int? 改为 CMP StringResource。
+// 原因：调用点处在 lazy scope 非 @Composable 上下文，stringResource 只能在 shared 内 item{} 里解析。
+// 调用方改传 titleRes = Res.string.x（15 个标题已随迁 shared）。
 fun AnimatedLazyListScope.segmentedSection(
-    @StringRes titleRes: Int? = null,
-    title: String? = null,
+    titleRes: StringResource? = null,
     content: AnimatedLazyListScope.() -> Unit,
 ) {
-    if (titleRes != null || title != null) {
-        item { SettingsSectionTitle(titleRes = titleRes, title = title) }
+    if (titleRes != null) {
+        item { SettingsSectionTitle(titleRes = titleRes) }
     }
     content()
     item { Spacer(Modifier.size(HanimeDefaults.Spacing.small)) }
@@ -87,11 +86,10 @@ fun AnimatedLazyListScope.segmentedSection(
 
 @Composable
 fun SettingsSectionTitle(
-    @StringRes titleRes: Int? = null,
-    title: String? = null,
+    titleRes: StringResource? = null,
 ) {
     Text(
-        text = titleRes?.let { stringResource(it) } ?: title.orEmpty(),
+        text = titleRes?.let { stringResource(it) }.orEmpty(),
         style = MaterialTheme.typography.labelLarge,
         color = MaterialTheme.colorScheme.primary,
         modifier = Modifier
@@ -101,28 +99,4 @@ fun SettingsSectionTitle(
             )
             .padding(horizontal = HanimeDefaults.Spacing.contentVertical),
     )
-}
-
-@Preview(showBackground = true, widthDp = 420)
-@Composable
-private fun SettingsSegmentedGroupPreview() {
-    ComponentPreview {
-        LazyColumn {
-            segmentedSection(title = "显示") {
-                segmentedGroup {
-                    SettingSwitchItem(
-                        title = "动态配色",
-                        summary = "跟随系统主题颜色",
-                        checked = true,
-                        onCheckedChange = {},
-                    )
-                    SettingNavigationItem(
-                        title = "深色模式",
-                        valueText = "跟随系统",
-                        onClick = {},
-                    )
-                }
-            }
-        }
-    }
 }
