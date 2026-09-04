@@ -17,12 +17,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.EMPTY_STRING
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.warning
+import io.github.daisukikaffuchino.han1meviewer.restart_or_not_working
+import io.github.daisukikaffuchino.han1meviewer.network_timeout_text
+import io.github.daisukikaffuchino.han1meviewer.mpv_socks5_warning
+import io.github.daisukikaffuchino.han1meviewer.domain_change_tips
+import io.github.daisukikaffuchino.han1meviewer.doh_conflict_message
+import io.github.daisukikaffuchino.han1meviewer.custom_mirror_site_warning
+import io.github.daisukikaffuchino.han1meviewer.custom_mirror_site_testing
+import io.github.daisukikaffuchino.han1meviewer.custom_mirror_site_invalid
+import io.github.daisukikaffuchino.han1meviewer.confirm
+import io.github.daisukikaffuchino.han1meviewer.cancel
+import io.github.daisukikaffuchino.han1meviewer.attention
 import io.github.daisukikaffuchino.han1meviewer.logic.Parser
 import io.github.daisukikaffuchino.han1meviewer.logic.network.DohConfig
 import io.github.daisukikaffuchino.han1meviewer.logic.network.HDns
@@ -84,9 +97,9 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
     val dohHandler = remember { Handler(Looper.getMainLooper()) }
     val executor = remember { Executors.newCachedThreadPool() }
     val uiState = remember(settings, context) { buildNetworkSettingsUiState(context) }
-    val networkTimeoutText = stringResource(R.string.network_timeout_text)
-    val customMirrorInvalidText = stringResource(R.string.custom_mirror_site_invalid)
-    val customMirrorTestingText = stringResource(R.string.custom_mirror_site_testing)
+    val networkTimeoutText = stringResource(Res.string.network_timeout_text)
+    val customMirrorInvalidText = stringResource(Res.string.custom_mirror_site_invalid)
+    val customMirrorTestingText = stringResource(Res.string.custom_mirror_site_testing)
     fun stopDelayTest() {
         isDelayTesting = false
         delayHandler.removeCallbacksAndMessages(null)
@@ -327,10 +340,10 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
 
     ConfirmDialog(
         visible = showDomainRestartConfirm,
-        title = stringResource(R.string.attention),
-        message = stringResource(R.string.domain_change_tips).trimIndent(),
-        confirmText = stringResource(R.string.confirm),
-        dismissText = stringResource(R.string.cancel),
+        title = stringResource(Res.string.attention),
+        message = stringResource(Res.string.domain_change_tips).trimIndent(),
+        confirmText = stringResource(Res.string.confirm),
+        dismissText = stringResource(Res.string.cancel),
         cancelable = false,
         onConfirm = {
             coroutineScope.launch {
@@ -359,11 +372,11 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
     if (showCustomMirrorValidationError) {
         AlertDialog(
             onDismissRequest = { showCustomMirrorValidationError = false },
-            title = { Text(stringResource(R.string.attention)) },
-            text = { Text(stringResource(R.string.custom_mirror_site_invalid)) },
+            title = { Text(stringResource(Res.string.attention)) },
+            text = { Text(stringResource(Res.string.custom_mirror_site_invalid)) },
             confirmButton = {
                 TextButton(onClick = { showCustomMirrorValidationError = false }) {
-                    Text(stringResource(R.string.confirm))
+                    Text(stringResource(Res.string.confirm))
                 }
             },
         )
@@ -371,10 +384,10 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
 
     ConfirmDialog(
         visible = showHostsRestartConfirm,
-        title = stringResource(R.string.attention),
-        message = stringResource(R.string.restart_or_not_working, EMPTY_STRING),
-        confirmText = stringResource(R.string.confirm),
-        dismissText = stringResource(R.string.cancel),
+        title = stringResource(Res.string.attention),
+        message = stringResource(Res.string.restart_or_not_working, EMPTY_STRING),
+        confirmText = stringResource(Res.string.confirm),
+        dismissText = stringResource(Res.string.cancel),
         cancelable = false,
         onConfirm = { ActivityManager.restart(killProcess = true) },
         onDismiss = { showHostsRestartConfirm = false },
@@ -384,11 +397,11 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
     if (validationErrors != null) {
         AlertDialog(
             onDismissRequest = { showCustomHostsValidationError = null },
-            title = { Text(stringResource(R.string.attention)) },
+            title = { Text(stringResource(Res.string.attention)) },
             text = { Text(validationErrors.joinToString("\n")) },
             confirmButton = {
                 TextButton(onClick = { showCustomHostsValidationError = null }) {
-                    Text(stringResource(R.string.confirm))
+                    Text(stringResource(Res.string.confirm))
                 }
             },
         )
@@ -396,10 +409,10 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
 
     ConfirmDialog(
         visible = showCustomMirrorWarningConfirm,
-        title = stringResource(R.string.attention),
-        message = stringResource(R.string.custom_mirror_site_warning),
-        confirmText = stringResource(R.string.confirm),
-        dismissText = stringResource(R.string.cancel),
+        title = stringResource(Res.string.attention),
+        message = stringResource(Res.string.custom_mirror_site_warning),
+        confirmText = stringResource(Res.string.confirm),
+        dismissText = stringResource(Res.string.cancel),
         cancelable = false,
         onConfirm = {
             showCustomMirrorWarningConfirm = false
@@ -415,10 +428,10 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
 
     ConfirmDialog(
         visible = showDohConflictConfirm,
-        title = stringResource(R.string.attention),
-        message = stringResource(R.string.doh_conflict_message),
-        confirmText = stringResource(R.string.confirm),
-        dismissText = stringResource(R.string.cancel),
+        title = stringResource(Res.string.attention),
+        message = stringResource(Res.string.doh_conflict_message),
+        confirmText = stringResource(Res.string.confirm),
+        dismissText = stringResource(Res.string.cancel),
         cancelable = false,
         onConfirm = {
             coroutineScope.launch {
@@ -437,10 +450,10 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
 
     ConfirmDialog(
         visible = showSocksWarning,
-        title = stringResource(R.string.warning),
-        message = stringResource(R.string.mpv_socks5_warning),
-        confirmText = stringResource(R.string.confirm),
-        dismissText = stringResource(R.string.cancel),
+        title = stringResource(Res.string.warning),
+        message = stringResource(Res.string.mpv_socks5_warning),
+        confirmText = stringResource(Res.string.confirm),
+        dismissText = stringResource(Res.string.cancel),
         onConfirm = { showSocksWarning = false },
         onDismiss = { showSocksWarning = false },
     )

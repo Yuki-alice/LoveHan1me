@@ -24,10 +24,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.subscription_artist_rows_option
+import io.github.daisukikaffuchino.han1meviewer.subscription_artist_rows
+import io.github.daisukikaffuchino.han1meviewer.my_subscribe
+import io.github.daisukikaffuchino.han1meviewer.load_failed_with_reason
 import io.github.daisukikaffuchino.han1meviewer.h_chan_sad
 import io.github.daisukikaffuchino.han1meviewer.ic_table_rows
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
@@ -115,9 +118,9 @@ fun SubscriptionScreen(
 
     ChoiceDialog(
         visible = showArtistRowsDialog,
-        title = stringResource(R.string.subscription_artist_rows),
+        title = stringResource(Res.string.subscription_artist_rows),
         options = (1..3).map { rows ->
-            stringResource(R.string.subscription_artist_rows_option, rows) to rows.toString()
+            stringResource(Res.string.subscription_artist_rows_option, rows) to rows.toString()
         },
         selectedValue = settings.subscriptionArtistRows.toString(),
         onDismiss = { showArtistRowsDialog = false },
@@ -151,13 +154,13 @@ fun SubscriptionScreen(
 
     HanimeScaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        title = stringResource(R.string.my_subscribe),
+        title = stringResource(Res.string.my_subscribe),
         onBack = navigateBack,
         actions = {
             IconButton(onClick = { showArtistRowsDialog = true }) {
                 Icon(
                     painter = painterResource(Res.drawable.ic_table_rows),
-                    contentDescription = stringResource(R.string.subscription_artist_rows),
+                    contentDescription = stringResource(Res.string.subscription_artist_rows),
                 )
             }
         },
@@ -190,8 +193,7 @@ fun SubscriptionScreen(
                 is WebsiteState.Error -> {
                     if (cachedArtists.value.isEmpty()) {
                         EmptyContent(
-                            hint = stringResource(
-                                R.string.load_failed_with_reason,
+                            hint = stringResource(Res.string.load_failed_with_reason,
                                 (state as WebsiteState.Error).throwable.message.orEmpty()
                             ),
                             picRes = Res.drawable.h_chan_sad

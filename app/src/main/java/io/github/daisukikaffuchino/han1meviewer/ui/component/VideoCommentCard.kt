@@ -28,14 +28,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.view_more_replies
+import io.github.daisukikaffuchino.han1meviewer.report_reason_hint
+import io.github.daisukikaffuchino.han1meviewer.reply
 import io.github.daisukikaffuchino.han1meviewer.ic_thumb_up_off_alt
 import io.github.daisukikaffuchino.han1meviewer.ic_thumb_up_alt
 import io.github.daisukikaffuchino.han1meviewer.ic_thumb_down_off_alt
@@ -131,7 +133,7 @@ fun VideoCommentCard(
                 IconButton(onClick = onReport, modifier = Modifier.size(36.dp)) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_report),
-                        contentDescription = stringResource(R.string.report_reason_hint),
+                        contentDescription = stringResource(Res.string.report_reason_hint),
                         tint = MaterialTheme.colorScheme.secondary.copy(alpha = 0.9f)
                     )
                 }
@@ -187,7 +189,7 @@ fun VideoCommentCard(
                         painter = painterResource(Res.drawable.ic_reply),
                         contentDescription = null,
                     )
-                    Text(stringResource(R.string.reply))
+                    Text(stringResource(Res.string.reply))
                 }
             }
 
@@ -195,7 +197,7 @@ fun VideoCommentCard(
                 TextButton(
                     onClick = onViewMoreReplies,
                 ) {
-                    Text(stringResource(R.string.view_more_replies, comment.replyCount ?: 0))
+                    Text(stringResource(Res.string.view_more_replies, comment.replyCount ?: 0))
                 }
             }
         }

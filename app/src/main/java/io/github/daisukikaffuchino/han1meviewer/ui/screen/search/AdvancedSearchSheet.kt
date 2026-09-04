@@ -40,11 +40,29 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.switch_to_year
+import io.github.daisukikaffuchino.han1meviewer.switch_to_year_month
+import io.github.daisukikaffuchino.han1meviewer.type
+import io.github.daisukikaffuchino.han1meviewer.tag
+import io.github.daisukikaffuchino.han1meviewer.specific_y_m
+import io.github.daisukikaffuchino.han1meviewer.sort_option
+import io.github.daisukikaffuchino.han1meviewer.search_options_tips
+import io.github.daisukikaffuchino.han1meviewer.search
+import io.github.daisukikaffuchino.han1meviewer.save
+import io.github.daisukikaffuchino.han1meviewer.reset
+import io.github.daisukikaffuchino.han1meviewer.release_date
+import io.github.daisukikaffuchino.han1meviewer.pair_widely_alert
+import io.github.daisukikaffuchino.han1meviewer.pair_widely
+import io.github.daisukikaffuchino.han1meviewer.duration
+import io.github.daisukikaffuchino.han1meviewer.cancel
+import io.github.daisukikaffuchino.han1meviewer.approximate_range
+import io.github.daisukikaffuchino.han1meviewer.advanced_search_combination
+import io.github.daisukikaffuchino.han1meviewer.advanced_search
 import io.github.daisukikaffuchino.han1meviewer.ic_search
 import io.github.daisukikaffuchino.han1meviewer.SEARCH_YEAR_RANGE_END
 import io.github.daisukikaffuchino.han1meviewer.SEARCH_YEAR_RANGE_START
@@ -95,11 +113,11 @@ fun AdvancedSearchSheet(
             SheetValue.Expanded,
         ),
     )
-    val typeLabel = stringResource(R.string.type)
-    val sortLabel = stringResource(R.string.sort_option)
-    val tagLabel = stringResource(R.string.tag)
-    val releaseDateLabel = stringResource(R.string.release_date)
-    val durationLabel = stringResource(R.string.duration)
+    val typeLabel = stringResource(Res.string.type)
+    val sortLabel = stringResource(Res.string.sort_option)
+    val tagLabel = stringResource(Res.string.tag)
+    val releaseDateLabel = stringResource(Res.string.release_date)
+    val durationLabel = stringResource(Res.string.duration)
     val tagScopes = remember(viewModel.tags) { buildTagScopeSections(viewModel.tags) }
 
     fun updateSelection(block: () -> Unit) {
@@ -163,7 +181,7 @@ fun AdvancedSearchSheet(
             ) {
                 item {
                     Text(
-                        text = stringResource(R.string.advanced_search),
+                        text = stringResource(Res.string.advanced_search),
                         style = MaterialTheme.typography.headlineSmall,
                     )
                 }
@@ -340,7 +358,7 @@ private fun AdvancedSearchSingleChoiceDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(state.titleRes)) },
+        title = { Text(androidx.compose.ui.res.stringResource(state.titleRes)) },
         text = {
             LazyColumn(
                 modifier = Modifier.heightIn(max = 360.dp),
@@ -386,7 +404,7 @@ private fun AdvancedSearchMultiChoiceDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(state.titleRes)) },
+        title = { Text(androidx.compose.ui.res.stringResource(state.titleRes)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(
@@ -395,11 +413,11 @@ private fun AdvancedSearchMultiChoiceDialog(
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = stringResource(R.string.pair_widely),
+                            text = stringResource(Res.string.pair_widely),
                             style = MaterialTheme.typography.titleSmall,
                         )
                         Text(
-                            text = stringResource(R.string.pair_widely_alert),
+                            text = stringResource(Res.string.pair_widely_alert),
                             style = MaterialTheme.typography.bodySmall,
                         )
                     }
@@ -423,7 +441,7 @@ private fun AdvancedSearchMultiChoiceDialog(
                             },
                             text = {
                                 Text(
-                                    text = stringResource(scopeSection.titleRes),
+                                    text = androidx.compose.ui.res.stringResource(scopeSection.titleRes),
                                     softWrap = false,
                                 )
                             },
@@ -466,7 +484,7 @@ private fun AdvancedSearchMultiChoiceDialog(
                 updateSelection { state.onSave(selected.toSet(), broad) }
                 onDismiss()
             }) {
-                Text(stringResource(R.string.save))
+                Text(stringResource(Res.string.save))
             }
         },
         dismissButton = {
@@ -505,7 +523,7 @@ private fun AdvancedSearchReleaseDateDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.release_date)) },
+        title = { Text(stringResource(Res.string.release_date)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Row(
@@ -516,13 +534,13 @@ private fun AdvancedSearchReleaseDateDialog(
                         modifier = Modifier.weight(1f),
                         onClick = { selectedTab = 0 }
                     ) {
-                        Text(stringResource(R.string.specific_y_m))
+                        Text(stringResource(Res.string.specific_y_m))
                     }
                     FilledTonalButton(
                         modifier = Modifier.weight(1f),
                         onClick = { selectedTab = 1 }
                     ) {
-                        Text(stringResource(R.string.approximate_range))
+                        Text(stringResource(Res.string.approximate_range))
                     }
                 }
                 if (selectedTab == 0) {
@@ -532,7 +550,7 @@ private fun AdvancedSearchReleaseDateDialog(
                     ) {
                         Text(
                             stringResource(
-                                if (yearOnly) R.string.switch_to_year_month else R.string.switch_to_year
+                                if (yearOnly) Res.string.switch_to_year_month else Res.string.switch_to_year
                             )
                         )
                     }
@@ -590,7 +608,7 @@ private fun AdvancedSearchReleaseDateDialog(
                 }
                 onDismiss()
             }) {
-                Text(stringResource(R.string.save))
+                Text(stringResource(Res.string.save))
             }
         },
         dismissButton = {
@@ -612,10 +630,10 @@ private fun AdvancedSearchDialogDismissButtons(
 ) {
     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
         TextButton(onClick = onReset) {
-            Text(stringResource(R.string.reset))
+            Text(stringResource(Res.string.reset))
         }
         TextButton(onClick = onDismiss) {
-            Text(stringResource(R.string.cancel))
+            Text(stringResource(Res.string.cancel))
         }
     }
 }
@@ -628,7 +646,7 @@ private fun AdvancedSearchHistorySection(
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         Text(
-            text = stringResource(R.string.advanced_search_combination),
+            text = stringResource(Res.string.advanced_search_combination),
             style = MaterialTheme.typography.titleMedium,
         )
         LazyColumn(
@@ -724,7 +742,7 @@ private fun AdvancedSearchActionSection(
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Text(
-            text = stringResource(R.string.search_options_tips),
+            text = stringResource(Res.string.search_options_tips),
             style = MaterialTheme.typography.bodyMedium,
         )
         FilledIconButton(
@@ -733,7 +751,7 @@ private fun AdvancedSearchActionSection(
         ) {
             Icon(
                 painter = painterResource(Res.drawable.ic_search),
-                contentDescription = stringResource(R.string.search),
+                contentDescription = stringResource(Res.string.search),
             )
         }
     }

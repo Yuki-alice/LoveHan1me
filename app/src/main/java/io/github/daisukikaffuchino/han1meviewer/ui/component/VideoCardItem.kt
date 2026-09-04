@@ -38,7 +38,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -46,6 +46,9 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.played
+import io.github.daisukikaffuchino.han1meviewer.now_playing
+import io.github.daisukikaffuchino.han1meviewer.delete
 import io.github.daisukikaffuchino.han1meviewer.h_chan_load_failed
 import io.github.daisukikaffuchino.han1meviewer.h_chan_loading
 import io.github.daisukikaffuchino.han1meviewer.ic_access_time
@@ -160,7 +163,7 @@ fun VideoCardItem(
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
                             Text(
-                                text = stringResource(R.string.played),
+                                text = stringResource(Res.string.played),
                                 color = Color.White,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
@@ -241,7 +244,7 @@ fun VideoCardItem(
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
-                                    text = stringResource(R.string.now_playing),
+                                    text = stringResource(Res.string.now_playing),
                                     color = MaterialTheme.colorScheme.onPrimary,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Bold,
@@ -340,7 +343,7 @@ fun VideoCardItem(
                 }
                 if (showDeleteAction) {
                     DropdownMenuItem(
-                        text = { Text(stringResource(R.string.delete)) },
+                        text = { Text(stringResource(Res.string.delete)) },
                         onClick = {
                             showContextMenu = false
                             onLongClickVideosItem(videoItem.videoCode, videoItem.title)

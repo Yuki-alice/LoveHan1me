@@ -36,7 +36,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
@@ -50,6 +50,14 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.BuildConfig
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.player_keyframe_option
+import io.github.daisukikaffuchino.han1meviewer.player_h_keyframe
+import io.github.daisukikaffuchino.han1meviewer.player_anime4k_label
+import io.github.daisukikaffuchino.han1meviewer.local_list_notice_title
+import io.github.daisukikaffuchino.han1meviewer.local_list_notice_message
+import io.github.daisukikaffuchino.han1meviewer.do_not_show_again
+import io.github.daisukikaffuchino.han1meviewer.continues
 import io.github.daisukikaffuchino.han1meviewer.getHanimeVideoLink
 import io.github.daisukikaffuchino.han1meviewer.logic.DatabaseRepo
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.HKeyframeEntity
@@ -699,7 +707,7 @@ fun VideoRouteHostScreen(
         onQualitySelected = playbackController::selectQuality,
         playbackSpeed = playbackState.engine.playbackSpeed,
         onPlaybackSpeedSelected = playbackController::setPlaybackSpeed,
-        superResolutionLabel = stringResource(R.string.player_anime4k_label),
+        superResolutionLabel = stringResource(Res.string.player_anime4k_label),
         superResolutionOptions = if (kernel == PlayerKernel.MpvPlayer && !playbackState.engine.isCasting) {
             listOf(
                 activity.getString(R.string.super_resolution_off),
@@ -715,11 +723,10 @@ fun VideoRouteHostScreen(
             (playbackEngine as? io.github.daisukikaffuchino.han1meviewer.ui.player.MpvPlaybackEngine)
                 ?.setSuperResolution(index)
         },
-        hKeyframeLabel = stringResource(R.string.player_h_keyframe),
+        hKeyframeLabel = stringResource(Res.string.player_h_keyframe),
         isHKeyframesEnabled = SettingsRepository.hKeyframesEnable,
         hKeyframeOptions = hKeyframes?.keyframes.orEmpty().mapIndexed { index, keyframe ->
-            stringResource(
-                R.string.player_keyframe_option,
+            stringResource(Res.string.player_keyframe_option,
                 index + 1,
                 formatPlaybackTime(keyframe.position),
             )
@@ -893,10 +900,10 @@ fun VideoRouteHostScreen(
 
     ConfirmDialog(
         visible = pendingLocalListAction != null,
-        title = stringResource(R.string.local_list_notice_title),
-        message = stringResource(R.string.local_list_notice_message),
-        confirmText = stringResource(R.string.continues),
-        dismissText = stringResource(R.string.do_not_show_again),
+        title = stringResource(Res.string.local_list_notice_title),
+        message = stringResource(Res.string.local_list_notice_message),
+        confirmText = stringResource(Res.string.continues),
+        dismissText = stringResource(Res.string.do_not_show_again),
         onConfirm = {
             val action = pendingLocalListAction
             pendingLocalListAction = null
@@ -1004,7 +1011,7 @@ fun Base64Dialog(
         text = { Text(text = decodedContent) },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text(text = stringResource(android.R.string.ok))
+                Text(text = androidx.compose.ui.res.stringResource(android.R.string.ok))
             }
         }
     )

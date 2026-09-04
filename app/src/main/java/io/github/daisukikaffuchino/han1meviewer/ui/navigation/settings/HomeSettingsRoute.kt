@@ -37,7 +37,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.DrawableResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -50,6 +50,23 @@ import io.github.daisukikaffuchino.han1meviewer.HanimeApplication
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.sure_to_clear_cache
+import io.github.daisukikaffuchino.han1meviewer.sure_to_clear
+import io.github.daisukikaffuchino.han1meviewer.restart_needed
+import io.github.daisukikaffuchino.han1meviewer.hanime_app_name
+import io.github.daisukikaffuchino.han1meviewer.go_to_settings
+import io.github.daisukikaffuchino.han1meviewer.fake_app_icon
+import io.github.daisukikaffuchino.han1meviewer.confirm
+import io.github.daisukikaffuchino.han1meviewer.cancel
+import io.github.daisukikaffuchino.han1meviewer.backup_import_title
+import io.github.daisukikaffuchino.han1meviewer.backup_import_confirm_message
+import io.github.daisukikaffuchino.han1meviewer.attention
+import io.github.daisukikaffuchino.han1meviewer.apply_deep_links_tips
+import io.github.daisukikaffuchino.han1meviewer.apply_deep_links_summary
+import io.github.daisukikaffuchino.han1meviewer.apply_deep_links
+import io.github.daisukikaffuchino.han1meviewer.app_name_fake_xxt
+import io.github.daisukikaffuchino.han1meviewer.app_name_fake_cornhub
+import io.github.daisukikaffuchino.han1meviewer.app_name_fake_calc
 import io.github.daisukikaffuchino.han1meviewer.ic_launcher_xxt
 import io.github.daisukikaffuchino.han1meviewer.ic_launcher_new
 import io.github.daisukikaffuchino.han1meviewer.ic_launcher_cornhub
@@ -215,10 +232,10 @@ fun HomeSettingsRouteScreen(
             }
         }
     }
-    val hanimeAppName = stringResource(R.string.hanime_app_name)
-    val fakeNameCalc = stringResource(R.string.app_name_fake_calc)
-    val fakeNameCornhub = stringResource(R.string.app_name_fake_cornhub)
-    val fakeNameXXT = stringResource(R.string.app_name_fake_xxt)
+    val hanimeAppName = stringResource(Res.string.hanime_app_name)
+    val fakeNameCalc = stringResource(Res.string.app_name_fake_calc)
+    val fakeNameCornhub = stringResource(Res.string.app_name_fake_cornhub)
+    val fakeNameXXT = stringResource(Res.string.app_name_fake_xxt)
 
     val launcherItems = remember(context) {
         listOf(
@@ -448,10 +465,10 @@ fun HomeSettingsRouteScreen(
 
     ConfirmDialog(
         visible = pendingImportUri != null,
-        title = stringResource(R.string.backup_import_title),
-        message = stringResource(R.string.backup_import_confirm_message),
-        confirmText = stringResource(R.string.confirm),
-        dismissText = stringResource(R.string.cancel),
+        title = stringResource(Res.string.backup_import_title),
+        message = stringResource(Res.string.backup_import_confirm_message),
+        confirmText = stringResource(Res.string.confirm),
+        dismissText = stringResource(Res.string.cancel),
         onConfirm = {
             val uri = pendingImportUri ?: return@ConfirmDialog
             pendingImportUri = null
@@ -475,10 +492,10 @@ fun HomeSettingsRouteScreen(
 
     ConfirmDialog(
         visible = showClearCacheConfirm,
-        title = stringResource(R.string.sure_to_clear),
-        message = stringResource(R.string.sure_to_clear_cache),
-        confirmText = stringResource(R.string.confirm),
-        dismissText = stringResource(R.string.cancel),
+        title = stringResource(Res.string.sure_to_clear),
+        message = stringResource(Res.string.sure_to_clear_cache),
+        confirmText = stringResource(Res.string.confirm),
+        dismissText = stringResource(Res.string.cancel),
         onConfirm = {
             showClearCacheConfirm = false
             coroutineScope.launch(Dispatchers.IO) {
@@ -496,14 +513,14 @@ fun HomeSettingsRouteScreen(
     if (showApplyDeepLinksDialog) {
         AlertDialog(
             onDismissRequest = { showApplyDeepLinksDialog = false },
-            title = { Text(stringResource(R.string.apply_deep_links)) },
+            title = { Text(stringResource(Res.string.apply_deep_links)) },
             text = {
                 Column(
                     modifier = Modifier.verticalScroll(rememberScrollState()),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text(stringResource(R.string.apply_deep_links_summary))
-                    Text(stringResource(R.string.apply_deep_links_tips))
+                    Text(stringResource(Res.string.apply_deep_links_summary))
+                    Text(stringResource(Res.string.apply_deep_links_tips))
                     Image(
                         // P6d-1：R.raw 留 :app（范围红线），此处保留 androidx Int 重载，全限定避免与 CMP 同名 import 冲突
                         painter = androidx.compose.ui.res.painterResource(R.raw.apply_deep_links),
@@ -521,12 +538,12 @@ fun HomeSettingsRouteScreen(
                         }
                     },
                 ) {
-                    Text(stringResource(R.string.go_to_settings))
+                    Text(stringResource(Res.string.go_to_settings))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showApplyDeepLinksDialog = false }) {
-                    Text(stringResource(R.string.cancel))
+                    Text(stringResource(Res.string.cancel))
                 }
             },
         )
@@ -534,10 +551,10 @@ fun HomeSettingsRouteScreen(
 
     ConfirmDialog(
         visible = showRestartConfirmDialog,
-        title = stringResource(R.string.attention),
-        message = stringResource(R.string.restart_needed),
-        confirmText = stringResource(R.string.confirm),
-        dismissText = stringResource(R.string.cancel),
+        title = stringResource(Res.string.attention),
+        message = stringResource(Res.string.restart_needed),
+        confirmText = stringResource(Res.string.confirm),
+        dismissText = stringResource(Res.string.cancel),
         cancelable = false,
         onConfirm = {
             ActivityManager.restart(killProcess = true)
@@ -558,7 +575,7 @@ fun HomeSettingsRouteScreen(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
                     Text(
-                        stringResource(R.string.fake_app_icon),
+                        stringResource(Res.string.fake_app_icon),
                         style = MaterialTheme.typography.titleLarge,
                     )
                     launcherItems.forEach { item ->

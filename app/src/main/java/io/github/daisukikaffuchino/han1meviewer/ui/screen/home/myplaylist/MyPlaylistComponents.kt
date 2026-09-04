@@ -27,12 +27,12 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.video_count
 import io.github.daisukikaffuchino.han1meviewer.h_chan_load_failed
 import io.github.daisukikaffuchino.han1meviewer.h_chan_loading
 import io.github.daisukikaffuchino.han1meviewer.playlist_placeholder
@@ -117,7 +117,7 @@ fun PlaylistItem(
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                 ) {
                     Text(
-                        text = stringResource(R.string.video_count, playlist.total),
+                        text = stringResource(Res.string.video_count, playlist.total),
                         style = MaterialTheme.typography.bodySmall.copy(color = Color.White),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,

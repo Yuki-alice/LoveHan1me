@@ -34,14 +34,17 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.switch_site
+import io.github.daisukikaffuchino.han1meviewer.refresh_page_or_login_expired
+import io.github.daisukikaffuchino.han1meviewer.not_logged_in
+import io.github.daisukikaffuchino.han1meviewer.loading
 import io.github.daisukikaffuchino.han1meviewer.h_chan_default_avatar
 import io.github.daisukikaffuchino.han1meviewer.ic_switch
 import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
@@ -131,11 +134,11 @@ fun MainDrawerHeader(
                 ) {
                     Text(
                         text = when {
-                            isLoading -> stringResource(R.string.loading)
+                            isLoading -> stringResource(Res.string.loading)
                             isLoggedIn -> username
-                                ?: stringResource(R.string.refresh_page_or_login_expired)
+                                ?: stringResource(Res.string.refresh_page_or_login_expired)
 
-                            else -> stringResource(R.string.not_logged_in)
+                            else -> stringResource(Res.string.not_logged_in)
                         },
                         style = MaterialTheme.typography.titleLarge,
                         maxLines = 1,
@@ -173,12 +176,12 @@ fun MainDrawerHeader(
                     ) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_switch),
-                            contentDescription = stringResource(R.string.switch_site)
+                            contentDescription = stringResource(Res.string.switch_site)
                         )
                     }
 
                     Text(
-                        text = stringResource(R.string.switch_site),
+                        text = stringResource(Res.string.switch_site),
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.alpha(0.7f),
                         textAlign = TextAlign.Center

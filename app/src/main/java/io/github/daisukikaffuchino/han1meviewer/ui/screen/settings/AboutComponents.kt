@@ -9,8 +9,11 @@ import androidx.compose.material3.Text
 import io.github.daisukikaffuchino.han1meviewer.ui.component.HapticTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
-import io.github.daisukikaffuchino.han1meviewer.R
+import org.jetbrains.compose.resources.stringResource
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.user_terms
+import io.github.daisukikaffuchino.han1meviewer.usage_notice_content
+import io.github.daisukikaffuchino.han1meviewer.confirm
 
 @Composable
 fun UsageTermsDialog(
@@ -20,11 +23,11 @@ fun UsageTermsDialog(
     if (!visible) return
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.user_terms)) },
+        title = { Text(stringResource(Res.string.user_terms)) },
         text = {
             SelectionContainer {
                 Text(
-                    text = stringResource(R.string.usage_notice_content),
+                    text = stringResource(Res.string.usage_notice_content),
                     modifier = Modifier.verticalScroll(rememberScrollState()),
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -32,7 +35,7 @@ fun UsageTermsDialog(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.confirm))
+                Text(stringResource(Res.string.confirm))
             }
         },
     )

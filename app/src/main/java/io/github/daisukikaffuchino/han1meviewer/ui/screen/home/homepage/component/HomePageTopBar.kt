@@ -11,7 +11,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.Font
@@ -23,6 +23,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.open_menu
+import io.github.daisukikaffuchino.han1meviewer.hanime_list
+import io.github.daisukikaffuchino.han1meviewer.global_search
 import io.github.daisukikaffuchino.han1meviewer.ic_menu
 import io.github.daisukikaffuchino.han1meviewer.ic_newspaper
 import io.github.daisukikaffuchino.han1meviewer.ic_search
@@ -58,7 +61,7 @@ fun HomePageTopBar(
                 IconButton(onClick = onOpenDrawer) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_menu),
-                        contentDescription = stringResource(R.string.open_menu),
+                        contentDescription = stringResource(Res.string.open_menu),
                     )
                 }
             }
@@ -70,13 +73,13 @@ fun HomePageTopBar(
                 IconButton(onClick = onSearchClick) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_search),
-                        contentDescription = stringResource(R.string.global_search),
+                        contentDescription = stringResource(Res.string.global_search),
                     )
                 }
                 IconButton(onClick = onNavigateToPreview) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_newspaper),
-                        contentDescription = stringResource(R.string.hanime_list),
+                        contentDescription = stringResource(Res.string.hanime_list),
                     )
                 }
             }

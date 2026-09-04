@@ -33,12 +33,22 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import androidx.compose.ui.res.stringArrayResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.sending_reply
+import io.github.daisukikaffuchino.han1meviewer.send_success
+import io.github.daisukikaffuchino.han1meviewer.send_failed
+import io.github.daisukikaffuchino.han1meviewer.reply_child_comment
+import io.github.daisukikaffuchino.han1meviewer.login_first
+import io.github.daisukikaffuchino.han1meviewer.load_reply_failed
+import io.github.daisukikaffuchino.han1meviewer.comment_too_short
+import io.github.daisukikaffuchino.han1meviewer.comment_not_found
+import io.github.daisukikaffuchino.han1meviewer.comment_count
+import io.github.daisukikaffuchino.han1meviewer.child_comment
 import io.github.daisukikaffuchino.han1meviewer.logic.model.ReportReason
 import io.github.daisukikaffuchino.han1meviewer.logic.model.VideoCommentArgs
 import io.github.daisukikaffuchino.han1meviewer.logic.model.VideoComments
@@ -94,11 +104,11 @@ fun ChildCommentScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    val loginFirstText = stringResource(R.string.login_first)
-    val sendFailedText = stringResource(R.string.send_failed)
-    val sendSuccessText = stringResource(R.string.send_success)
-    val sendingReplyText = stringResource(R.string.sending_reply)
-    val commentTooShortText = stringResource(R.string.comment_too_short)
+    val loginFirstText = stringResource(Res.string.login_first)
+    val sendFailedText = stringResource(Res.string.send_failed)
+    val sendSuccessText = stringResource(Res.string.send_success)
+    val sendingReplyText = stringResource(Res.string.sending_reply)
+    val commentTooShortText = stringResource(Res.string.comment_too_short)
 
     LaunchedEffect(reportMessageFlow) {
         reportMessageFlow.collect { message ->
@@ -179,7 +189,7 @@ fun ChildCommentScreen(
                             }
                         }
                     },
-                    placeholder = stringResource(R.string.reply_child_comment),
+                    placeholder = stringResource(Res.string.reply_child_comment),
                 )
             }
         },
@@ -192,13 +202,13 @@ fun ChildCommentScreen(
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = stringResource(R.string.child_comment),
+                text = stringResource(Res.string.child_comment),
                 style = MaterialTheme.typography.headlineSmall,
             )
 
             if (sortedComments.isNotEmpty()) {
                 Text(
-                    text = stringResource(R.string.comment_count, sortedComments.size),
+                    text = stringResource(Res.string.comment_count, sortedComments.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -223,7 +233,7 @@ fun ChildCommentScreen(
                 },
                 error = {
                     ErrorContent(
-                        title = stringResource(R.string.load_reply_failed),
+                        title = stringResource(Res.string.load_reply_failed),
                         message = (state as WebsiteState.Error).throwable.message,
                         onRetry = onRefresh,
                         modifier = Modifier
@@ -232,7 +242,7 @@ fun ChildCommentScreen(
                     )
                 },
                 empty = {
-                    EmptyContent(hint = stringResource(R.string.comment_not_found))
+                    EmptyContent(hint = stringResource(Res.string.comment_not_found))
                 },
             ) {
                 LazyColumn(

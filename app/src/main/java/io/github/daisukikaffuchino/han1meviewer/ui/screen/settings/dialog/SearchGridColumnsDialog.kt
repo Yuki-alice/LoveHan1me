@@ -7,9 +7,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.tooling.preview.Preview
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.search_grid_columns_title
+import io.github.daisukikaffuchino.han1meviewer.search_grid_columns_range_medium
+import io.github.daisukikaffuchino.han1meviewer.search_grid_columns_range_large
+import io.github.daisukikaffuchino.han1meviewer.search_grid_columns_range_expanded
+import io.github.daisukikaffuchino.han1meviewer.search_grid_columns_range_compact
+import io.github.daisukikaffuchino.han1meviewer.search_grid_columns_dialog_hint
+import io.github.daisukikaffuchino.han1meviewer.search_grid_columns_current_width_hint
+import io.github.daisukikaffuchino.han1meviewer.search_grid_columns_current_portrait
+import io.github.daisukikaffuchino.han1meviewer.search_grid_columns_current_landscape
+import io.github.daisukikaffuchino.han1meviewer.search_grid_columns_current_bucket_hint
 import io.github.daisukikaffuchino.han1meviewer.SearchGridColumnsConfig
 import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.model.GridRangeOption
@@ -48,61 +58,59 @@ fun SearchGridColumnsDialog(
 
     val options = listOf(
         GridRangeOption(
-            label = stringResource(R.string.search_grid_columns_range_compact),
+            label = stringResource(Res.string.search_grid_columns_range_compact),
             value = compactText,
             onValueChange = { compactText = it },
             isError = compactCols == null,
             isHighlighted = portraitWidthDp <= 600 || landscapeWidthDp <= 600,
             highlightLabels = buildList {
-                if (portraitWidthDp <= 600) add(stringResource(R.string.search_grid_columns_current_portrait))
-                if (landscapeWidthDp <= 600) add(stringResource(R.string.search_grid_columns_current_landscape))
+                if (portraitWidthDp <= 600) add(stringResource(Res.string.search_grid_columns_current_portrait))
+                if (landscapeWidthDp <= 600) add(stringResource(Res.string.search_grid_columns_current_landscape))
             }
         ),
         GridRangeOption(
-            label = stringResource(R.string.search_grid_columns_range_medium),
+            label = stringResource(Res.string.search_grid_columns_range_medium),
             value = mediumText,
             onValueChange = { mediumText = it },
             isError = mediumCols == null,
             isHighlighted = (portraitWidthDp in 601..900) || (landscapeWidthDp in 601..900),
             highlightLabels = buildList {
-                if (portraitWidthDp in 601..900) add(stringResource(R.string.search_grid_columns_current_portrait))
-                if (landscapeWidthDp in 601..900) add(stringResource(R.string.search_grid_columns_current_landscape))
+                if (portraitWidthDp in 601..900) add(stringResource(Res.string.search_grid_columns_current_portrait))
+                if (landscapeWidthDp in 601..900) add(stringResource(Res.string.search_grid_columns_current_landscape))
             }
         ),
         GridRangeOption(
-            label = stringResource(R.string.search_grid_columns_range_expanded),
+            label = stringResource(Res.string.search_grid_columns_range_expanded),
             value = expandedText,
             onValueChange = { expandedText = it },
             isError = expandedCols == null,
             isHighlighted = (portraitWidthDp in 901..1200) || (landscapeWidthDp in 901..1200),
             highlightLabels = buildList {
-                if (portraitWidthDp in 901..1200) add(stringResource(R.string.search_grid_columns_current_portrait))
-                if (landscapeWidthDp in 901..1200) add(stringResource(R.string.search_grid_columns_current_landscape))
+                if (portraitWidthDp in 901..1200) add(stringResource(Res.string.search_grid_columns_current_portrait))
+                if (landscapeWidthDp in 901..1200) add(stringResource(Res.string.search_grid_columns_current_landscape))
             }
         ),
         GridRangeOption(
-            label = stringResource(R.string.search_grid_columns_range_large),
+            label = stringResource(Res.string.search_grid_columns_range_large),
             value = largeText,
             onValueChange = { largeText = it },
             isError = largeCols == null,
             isHighlighted = portraitWidthDp >= 1201 || landscapeWidthDp >= 1201,
             highlightLabels = buildList {
-                if (portraitWidthDp >= 1201) add(stringResource(R.string.search_grid_columns_current_portrait))
-                if (landscapeWidthDp >= 1201) add(stringResource(R.string.search_grid_columns_current_landscape))
+                if (portraitWidthDp >= 1201) add(stringResource(Res.string.search_grid_columns_current_portrait))
+                if (landscapeWidthDp >= 1201) add(stringResource(Res.string.search_grid_columns_current_landscape))
             }
         )
     )
 
     BaseGridConfigDialog(
-        title = stringResource(R.string.search_grid_columns_title),
-        hintText = stringResource(R.string.search_grid_columns_dialog_hint),
-        widthHintText = stringResource(
-            R.string.search_grid_columns_current_width_hint,
+        title = stringResource(Res.string.search_grid_columns_title),
+        hintText = stringResource(Res.string.search_grid_columns_dialog_hint),
+        widthHintText = stringResource(Res.string.search_grid_columns_current_width_hint,
             portraitWidthDp,
             landscapeWidthDp
         ),
-        bucketHintText = stringResource(
-            R.string.search_grid_columns_current_bucket_hint,
+        bucketHintText = stringResource(Res.string.search_grid_columns_current_bucket_hint,
             searchGridColumnsBucketLabel(portraitWidthDp),
             currentConfig.columnsForWidthDp(portraitWidthDp),
             searchGridColumnsBucketLabel(landscapeWidthDp),
@@ -130,10 +138,10 @@ private fun String.toSearchGridColumnsOrNull(): Int? {
 @Composable
 private fun searchGridColumnsBucketLabel(widthDp: Int): String {
     return when {
-        widthDp <= 600 -> stringResource(R.string.search_grid_columns_range_compact)
-        widthDp <= 900 -> stringResource(R.string.search_grid_columns_range_medium)
-        widthDp <= 1200 -> stringResource(R.string.search_grid_columns_range_expanded)
-        else -> stringResource(R.string.search_grid_columns_range_large)
+        widthDp <= 600 -> stringResource(Res.string.search_grid_columns_range_compact)
+        widthDp <= 900 -> stringResource(Res.string.search_grid_columns_range_medium)
+        widthDp <= 1200 -> stringResource(Res.string.search_grid_columns_range_expanded)
+        else -> stringResource(Res.string.search_grid_columns_range_large)
     }
 }
 

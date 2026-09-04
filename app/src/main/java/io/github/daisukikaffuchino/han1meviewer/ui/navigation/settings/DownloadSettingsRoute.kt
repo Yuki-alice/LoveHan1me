@@ -24,13 +24,28 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.documentfile.provider.DocumentFile
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.understood
+import io.github.daisukikaffuchino.han1meviewer.specify_path_first
+import io.github.daisukikaffuchino.han1meviewer.select_folder_message
+import io.github.daisukikaffuchino.han1meviewer.select_download_folder
+import io.github.daisukikaffuchino.han1meviewer.restore_default_path
+import io.github.daisukikaffuchino.han1meviewer.restore_default_message
+import io.github.daisukikaffuchino.han1meviewer.path_permission_message
+import io.github.daisukikaffuchino.han1meviewer.ok
+import io.github.daisukikaffuchino.han1meviewer.importing
+import io.github.daisukikaffuchino.han1meviewer.import_warning
+import io.github.daisukikaffuchino.han1meviewer.import_progress_format
+import io.github.daisukikaffuchino.han1meviewer.import_progress
+import io.github.daisukikaffuchino.han1meviewer.confirm_import
+import io.github.daisukikaffuchino.han1meviewer.cancel
 import io.github.daisukikaffuchino.han1meviewer.logic.dao.DownloadDatabase
 import io.github.daisukikaffuchino.han1meviewer.logic.instance
 import io.github.daisukikaffuchino.han1meviewer.logic.network.interceptor.SpeedLimitInterceptor
@@ -103,11 +118,11 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
     if (!SettingsRepository.isUsePrivateStorage) {
         TripleButtonDialog(
             visible = showDownloadPathDialog,
-            title = stringResource(R.string.select_download_folder),
-            message = stringResource(R.string.select_folder_message),
-            negativeText = stringResource(R.string.cancel),
-            neutralText = stringResource(R.string.restore_default_path),
-            positiveText = stringResource(R.string.ok),
+            title = stringResource(Res.string.select_download_folder),
+            message = stringResource(Res.string.select_folder_message),
+            negativeText = stringResource(Res.string.cancel),
+            neutralText = stringResource(Res.string.restore_default_path),
+            positiveText = stringResource(Res.string.ok),
             onNegative = { showDownloadPathDialog = false },
             onNeutral = {
                 showDownloadPathDialog = false
@@ -122,10 +137,10 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
     } else {
         ConfirmDialog(
             visible = showDownloadPathDialog,
-            title = stringResource(R.string.select_download_folder),
-            message = stringResource(R.string.select_folder_message),
-            confirmText = stringResource(R.string.ok),
-            dismissText = stringResource(R.string.cancel),
+            title = stringResource(Res.string.select_download_folder),
+            message = stringResource(Res.string.select_folder_message),
+            confirmText = stringResource(Res.string.ok),
+            dismissText = stringResource(Res.string.cancel),
             onConfirm = {
                 showDownloadPathDialog = false
                 openDirectoryPicker.launch(SafFileManager.buildOpenDirectoryIntent())
@@ -136,10 +151,10 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
 
     ConfirmDialog(
         visible = showRestoreDefaultConfirm,
-        title = stringResource(R.string.restore_default_path),
-        message = stringResource(R.string.restore_default_message),
-        confirmText = stringResource(R.string.ok),
-        dismissText = stringResource(R.string.cancel),
+        title = stringResource(Res.string.restore_default_path),
+        message = stringResource(Res.string.restore_default_message),
+        confirmText = stringResource(Res.string.ok),
+        dismissText = stringResource(Res.string.cancel),
         onConfirm = {
             coroutineScope.launch {
                 SettingsRepository.setDownloadStorage(usePrivate = true, path = null)
@@ -152,10 +167,10 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
 
     ConfirmDialog(
         visible = showImportConfirm,
-        title = stringResource(R.string.confirm_import),
-        message = stringResource(R.string.import_warning),
-        confirmText = stringResource(R.string.ok),
-        dismissText = stringResource(R.string.cancel),
+        title = stringResource(Res.string.confirm_import),
+        message = stringResource(Res.string.import_warning),
+        confirmText = stringResource(Res.string.ok),
+        dismissText = stringResource(Res.string.cancel),
         onConfirm = {
             showImportConfirm = false
             importProgress = ImportProgress()
@@ -187,11 +202,11 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
     if (showSpecifyPathDialog) {
         AlertDialog(
             onDismissRequest = { showSpecifyPathDialog = false },
-            title = { Text(stringResource(R.string.specify_path_first)) },
-            text = { Text(stringResource(R.string.path_permission_message)) },
+            title = { Text(stringResource(Res.string.specify_path_first)) },
+            text = { Text(stringResource(Res.string.path_permission_message)) },
             confirmButton = {
                 TextButton(onClick = { showSpecifyPathDialog = false }) {
-                    Text(stringResource(R.string.understood))
+                    Text(stringResource(Res.string.understood))
                 }
             },
         )
@@ -224,10 +239,10 @@ private fun ImportProgressDialog(progress: ImportProgress) {
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
                 Text(
-                    text = stringResource(R.string.import_progress),
+                    text = stringResource(Res.string.import_progress),
                     style = MaterialTheme.typography.titleLarge,
                 )
-                Text(stringResource(R.string.importing))
+                Text(stringResource(Res.string.importing))
                 LinearProgressIndicator(
                     progress = {
                         if (progress.total > 0) {
@@ -239,8 +254,7 @@ private fun ImportProgressDialog(progress: ImportProgress) {
                     modifier = Modifier.fillMaxWidth(),
                 )
                 Text(
-                    stringResource(
-                        R.string.import_progress_format,
+                    stringResource(Res.string.import_progress_format,
                         progress.migrated,
                         progress.total,
                         percent,

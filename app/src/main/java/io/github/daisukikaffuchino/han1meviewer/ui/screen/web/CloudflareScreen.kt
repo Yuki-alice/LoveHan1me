@@ -16,11 +16,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.lerp
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.complete_cloudflare_verification
 import io.github.daisukikaffuchino.han1meviewer.ui.component.appbar.HanimeScaffold
 import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 
@@ -33,7 +34,7 @@ fun CloudflareScreen(
     webViewFactory: () -> WebView,
 ) {
     HanimeScaffold(
-        title = stringResource(R.string.complete_cloudflare_verification),
+        title = stringResource(Res.string.complete_cloudflare_verification),
         onBack = onClose,
     ) {
         Box(

@@ -16,9 +16,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.load_failed_with_reason
+import io.github.daisukikaffuchino.han1meviewer.empty_content
 import io.github.daisukikaffuchino.han1meviewer.logic.model.Playlists
 import io.github.daisukikaffuchino.han1meviewer.logic.state.PageLoadingState
 import io.github.daisukikaffuchino.han1meviewer.logic.state.WebsiteState
@@ -77,14 +79,13 @@ fun PlaylistContent(
             onRetry = { onEvent(PlaylistEvent.OnRefresh) },
             error = {
                 ErrorContent(
-                    message = stringResource(
-                        R.string.load_failed_with_reason,
+                    message = stringResource(Res.string.load_failed_with_reason,
                         (state as WebsiteState.Error).throwable.message.orEmpty(),
                     ),
                     onRetry = { onEvent(PlaylistEvent.OnRefresh) },
                 )
             },
-            empty = { EmptyContent(stringResource(R.string.empty_content)) },
+            empty = { EmptyContent(stringResource(Res.string.empty_content)) },
         ) {
             LazyVerticalGrid(
                 state = gridState,

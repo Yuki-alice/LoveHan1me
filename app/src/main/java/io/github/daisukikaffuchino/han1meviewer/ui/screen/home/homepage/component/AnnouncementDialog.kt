@@ -34,7 +34,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -45,6 +45,10 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.sure
+import io.github.daisukikaffuchino.han1meviewer.save_image_confirm
+import io.github.daisukikaffuchino.han1meviewer.i_understand
+import io.github.daisukikaffuchino.han1meviewer.cancel
 import io.github.daisukikaffuchino.han1meviewer.ic_alert
 import io.github.daisukikaffuchino.han1meviewer.logic.model.Announcement
 import io.github.daisukikaffuchino.han1meviewer.ui.component.ConfirmDialog
@@ -166,7 +170,7 @@ fun AnnouncementDialog(
                     TextButton(onClick = onDismiss) {
                         Text(
                             text = dialogPositive
-                                ?: stringResource(R.string.i_understand)
+                                ?: stringResource(Res.string.i_understand)
                         )
                     }
                 }
@@ -204,10 +208,10 @@ fun AnnouncementDialog(
         val imageUrl = announcementData.imageUrl.orEmpty()
         ConfirmDialog(
             visible = true,
-            title = stringResource(R.string.save_image_confirm),
+            title = stringResource(Res.string.save_image_confirm),
             message = "",
-            confirmText = stringResource(R.string.sure),
-            dismissText = stringResource(R.string.cancel),
+            confirmText = stringResource(Res.string.sure),
+            dismissText = stringResource(Res.string.cancel),
             onConfirm = {
                 showSaveImageConfirm = false
                 scope.launch(Dispatchers.IO) {

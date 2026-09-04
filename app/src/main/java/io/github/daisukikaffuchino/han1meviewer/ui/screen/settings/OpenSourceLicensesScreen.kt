@@ -62,7 +62,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextOverflow
@@ -76,6 +76,11 @@ import com.mikepenz.aboutlibraries.ui.compose.util.author
 import com.mikepenz.aboutlibraries.ui.compose.util.htmlReadyLicenseContent
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.no_license_items
+import io.github.daisukikaffuchino.han1meviewer.no_licenses_found
+import io.github.daisukikaffuchino.han1meviewer.search
+import io.github.daisukikaffuchino.han1meviewer.confirm
+import io.github.daisukikaffuchino.han1meviewer.clear
 import io.github.daisukikaffuchino.han1meviewer.ic_search_not_found
 import io.github.daisukikaffuchino.han1meviewer.ic_search
 import io.github.daisukikaffuchino.han1meviewer.ic_list_no_item
@@ -228,9 +233,9 @@ fun OpenSourceLicensesScreen(
                     Text(
                         text = stringResource(
                             if (searchMode) {
-                                R.string.no_licenses_found
+                                Res.string.no_licenses_found
                             } else {
-                                R.string.no_license_items
+                                Res.string.no_license_items
                             },
                         ),
                         style = MaterialTheme.typography.titleMedium,
@@ -292,7 +297,7 @@ private fun LicenseSearchTextField(
         modifier = Modifier.fillMaxWidth(),
         state = textFieldState,
         shape = CircleShape,
-        placeholder = { Text(stringResource(R.string.search)) },
+        placeholder = { Text(stringResource(Res.string.search)) },
         lineLimits = TextFieldLineLimits.SingleLine,
         colors = TextFieldDefaults.colors(
             focusedIndicatorColor = Color.Transparent,
@@ -314,7 +319,7 @@ private fun LicenseSearchTextField(
                 IconButton(onClick = { textFieldState.setTextAndPlaceCursorAtEnd("") }) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_close),
-                        contentDescription = stringResource(R.string.clear),
+                        contentDescription = stringResource(Res.string.clear),
                     )
                 }
             }
@@ -444,7 +449,7 @@ private fun LicenseContentDialog(
                 },
                 shapes = ButtonDefaults.shapes(),
             ) {
-                Text(stringResource(R.string.confirm))
+                Text(stringResource(Res.string.confirm))
             }
         },
     )

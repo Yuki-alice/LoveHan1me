@@ -23,12 +23,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.update_now
+import io.github.daisukikaffuchino.han1meviewer.update_available_title
+import io.github.daisukikaffuchino.han1meviewer.ignore_this_update
+import io.github.daisukikaffuchino.han1meviewer.force_update_notice
 import io.github.daisukikaffuchino.han1meviewer.ic_download
 import io.github.daisukikaffuchino.han1meviewer.ic_security_update
 import io.github.daisukikaffuchino.han1meviewer.ic_warning
@@ -69,7 +72,7 @@ fun AppUpdateCard(
                 )
                 Spacer(Modifier.width(10.dp))
                 Text(
-                    text = stringResource(R.string.update_available_title, updateInfo.versionName),
+                    text = stringResource(Res.string.update_available_title, updateInfo.versionName),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     modifier = Modifier.weight(1f),
@@ -88,7 +91,7 @@ fun AppUpdateCard(
                         modifier = Modifier.size(20.dp),
                     )
                     Text(
-                        text = stringResource(R.string.force_update_notice),
+                        text = stringResource(Res.string.force_update_notice),
                         color = MaterialTheme.colorScheme.error,
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.SemiBold,
@@ -112,7 +115,7 @@ fun AppUpdateCard(
             ) {
                 if (!updateInfo.forceUpdate) {
                     TextButton(onClick = onIgnoreClick) {
-                        Text(stringResource(R.string.ignore_this_update))
+                        Text(stringResource(Res.string.ignore_this_update))
                     }
                 }
                 Button(onClick = onUpdateClick) {
@@ -122,7 +125,7 @@ fun AppUpdateCard(
                         modifier = Modifier.size(18.dp),
                     )
                     Spacer(Modifier.width(8.dp))
-                    Text(stringResource(R.string.update_now))
+                    Text(stringResource(Res.string.update_now))
                 }
             }
         }

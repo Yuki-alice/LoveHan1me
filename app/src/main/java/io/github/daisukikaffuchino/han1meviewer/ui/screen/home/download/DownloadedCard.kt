@@ -41,15 +41,20 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.daisukikaffuchino.han1meviewer.LOCAL_DATE_TIME_FORMAT
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.video_count
+import io.github.daisukikaffuchino.han1meviewer.local_playback
+import io.github.daisukikaffuchino.han1meviewer.ext_player
+import io.github.daisukikaffuchino.han1meviewer.expand
+import io.github.daisukikaffuchino.han1meviewer.delete
+import io.github.daisukikaffuchino.han1meviewer.collapse
 import io.github.daisukikaffuchino.han1meviewer.ic_play_arrow
 import io.github.daisukikaffuchino.han1meviewer.ic_format_list_bulleted
 import io.github.daisukikaffuchino.han1meviewer.ic_fold
@@ -133,7 +138,7 @@ fun DownloadGroupHeader(
                     fontWeight = FontWeight.SemiBold,
                 )
                 Text(
-                    text = stringResource(R.string.video_count, header.originalVideos.size),
+                    text = stringResource(Res.string.video_count, header.originalVideos.size),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -145,8 +150,8 @@ fun DownloadGroupHeader(
                 },
                 label = {
                     Text(
-                        if (header.isExpanded) stringResource(R.string.collapse)
-                        else stringResource(R.string.expand)
+                        if (header.isExpanded) stringResource(Res.string.collapse)
+                        else stringResource(Res.string.expand)
                     )
                 },
                 colors = AssistChipDefaults.assistChipColors(
@@ -339,7 +344,7 @@ fun DownloadedVideoCard(
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_delete),
-                        contentDescription = stringResource(R.string.delete)
+                        contentDescription = stringResource(Res.string.delete)
                     )
                 }
 
@@ -358,7 +363,7 @@ fun DownloadedVideoCard(
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                         )
-                        Text(stringResource(R.string.ext_player))
+                        Text(stringResource(Res.string.ext_player))
                     }
                 }
 
@@ -377,7 +382,7 @@ fun DownloadedVideoCard(
                             contentDescription = null,
                             modifier = Modifier.size(18.dp),
                         )
-                        Text(stringResource(R.string.local_playback))
+                        Text(stringResource(Res.string.local_playback))
                     }
                 }
             }

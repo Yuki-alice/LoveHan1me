@@ -23,10 +23,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.video_count
+import io.github.daisukikaffuchino.han1meviewer.sure_to_delete_s
+import io.github.daisukikaffuchino.han1meviewer.ok
+import io.github.daisukikaffuchino.han1meviewer.load_failed_retry
+import io.github.daisukikaffuchino.han1meviewer.help
+import io.github.daisukikaffuchino.han1meviewer.empty_content
+import io.github.daisukikaffuchino.han1meviewer.delete_success
+import io.github.daisukikaffuchino.han1meviewer.delete_failed
+import io.github.daisukikaffuchino.han1meviewer.delete
+import io.github.daisukikaffuchino.han1meviewer.close
+import io.github.daisukikaffuchino.han1meviewer.cancel
 import io.github.daisukikaffuchino.han1meviewer.ic_help
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeInfo
 import io.github.daisukikaffuchino.han1meviewer.logic.state.PageLoadingState
@@ -86,8 +97,8 @@ fun VideoGridScreen(
     var pendingDelete by remember { mutableStateOf<HanimeInfo?>(null) }
     var showHelpDialog by rememberSaveable { mutableStateOf(false) }
     var pendingRefresh by rememberSaveable { mutableStateOf(false) }
-    val deleteFailedText = stringResource(R.string.delete_failed)
-    val deleteSuccessText = stringResource(R.string.delete_success)
+    val deleteFailedText = stringResource(Res.string.delete_failed)
+    val deleteSuccessText = stringResource(Res.string.delete_success)
 
     val refreshing = state is PageLoadingState.Loading && pendingRefresh
     val refreshingState = rememberPullToRefreshState()
@@ -126,10 +137,10 @@ fun VideoGridScreen(
 
     ConfirmDialog(
         visible = pendingDelete != null,
-        title = stringResource(deleteTitleRes),
-        message = stringResource(R.string.sure_to_delete_s, pendingDelete?.title.orEmpty()),
-        confirmText = stringResource(R.string.delete),
-        dismissText = stringResource(R.string.cancel),
+        title = androidx.compose.ui.res.stringResource(deleteTitleRes),
+        message = stringResource(Res.string.sure_to_delete_s, pendingDelete?.title.orEmpty()),
+        confirmText = stringResource(Res.string.delete),
+        dismissText = stringResource(Res.string.cancel),
         onConfirm = {
             pendingDelete?.let(onDeleteItem)
             pendingDelete = null
@@ -139,10 +150,10 @@ fun VideoGridScreen(
 
     ConfirmDialog(
         visible = showHelpDialog,
-        title = stringResource(R.string.help),
-        message = stringResource(helpMessageRes),
-        confirmText = stringResource(R.string.ok),
-        dismissText = stringResource(R.string.close),
+        title = stringResource(Res.string.help),
+        message = androidx.compose.ui.res.stringResource(helpMessageRes),
+        confirmText = stringResource(Res.string.ok),
+        dismissText = stringResource(Res.string.close),
         onConfirm = { showHelpDialog = false },
         onDismiss = { showHelpDialog = false },
     )
@@ -158,10 +169,10 @@ fun VideoGridScreen(
     )
 
     HanimeScaffold(
-        title = stringResource(titleRes),
+        title = androidx.compose.ui.res.stringResource(titleRes),
         subtitle = {
             Text(
-                text = stringResource(R.string.video_count, items.size),
+                text = stringResource(Res.string.video_count, items.size),
                 style = MaterialTheme.typography.labelLarge,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -171,7 +182,7 @@ fun VideoGridScreen(
             IconButton(onClick = { showHelpDialog = true }) {
                 Icon(
                     painter = painterResource(Res.drawable.ic_help),
-                    contentDescription = stringResource(R.string.help),
+                    contentDescription = stringResource(Res.string.help),
                 )
             }
         },
@@ -205,7 +216,7 @@ fun VideoGridScreen(
                 },
                 error = {
                     ErrorContent(
-                        title = stringResource(R.string.load_failed_retry),
+                        title = stringResource(Res.string.load_failed_retry),
                         onRetry = {
                             pendingRefresh = true
                             onRefresh()
@@ -214,7 +225,7 @@ fun VideoGridScreen(
                     )
                 },
                 empty = {
-                    EmptyContent(hint = stringResource(R.string.empty_content))
+                    EmptyContent(hint = stringResource(Res.string.empty_content))
                 },
             ) {
                 VideoGridContent(

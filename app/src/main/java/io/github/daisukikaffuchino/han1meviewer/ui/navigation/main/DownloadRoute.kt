@@ -10,10 +10,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ext_player
 import io.github.daisukikaffuchino.han1meviewer.logic.dao.DownloadDatabase
 import io.github.daisukikaffuchino.han1meviewer.logic.instance
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.HanimeDownloadEntity
@@ -41,7 +43,7 @@ fun DownloadRouteScreen(
     onNavigateToLocalVideo: (String, String?) -> Unit,
 ) {
     val context = LocalContext.current
-    val externalPlayerChooserTitle = stringResource(R.string.ext_player)
+    val externalPlayerChooserTitle = stringResource(Res.string.ext_player)
     val viewModel: DownloadViewModel = viewModel()
     val scope = rememberCoroutineScope()
     val dao = remember { DownloadDatabase.instance.hanimeDownloadDao }

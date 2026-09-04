@@ -8,10 +8,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.profile_gpu_hq
+import io.github.daisukikaffuchino.han1meviewer.profile_fast
+import io.github.daisukikaffuchino.han1meviewer.decoding_vulkan_copy
+import io.github.daisukikaffuchino.han1meviewer.decoding_vulkan
+import io.github.daisukikaffuchino.han1meviewer.decoding_sw
+import io.github.daisukikaffuchino.han1meviewer.decoding_hw_plus
+import io.github.daisukikaffuchino.han1meviewer.decoding_hw
+import io.github.daisukikaffuchino.han1meviewer.decoding_auto
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.MpvChoiceDialog
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.MpvPlayerSettingsScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.MpvPlayerSettingsUiState
@@ -28,16 +37,16 @@ fun MpvPlayerSettingsRouteScreen() {
     MpvPlayerSettingsScreen(
         state = uiState,
         profileOptions = listOf(
-            stringResource(R.string.profile_fast) to "fast",
-            stringResource(R.string.profile_gpu_hq) to "gpu-hq",
+            stringResource(Res.string.profile_fast) to "fast",
+            stringResource(Res.string.profile_gpu_hq) to "gpu-hq",
         ),
         hwdecOptions = listOf(
-            stringResource(R.string.decoding_auto) to "Auto",
-            stringResource(R.string.decoding_hw) to "HW",
-            stringResource(R.string.decoding_hw_plus) to "HW+",
-            stringResource(R.string.decoding_vulkan_copy) to "Vulkan",
-            stringResource(R.string.decoding_vulkan) to "Vulkan+",
-            stringResource(R.string.decoding_sw) to "SW",
+            stringResource(Res.string.decoding_auto) to "Auto",
+            stringResource(Res.string.decoding_hw) to "HW",
+            stringResource(Res.string.decoding_hw_plus) to "HW+",
+            stringResource(Res.string.decoding_vulkan_copy) to "Vulkan",
+            stringResource(Res.string.decoding_vulkan) to "Vulkan+",
+            stringResource(Res.string.decoding_sw) to "SW",
         ),
         activeDialog = activeDialog,
         onOpenProfileDialog = { activeDialog = MpvChoiceDialog.Profile },

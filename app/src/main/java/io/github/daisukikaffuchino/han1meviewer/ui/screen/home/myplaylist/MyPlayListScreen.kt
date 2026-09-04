@@ -26,12 +26,15 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.my_list
+import io.github.daisukikaffuchino.han1meviewer.load_failed_with_reason
+import io.github.daisukikaffuchino.han1meviewer.create_new_playlist
 import io.github.daisukikaffuchino.han1meviewer.h_chan_sad
 import io.github.daisukikaffuchino.han1meviewer.ic_add
 import io.github.daisukikaffuchino.han1meviewer.logic.state.WebsiteState
@@ -128,7 +131,7 @@ fun PlaylistScreen(
 
     HanimeScaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        title = stringResource(R.string.my_list),
+        title = stringResource(Res.string.my_list),
         onBack = navigateBack,
         scrollBehavior = scrollBehavior,
         floatingActionButton = {
@@ -140,14 +143,14 @@ fun PlaylistScreen(
             ) {
                 Icon(
                     painter = painterResource(Res.drawable.ic_add),
-                    contentDescription = stringResource(R.string.create_new_playlist)
+                    contentDescription = stringResource(Res.string.create_new_playlist)
                 )
             }
         },
     ) { innerPadding ->
         if (showCreatePlaylistDialog) {
             PlaylistEditDialog(
-                title = stringResource(R.string.create_new_playlist),
+                title = stringResource(Res.string.create_new_playlist),
                 onConfirm = { title, description ->
                     handleEvent(PlaylistEvent.OnCreatePlaylist(title, description))
                 },
@@ -176,8 +179,7 @@ fun PlaylistScreen(
                 is WebsiteState.Error -> {
                     if (uiState.playlists.isEmpty()) {
                         EmptyContent(
-                            hint = stringResource(
-                                R.string.load_failed_with_reason,
+                            hint = stringResource(Res.string.load_failed_with_reason,
                                 (state as WebsiteState.Error).throwable.message.orEmpty()
                             ),
                             picRes = Res.drawable.h_chan_sad

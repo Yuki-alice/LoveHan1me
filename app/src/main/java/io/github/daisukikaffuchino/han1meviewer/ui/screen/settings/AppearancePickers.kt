@@ -48,13 +48,25 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.colorResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.DrawableResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.video_landscape_layout_style_summary
+import io.github.daisukikaffuchino.han1meviewer.video_landscape_layout_style
+import io.github.daisukikaffuchino.han1meviewer.preset_color_scheme_summary
+import io.github.daisukikaffuchino.han1meviewer.preset_color_scheme
+import io.github.daisukikaffuchino.han1meviewer.palette_style_summary
+import io.github.daisukikaffuchino.han1meviewer.palette_style
+import io.github.daisukikaffuchino.han1meviewer.layout_style_dual_pane
+import io.github.daisukikaffuchino.han1meviewer.layout_style_classic
+import io.github.daisukikaffuchino.han1meviewer.follow_system
+import io.github.daisukikaffuchino.han1meviewer.dark_theme
+import io.github.daisukikaffuchino.han1meviewer.dark_mode_picker_summary
+import io.github.daisukikaffuchino.han1meviewer.always_on
+import io.github.daisukikaffuchino.han1meviewer.always_off
 import io.github.daisukikaffuchino.han1meviewer.ic_lightbulb
 import io.github.daisukikaffuchino.han1meviewer.ic_light_mode
 import io.github.daisukikaffuchino.han1meviewer.ic_dark_mode
@@ -78,8 +90,8 @@ fun ThemeAccentColorPicker(
 ) {
     val options = remember { ThemeAccentColor.entries.toList() }
     PickerContainer(
-        title = stringResource(R.string.preset_color_scheme),
-        description = stringResource(R.string.preset_color_scheme_summary),
+        title = stringResource(Res.string.preset_color_scheme),
+        description = stringResource(Res.string.preset_color_scheme_summary),
         modifier = modifier,
     ) {
         items(items = options, key = { it.id }) { option ->
@@ -101,18 +113,18 @@ fun VideoLandscapeLayoutStylePicker(
     val options = listOf(
         VideoLandscapeLayoutOption(
             value = "classic",
-            title = stringResource(R.string.layout_style_classic),
+            title = stringResource(Res.string.layout_style_classic),
             previewRes = Res.drawable.bg_settings_pad_classic,
         ),
         VideoLandscapeLayoutOption(
             value = "dual_pane",
-            title = stringResource(R.string.layout_style_dual_pane),
+            title = stringResource(Res.string.layout_style_dual_pane),
             previewRes = Res.drawable.bg_settings_pad_new,
         ),
     )
     PickerContainer(
-        title = stringResource(R.string.video_landscape_layout_style),
-        description = stringResource(R.string.video_landscape_layout_style_summary),
+        title = stringResource(Res.string.video_landscape_layout_style),
+        description = stringResource(Res.string.video_landscape_layout_style_summary),
         modifier = modifier,
     ) {
         items(items = options, key = { it.value }) { option ->
@@ -135,26 +147,26 @@ fun DarkModePicker(
     val options = listOf(
         DarkModeOption(
             value = "follow_system",
-            title = stringResource(R.string.follow_system),
+            title = stringResource(Res.string.follow_system),
             iconRes = Res.drawable.ic_lightbulb,
             dark = systemDark,
         ),
         DarkModeOption(
             value = "always_off",
-            title = stringResource(R.string.always_off),
+            title = stringResource(Res.string.always_off),
             iconRes = Res.drawable.ic_light_mode,
             dark = false,
         ),
         DarkModeOption(
             value = "always_on",
-            title = stringResource(R.string.always_on),
+            title = stringResource(Res.string.always_on),
             iconRes = Res.drawable.ic_dark_mode,
             dark = true,
         ),
     )
     PickerContainer(
-        title = stringResource(R.string.dark_theme),
-        description = stringResource(R.string.dark_mode_picker_summary),
+        title = stringResource(Res.string.dark_theme),
+        description = stringResource(Res.string.dark_mode_picker_summary),
         modifier = modifier,
     ) {
         items(options, key = DarkModeOption::value) { option ->
@@ -189,8 +201,8 @@ fun AppPalettePicker(
         accentColor.colors.first()
     }
     PickerContainer(
-        title = stringResource(R.string.palette_style),
-        description = stringResource(R.string.palette_style_summary),
+        title = stringResource(Res.string.palette_style),
+        description = stringResource(Res.string.palette_style_summary),
         modifier = modifier,
     ) {
         items(items = options, key = { it.id }) { style ->

@@ -31,14 +31,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.zIndex
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.HanimeConstants
 import io.github.daisukikaffuchino.han1meviewer.BuildConfig
 import io.github.daisukikaffuchino.han1meviewer.HA1_GITHUB_URL
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.simulated_update_description
+import io.github.daisukikaffuchino.han1meviewer.checking_for_updates
 import io.github.daisukikaffuchino.han1meviewer.logic.state.PageState
 import io.github.daisukikaffuchino.han1meviewer.logic.AppUpdateState
 import io.github.daisukikaffuchino.han1meviewer.logic.AppUpdateInfo
@@ -110,7 +112,7 @@ fun HomePageScreen(
     }
 
     val isCurrentlyRefreshing = (pageState as? PageState.Success)?.isRefreshing == true
-    val simulatedUpdateDescription = stringResource(R.string.simulated_update_description)
+    val simulatedUpdateDescription = stringResource(Res.string.simulated_update_description)
     val simulatedUpdate = remember(simulatedUpdateDescription) {
         AppUpdateInfo(
             versionName = "Debug Preview",
@@ -193,11 +195,11 @@ fun HomePageScreen(
                         isEmpty = pageState.isFirstPageError || pageState.isFirstPageEmpty,
                         errorMessage = (pageState as? PageState.Error)?.throwable
                             ?.toNetworkErrorMessageRes()
-                            ?.let { stringResource(it) }
+                            ?.let { androidx.compose.ui.res.stringResource(it) }
                             ?: "",
                         onRetry = { viewModel.getHomePage(isRefresh = false) },
                         loadingMessage = if (!showSimulatedUpdate && updateState is AppUpdateState.Checking) {
-                            stringResource(R.string.checking_for_updates)
+                            stringResource(Res.string.checking_for_updates)
                         } else {
                             loadingHint
                         },

@@ -15,10 +15,17 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.type
+import io.github.daisukikaffuchino.han1meviewer.tag
+import io.github.daisukikaffuchino.han1meviewer.sort_option
+import io.github.daisukikaffuchino.han1meviewer.release_date
+import io.github.daisukikaffuchino.han1meviewer.pair_widely
+import io.github.daisukikaffuchino.han1meviewer.duration
+import io.github.daisukikaffuchino.han1meviewer.delete
+import io.github.daisukikaffuchino.han1meviewer.brand
 import io.github.daisukikaffuchino.han1meviewer.ic_delete
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.HanimeAdvancedSearchHistoryEntity
 
@@ -28,13 +35,13 @@ fun AdvancedSearchHistoryCard(
     onDelete: () -> Unit,
     onClick: () -> Unit,
 ) {
-    val type = stringResource(R.string.type)
-    val sortOption = stringResource(R.string.sort_option)
-    val pairWidely = stringResource(R.string.pair_widely)
-    val releaseDate = stringResource(R.string.release_date)
-    val duration = stringResource(R.string.duration)
-    val tag = stringResource(R.string.tag)
-    val brand = stringResource(R.string.brand)
+    val type = stringResource(Res.string.type)
+    val sortOption = stringResource(Res.string.sort_option)
+    val pairWidely = stringResource(Res.string.pair_widely)
+    val releaseDate = stringResource(Res.string.release_date)
+    val duration = stringResource(Res.string.duration)
+    val tag = stringResource(Res.string.tag)
+    val brand = stringResource(Res.string.brand)
     val conditions = remember(history) {
         buildList {
             history.genre?.takeIf { it.isNotBlank() }?.let { add("$type: $it") }
@@ -80,7 +87,7 @@ fun AdvancedSearchHistoryCard(
             IconButton(onClick = onDelete) {
                 Icon(
                     painter = painterResource(Res.drawable.ic_delete),
-                    contentDescription = stringResource(R.string.delete),
+                    contentDescription = stringResource(Res.string.delete),
                 )
             }
         }

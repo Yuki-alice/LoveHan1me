@@ -3,11 +3,15 @@ package io.github.daisukikaffuchino.han1meviewer.ui.screen.settings
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.pref_export_downloads_title
+import io.github.daisukikaffuchino.han1meviewer.pref_export_downloads_summary
+import io.github.daisukikaffuchino.han1meviewer.download_speed_limit
+import io.github.daisukikaffuchino.han1meviewer.download_path
+import io.github.daisukikaffuchino.han1meviewer.download_count_limit
 import io.github.daisukikaffuchino.han1meviewer.download
 import io.github.daisukikaffuchino.han1meviewer.ic_count
 import io.github.daisukikaffuchino.han1meviewer.ic_export
@@ -47,19 +51,19 @@ fun DownloadSettingsScreen(
             }
             SettingsSegmentedGroup {
                 SettingNavigationItem(
-                    title = stringResource(R.string.download_path),
+                    title = stringResource(Res.string.download_path),
                     summary = state.downloadPathSummary,
                     iconRes = Res.drawable.ic_file_path,
                     onClick = onOpenDownloadPath,
                 )
                 SettingNavigationItem(
-                    title = stringResource(R.string.pref_export_downloads_title),
-                    summary = stringResource(R.string.pref_export_downloads_summary),
+                    title = stringResource(Res.string.pref_export_downloads_title),
+                    summary = stringResource(Res.string.pref_export_downloads_summary),
                     iconRes = Res.drawable.ic_export,
                     onClick = onImportDownloadedFiles,
                 )
                 SettingSliderItem(
-                    title = stringResource(R.string.download_count_limit),
+                    title = stringResource(Res.string.download_count_limit),
                     summary = state.downloadCountLimitSummary,
                     value = state.downloadCountLimit,
                     valueRange = 0..maxDownloadCountLimit,
@@ -67,7 +71,7 @@ fun DownloadSettingsScreen(
                     onValueChange = onDownloadCountLimitChange,
                 )
                 SettingSliderItem(
-                    title = stringResource(R.string.download_speed_limit),
+                    title = stringResource(Res.string.download_speed_limit),
                     summary = state.downloadSpeedLimitSummary,
                     value = state.downloadSpeedLimitIndex,
                     valueRange = 0..maxDownloadSpeedLimitIndex,

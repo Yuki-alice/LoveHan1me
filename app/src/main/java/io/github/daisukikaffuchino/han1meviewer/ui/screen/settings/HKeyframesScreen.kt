@@ -25,12 +25,28 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.video_code
+import io.github.daisukikaffuchino.han1meviewer.title
+import io.github.daisukikaffuchino.han1meviewer.sure_to_delete
+import io.github.daisukikaffuchino.han1meviewer.share_to_others_tip
+import io.github.daisukikaffuchino.han1meviewer.share_to_others
+import io.github.daisukikaffuchino.han1meviewer.share
+import io.github.daisukikaffuchino.han1meviewer.prompt
+import io.github.daisukikaffuchino.han1meviewer.position_ms
+import io.github.daisukikaffuchino.han1meviewer.modify_h_keyframe
+import io.github.daisukikaffuchino.han1meviewer.here_is_empty
+import io.github.daisukikaffuchino.han1meviewer.h_keyframe_title_prefix
+import io.github.daisukikaffuchino.han1meviewer.edit
+import io.github.daisukikaffuchino.han1meviewer.delete
+import io.github.daisukikaffuchino.han1meviewer.copy_
+import io.github.daisukikaffuchino.han1meviewer.confirm
+import io.github.daisukikaffuchino.han1meviewer.cancel
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.HKeyframeEntity
 import io.github.daisukikaffuchino.han1meviewer.ui.component.ConfirmDialog
 import io.github.daisukikaffuchino.han1meviewer.ui.component.content.EmptyContent
@@ -80,10 +96,10 @@ fun HKeyframesScreen(
     selectedEntity?.takeIf { activeDialog == HKeyframeDialog.DeleteEntity }?.let { entity ->
         ConfirmDialog(
             visible = true,
-            title = stringResource(R.string.sure_to_delete),
+            title = stringResource(Res.string.sure_to_delete),
             message = entity.title,
-            confirmText = stringResource(R.string.confirm),
-            dismissText = stringResource(R.string.cancel),
+            confirmText = stringResource(Res.string.confirm),
+            dismissText = stringResource(Res.string.cancel),
             onDismiss = {
                 activeDialog = null
                 selectedEntity = null
@@ -131,10 +147,10 @@ fun HKeyframesScreen(
         ?.let { (videoCode, keyframe) ->
             ConfirmDialog(
                 visible = true,
-                title = stringResource(R.string.sure_to_delete),
+                title = stringResource(Res.string.sure_to_delete),
                 message = formatPlaybackTime(keyframe.position),
-                confirmText = stringResource(R.string.confirm),
-                dismissText = stringResource(R.string.cancel),
+                confirmText = stringResource(Res.string.confirm),
+                dismissText = stringResource(Res.string.cancel),
                 onDismiss = {
                     activeDialog = null
                     selectedKeyframe = null
@@ -148,7 +164,7 @@ fun HKeyframesScreen(
         }
 
     if (items.isEmpty()) {
-        EmptyContent(hint = stringResource(R.string.here_is_empty))
+        EmptyContent(hint = stringResource(Res.string.here_is_empty))
         return
     }
 
@@ -222,14 +238,14 @@ private fun HKeyframeEntityCard(
                     overflow = TextOverflow.Ellipsis,
                 )
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    TextButton(onClick = onEdit) { Text(stringResource(R.string.edit)) }
-                    TextButton(onClick = onDelete) { Text(stringResource(R.string.delete)) }
-                    TextButton(onClick = onShare) { Text(stringResource(R.string.share)) }
+                    TextButton(onClick = onEdit) { Text(stringResource(Res.string.edit)) }
+                    TextButton(onClick = onDelete) { Text(stringResource(Res.string.delete)) }
+                    TextButton(onClick = onShare) { Text(stringResource(Res.string.share)) }
                 }
             }
 
             Text(
-                text = stringResource(R.string.h_keyframe_title_prefix) + entity.videoCode,
+                text = stringResource(Res.string.h_keyframe_title_prefix) + entity.videoCode,
                 modifier = Modifier.clickable {
                     VibrationUtil.performHapticFeedback(view)
                     onOpenVideo()
@@ -282,8 +298,8 @@ private fun HKeyframeRow(
             }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            TextButton(onClick = onEdit) { Text(stringResource(R.string.edit)) }
-            TextButton(onClick = onDelete) { Text(stringResource(R.string.delete)) }
+            TextButton(onClick = onEdit) { Text(stringResource(Res.string.edit)) }
+            TextButton(onClick = onDelete) { Text(stringResource(Res.string.delete)) }
         }
     }
 }
@@ -297,32 +313,32 @@ private fun EditEntityDialog(
     var title by remember(entity.title) { mutableStateOf(entity.title) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.modify_h_keyframe)) },
+        title = { Text(stringResource(Res.string.modify_h_keyframe)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
                     value = title,
                     onValueChange = { title = it },
-                    label = { Text(stringResource(R.string.title)) },
+                    label = { Text(stringResource(Res.string.title)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = entity.videoCode,
                     onValueChange = {},
                     readOnly = true,
-                    label = { Text(stringResource(R.string.video_code)) },
+                    label = { Text(stringResource(Res.string.video_code)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(title) }) {
-                Text(stringResource(R.string.confirm))
+                Text(stringResource(Res.string.confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
+                Text(stringResource(Res.string.cancel))
             }
         },
     )
@@ -338,19 +354,19 @@ private fun EditKeyframeDialog(
     var prompt by remember(keyframe.prompt) { mutableStateOf(keyframe.prompt.orEmpty()) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.modify_h_keyframe)) },
+        title = { Text(stringResource(Res.string.modify_h_keyframe)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                 OutlinedTextField(
                     value = positionText,
                     onValueChange = { positionText = it.filter(Char::isDigit) },
-                    label = { Text(stringResource(R.string.position_ms)) },
+                    label = { Text(stringResource(Res.string.position_ms)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
                     value = prompt,
                     onValueChange = { prompt = it },
-                    label = { Text(stringResource(R.string.prompt)) },
+                    label = { Text(stringResource(Res.string.prompt)) },
                     modifier = Modifier.fillMaxWidth(),
                 )
             }
@@ -364,12 +380,12 @@ private fun EditKeyframeDialog(
                     )
                 )
             }) {
-                Text(stringResource(R.string.confirm))
+                Text(stringResource(Res.string.confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
+                Text(stringResource(Res.string.cancel))
             }
         },
     )
@@ -390,21 +406,21 @@ private fun ShareEntityDialog(
     }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.share_to_others)) },
+        title = { Text(stringResource(Res.string.share_to_others)) },
         text = {
             Text(
-                text = stringResource(R.string.share_to_others_tip, content),
+                text = stringResource(Res.string.share_to_others_tip, content),
                 modifier = Modifier.heightIn(max = 260.dp),
             )
         },
         confirmButton = {
             TextButton(onClick = { onCopy(content) }) {
-                Text(stringResource(R.string.copy_))
+                Text(stringResource(Res.string.copy_))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
+                Text(stringResource(Res.string.cancel))
             }
         },
     )

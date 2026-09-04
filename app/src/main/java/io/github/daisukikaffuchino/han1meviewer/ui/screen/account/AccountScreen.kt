@@ -46,7 +46,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -56,6 +56,24 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import coil3.compose.AsyncImage
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.username
+import io.github.daisukikaffuchino.han1meviewer.updating
+import io.github.daisukikaffuchino.han1meviewer.update_profile
+import io.github.daisukikaffuchino.han1meviewer.old_password
+import io.github.daisukikaffuchino.han1meviewer.new_password
+import io.github.daisukikaffuchino.han1meviewer.my_account
+import io.github.daisukikaffuchino.han1meviewer.modify_success
+import io.github.daisukikaffuchino.han1meviewer.modify_failed
+import io.github.daisukikaffuchino.han1meviewer.logout
+import io.github.daisukikaffuchino.han1meviewer.load_failed_retry
+import io.github.daisukikaffuchino.han1meviewer.forgot_password
+import io.github.daisukikaffuchino.han1meviewer.email
+import io.github.daisukikaffuchino.han1meviewer.edit_profile
+import io.github.daisukikaffuchino.han1meviewer.confirm_new_password
+import io.github.daisukikaffuchino.han1meviewer.changing
+import io.github.daisukikaffuchino.han1meviewer.change_password
+import io.github.daisukikaffuchino.han1meviewer.change_avatar
+import io.github.daisukikaffuchino.han1meviewer.account_stats_summary
 import io.github.daisukikaffuchino.han1meviewer.ic_visibility_off
 import io.github.daisukikaffuchino.han1meviewer.ic_visibility
 import io.github.daisukikaffuchino.han1meviewer.ic_person
@@ -102,8 +120,8 @@ fun AccountScreen(
     }
     val state by viewModel.accountState.collectAsStateWithLifecycle()
     val submittingState by viewModel.submittingState.collectAsStateWithLifecycle()
-    val modifyFailed = stringResource(R.string.modify_failed)
-    val modifySuccess = stringResource(R.string.modify_success)
+    val modifyFailed = stringResource(Res.string.modify_failed)
+    val modifySuccess = stringResource(Res.string.modify_success)
     LaunchedEffect(Unit) {
         viewModel.loadAccount()
     }
@@ -148,7 +166,7 @@ fun AccountScreen(
     }
 
     HanimeScaffold(
-        title = stringResource(R.string.my_account),
+        title = stringResource(Res.string.my_account),
         onBack = onBack,
     ) { paddingValues ->
         val loadingHint = rememberRandomLoadingHint()
@@ -166,7 +184,7 @@ fun AccountScreen(
                     contentAlignment = Alignment.Center,
                 ) {
                     ErrorContent(
-                        title = stringResource(R.string.load_failed_retry),
+                        title = stringResource(Res.string.load_failed_retry),
                         onRetry = { viewModel.loadAccount(forceReload = true) },
                     )
                 }
@@ -275,7 +293,7 @@ private fun AccountContent(
                         } else {
                             Icon(
                                 painter = painterResource(Res.drawable.ic_edit),
-                                contentDescription = stringResource(R.string.change_avatar),
+                                contentDescription = stringResource(Res.string.change_avatar),
                                 modifier = Modifier.size(18.dp)
                             )
                         }
@@ -308,8 +326,7 @@ private fun AccountContent(
                 Spacer(modifier = Modifier.height(12.dp))
 
                 Text(
-                    text = stringResource(
-                        R.string.account_stats_summary,
+                    text = stringResource(Res.string.account_stats_summary,
                         account.subscriberCount,
                         account.videoCount
                     ),
@@ -340,7 +357,7 @@ private fun AccountContent(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = stringResource(R.string.edit_profile),
+                    text = stringResource(Res.string.edit_profile),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -349,7 +366,7 @@ private fun AccountContent(
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text(stringResource(R.string.username)) },
+                    label = { Text(stringResource(Res.string.username)) },
                     leadingIcon = {
                         Icon(
                             painter = painterResource(Res.drawable.ic_person),
@@ -364,7 +381,7 @@ private fun AccountContent(
                 OutlinedTextField(
                     value = email,
                     onValueChange = { email = it },
-                    label = { Text(stringResource(R.string.email)) },
+                    label = { Text(stringResource(Res.string.email)) },
                     leadingIcon = {
                         Icon(
                             painter = painterResource(Res.drawable.ic_mail),
@@ -387,9 +404,9 @@ private fun AccountContent(
                                 .size(18.dp)
                                 .padding(end = 8.dp)
                         )
-                        Text(stringResource(R.string.updating))
+                        Text(stringResource(Res.string.updating))
                     } else {
-                        Text(stringResource(R.string.update_profile))
+                        Text(stringResource(Res.string.update_profile))
                     }
                 }
             }
@@ -406,7 +423,7 @@ private fun AccountContent(
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Text(
-                    text = stringResource(R.string.change_password),
+                    text = stringResource(Res.string.change_password),
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -415,7 +432,7 @@ private fun AccountContent(
                 OutlinedTextField(
                     value = oldPassword,
                     onValueChange = { oldPassword = it },
-                    label = { Text(stringResource(R.string.old_password)) },
+                    label = { Text(stringResource(Res.string.old_password)) },
                     leadingIcon = {
                         Icon(
                             painter = painterResource(Res.drawable.ic_lock),
@@ -441,7 +458,7 @@ private fun AccountContent(
                 OutlinedTextField(
                     value = newPassword,
                     onValueChange = { newPassword = it },
-                    label = { Text(stringResource(R.string.new_password)) },
+                    label = { Text(stringResource(Res.string.new_password)) },
                     leadingIcon = {
                         Icon(
                             painter = painterResource(Res.drawable.ic_lock),
@@ -467,7 +484,7 @@ private fun AccountContent(
                 OutlinedTextField(
                     value = newPasswordConfirm,
                     onValueChange = { newPasswordConfirm = it },
-                    label = { Text(stringResource(R.string.confirm_new_password)) },
+                    label = { Text(stringResource(Res.string.confirm_new_password)) },
                     leadingIcon = {
                         Icon(
                             painter = painterResource(Res.drawable.ic_lock),
@@ -502,7 +519,7 @@ private fun AccountContent(
                     )
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
-                        text = stringResource(R.string.forgot_password),
+                        text = stringResource(Res.string.forgot_password),
                         style = MaterialTheme.typography.bodyMedium
                     )
                 }
@@ -527,9 +544,9 @@ private fun AccountContent(
                                 .size(18.dp)
                                 .padding(end = 8.dp)
                         )
-                        Text(stringResource(R.string.changing))
+                        Text(stringResource(Res.string.changing))
                     } else {
-                        Text(stringResource(R.string.change_password))
+                        Text(stringResource(Res.string.change_password))
                     }
                 }
             }
@@ -550,7 +567,7 @@ private fun AccountContent(
                 modifier = Modifier.size(18.dp)
             )
             Spacer(modifier = Modifier.width(8.dp))
-            Text(stringResource(R.string.logout), fontWeight = FontWeight.Medium)
+            Text(stringResource(Res.string.logout), fontWeight = FontWeight.Medium)
         }
     }
 }

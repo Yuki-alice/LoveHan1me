@@ -33,14 +33,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.retry
+import io.github.daisukikaffuchino.han1meviewer.pause_all
+import io.github.daisukikaffuchino.han1meviewer.download_progress_size
+import io.github.daisukikaffuchino.han1meviewer.continues
+import io.github.daisukikaffuchino.han1meviewer.cancel_download
 import io.github.daisukikaffuchino.han1meviewer.h_chan_load_failed
 import io.github.daisukikaffuchino.han1meviewer.h_chan_loading
 import io.github.daisukikaffuchino.han1meviewer.ic_close
@@ -177,8 +181,7 @@ fun DownloadingItemCard(
                     }
 
                     Text(
-                        text = stringResource(
-                            R.string.download_progress_size,
+                        text = stringResource(Res.string.download_progress_size,
                             item.downloadedLength.formatFileSize(),
                             item.length.formatFileSize(),
                         ),
@@ -198,7 +201,7 @@ fun DownloadingItemCard(
                     ) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_close),
-                            contentDescription = stringResource(R.string.cancel_download),
+                            contentDescription = stringResource(Res.string.cancel_download),
                             modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.outline
                         )
@@ -212,7 +215,7 @@ fun DownloadingItemCard(
                             ) {
                                 Icon(
                                     painter = painterResource(Res.drawable.ic_pause),
-                                    contentDescription = stringResource(R.string.pause_all),
+                                    contentDescription = stringResource(Res.string.pause_all),
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -227,7 +230,7 @@ fun DownloadingItemCard(
                             ) {
                                 Icon(
                                     painter = painterResource(Res.drawable.ic_play_arrow),
-                                    contentDescription = stringResource(R.string.continues),
+                                    contentDescription = stringResource(Res.string.continues),
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -240,7 +243,7 @@ fun DownloadingItemCard(
                             ) {
                                 Icon(
                                     painter = painterResource(Res.drawable.ic_refresh),
-                                    contentDescription = stringResource(R.string.retry),
+                                    contentDescription = stringResource(Res.string.retry),
                                     modifier = Modifier.size(20.dp)
                                 )
                             }

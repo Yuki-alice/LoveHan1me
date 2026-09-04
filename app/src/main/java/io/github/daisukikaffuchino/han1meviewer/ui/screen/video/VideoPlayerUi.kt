@@ -85,7 +85,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
@@ -100,6 +100,36 @@ import coil3.compose.AsyncImage
 import com.google.android.gms.cast.framework.CastButtonFactory
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.video_loading_failed
+import io.github.daisukikaffuchino.han1meviewer.sure_to_delete
+import io.github.daisukikaffuchino.han1meviewer.super_resolution_quality
+import io.github.daisukikaffuchino.han1meviewer.super_resolution_performance
+import io.github.daisukikaffuchino.han1meviewer.super_resolution_off
+import io.github.daisukikaffuchino.han1meviewer.retry
+import io.github.daisukikaffuchino.han1meviewer.replay
+import io.github.daisukikaffuchino.han1meviewer.prompt
+import io.github.daisukikaffuchino.han1meviewer.position_ms
+import io.github.daisukikaffuchino.han1meviewer.player_time_format
+import io.github.daisukikaffuchino.han1meviewer.player_speed_format
+import io.github.daisukikaffuchino.han1meviewer.player_progress_percent
+import io.github.daisukikaffuchino.han1meviewer.player_play_from_beginning
+import io.github.daisukikaffuchino.han1meviewer.player_keyframe_index
+import io.github.daisukikaffuchino.han1meviewer.player_h_keyframe
+import io.github.daisukikaffuchino.han1meviewer.player_gesture_volume
+import io.github.daisukikaffuchino.han1meviewer.player_gesture_progress
+import io.github.daisukikaffuchino.han1meviewer.player_gesture_brightness
+import io.github.daisukikaffuchino.han1meviewer.player_casting_to
+import io.github.daisukikaffuchino.han1meviewer.player_cast_device
+import io.github.daisukikaffuchino.han1meviewer.player_auto_quality
+import io.github.daisukikaffuchino.han1meviewer.player_anime4k_label
+import io.github.daisukikaffuchino.han1meviewer.playback_finished
+import io.github.daisukikaffuchino.han1meviewer.modify_h_keyframe
+import io.github.daisukikaffuchino.han1meviewer.long_press_to_add_h_keyframe
+import io.github.daisukikaffuchino.han1meviewer.here_is_empty
+import io.github.daisukikaffuchino.han1meviewer.edit
+import io.github.daisukikaffuchino.han1meviewer.delete
+import io.github.daisukikaffuchino.han1meviewer.confirm
+import io.github.daisukikaffuchino.han1meviewer.cancel
 import io.github.daisukikaffuchino.han1meviewer.ic_volume_up
 import io.github.daisukikaffuchino.han1meviewer.ic_unlock
 import io.github.daisukikaffuchino.han1meviewer.ic_refresh
@@ -234,7 +264,7 @@ fun VideoPlayerUi(
         ?: PlayerDefaults.speeds.indexOfFirst { it == PlayerDefaults.DEFAULT_SPEED }
     val resolvedQualityLabel =
         selectedQuality ?: qualities.lastOrNull()?.label
-        ?: stringResource(R.string.player_auto_quality)
+        ?: stringResource(Res.string.player_auto_quality)
     val qualitySelectedIndex = qualities.indexOfFirst { it.label == resolvedQualityLabel }
     val latestProgress by rememberUpdatedState(progress)
     val latestVolume by rememberUpdatedState(currentVolume)
@@ -376,9 +406,8 @@ fun VideoPlayerUi(
                     color = Color.Black.copy(alpha = 0.72f),
                 ) {
                     Text(
-                        text = stringResource(
-                            R.string.player_casting_to,
-                            castDeviceName ?: stringResource(R.string.player_cast_device),
+                        text = stringResource(Res.string.player_casting_to,
+                            castDeviceName ?: stringResource(Res.string.player_cast_device),
                         ),
                         color = Color.White,
                         style = MaterialTheme.typography.bodyMedium,
@@ -967,8 +996,7 @@ fun VideoPlayerUi(
                          * Time
                          */
                         Text(
-                            text = stringResource(
-                                R.string.player_time_format,
+                            text = stringResource(Res.string.player_time_format,
                                 currentTime,
                                 totalTime
                             ),
@@ -979,7 +1007,7 @@ fun VideoPlayerUi(
                         Spacer(modifier = Modifier.weight(1f))
 
                         PlayerMenuChip(
-                            label = stringResource(R.string.player_speed_format, playbackSpeed),
+                            label = stringResource(Res.string.player_speed_format, playbackSpeed),
                             onClick = { activeSidePanel = PlayerSidePanel.Speed },
                         )
 
@@ -1026,7 +1054,7 @@ fun VideoPlayerUi(
                 onClick = onResumeClick,
                 shape = RoundedCornerShape(50),
             ) {
-                Text(stringResource(R.string.player_play_from_beginning))
+                Text(stringResource(Res.string.player_play_from_beginning))
             }
         }
 
@@ -1048,7 +1076,7 @@ fun VideoPlayerUi(
                     horizontalAlignment = Alignment.CenterHorizontally,
                 ) {
                     Text(
-                        text = stringResource(R.string.playback_finished),
+                        text = stringResource(Res.string.playback_finished),
                         style = MaterialTheme.typography.titleMedium,
                     )
 
@@ -1062,7 +1090,7 @@ fun VideoPlayerUi(
 
                         Spacer(modifier = Modifier.width(6.dp))
 
-                        Text(stringResource(R.string.replay))
+                        Text(stringResource(Res.string.replay))
                     }
                 }
             }
@@ -1091,7 +1119,7 @@ fun VideoPlayerUi(
                 ) {
 
                     Text(
-                        text = stringResource(R.string.video_loading_failed),
+                        text = stringResource(Res.string.video_loading_failed),
                         style = MaterialTheme.typography.titleMedium
                     )
 
@@ -1107,7 +1135,7 @@ fun VideoPlayerUi(
 
                         Spacer(modifier = Modifier.width(6.dp))
 
-                        Text(stringResource(R.string.retry))
+                        Text(stringResource(Res.string.retry))
                     }
                 }
             }
@@ -1177,8 +1205,8 @@ fun VideoPlayerUi(
                             panelWidth = 216.dp,
                             hKeyframes = hKeyframes,
                             isHKeyframeLocal = isHKeyframeLocal,
-                            emptyText = stringResource(R.string.here_is_empty) + "\n" +
-                                    stringResource(R.string.long_press_to_add_h_keyframe),
+                            emptyText = stringResource(Res.string.here_is_empty) + "\n" +
+                                    stringResource(Res.string.long_press_to_add_h_keyframe),
                             onSelected = { index ->
                                 activeSidePanel = null
                                 onHKeyframeSelected(index)
@@ -1191,7 +1219,7 @@ fun VideoPlayerUi(
                     PlayerSidePanel.Speed -> {
                         PlayerSidePanelSheet(
                             options = PlayerDefaults.speeds.map {
-                                stringResource(R.string.player_speed_format, it)
+                                stringResource(Res.string.player_speed_format, it)
                             },
                             selectedIndex = speedSelectedIndex,
                             panelWidth = 156.dp,
@@ -1343,7 +1371,7 @@ private fun BoxScope.PlayerSidePanelSheet(
                     val marker = if (separatorIndex >= 0) {
                         label.substring(0, separatorIndex)
                     } else {
-                        stringResource(R.string.player_keyframe_index, index + 1)
+                        stringResource(Res.string.player_keyframe_index, index + 1)
                     }
                     val time =
                         if (separatorIndex >= 0) label.substring(separatorIndex + 1) else label
@@ -1380,7 +1408,7 @@ private fun BoxScope.PlayerSidePanelSheet(
                                 ) {
                                     Icon(
                                         painter = painterResource(Res.drawable.ic_edit),
-                                        contentDescription = stringResource(R.string.edit),
+                                        contentDescription = stringResource(Res.string.edit),
                                         modifier = Modifier.size(16.dp),
                                     )
                                 }
@@ -1393,7 +1421,7 @@ private fun BoxScope.PlayerSidePanelSheet(
                                 ) {
                                     Icon(
                                         painter = painterResource(Res.drawable.ic_delete),
-                                        contentDescription = stringResource(R.string.delete),
+                                        contentDescription = stringResource(Res.string.delete),
                                         modifier = Modifier.size(16.dp),
                                     )
                                 }
@@ -1461,7 +1489,7 @@ private fun BoxScope.PlayerSidePanelSheet(
         var isPositionError by remember(keyframe) { mutableStateOf(false) }
         AlertDialog(
             onDismissRequest = { editingKeyframe = null },
-            title = { Text(stringResource(R.string.modify_h_keyframe)) },
+            title = { Text(stringResource(Res.string.modify_h_keyframe)) },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     OutlinedTextField(
@@ -1470,7 +1498,7 @@ private fun BoxScope.PlayerSidePanelSheet(
                             positionText = it
                             isPositionError = false
                         },
-                        label = { Text(stringResource(R.string.position_ms)) },
+                        label = { Text(stringResource(Res.string.position_ms)) },
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         isError = isPositionError,
                         singleLine = true,
@@ -1478,7 +1506,7 @@ private fun BoxScope.PlayerSidePanelSheet(
                     OutlinedTextField(
                         value = promptText,
                         onValueChange = { promptText = it },
-                        label = { Text(stringResource(R.string.prompt)) },
+                        label = { Text(stringResource(Res.string.prompt)) },
                         maxLines = 3,
                     )
                 }
@@ -1501,12 +1529,12 @@ private fun BoxScope.PlayerSidePanelSheet(
                         }
                     }
                 ) {
-                    Text(stringResource(R.string.confirm))
+                    Text(stringResource(Res.string.confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { editingKeyframe = null }) {
-                    Text(stringResource(R.string.cancel))
+                    Text(stringResource(Res.string.cancel))
                 }
             },
         )
@@ -1515,7 +1543,7 @@ private fun BoxScope.PlayerSidePanelSheet(
     deletingKeyframe?.let { keyframe ->
         AlertDialog(
             onDismissRequest = { deletingKeyframe = null },
-            title = { Text(stringResource(R.string.sure_to_delete)) },
+            title = { Text(stringResource(Res.string.sure_to_delete)) },
             text = { Text(keyframe.position.toString()) },
             confirmButton = {
                 TextButton(
@@ -1524,12 +1552,12 @@ private fun BoxScope.PlayerSidePanelSheet(
                         deletingKeyframe = null
                     }
                 ) {
-                    Text(stringResource(R.string.confirm))
+                    Text(stringResource(Res.string.confirm))
                 }
             },
             dismissButton = {
                 TextButton(onClick = { deletingKeyframe = null }) {
-                    Text(stringResource(R.string.cancel))
+                    Text(stringResource(Res.string.cancel))
                 }
             },
         )
@@ -1665,8 +1693,7 @@ private fun GestureIndicatorOverlay(
     progressDirection: ProgressGestureDirection? = null,
     text: String? = null,
 ) {
-    val displayText = text ?: stringResource(
-        R.string.player_progress_percent,
+    val displayText = text ?: stringResource(Res.string.player_progress_percent,
         (percent * 100).toInt(),
     )
 
@@ -1780,9 +1807,9 @@ private fun GestureIndicatorOverlay(
 
                     Text(
                         text = when (type) {
-                            GestureIndicatorType.Brightness -> stringResource(R.string.player_gesture_brightness)
-                            GestureIndicatorType.Volume -> stringResource(R.string.player_gesture_volume)
-                            GestureIndicatorType.Progress -> stringResource(R.string.player_gesture_progress)
+                            GestureIndicatorType.Brightness -> stringResource(Res.string.player_gesture_brightness)
+                            GestureIndicatorType.Volume -> stringResource(Res.string.player_gesture_volume)
+                            GestureIndicatorType.Progress -> stringResource(Res.string.player_gesture_progress)
                         },
                         color = Color.White.copy(alpha = 0.92f),
                         style = MaterialTheme.typography.titleMedium
@@ -1913,13 +1940,13 @@ private fun VideoPlayerUiPreviewContent(
         showRetry = showRetry,
         qualities = listOf(PlaybackQuality(label = "1080p", uri = "")),
         selectedQuality = "1080p",
-        superResolutionLabel = stringResource(R.string.player_anime4k_label),
+        superResolutionLabel = stringResource(Res.string.player_anime4k_label),
         superResolutionOptions = listOf(
-            stringResource(R.string.super_resolution_off),
-            stringResource(R.string.super_resolution_performance),
-            stringResource(R.string.super_resolution_quality),
+            stringResource(Res.string.super_resolution_off),
+            stringResource(Res.string.super_resolution_performance),
+            stringResource(Res.string.super_resolution_quality),
         ),
-        hKeyframeLabel = stringResource(R.string.player_h_keyframe),
+        hKeyframeLabel = stringResource(Res.string.player_h_keyframe),
     )
 }
 

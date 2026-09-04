@@ -5,9 +5,11 @@ import android.os.Bundle
 import android.os.Process
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.remember
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import io.github.daisukikaffuchino.han1meviewer.BuildConfig
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.crash_no_logs
 import io.github.daisukikaffuchino.han1meviewer.ui.crash.CrashHandler
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.crash.CrashScreen
 import io.github.daisukikaffuchino.utils.ActivityManager
@@ -25,7 +27,7 @@ class CrashActivity : BaseActivity() {
         val crashTimeMillis = System.currentTimeMillis()
 
         setHanimeContent {
-            val noCrashLog = stringResource(R.string.crash_no_logs)
+            val noCrashLog = stringResource(Res.string.crash_no_logs)
             val report = remember(crashLog, crashTimeMillis, noCrashLog) {
                 buildCrashReport(
                     crashLog = crashLog ?: noCrashLog,

@@ -17,12 +17,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.close
 import io.github.daisukikaffuchino.han1meviewer.ic_close
 import io.github.daisukikaffuchino.han1meviewer.logic.model.Announcement
 import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
@@ -72,7 +72,7 @@ fun AnnouncementCard(
             ) {
                 Icon(
                     painter = painterResource(Res.drawable.ic_close),
-                    contentDescription = stringResource(R.string.close),
+                    contentDescription = stringResource(Res.string.close),
                     modifier = Modifier.size(18.dp),
                     tint = MaterialTheme.colorScheme.onSecondaryContainer,
                 )

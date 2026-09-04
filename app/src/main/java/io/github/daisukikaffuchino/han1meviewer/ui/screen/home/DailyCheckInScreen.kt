@@ -24,12 +24,26 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalContext
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.suck_back_title
+import io.github.daisukikaffuchino.han1meviewer.suck_back_message
+import io.github.daisukikaffuchino.han1meviewer.suck_back_dismiss
+import io.github.daisukikaffuchino.han1meviewer.suck_back_confirm
+import io.github.daisukikaffuchino.han1meviewer.forgot_title
+import io.github.daisukikaffuchino.han1meviewer.forgot_message
+import io.github.daisukikaffuchino.han1meviewer.forgot_dismiss
+import io.github.daisukikaffuchino.han1meviewer.forgot_confirm
+import io.github.daisukikaffuchino.han1meviewer.checkin_report
+import io.github.daisukikaffuchino.han1meviewer.check_in_feature_name
+import io.github.daisukikaffuchino.han1meviewer.cancel
+import io.github.daisukikaffuchino.han1meviewer.calendar_dialog_title
+import io.github.daisukikaffuchino.han1meviewer.calendar_dialog_message
+import io.github.daisukikaffuchino.han1meviewer.calendar_dialog_confirm
 import io.github.daisukikaffuchino.han1meviewer.ic_event_note
 import io.github.daisukikaffuchino.utils.SonnerToast
 import io.github.daisukikaffuchino.utils.toastText
@@ -174,7 +188,7 @@ fun DailyCheckInScreen(
     val scrollBehavior = pinnedScrollBehavior(rememberTopAppBarState())
     HanimeScaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
-        title = stringResource(R.string.check_in_feature_name),
+        title = stringResource(Res.string.check_in_feature_name),
         onBack = onBack,
         scrollBehavior = scrollBehavior,
         actions = {
@@ -187,7 +201,7 @@ fun DailyCheckInScreen(
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(4.dp))
-                Text(stringResource(R.string.checkin_report))
+                Text(stringResource(Res.string.checkin_report))
             }
         },
     ) { innerPadding ->
@@ -205,15 +219,14 @@ fun DailyCheckInScreen(
 
     ConfirmDialog(
         visible = forgotDialogDate != null,
-        title = stringResource(R.string.forgot_title),
+        title = stringResource(Res.string.forgot_title),
         message = forgotDialogDate?.let {
-            stringResource(
-                R.string.forgot_message,
+            stringResource(Res.string.forgot_message,
                 it.formatMd()
             )
         } ?: "",
-        confirmText = stringResource(R.string.forgot_confirm),
-        dismissText = stringResource(R.string.forgot_dismiss),
+        confirmText = stringResource(Res.string.forgot_confirm),
+        dismissText = stringResource(Res.string.forgot_dismiss),
         onConfirm = {
             forgotDialogDate?.let { checkInDialogDate = it }
             forgotDialogDate = null
@@ -223,15 +236,14 @@ fun DailyCheckInScreen(
 
     ConfirmDialog(
         visible = calendarDialogDate != null,
-        title = stringResource(R.string.calendar_dialog_title),
+        title = stringResource(Res.string.calendar_dialog_title),
         message = calendarDialogDate?.let {
-            stringResource(
-                R.string.calendar_dialog_message,
+            stringResource(Res.string.calendar_dialog_message,
                 it.formatMd()
             )
         } ?: "",
-        confirmText = stringResource(R.string.calendar_dialog_confirm),
-        dismissText = stringResource(R.string.cancel),
+        confirmText = stringResource(Res.string.calendar_dialog_confirm),
+        dismissText = stringResource(Res.string.cancel),
         onConfirm = {
             calendarDialogDate?.let { createCalendarEvent(context, it) }
             calendarDialogDate = null
@@ -241,16 +253,15 @@ fun DailyCheckInScreen(
 
     ConfirmDialog(
         visible = suckBackDialogDate != null,
-        title = stringResource(R.string.suck_back_title),
+        title = stringResource(Res.string.suck_back_title),
         message = suckBackDialogDate?.let {
-            stringResource(
-                R.string.suck_back_message,
+            stringResource(Res.string.suck_back_message,
                 it.formatMd(),
                 uiState.records[it] ?: 0
             )
         } ?: "",
-        confirmText = stringResource(R.string.suck_back_confirm),
-        dismissText = stringResource(R.string.suck_back_dismiss),
+        confirmText = stringResource(Res.string.suck_back_confirm),
+        dismissText = stringResource(Res.string.suck_back_dismiss),
         onConfirm = {
             suckBackDialogDate?.let {
                 viewModel.clearCheckIn(it)

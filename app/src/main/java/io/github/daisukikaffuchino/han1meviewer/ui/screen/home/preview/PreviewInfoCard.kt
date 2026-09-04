@@ -22,12 +22,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.release_date
+import io.github.daisukikaffuchino.han1meviewer.play_trailer
+import io.github.daisukikaffuchino.han1meviewer.brand
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimePreview
 import io.github.daisukikaffuchino.han1meviewer.ui.component.TagChipGroup
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyRow
@@ -111,20 +114,20 @@ fun PreviewInfoCard(
                     Column(modifier = Modifier.weight(1f)) {
                         if (!previewInfo.brand.isNullOrBlank()) {
                             Text(
-                                text = "${stringResource(R.string.brand)}: ${previewInfo.brand}",
+                                text = "${stringResource(Res.string.brand)}: ${previewInfo.brand}",
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }
                         if (!previewInfo.releaseDate.isNullOrBlank()) {
                             Text(
-                                text = "${stringResource(R.string.release_date)}: ${previewInfo.releaseDate}",
+                                text = "${stringResource(Res.string.release_date)}: ${previewInfo.releaseDate}",
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }
                     }
                     if (!previewInfo.videoCode.isNullOrBlank()) {
                         Button(onClick = { onOpenVideo(previewInfo.videoCode) }) {
-                            Text(stringResource(R.string.play_trailer))
+                            Text(stringResource(Res.string.play_trailer))
                         }
                     }
                 }

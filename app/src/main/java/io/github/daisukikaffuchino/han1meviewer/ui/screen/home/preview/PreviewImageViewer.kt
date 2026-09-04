@@ -39,15 +39,15 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil3.ImageLoader
 import coil3.SingletonImageLoader
 import coil3.compose.AsyncImage
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.back
 import io.github.daisukikaffuchino.han1meviewer.ic_arrow_back
 
 /**
@@ -154,7 +154,7 @@ fun PreviewImageViewerDialog(
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_arrow_back),
-                        contentDescription = stringResource(R.string.back),
+                        contentDescription = stringResource(Res.string.back),
                         tint = MaterialTheme.colorScheme.onSurface,
                     )
                 }

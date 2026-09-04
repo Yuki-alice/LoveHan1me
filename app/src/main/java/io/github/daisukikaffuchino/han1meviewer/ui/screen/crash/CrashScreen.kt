@@ -24,7 +24,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.lerp
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
@@ -33,8 +33,16 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.crash_unexpected_title
+import io.github.daisukikaffuchino.han1meviewer.crash_unexpected_message
+import io.github.daisukikaffuchino.han1meviewer.crash_restart_app_summary
+import io.github.daisukikaffuchino.han1meviewer.crash_restart_app
+import io.github.daisukikaffuchino.han1meviewer.crash_page_title
+import io.github.daisukikaffuchino.han1meviewer.crash_exit_app_summary
+import io.github.daisukikaffuchino.han1meviewer.crash_exit_app
+import io.github.daisukikaffuchino.han1meviewer.crash_copy_log_summary
+import io.github.daisukikaffuchino.han1meviewer.crash_copy_log
 import io.github.daisukikaffuchino.han1meviewer.crash_log_title
 import io.github.daisukikaffuchino.han1meviewer.crash_actions
 import io.github.daisukikaffuchino.han1meviewer.ic_bug_report
@@ -87,7 +95,7 @@ fun CrashScreen(
     }
 
     HanimeScaffold(
-        title = stringResource(R.string.crash_page_title),
+        title = stringResource(Res.string.crash_page_title),
         onBack = null,
         modifier = modifier.fillMaxSize(),
         contentHorizontalPadding = 0.dp,
@@ -129,12 +137,12 @@ fun CrashScreen(
                         )
                         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
                             Text(
-                                text = stringResource(R.string.crash_unexpected_title),
+                                text = stringResource(Res.string.crash_unexpected_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                             )
                             Text(
-                                text = stringResource(R.string.crash_unexpected_message),
+                                text = stringResource(Res.string.crash_unexpected_message),
                                 style = MaterialTheme.typography.bodyMedium,
                             )
                         }
@@ -144,20 +152,20 @@ fun CrashScreen(
                 SettingsSectionTitle(titleRes = Res.string.crash_actions)
                 SettingsSegmentedGroup {
                     SettingNavigationItem(
-                        title = stringResource(R.string.crash_copy_log),
-                        summary = stringResource(R.string.crash_copy_log_summary),
+                        title = stringResource(Res.string.crash_copy_log),
+                        summary = stringResource(Res.string.crash_copy_log_summary),
                         iconRes = Res.drawable.ic_bug_report,
                         onClick = onCopyLog,
                     )
                     SettingNavigationItem(
-                        title = stringResource(R.string.crash_restart_app),
-                        summary = stringResource(R.string.crash_restart_app_summary),
+                        title = stringResource(Res.string.crash_restart_app),
+                        summary = stringResource(Res.string.crash_restart_app_summary),
                         iconRes = Res.drawable.ic_refresh,
                         onClick = onRestartApp,
                     )
                     SettingNavigationItem(
-                        title = stringResource(R.string.crash_exit_app),
-                        summary = stringResource(R.string.crash_exit_app_summary),
+                        title = stringResource(Res.string.crash_exit_app),
+                        summary = stringResource(Res.string.crash_exit_app_summary),
                         iconRes = Res.drawable.ic_exit_to_app,
                         onClick = onExitApp,
                     )

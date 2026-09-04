@@ -29,9 +29,17 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.title_activity_qrcode_scanner
+import io.github.daisukikaffuchino.han1meviewer.import_cookies_intro
+import io.github.daisukikaffuchino.han1meviewer.cookies_label
+import io.github.daisukikaffuchino.han1meviewer.cookies_import_title
+import io.github.daisukikaffuchino.han1meviewer.cookies_import_dismiss
+import io.github.daisukikaffuchino.han1meviewer.cookies_import_desc
+import io.github.daisukikaffuchino.han1meviewer.confirm
 import io.github.daisukikaffuchino.han1meviewer.ui.component.appbar.HanimeScaffold
 
 @Composable
@@ -40,7 +48,7 @@ fun ManualInputCookiesScreen(
     onCookieScanned: (String) -> Unit,
 ) {
     HanimeScaffold(
-        title = stringResource(R.string.title_activity_qrcode_scanner),
+        title = stringResource(Res.string.title_activity_qrcode_scanner),
         onBack = onBack,
     ) { innerPadding ->
         ScanCookieContent(innerPadding, onCookieScanned)
@@ -68,7 +76,7 @@ private fun ScanCookieContent(
             OutlinedTextField(
                 value = scannedText.value,
                 onValueChange = { scannedText.value = it },
-                label = { Text(stringResource(R.string.cookies_label)) },
+                label = { Text(stringResource(Res.string.cookies_label)) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .heightIn(min = 100.dp, max = 300.dp),
@@ -84,7 +92,7 @@ private fun ScanCookieContent(
                 },
                 modifier = Modifier.align(Alignment.End),
             ) {
-                Text(stringResource(R.string.confirm))
+                Text(stringResource(Res.string.confirm))
             }
         }
     }
@@ -97,19 +105,19 @@ private fun CookieGuideDialog(onDismiss: () -> Unit) {
         onDismissRequest = onDismiss,
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cookies_import_dismiss))
+                Text(stringResource(Res.string.cookies_import_dismiss))
             }
         },
-        title = { Text(stringResource(R.string.cookies_import_title)) },
+        title = { Text(stringResource(Res.string.cookies_import_title)) },
         text = {
             Column(
                 modifier = Modifier.verticalScroll(rememberScrollState()),
             ) {
-                Text(stringResource(R.string.import_cookies_intro))
+                Text(stringResource(Res.string.import_cookies_intro))
                 Spacer(modifier = Modifier.height(8.dp))
                 Image(
                     painter = painterResource(R.raw.cookies_intro),
-                    contentDescription = stringResource(R.string.cookies_import_desc),
+                    contentDescription = stringResource(Res.string.cookies_import_desc),
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(8.dp)),

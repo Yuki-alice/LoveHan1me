@@ -6,12 +6,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.google.android.gms.common.ConnectionResult
 import com.google.android.gms.common.GoogleApiAvailability
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.default_
+import io.github.daisukikaffuchino.han1meviewer.d_speed_times
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlayerDefaults
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlayerKernel
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.PlayerSettingsScreen
@@ -32,21 +35,20 @@ fun PlayerSettingsRouteScreen(
         kernelOptions = PlayerKernel.entries.map { it.name to it.name },
         speedOptions = PlayerDefaults.speedLabels.zip(PlayerDefaults.speeds.map { it.toString() }),
         longPressSpeedOptions = listOf(
-            stringResource(R.string.d_speed_times, 1f) to "1",
-            stringResource(R.string.d_speed_times, 1.5f) to "1.5",
-            stringResource(R.string.d_speed_times, 2f) to "2",
+            stringResource(Res.string.d_speed_times, 1f) to "1",
+            stringResource(Res.string.d_speed_times, 1.5f) to "1.5",
+            stringResource(Res.string.d_speed_times, 2f) to "2",
             "${
-                stringResource(
-                    R.string.d_speed_times,
+                stringResource(Res.string.d_speed_times,
                     2.5f
                 )
-            } (${stringResource(R.string.default_)})" to "2.5",
-            stringResource(R.string.d_speed_times, 2.8f) to "2.8",
-            stringResource(R.string.d_speed_times, 3f) to "3",
-            stringResource(R.string.d_speed_times, 3.2f) to "3.2",
-            stringResource(R.string.d_speed_times, 3.5f) to "3.5",
-            stringResource(R.string.d_speed_times, 3.8f) to "3.8",
-            stringResource(R.string.d_speed_times, 4f) to "4",
+            } (${stringResource(Res.string.default_)})" to "2.5",
+            stringResource(Res.string.d_speed_times, 2.8f) to "2.8",
+            stringResource(Res.string.d_speed_times, 3f) to "3",
+            stringResource(Res.string.d_speed_times, 3.2f) to "3.2",
+            stringResource(Res.string.d_speed_times, 3.5f) to "3.5",
+            stringResource(Res.string.d_speed_times, 3.8f) to "3.8",
+            stringResource(Res.string.d_speed_times, 4f) to "4",
         ),
         onKernelChange = {
             coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(playerKernel = io.github.daisukikaffuchino.han1meviewer.logic.model.PlayerKernel.fromValue(it)) } }

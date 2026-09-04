@@ -12,11 +12,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.shared_h_keyframe_detected_msg
+import io.github.daisukikaffuchino.han1meviewer.h_keyframes_shared_by_other_detected
+import io.github.daisukikaffuchino.han1meviewer.h_keyframes_import_shared_hint
+import io.github.daisukikaffuchino.han1meviewer.h_keyframes_import_shared
+import io.github.daisukikaffuchino.han1meviewer.confirm
+import io.github.daisukikaffuchino.han1meviewer.cancel
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.HKeyframeEntity
 import io.github.daisukikaffuchino.han1meviewer.ui.component.ConfirmDialog
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.HKeyframeSettingsScreen
@@ -85,15 +92,14 @@ fun HKeyframesRouteScreen(
     sharedHKeyframeEntity?.let { entity ->
         ConfirmDialog(
             visible = true,
-            title = stringResource(R.string.h_keyframes_shared_by_other_detected),
-            message = stringResource(
-                R.string.shared_h_keyframe_detected_msg,
+            title = stringResource(Res.string.h_keyframes_shared_by_other_detected),
+            message = stringResource(Res.string.shared_h_keyframe_detected_msg,
                 entity.title,
                 entity.videoCode,
                 entity.keyframes.size,
             ).trimIndent(),
-            confirmText = stringResource(R.string.confirm),
-            dismissText = stringResource(R.string.cancel),
+            confirmText = stringResource(Res.string.confirm),
+            dismissText = stringResource(Res.string.cancel),
             onConfirm = {
                 viewModel.insertHKeyframes(entity.copy(lastModifiedTime = System.currentTimeMillis()))
                 sharedHKeyframeEntity = null
@@ -122,22 +128,22 @@ private fun ImportSharedHKeyframeDialog(
     var content by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.h_keyframes_import_shared)) },
+        title = { Text(stringResource(Res.string.h_keyframes_import_shared)) },
         text = {
             OutlinedTextField(
                 value = content,
                 onValueChange = { content = it },
-                label = { Text(stringResource(R.string.h_keyframes_import_shared_hint)) },
+                label = { Text(stringResource(Res.string.h_keyframes_import_shared_hint)) },
             )
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(content) }) {
-                Text(stringResource(R.string.confirm))
+                Text(stringResource(Res.string.confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
+                Text(stringResource(Res.string.cancel))
             }
         },
     )

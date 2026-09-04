@@ -7,12 +7,27 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.BuildConfig
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.settings_video_playback_summary
+import io.github.daisukikaffuchino.han1meviewer.settings_video_playback
+import io.github.daisukikaffuchino.han1meviewer.settings_player_summary
+import io.github.daisukikaffuchino.han1meviewer.settings_network_download_summary
+import io.github.daisukikaffuchino.han1meviewer.settings_network_download
+import io.github.daisukikaffuchino.han1meviewer.settings_interface_interaction_summary
+import io.github.daisukikaffuchino.han1meviewer.settings_interface_interaction
+import io.github.daisukikaffuchino.han1meviewer.settings_data_privacy_summary
+import io.github.daisukikaffuchino.han1meviewer.settings_data_privacy
+import io.github.daisukikaffuchino.han1meviewer.settings_appearance_summary
+import io.github.daisukikaffuchino.han1meviewer.settings_appearance
+import io.github.daisukikaffuchino.han1meviewer.settings_about_summary
+import io.github.daisukikaffuchino.han1meviewer.player_settings
+import io.github.daisukikaffuchino.han1meviewer.developer_options_summary
+import io.github.daisukikaffuchino.han1meviewer.developer_options
+import io.github.daisukikaffuchino.han1meviewer.about
 import io.github.daisukikaffuchino.han1meviewer.ic_captive_portal
 import io.github.daisukikaffuchino.han1meviewer.ic_code
 import io.github.daisukikaffuchino.han1meviewer.ic_data_table
@@ -46,8 +61,8 @@ fun SettingsMainScreen(
     ) {
         item {
             SettingNavigationItem(
-                title = stringResource(R.string.settings_appearance),
-                summary = stringResource(R.string.settings_appearance_summary),
+                title = stringResource(Res.string.settings_appearance),
+                summary = stringResource(Res.string.settings_appearance_summary),
                 iconRes = Res.drawable.ic_palette,
                 shapes = HanimeDefaults.cardShapes(),
                 onClick = onOpenAppearance,
@@ -55,8 +70,8 @@ fun SettingsMainScreen(
         }
         item {
             SettingNavigationItem(
-                title = stringResource(R.string.settings_interface_interaction),
-                summary = stringResource(R.string.settings_interface_interaction_summary),
+                title = stringResource(Res.string.settings_interface_interaction),
+                summary = stringResource(Res.string.settings_interface_interaction_summary),
                 iconRes = Res.drawable.ic_interests,
                 shapes = HanimeDefaults.cardShapes(),
                 onClick = onOpenInterfaceInteraction,
@@ -64,8 +79,8 @@ fun SettingsMainScreen(
         }
         item {
             SettingNavigationItem(
-                title = stringResource(R.string.settings_video_playback),
-                summary = stringResource(R.string.settings_video_playback_summary),
+                title = stringResource(Res.string.settings_video_playback),
+                summary = stringResource(Res.string.settings_video_playback_summary),
                 iconRes = Res.drawable.ic_video_settings,
                 shapes = HanimeDefaults.cardShapes(),
                 onClick = onOpenVideoPlayback,
@@ -73,8 +88,8 @@ fun SettingsMainScreen(
         }
         item {
             SettingNavigationItem(
-                title = stringResource(R.string.player_settings),
-                summary = stringResource(R.string.settings_player_summary),
+                title = stringResource(Res.string.player_settings),
+                summary = stringResource(Res.string.settings_player_summary),
                 iconRes = Res.drawable.ic_dvr,
                 shapes = HanimeDefaults.cardShapes(),
                 onClick = onOpenPlayerSettings,
@@ -82,8 +97,8 @@ fun SettingsMainScreen(
         }
         item {
             SettingNavigationItem(
-                title = stringResource(R.string.settings_network_download),
-                summary = stringResource(R.string.settings_network_download_summary),
+                title = stringResource(Res.string.settings_network_download),
+                summary = stringResource(Res.string.settings_network_download_summary),
                 iconRes = Res.drawable.ic_captive_portal,
                 shapes = HanimeDefaults.cardShapes(),
                 onClick = onOpenNetworkDownload,
@@ -91,8 +106,8 @@ fun SettingsMainScreen(
         }
         item {
             SettingNavigationItem(
-                title = stringResource(R.string.settings_data_privacy),
-                summary = stringResource(R.string.settings_data_privacy_summary),
+                title = stringResource(Res.string.settings_data_privacy),
+                summary = stringResource(Res.string.settings_data_privacy_summary),
                 iconRes = Res.drawable.ic_data_table,
                 shapes = HanimeDefaults.cardShapes(),
                 onClick = onOpenDataPrivacy,
@@ -101,8 +116,8 @@ fun SettingsMainScreen(
         if (BuildConfig.DEBUG) {
             item {
                 SettingNavigationItem(
-                    title = stringResource(R.string.developer_options),
-                    summary = stringResource(R.string.developer_options_summary),
+                    title = stringResource(Res.string.developer_options),
+                    summary = stringResource(Res.string.developer_options_summary),
                     iconRes = Res.drawable.ic_code,
                     shapes = HanimeDefaults.cardShapes(),
                     onClick = onOpenDeveloperOptions,
@@ -111,8 +126,8 @@ fun SettingsMainScreen(
         }
         item {
             SettingNavigationItem(
-                title = stringResource(R.string.about),
-                summary = stringResource(R.string.settings_about_summary),
+                title = stringResource(Res.string.about),
+                summary = stringResource(Res.string.settings_about_summary),
                 iconRes = Res.drawable.ic_info,
                 shapes = HanimeDefaults.cardShapes(),
                 onClick = onOpenAbout,

@@ -46,11 +46,17 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.modify_title_or_desc
+import io.github.daisukikaffuchino.han1meviewer.load_failed_retry
+import io.github.daisukikaffuchino.han1meviewer.load_complete_with_pages
+import io.github.daisukikaffuchino.han1meviewer.empty_content
+import io.github.daisukikaffuchino.han1meviewer.edit
+import io.github.daisukikaffuchino.han1meviewer.delete
 import io.github.daisukikaffuchino.han1meviewer.h_chan_load_failed
 import io.github.daisukikaffuchino.han1meviewer.h_chan_loading
 import io.github.daisukikaffuchino.han1meviewer.ic_delete
@@ -149,7 +155,7 @@ fun PlaylistBottomSheet(
             Box(Modifier
                 .fillMaxSize()
                 .height(200.dp), contentAlignment = Alignment.Center) {
-                Text(stringResource(R.string.load_failed_retry))
+                Text(stringResource(Res.string.load_failed_retry))
             }
         } else {
             AnimatedVisibility(visible = true, enter = fadeIn()) {
@@ -165,7 +171,7 @@ fun PlaylistBottomSheet(
                     context = context,
                 )
                 if (playlist.isEmpty()) {
-                    EmptyContent(stringResource(R.string.empty_content))
+                    EmptyContent(stringResource(Res.string.empty_content))
                 }
             }
         }
@@ -290,7 +296,7 @@ private fun PlaylistSheetContent(
                     ) {
                         Icon(
                             painterResource(Res.drawable.ic_delete),
-                            stringResource(R.string.delete)
+                            stringResource(Res.string.delete)
                         )
                     }
                     Spacer(Modifier.width(8.dp))
@@ -300,7 +306,7 @@ private fun PlaylistSheetContent(
                     ) {
                         Icon(
                             painterResource(Res.drawable.ic_edit_square),
-                            stringResource(R.string.edit)
+                            stringResource(Res.string.edit)
                         )
                     }
                 }
@@ -309,7 +315,7 @@ private fun PlaylistSheetContent(
 
         if (showEditPlaylistDialog) {
             PlaylistEditDialog(
-                title = stringResource(R.string.modify_title_or_desc),
+                title = stringResource(Res.string.modify_title_or_desc),
                 initialTitle = playListTitle,
                 initialDescription = desc.orEmpty(),
                 onConfirm = { title, description ->
@@ -364,8 +370,7 @@ private fun PlaylistSheetContent(
                             contentAlignment = Alignment.Center
                         ) {
                             Text(
-                                stringResource(
-                                    R.string.load_complete_with_pages,
+                                stringResource(Res.string.load_complete_with_pages,
                                     viewModel.currentPage - 1
                                 ),
                                 style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)

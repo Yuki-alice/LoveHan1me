@@ -15,7 +15,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.res.stringArrayResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
@@ -23,6 +23,8 @@ import coil3.request.ImageRequest
 import coil3.request.crossfade
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.loading
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.SpacingLarge
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.SpacingNormal
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.VideoNormalCardMinWidth
@@ -114,7 +116,7 @@ fun rememberVideoGridColumns(): Int {
 
 @Composable
 fun rememberRandomLoadingHint(): String {
-    val defaultHint = stringResource(R.string.loading)
+    val defaultHint = stringResource(Res.string.loading)
     if (!SettingsRepository.funLoadingHints) return defaultHint
 
     val placeholders = stringArrayResource(R.array.loading_hints)

@@ -73,7 +73,7 @@ import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.platform.LocalWindowInfo
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -83,8 +83,23 @@ import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.type
+import io.github.daisukikaffuchino.han1meviewer.tag
+import io.github.daisukikaffuchino.han1meviewer.sort_option
+import io.github.daisukikaffuchino.han1meviewer.search_video_hint
+import io.github.daisukikaffuchino.han1meviewer.search_no_results
+import io.github.daisukikaffuchino.han1meviewer.search_load_failed_with_reason
+import io.github.daisukikaffuchino.han1meviewer.reset
+import io.github.daisukikaffuchino.han1meviewer.release_date
+import io.github.daisukikaffuchino.han1meviewer.recent_searches
+import io.github.daisukikaffuchino.han1meviewer.pair_widely
+import io.github.daisukikaffuchino.han1meviewer.duration
+import io.github.daisukikaffuchino.han1meviewer.delete
+import io.github.daisukikaffuchino.han1meviewer.clear_checkin
+import io.github.daisukikaffuchino.han1meviewer.brand
+import io.github.daisukikaffuchino.han1meviewer.back
+import io.github.daisukikaffuchino.han1meviewer.advanced_search
 import io.github.daisukikaffuchino.han1meviewer.h_chan_speechless
 import io.github.daisukikaffuchino.han1meviewer.h_chan_sad
 import io.github.daisukikaffuchino.han1meviewer.ic_search
@@ -418,7 +433,7 @@ fun SearchScreen(
                 // 未搜索 + 搜索框为空 → 显示历史
                 Column(Modifier.fillMaxSize()) {
                     Text(
-                        stringResource(R.string.recent_searches),
+                        stringResource(Res.string.recent_searches),
                         style = MaterialTheme.typography.labelMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
@@ -484,7 +499,7 @@ fun SearchAppBar(
                 IconButton(onClick = onBack) {
                     Icon(
                         painterResource(Res.drawable.ic_arrow_back),
-                        contentDescription = stringResource(R.string.back),
+                        contentDescription = stringResource(Res.string.back),
                         tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
@@ -516,7 +531,7 @@ fun SearchAppBar(
                             ) {
                                 if (query.isEmpty()) {
                                     Text(
-                                        text = stringResource(R.string.search_video_hint),
+                                        text = stringResource(Res.string.search_video_hint),
                                         style = MaterialTheme.typography.bodyLarge,
                                         color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
@@ -529,7 +544,7 @@ fun SearchAppBar(
                     IconButton(onClick = { onQueryChange("") }) {
                         Icon(
                             painterResource(Res.drawable.ic_close),
-                            contentDescription = stringResource(R.string.clear_checkin),
+                            contentDescription = stringResource(Res.string.clear_checkin),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
@@ -537,7 +552,7 @@ fun SearchAppBar(
                 FilledIconButton(onClick = onOpenAdvancedSearch) {
                     Icon(
                         painterResource(Res.drawable.ic_filter_list),
-                        contentDescription = stringResource(R.string.advanced_search)
+                        contentDescription = stringResource(Res.string.advanced_search)
                     )
                 }
             }
@@ -595,7 +610,7 @@ fun SearchHistoryList(
                     ) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_close),
-                            stringResource(R.string.delete),
+                            stringResource(Res.string.delete),
                             Modifier.size(16.dp),
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -711,20 +726,19 @@ fun SearchStateIndicator(
         }
 
         is PageLoadingState.NoMoreData -> if (resultCount == 0) EmptyContent(
-            hint = stringResource(R.string.search_no_results),
+            hint = stringResource(Res.string.search_no_results),
             picRes = Res.drawable.h_chan_speechless
         )
 
         is PageLoadingState.Error -> EmptyContent(
-            hint = stringResource(
-                R.string.search_load_failed_with_reason,
+            hint = stringResource(Res.string.search_load_failed_with_reason,
                 state.throwable.message.orEmpty()
             ),
             picRes = Res.drawable.h_chan_sad
         )
 
         is PageLoadingState.Success -> if (resultCount == 0) EmptyContent(
-            hint = stringResource(R.string.search_no_results),
+            hint = stringResource(Res.string.search_no_results),
             picRes = Res.drawable.h_chan_speechless
         )
     }
@@ -805,7 +819,7 @@ private fun ActiveSearchCriteria(
             val label = viewModel.genres.find { option -> option.searchKey == it }?.name ?: it
             AssistChip(
                 onClick = onClearGenre,
-                label = { Text("${stringResource(R.string.type)}: $label") },
+                label = { Text("${stringResource(Res.string.type)}: $label") },
                 colors = AssistChipDefaults.assistChipColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 ),
@@ -814,7 +828,7 @@ private fun ActiveSearchCriteria(
         if (filter.tagCount > 0) {
             AssistChip(
                 onClick = onClearTagCount,
-                label = { Text("${stringResource(R.string.tag)} (${filter.tagCount})") },
+                label = { Text("${stringResource(Res.string.tag)} (${filter.tagCount})") },
                 colors = AssistChipDefaults.assistChipColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 ),
@@ -824,7 +838,7 @@ private fun ActiveSearchCriteria(
             val label = viewModel.sortOptions.find { option -> option.searchKey == it }?.name ?: it
             AssistChip(
                 onClick = onClearSort,
-                label = { Text("${stringResource(R.string.sort_option)}: $label") },
+                label = { Text("${stringResource(Res.string.sort_option)}: $label") },
                 colors = AssistChipDefaults.assistChipColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 ),
@@ -833,7 +847,7 @@ private fun ActiveSearchCriteria(
         filter.releaseDate?.let {
             AssistChip(
                 onClick = onClearDuration,
-                label = { Text("${stringResource(R.string.release_date)}: $it") },
+                label = { Text("${stringResource(Res.string.release_date)}: $it") },
                 colors = AssistChipDefaults.assistChipColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 ),
@@ -843,7 +857,7 @@ private fun ActiveSearchCriteria(
             val label = viewModel.durations.find { option -> option.searchKey == it }?.name ?: it
             AssistChip(
                 onClick = onClearDuration,
-                label = { Text("${stringResource(R.string.duration)}: $label") },
+                label = { Text("${stringResource(Res.string.duration)}: $label") },
                 colors = AssistChipDefaults.assistChipColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 ),
@@ -852,7 +866,7 @@ private fun ActiveSearchCriteria(
         if (filter.brandCount > 0) {
             AssistChip(
                 onClick = onClearBrandCount,
-                label = { Text("${stringResource(R.string.brand)} (${filter.brandCount})") },
+                label = { Text("${stringResource(Res.string.brand)} (${filter.brandCount})") },
                 colors = AssistChipDefaults.assistChipColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 ),
@@ -861,7 +875,7 @@ private fun ActiveSearchCriteria(
         if (filter.broad) {
             AssistChip(
                 onClick = onClearBroad,
-                label = { Text(stringResource(R.string.pair_widely)) },
+                label = { Text(stringResource(Res.string.pair_widely)) },
                 colors = AssistChipDefaults.assistChipColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,
                 ),
@@ -869,7 +883,7 @@ private fun ActiveSearchCriteria(
         }
         AssistChip(
             onClick = onClearAll,
-            label = { Text(stringResource(R.string.reset)) },
+            label = { Text(stringResource(Res.string.reset)) },
             colors = AssistChipDefaults.assistChipColors(
                 containerColor = MaterialTheme.colorScheme.surfaceVariant,
             ),

@@ -52,13 +52,23 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.sort_most_likes
+import io.github.daisukikaffuchino.han1meviewer.sort_most_dislikes
+import io.github.daisukikaffuchino.han1meviewer.sort_comment
+import io.github.daisukikaffuchino.han1meviewer.sort_by_replies
+import io.github.daisukikaffuchino.han1meviewer.sort_by_oldest
+import io.github.daisukikaffuchino.han1meviewer.sort_by_newest
+import io.github.daisukikaffuchino.han1meviewer.login_first
+import io.github.daisukikaffuchino.han1meviewer.load_failed_retry
+import io.github.daisukikaffuchino.han1meviewer.comment_too_short
+import io.github.daisukikaffuchino.han1meviewer.comment_not_found
+import io.github.daisukikaffuchino.han1meviewer.comment
 import io.github.daisukikaffuchino.han1meviewer.ic_reply
 import io.github.daisukikaffuchino.han1meviewer.logic.model.ReportReason
 import io.github.daisukikaffuchino.han1meviewer.logic.model.VideoComments
@@ -127,8 +137,8 @@ fun CommentScreen(
         initialFirstVisibleItemScrollOffset = initialFirstVisibleItemScrollOffset,
     )
     val scope = rememberCoroutineScope()
-    val loginFirstText = stringResource(R.string.login_first)
-    val commentTooShortText = stringResource(R.string.comment_too_short)
+    val loginFirstText = stringResource(Res.string.login_first)
+    val commentTooShortText = stringResource(Res.string.comment_too_short)
     val nestedScrollInterop = rememberNestedScrollInteropConnection()
     LaunchedEffect(reportMessageFlow) {
         reportMessageFlow.collect {
@@ -168,7 +178,7 @@ fun CommentScreen(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 Text(
-                    text = stringResource(R.string.sort_comment),
+                    text = stringResource(Res.string.sort_comment),
                     style = MaterialTheme.typography.titleLarge,
                     modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
                 )
@@ -225,7 +235,7 @@ fun CommentScreen(
                         modifier = Modifier.padding(8.dp)
                     ) {
                         ExtendedFloatingActionButton(
-                            text = { Text(stringResource(R.string.comment)) },
+                            text = { Text(stringResource(Res.string.comment)) },
                             icon = {
                                 Icon(
                                     painter = painterResource(Res.drawable.ic_reply),
@@ -274,7 +284,7 @@ fun CommentScreen(
                         onRetry = onRefresh,
                         error = {
                             ErrorContent(
-                                title = stringResource(R.string.load_failed_retry),
+                                title = stringResource(Res.string.load_failed_retry),
                                 message = (state as WebsiteState.Error).throwable.message,
                                 onRetry = onRefresh,
                                 modifier = Modifier
@@ -284,7 +294,7 @@ fun CommentScreen(
                         },
                         empty = {
                             EmptyContent(
-                                hint = stringResource(R.string.comment_not_found),
+                                hint = stringResource(Res.string.comment_not_found),
                                 subHint = latestReportMessage ?: ""
                             )
                         },
@@ -391,7 +401,7 @@ fun CommentScreen(
                                 replyText = TextFieldValue("")
                             }
                         },
-                        placeholder = stringResource(R.string.comment),
+                        placeholder = stringResource(Res.string.comment),
                     )
                 } else {
                     CommentReplyBar(
@@ -407,7 +417,7 @@ fun CommentScreen(
                                 composeText = TextFieldValue("")
                             }
                         },
-                        placeholder = stringResource(R.string.comment),
+                        placeholder = stringResource(Res.string.comment),
                     )
                 }
             }
@@ -439,11 +449,11 @@ private fun sortComments(
 
 @Composable
 private fun sortText(type: CommentSortType): String = when (type) {
-    CommentSortType.LATEST -> stringResource(R.string.sort_by_newest)
-    CommentSortType.EARLIEST -> stringResource(R.string.sort_by_oldest)
-    CommentSortType.MOST_REPLY -> stringResource(R.string.sort_by_replies)
-    CommentSortType.MOST_LIKES -> stringResource(R.string.sort_most_likes)
-    CommentSortType.MOST_DISLIKES -> stringResource(R.string.sort_most_dislikes)
+    CommentSortType.LATEST -> stringResource(Res.string.sort_by_newest)
+    CommentSortType.EARLIEST -> stringResource(Res.string.sort_by_oldest)
+    CommentSortType.MOST_REPLY -> stringResource(Res.string.sort_by_replies)
+    CommentSortType.MOST_LIKES -> stringResource(Res.string.sort_most_likes)
+    CommentSortType.MOST_DISLIKES -> stringResource(Res.string.sort_most_dislikes)
 }
 
 data class CommentMessage(val text: String)

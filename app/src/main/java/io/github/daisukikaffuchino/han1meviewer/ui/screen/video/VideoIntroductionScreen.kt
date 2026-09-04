@@ -70,7 +70,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.DrawableResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -79,6 +79,43 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.sure_to_download
+import io.github.daisukikaffuchino.han1meviewer.sure_to_redownload
+import io.github.daisukikaffuchino.han1meviewer.watch_later
+import io.github.daisukikaffuchino.han1meviewer.video_might_not_exist
+import io.github.daisukikaffuchino.han1meviewer.sure
+import io.github.daisukikaffuchino.han1meviewer.subscribed
+import io.github.daisukikaffuchino.han1meviewer.subscribe
+import io.github.daisukikaffuchino.han1meviewer.share
+import io.github.daisukikaffuchino.han1meviewer.series_video
+import io.github.daisukikaffuchino.han1meviewer.s_view_times
+import io.github.daisukikaffuchino.han1meviewer.related_video
+import io.github.daisukikaffuchino.han1meviewer.quick_checkin
+import io.github.daisukikaffuchino.han1meviewer.quality_with_colon
+import io.github.daisukikaffuchino.han1meviewer.original_comic
+import io.github.daisukikaffuchino.han1meviewer.now_playing
+import io.github.daisukikaffuchino.han1meviewer.no_custom_playlist_hint
+import io.github.daisukikaffuchino.han1meviewer.no
+import io.github.daisukikaffuchino.han1meviewer.name_with_colon
+import io.github.daisukikaffuchino.han1meviewer.more
+import io.github.daisukikaffuchino.han1meviewer.load_failed_retry
+import io.github.daisukikaffuchino.han1meviewer.liked
+import io.github.daisukikaffuchino.han1meviewer.jump_to_webpage
+import io.github.daisukikaffuchino.han1meviewer.go_to_official
+import io.github.daisukikaffuchino.han1meviewer.download_video_detail_below
+import io.github.daisukikaffuchino.han1meviewer.download
+import io.github.daisukikaffuchino.han1meviewer.dialog_feeling_hint
+import io.github.daisukikaffuchino.han1meviewer.dialog_confirm
+import io.github.daisukikaffuchino.han1meviewer.dialog_cancel
+import io.github.daisukikaffuchino.han1meviewer.confirm
+import io.github.daisukikaffuchino.han1meviewer.check_video_exists_in_download
+import io.github.daisukikaffuchino.han1meviewer.cancel
+import io.github.daisukikaffuchino.han1meviewer.blank_brackets
+import io.github.daisukikaffuchino.han1meviewer.back
+import io.github.daisukikaffuchino.han1meviewer.auto_create_same_name_download_group
+import io.github.daisukikaffuchino.han1meviewer.after_download_tips
+import io.github.daisukikaffuchino.han1meviewer.add_to_playlist
+import io.github.daisukikaffuchino.han1meviewer.add_to_fav
 import io.github.daisukikaffuchino.han1meviewer.ic_thumb_up_off_alt
 import io.github.daisukikaffuchino.han1meviewer.ic_thumb_up_alt
 import io.github.daisukikaffuchino.han1meviewer.ic_thumb_down_off_alt
@@ -209,14 +246,14 @@ fun VideoIntroductionScreen(
             )
 
             state is VideoLoadingState.Error -> ErrorContent(
-                title = stringResource(R.string.load_failed_retry),
+                title = stringResource(Res.string.load_failed_retry),
                 message = state.throwable.message,
                 onRetry = onRetry,
                 modifier = Modifier.align(Alignment.Center),
             )
 
             state is VideoLoadingState.NoContent -> EmptyContent(
-                hint = stringResource(R.string.video_might_not_exist),
+                hint = stringResource(Res.string.video_might_not_exist),
             )
 
             else -> LoadingContent(
@@ -448,7 +485,7 @@ private fun VideoIntroductionContent(
 
             if (!fromDownload && !hideRelatedInIntro && relatedItems.isNotEmpty()) {
                 item(key = "related_header", contentType = "section_header") {
-                    SectionHeader(title = stringResource(R.string.related_video))
+                    SectionHeader(title = stringResource(Res.string.related_video))
                 }
                 itemsIndexed(
                     items = relatedRows,
@@ -487,7 +524,7 @@ private fun DownloadQualityDialog(
     val qualities = videoUrls.keys.toList()
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.download)) },
+        title = { Text(stringResource(Res.string.download)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                 qualities.forEach { quality ->
@@ -512,7 +549,7 @@ private fun DownloadQualityDialog(
                         Text(quality)
                         if (quality == io.github.daisukikaffuchino.han1meviewer.HanimeResolution.RES_UNKNOWN) {
                             Text(
-                                text = stringResource(R.string.go_to_official),
+                                text = stringResource(Res.string.go_to_official),
                                 color = MaterialTheme.colorScheme.primary,
                                 style = MaterialTheme.typography.labelMedium,
                             )
@@ -524,7 +561,7 @@ private fun DownloadQualityDialog(
         confirmButton = {},
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.cancel))
+                Text(stringResource(Res.string.cancel))
             }
         },
     )
@@ -545,19 +582,19 @@ private fun DownloadConfirmDialog(
         title = {
             Text(
                 stringResource(
-                    if (prompt.oldQuality != null) R.string.sure_to_redownload else R.string.sure_to_download
+                    if (prompt.oldQuality != null) Res.string.sure_to_redownload else Res.string.sure_to_download
                 )
             )
         },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                Text(stringResource(R.string.download_video_detail_below))
+                Text(stringResource(Res.string.download_video_detail_below))
                 prompt.oldQuality?.let {
-                    Text(stringResource(R.string.check_video_exists_in_download, it))
+                    Text(stringResource(Res.string.check_video_exists_in_download, it))
                 }
-                Text(stringResource(R.string.name_with_colon) + video.title)
+                Text(stringResource(Res.string.name_with_colon) + video.title)
                 Text(
-                    stringResource(R.string.quality_with_colon) + if (
+                    stringResource(Res.string.quality_with_colon) + if (
                         prompt.oldQuality != null && prompt.oldQuality != prompt.newQuality
                     ) {
                         "${prompt.oldQuality} → ${prompt.newQuality}"
@@ -566,7 +603,7 @@ private fun DownloadConfirmDialog(
                     }
                 )
                 Text(
-                    text = stringResource(R.string.after_download_tips),
+                    text = stringResource(Res.string.after_download_tips),
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -588,22 +625,22 @@ private fun DownloadConfirmDialog(
                         checked = autoCreateGroup,
                         onCheckedChange = null,
                     )
-                    Text(stringResource(R.string.auto_create_same_name_download_group))
+                    Text(stringResource(Res.string.auto_create_same_name_download_group))
                 }
             }
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(autoCreateGroup) }) {
-                Text(stringResource(R.string.sure))
+                Text(stringResource(Res.string.sure))
             }
         },
         dismissButton = {
             Row {
                 TextButton(onClick = onOpenOfficial) {
-                    Text(stringResource(R.string.go_to_official))
+                    Text(stringResource(Res.string.go_to_official))
                 }
                 TextButton(onClick = onDismiss) {
-                    Text(stringResource(R.string.no))
+                    Text(stringResource(Res.string.no))
                 }
             }
         },
@@ -619,7 +656,7 @@ private fun QuickCheckInDialog(
     var feeling by remember { mutableStateOf("") }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.quick_checkin)) },
+        title = { Text(stringResource(Res.string.quick_checkin)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 Text(
@@ -632,7 +669,7 @@ private fun QuickCheckInDialog(
                     value = feeling,
                     onValueChange = { if (it.length <= 200) feeling = it },
                     modifier = Modifier.fillMaxWidth(),
-                    placeholder = { Text(stringResource(R.string.dialog_feeling_hint)) },
+                    placeholder = { Text(stringResource(Res.string.dialog_feeling_hint)) },
                     minLines = 3,
                     supportingText = { Text("${feeling.length}/200") },
                 )
@@ -653,12 +690,12 @@ private fun QuickCheckInDialog(
                     )
                 },
             ) {
-                Text(stringResource(R.string.dialog_confirm))
+                Text(stringResource(Res.string.dialog_confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.dialog_cancel))
+                Text(stringResource(Res.string.dialog_cancel))
             }
         },
     )
@@ -678,12 +715,12 @@ private fun MyListDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(stringResource(R.string.add_to_playlist)) },
+        title = { Text(stringResource(Res.string.add_to_playlist)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                 if (!hasCustomPlaylist) {
                     Text(
-                        text = stringResource(R.string.no_custom_playlist_hint),
+                        text = stringResource(Res.string.no_custom_playlist_hint),
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
@@ -717,7 +754,7 @@ private fun MyListDialog(
                             Text(
                                 // P6c：VM 下沉后 watch-later 条目 title 为占位（commonMain 无同步资源读）
                                 text = if (info.code == LocalListRepository.WATCH_LATER_CODE) {
-                                    stringResource(R.string.watch_later)
+                                    stringResource(Res.string.watch_later)
                                 } else {
                                     info.title
                                 }
@@ -731,12 +768,12 @@ private fun MyListDialog(
             TextButton(
                 onClick = { onConfirm(selectedStates) },
             ) {
-                Text(stringResource(R.string.confirm))
+                Text(stringResource(Res.string.confirm))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text(stringResource(R.string.back))
+                Text(stringResource(Res.string.back))
             }
         },
     )
@@ -769,7 +806,7 @@ private fun PlaylistBottomSheet(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = stringResource(R.string.series_video),
+                        text = stringResource(Res.string.series_video),
                         style = MaterialTheme.typography.headlineSmall,
                     )
                     playlist.playlistName?.takeIf { it.isNotBlank() }?.let {
@@ -781,7 +818,7 @@ private fun PlaylistBottomSheet(
                     }
                 }
                 Text(
-                    text = stringResource(R.string.blank_brackets, playlist.video.size),
+                    text = stringResource(Res.string.blank_brackets, playlist.video.size),
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -884,7 +921,7 @@ private fun PlaylistBottomSheet(
                         }
                         if (item.isPlaying) {
                             Text(
-                                text = stringResource(R.string.now_playing),
+                                text = stringResource(Res.string.now_playing),
                                 style = MaterialTheme.typography.labelMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.primary,
@@ -972,13 +1009,13 @@ private fun ArtistSection(
                             color = MaterialTheme.colorScheme.outlineVariant
                         )
                     ) {
-                        Text(text = stringResource(R.string.subscribed))
+                        Text(text = stringResource(Res.string.subscribed))
                     }
                 } else {
                     Button(
                         onClick = onToggleSubscribe,
                     ) {
-                        Text(text = stringResource(R.string.subscribe))
+                        Text(text = stringResource(Res.string.subscribe))
                     }
                 }
             }
@@ -1029,7 +1066,7 @@ private fun MetaSection(
     onRateVideo: (Boolean) -> Unit,
 ) {
     val viewsText = if (fromDownload) {
-        stringResource(R.string.s_view_times, "0721")
+        stringResource(Res.string.s_view_times, "0721")
     } else {
         DisplayTextLocalizer.localizeViews(video.views.toString())
     }
@@ -1231,41 +1268,41 @@ private fun ActionSection(
         if (checkInEnabled) {
             VideoActionButton(
                 iconRes = Res.drawable.ic_check_circle,
-                label = stringResource(R.string.quick_checkin),
+                label = stringResource(Res.string.quick_checkin),
                 onClick = onQuickCheckIn,
             )
         }
         if (hasOriginalComic && onOpenOriginalComic != null) {
             VideoActionButton(
                 iconRes = Res.drawable.ic_book,
-                label = stringResource(R.string.original_comic),
+                label = stringResource(Res.string.original_comic),
                 onClick = onOpenOriginalComic,
             )
         }
         VideoActionButton(
             iconRes = if (isFav) Res.drawable.ic_favorite else Res.drawable.ic_favorite_border,
-            label = if (isFav) stringResource(R.string.liked) else stringResource(R.string.add_to_fav),
+            label = if (isFav) stringResource(Res.string.liked) else stringResource(Res.string.add_to_fav),
             onClick = onToggleFavorite,
         )
         VideoActionButton(
             iconRes = Res.drawable.ic_format_list_bulleted_add,
-            label = stringResource(R.string.add_to_playlist),
+            label = stringResource(Res.string.add_to_playlist),
             onClick = onManageMyList,
         )
         VideoActionButton(
             iconRes = Res.drawable.ic_download,
-            label = stringResource(R.string.download),
+            label = stringResource(Res.string.download),
             onClick = onDownload,
         )
         VideoActionButton(
             iconRes = Res.drawable.ic_share,
-            label = stringResource(R.string.share),
+            label = stringResource(Res.string.share),
             onClick = onShare,
             onLongClick = onCopyShareText,
         )
         VideoActionButton(
             iconRes = Res.drawable.ic_language,
-            label = stringResource(R.string.jump_to_webpage),
+            label = stringResource(Res.string.jump_to_webpage),
             onClick = onOpenWebPage,
         )
     }
@@ -1359,9 +1396,9 @@ private fun PlaylistSection(
     }
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         SectionHeader(
-            title = stringResource(R.string.series_video),
+            title = stringResource(Res.string.series_video),
             subtitle = playlist.playlistName,
-            actionText = if (onShowAllPlaylist != null) stringResource(R.string.more) else null,
+            actionText = if (onShowAllPlaylist != null) stringResource(Res.string.more) else null,
             onActionClick = onShowAllPlaylist,
         )
         val (cardWidth, _) = rememberCardResponsiveWidth()
@@ -1405,7 +1442,7 @@ internal fun RelatedVideosSection(
             span = { GridItemSpan(maxLineSpan) },
             contentType = "section_header",
         ) {
-            SectionHeader(title = stringResource(R.string.related_video))
+            SectionHeader(title = stringResource(Res.string.related_video))
         }
         items(
             items = videos,

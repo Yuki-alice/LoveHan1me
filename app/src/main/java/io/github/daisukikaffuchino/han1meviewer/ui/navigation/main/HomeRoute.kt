@@ -7,11 +7,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel as composeViewModel
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.finished_masturbating
+import io.github.daisukikaffuchino.han1meviewer.exit
+import io.github.daisukikaffuchino.han1meviewer.do_more
+import io.github.daisukikaffuchino.han1meviewer.confirm_to_exit
+import io.github.daisukikaffuchino.han1meviewer.confirm_exit_message
+import io.github.daisukikaffuchino.han1meviewer.checkout_exit
+import io.github.daisukikaffuchino.han1meviewer.cancel
 import io.github.daisukikaffuchino.han1meviewer.getHanimeShareText
 import io.github.daisukikaffuchino.han1meviewer.logic.DatabaseRepo
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.CheckInType
@@ -52,10 +60,10 @@ fun HomeRouteScreen(
     val checkInViewModel: CheckInCalendarViewModel? = if (checkInEnabled) composeViewModel() else null
     val copyTextToClipboard = rememberCopyTextToClipboard()
     val uriHandler = LocalUriHandler.current
-    val confirmToExit = stringResource(R.string.confirm_to_exit)
-    val confirmExitMessage = stringResource(R.string.confirm_exit_message)
-    val cancel = stringResource(R.string.cancel)
-    val exit = stringResource(R.string.exit)
+    val confirmToExit = stringResource(Res.string.confirm_to_exit)
+    val confirmExitMessage = stringResource(Res.string.confirm_exit_message)
+    val cancel = stringResource(Res.string.cancel)
+    val exit = stringResource(Res.string.exit)
     var showExitDialog by remember { mutableStateOf(false) }
     var announcement by remember { mutableStateOf<Announcement?>(null) }
     CompositionLocalProvider(
@@ -94,9 +102,9 @@ fun HomeRouteScreen(
         TripleButtonDialog(
             visible = true,
             title = confirmToExit,
-            message = stringResource(R.string.finished_masturbating),
-            negativeText = stringResource(R.string.do_more),
-            neutralText = stringResource(R.string.checkout_exit),
+            message = stringResource(Res.string.finished_masturbating),
+            negativeText = stringResource(Res.string.do_more),
+            neutralText = stringResource(Res.string.checkout_exit),
             positiveText = exit,
             onNegative = { showExitDialog = false },
             onNeutral = {

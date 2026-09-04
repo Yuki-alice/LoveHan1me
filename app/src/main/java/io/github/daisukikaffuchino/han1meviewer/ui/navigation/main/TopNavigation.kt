@@ -27,15 +27,16 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.search
+import io.github.daisukikaffuchino.han1meviewer.h_keyframes_import_shared
 import io.github.daisukikaffuchino.han1meviewer.ic_add
 import io.github.daisukikaffuchino.han1meviewer.ic_search
 import io.github.daisukikaffuchino.han1meviewer.ui.activity.MainActivity
@@ -395,7 +396,7 @@ fun TopNavigation(
                         ) {
                             Icon(
                                 painter = painterResource(Res.drawable.ic_search),
-                                contentDescription = stringResource(R.string.search),
+                                contentDescription = stringResource(Res.string.search),
                             )
                         }
                     }
@@ -460,7 +461,7 @@ fun TopNavigation(
                     ) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_add),
-                            contentDescription = stringResource(R.string.h_keyframes_import_shared),
+                            contentDescription = stringResource(Res.string.h_keyframes_import_shared),
                         )
                     }
                 },

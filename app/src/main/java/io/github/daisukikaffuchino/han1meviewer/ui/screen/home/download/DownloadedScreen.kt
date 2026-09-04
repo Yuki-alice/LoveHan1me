@@ -23,12 +23,21 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.painterResource
-import androidx.compose.ui.res.stringResource
+import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.select_all
+import io.github.daisukikaffuchino.han1meviewer.move_group
+import io.github.daisukikaffuchino.han1meviewer.empty_content
+import io.github.daisukikaffuchino.han1meviewer.downloaded
+import io.github.daisukikaffuchino.han1meviewer.deselect_all
+import io.github.daisukikaffuchino.han1meviewer.delete
+import io.github.daisukikaffuchino.han1meviewer.confirm_delete_videos
+import io.github.daisukikaffuchino.han1meviewer.confirm
+import io.github.daisukikaffuchino.han1meviewer.close
+import io.github.daisukikaffuchino.han1meviewer.cancel
 import io.github.daisukikaffuchino.han1meviewer.ic_close
 import io.github.daisukikaffuchino.han1meviewer.ic_delete
 import io.github.daisukikaffuchino.han1meviewer.ic_move_group
@@ -106,8 +115,8 @@ fun DownloadedScreen(
     if (uiState.downloadedNodes.isEmpty()) {
         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             EmptyContent(
-                hint = stringResource(R.string.empty_content),
-                subHint = stringResource(R.string.downloaded),
+                hint = stringResource(Res.string.empty_content),
+                subHint = stringResource(Res.string.downloaded),
             )
         }
         return
@@ -225,10 +234,10 @@ fun DownloadedScreen(
     pendingBatchDeleteVideos?.let { videos ->
         ConfirmDialog(
             visible = true,
-            title = stringResource(R.string.delete),
-            message = stringResource(R.string.confirm_delete_videos, videos.size),
-            confirmText = stringResource(R.string.confirm),
-            dismissText = stringResource(R.string.cancel),
+            title = stringResource(Res.string.delete),
+            message = stringResource(Res.string.confirm_delete_videos, videos.size),
+            confirmText = stringResource(Res.string.confirm),
+            dismissText = stringResource(Res.string.cancel),
             onConfirm = {
                 onEvent(DownloadEvent.OnBatchDelete(videos))
                 pendingBatchDeleteVideos = null
@@ -274,7 +283,7 @@ private fun BatchActionBar(
                 IconButton(onClick = onExitMultiSelect) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_close),
-                        contentDescription = stringResource(R.string.close),
+                        contentDescription = stringResource(Res.string.close),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
@@ -300,9 +309,9 @@ private fun BatchActionBar(
                             painterResource(Res.drawable.ic_select_all)
                         },
                         contentDescription = if (isAllSelected) {
-                            stringResource(R.string.deselect_all)
+                            stringResource(Res.string.deselect_all)
                         } else {
-                            stringResource(R.string.select_all)
+                            stringResource(Res.string.select_all)
                         }
                     )
                 }
@@ -313,7 +322,7 @@ private fun BatchActionBar(
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_move_group),
-                        contentDescription = stringResource(R.string.move_group),
+                        contentDescription = stringResource(Res.string.move_group),
                         tint = if (hasSelection) {
                             MaterialTheme.colorScheme.primary
                         } else {
@@ -328,7 +337,7 @@ private fun BatchActionBar(
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_delete),
-                        contentDescription = stringResource(R.string.delete),
+                        contentDescription = stringResource(Res.string.delete),
                         tint = if (hasSelection) {
                             MaterialTheme.colorScheme.onPrimary
                         } else {
