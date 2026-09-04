@@ -13,6 +13,13 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_cast
+import io.github.daisukikaffuchino.han1meviewer.ic_player_setting
+import io.github.daisukikaffuchino.han1meviewer.ic_seek_bar
+import io.github.daisukikaffuchino.han1meviewer.ic_speed
+import io.github.daisukikaffuchino.han1meviewer.ic_speed_flash
+import io.github.daisukikaffuchino.han1meviewer.ic_touch_long
 import io.github.daisukikaffuchino.han1meviewer.ui.component.ChoiceDialog
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingNavigationItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsPlainBox
@@ -108,13 +115,13 @@ fun PlayerSettingsScreen(
                 SettingNavigationItem(
                     title = stringResource(R.string.switch_player_kernel),
                     valueText = state.kernelDisplay,
-                    iconRes = R.drawable.ic_player_setting,
+                    iconRes = Res.drawable.ic_player_setting,
                     onClick = { activeDialog = PlayerChoiceDialog.Kernel },
                 )
                 SettingNavigationItem(
                     title = stringResource(R.string.mpv_advanced_settings),
                     summary = state.mpvSettingsSummary,
-                    iconRes = R.drawable.ic_player_setting,
+                    iconRes = Res.drawable.ic_player_setting,
                     onClick = onOpenMpvSettings,
                     enabled = state.mpvSettingsEnabled,
                     valueText = null,
@@ -122,13 +129,13 @@ fun PlayerSettingsScreen(
                 SettingSwitchItem(
                     title = stringResource(R.string.show_bottom_progress),
                     checked = state.showBottomProgress,
-                    iconRes = R.drawable.ic_seek_bar,
+                    iconRes = Res.drawable.ic_seek_bar,
                     onCheckedChange = onShowBottomProgressChange,
                 )
                 SettingNavigationItem(
                     title = stringResource(R.string.default_playback_speed),
                     valueText = state.playerSpeedLabel,
-                    iconRes = R.drawable.ic_speed,
+                    iconRes = Res.drawable.ic_speed,
                     onClick = { activeDialog = PlayerChoiceDialog.Speed },
                 )
                 SettingNavigationItem(
@@ -138,7 +145,7 @@ fun PlayerSettingsScreen(
                         state.longPressSpeedTimesLabel,
                     ),
                     valueText = state.longPressSpeedTimesLabel,
-                    iconRes = R.drawable.ic_touch_long,
+                    iconRes = Res.drawable.ic_touch_long,
                     onClick = { activeDialog = PlayerChoiceDialog.LongPressSpeed },
                 )
                 SettingSliderItem(
@@ -146,7 +153,7 @@ fun PlayerSettingsScreen(
                     summary = state.slideSensitivitySummary,
                     value = state.slideSensitivity,
                     valueRange = 1..7,
-                    iconRes = R.drawable.ic_speed_flash,
+                    iconRes = Res.drawable.ic_speed_flash,
                     onValueChange = onSlideSensitivityChange,
                 )
             }
@@ -164,7 +171,7 @@ fun PlayerSettingsScreen(
                         }
                     ),
                     checked = state.enableGoogleCast,
-                    iconRes = R.drawable.ic_cast,
+                    iconRes = Res.drawable.ic_cast,
                     onCheckedChange = onEnableGoogleCastChange,
                     enabled = state.googleCastAvailable,
                 )

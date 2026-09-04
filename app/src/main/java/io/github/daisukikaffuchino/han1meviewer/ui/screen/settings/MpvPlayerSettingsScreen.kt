@@ -15,6 +15,17 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_cache
+import io.github.daisukikaffuchino.han1meviewer.ic_cert
+import io.github.daisukikaffuchino.han1meviewer.ic_chip
+import io.github.daisukikaffuchino.han1meviewer.ic_custom
+import io.github.daisukikaffuchino.han1meviewer.ic_deband
+import io.github.daisukikaffuchino.han1meviewer.ic_decoder
+import io.github.daisukikaffuchino.han1meviewer.ic_frame_inter
+import io.github.daisukikaffuchino.han1meviewer.ic_frame_jump
+import io.github.daisukikaffuchino.han1meviewer.ic_overtime
+import io.github.daisukikaffuchino.han1meviewer.ic_render
 import io.github.daisukikaffuchino.han1meviewer.ui.component.ChoiceDialog
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingNavigationItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingSliderItem
@@ -104,41 +115,41 @@ fun MpvPlayerSettingsScreen(
                 SettingNavigationItem(
                     title = stringResource(R.string.mpv_profile),
                     valueText = state.profileDisplay,
-                    iconRes = R.drawable.ic_render,
+                    iconRes = Res.drawable.ic_render,
                     onClick = onOpenProfileDialog,
                 )
                 SettingSwitchItem(
                     title = stringResource(R.string.enable_gpu_next),
                     summary = stringResource(R.string.enable_gpu_next_summary),
                     checked = state.enableGpuNextRenderer,
-                    iconRes = R.drawable.ic_chip,
+                    iconRes = Res.drawable.ic_chip,
                     onCheckedChange = onEnableGpuNextRendererChange,
                 )
                 SettingSwitchItem(
                     title = stringResource(R.string.mpv_interpolation),
                     summary = stringResource(R.string.mpv_interpolation_summary),
                     checked = state.interpolation,
-                    iconRes = R.drawable.ic_frame_inter,
+                    iconRes = Res.drawable.ic_frame_inter,
                     onCheckedChange = onInterpolationChange,
                 )
                 SettingSwitchItem(
                     title = stringResource(R.string.mpv_deband),
                     summary = stringResource(R.string.mpv_deband_summary),
                     checked = state.deband,
-                    iconRes = R.drawable.ic_deband,
+                    iconRes = Res.drawable.ic_deband,
                     onCheckedChange = onDebandChange,
                 )
                 SettingSwitchItem(
                     title = stringResource(R.string.mpv_framedrop),
                     summary = stringResource(R.string.mpv_framedrop_summary),
                     checked = state.framedrop,
-                    iconRes = R.drawable.ic_frame_jump,
+                    iconRes = Res.drawable.ic_frame_jump,
                     onCheckedChange = onFramedropChange,
                 )
                 SettingNavigationItem(
                     title = stringResource(R.string.mpv_hwdec),
                     summary = state.hwdecDisplay,
-                    iconRes = R.drawable.ic_decoder,
+                    iconRes = Res.drawable.ic_decoder,
                     onClick = onOpenHwdecDialog,
                 )
             }
@@ -152,14 +163,14 @@ fun MpvPlayerSettingsScreen(
                     value = state.cacheSecs,
                     valueRange = 10..120,
                     step = 5,
-                    iconRes = R.drawable.ic_cache,
+                    iconRes = Res.drawable.ic_cache,
                     onValueChange = onCacheSecsChange,
                 )
                 SettingSwitchItem(
                     title = stringResource(R.string.mpv_tls_verify),
                     summary = stringResource(R.string.mpv_tls_verify_summary),
                     checked = state.tlsVerify,
-                    iconRes = R.drawable.ic_cert,
+                    iconRes = Res.drawable.ic_cert,
                     onCheckedChange = onTlsVerifyChange,
                 )
                 SettingSliderItem(
@@ -167,7 +178,7 @@ fun MpvPlayerSettingsScreen(
                     summary = state.networkTimeoutSummary,
                     value = state.networkTimeout,
                     valueRange = 5..30,
-                    iconRes = R.drawable.ic_overtime,
+                    iconRes = Res.drawable.ic_overtime,
                     onValueChange = onNetworkTimeoutChange,
                 )
             }
@@ -178,7 +189,7 @@ fun MpvPlayerSettingsScreen(
                 SettingNavigationItem(
                     title = stringResource(R.string.custom_parameters),
                     summary = state.customParams.ifBlank { stringResource(R.string.custom_parameters_summary) },
-                    iconRes = R.drawable.ic_custom,
+                    iconRes = Res.drawable.ic_custom,
                     onClick = onOpenCustomParamsDialog,
                 )
             }

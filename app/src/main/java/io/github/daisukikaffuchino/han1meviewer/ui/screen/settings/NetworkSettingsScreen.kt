@@ -32,6 +32,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_delay
+import io.github.daisukikaffuchino.han1meviewer.ic_dns
+import io.github.daisukikaffuchino.han1meviewer.ic_domain
+import io.github.daisukikaffuchino.han1meviewer.ic_edit_square
+import io.github.daisukikaffuchino.han1meviewer.ic_hosts
+import io.github.daisukikaffuchino.han1meviewer.ic_router
+import io.github.daisukikaffuchino.han1meviewer.ic_vpn
 import io.github.daisukikaffuchino.han1meviewer.logic.network.DohConfig
 import io.github.daisukikaffuchino.han1meviewer.logic.network.HProxySelector
 import io.github.daisukikaffuchino.han1meviewer.ui.component.ChoiceDialog
@@ -209,19 +217,19 @@ fun NetworkSettingsScreen(
                 SettingNavigationItem(
                     title = stringResource(R.string.domain_name),
                     valueText = state.domainDisplay,
-                    iconRes = R.drawable.ic_domain,
+                    iconRes = Res.drawable.ic_domain,
                     onClick = { showDomainDialog = true },
                 )
                 SettingNavigationItem(
                     title = stringResource(R.string.custom_mirror_site),
                     summary = if (useCustomMirrorSite && customMirrorSite.isNotBlank()) customMirrorSite else stringResource(R.string.custom_mirror_site_hint),
-                    iconRes = R.drawable.ic_domain,
+                    iconRes = Res.drawable.ic_domain,
                     onClick = { showCustomMirrorSiteDialog = true },
                 )
                 SettingNavigationItem(
                     title = stringResource(R.string.proxy),
                     summary = state.proxySummary,
-                    iconRes = R.drawable.ic_vpn,
+                    iconRes = Res.drawable.ic_vpn,
                     onClick = { showProxyDialog = true },
                 )
             }
@@ -232,19 +240,19 @@ fun NetworkSettingsScreen(
                     title = stringResource(R.string.use_built_in_hosts),
                     summary = stringResource(R.string.use_built_in_hosts_summary),
                     checked = state.useBuiltInHosts,
-                    iconRes = R.drawable.ic_hosts,
+                    iconRes = Res.drawable.ic_hosts,
                     onCheckedChange = onUseBuiltInHostsChange,
                 )
                 SettingNavigationItem(
                     title = stringResource(R.string.custom_hosts),
                     summary = if (customHostsData.isBlank()) stringResource(R.string.custom_hosts_empty_summary) else customHostsData.take(60),
-                    iconRes = R.drawable.ic_edit_square,
+                    iconRes = Res.drawable.ic_edit_square,
                     onClick = { showCustomHostsDialog = true },
                 )
                 SettingNavigationItem(
                     title = stringResource(R.string.use_doh),
                     summary = state.dohSummary,
-                    iconRes = R.drawable.ic_dns,
+                    iconRes = Res.drawable.ic_dns,
                     onClick = { showDohDialog = true },
                 )
             }
@@ -254,13 +262,13 @@ fun NetworkSettingsScreen(
                 SettingNavigationItem(
                     title = stringResource(R.string.view_node_latency),
                     summary = state.delaySummary,
-                    iconRes = R.drawable.ic_delay,
+                    iconRes = Res.drawable.ic_delay,
                     onClick = onOpenDelayTest,
                 )
                 SettingNavigationItem(
                     title = stringResource(R.string.test_doh),
                     summary = stringResource(R.string.test_doh_summary),
-                    iconRes = R.drawable.ic_router,
+                    iconRes = Res.drawable.ic_router,
                     onClick = onOpenDohTest,
                 )
             }
@@ -542,7 +550,7 @@ private fun DohDialog(
                     title = stringResource(R.string.doh_preset),
                     valueText = DohConfig.presets.firstOrNull { it.key == presetValue }?.title
                         ?: stringResource(R.string.custom),
-                    iconRes = R.drawable.ic_domain,
+                    iconRes = Res.drawable.ic_domain,
                     onClick = { showPresetDialog = true },
                 )
 

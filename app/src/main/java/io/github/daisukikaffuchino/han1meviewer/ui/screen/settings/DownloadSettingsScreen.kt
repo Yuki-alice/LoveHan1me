@@ -7,6 +7,11 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_count
+import io.github.daisukikaffuchino.han1meviewer.ic_export
+import io.github.daisukikaffuchino.han1meviewer.ic_file_path
+import io.github.daisukikaffuchino.han1meviewer.ic_speed
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingNavigationItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingSliderItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsSectionTitle
@@ -43,13 +48,13 @@ fun DownloadSettingsScreen(
                 SettingNavigationItem(
                     title = stringResource(R.string.download_path),
                     summary = state.downloadPathSummary,
-                    iconRes = R.drawable.ic_file_path,
+                    iconRes = Res.drawable.ic_file_path,
                     onClick = onOpenDownloadPath,
                 )
                 SettingNavigationItem(
                     title = stringResource(R.string.pref_export_downloads_title),
                     summary = stringResource(R.string.pref_export_downloads_summary),
-                    iconRes = R.drawable.ic_export,
+                    iconRes = Res.drawable.ic_export,
                     onClick = onImportDownloadedFiles,
                 )
                 SettingSliderItem(
@@ -57,7 +62,7 @@ fun DownloadSettingsScreen(
                     summary = state.downloadCountLimitSummary,
                     value = state.downloadCountLimit,
                     valueRange = 0..maxDownloadCountLimit,
-                    iconRes = R.drawable.ic_count,
+                    iconRes = Res.drawable.ic_count,
                     onValueChange = onDownloadCountLimitChange,
                 )
                 SettingSliderItem(
@@ -65,7 +70,7 @@ fun DownloadSettingsScreen(
                     summary = state.downloadSpeedLimitSummary,
                     value = state.downloadSpeedLimitIndex,
                     valueRange = 0..maxDownloadSpeedLimitIndex,
-                    iconRes = R.drawable.ic_speed,
+                    iconRes = Res.drawable.ic_speed,
                     onValueChange = onDownloadSpeedLimitChange,
                 )
             }

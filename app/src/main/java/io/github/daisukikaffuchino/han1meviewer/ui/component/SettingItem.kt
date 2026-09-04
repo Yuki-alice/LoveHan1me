@@ -24,15 +24,19 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_check
+import io.github.daisukikaffuchino.han1meviewer.ic_check_circle
+import io.github.daisukikaffuchino.han1meviewer.ic_close
 import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.animatedShape
+import org.jetbrains.compose.resources.DrawableResource
 import kotlin.math.roundToInt
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -83,7 +87,7 @@ private fun SettingSurface(
 private fun SettingRow(
     title: String,
     summary: String?,
-    iconRes: Int?,
+    iconRes: DrawableResource?,
     enabled: Boolean,
     applyContainerPadding: Boolean = true,
     trailingContent: @Composable (() -> Unit)? = null,
@@ -147,7 +151,7 @@ fun SettingSwitchItem(
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier,
     summary: String? = null,
-    iconRes: Int? = null,
+    iconRes: DrawableResource? = null,
     enabled: Boolean = true,
 ) {
     SettingSurface(
@@ -162,8 +166,8 @@ fun SettingSwitchItem(
                 onCheckedChange = null,
                 thumbContent = {
                     Icon(
-                        painter = if (checked) painterResource(R.drawable.ic_check) else painterResource(
-                            R.drawable.ic_close
+                        painter = if (checked) painterResource(Res.drawable.ic_check) else painterResource(
+                            Res.drawable.ic_close
                         ),
                         contentDescription = null,
                         modifier = Modifier.size(SwitchDefaults.IconSize),
@@ -182,7 +186,7 @@ fun SettingNavigationItem(
     modifier: Modifier = Modifier,
     summary: String? = null,
     valueText: String? = null,
-    iconRes: Int? = null,
+    iconRes: DrawableResource? = null,
     enabled: Boolean = true,
     shapes: ButtonShapes = HanimeDefaults.shapes(),
 ) {
@@ -212,7 +216,7 @@ fun SettingInfoItem(
     modifier: Modifier = Modifier,
     summary: String? = null,
     valueText: String? = null,
-    iconRes: Int? = null,
+    iconRes: DrawableResource? = null,
 ) {
     SettingSurface(modifier = modifier) {
         SettingRow(title, summary, iconRes, enabled = true) {
@@ -237,7 +241,7 @@ fun SettingSliderItem(
     modifier: Modifier = Modifier,
     step: Int = 1,
     summary: String? = null,
-    iconRes: Int? = null,
+    iconRes: DrawableResource? = null,
 ) {
     val totalSteps = if (step > 0) {
         ((valueRange.last - valueRange.first) / step) - 1
@@ -276,13 +280,13 @@ fun SettingChoiceItem(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     summary: String? = null,
-    iconRes: Int? = null,
+    iconRes: DrawableResource? = null,
 ) {
     SettingSurface(modifier, selected = selected, onClick = onClick) {
         SettingRow(title, summary, iconRes, enabled = true) {
             if (selected) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_check_circle),
+                    painter = painterResource(Res.drawable.ic_check_circle),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSecondaryContainer,
                     modifier = Modifier.padding(start = 12.dp),

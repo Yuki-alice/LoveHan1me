@@ -23,7 +23,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.lerp
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -34,6 +34,11 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_bug_report
+import io.github.daisukikaffuchino.han1meviewer.ic_error_outline
+import io.github.daisukikaffuchino.han1meviewer.ic_exit_to_app
+import io.github.daisukikaffuchino.han1meviewer.ic_refresh
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingNavigationItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsSectionTitle
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsSegmentedGroup
@@ -116,7 +121,7 @@ fun CrashScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_error_outline),
+                            painter = painterResource(Res.drawable.ic_error_outline),
                             contentDescription = null,
                             modifier = Modifier.size(28.dp),
                         )
@@ -139,19 +144,19 @@ fun CrashScreen(
                     SettingNavigationItem(
                         title = stringResource(R.string.crash_copy_log),
                         summary = stringResource(R.string.crash_copy_log_summary),
-                        iconRes = R.drawable.ic_bug_report,
+                        iconRes = Res.drawable.ic_bug_report,
                         onClick = onCopyLog,
                     )
                     SettingNavigationItem(
                         title = stringResource(R.string.crash_restart_app),
                         summary = stringResource(R.string.crash_restart_app_summary),
-                        iconRes = R.drawable.ic_refresh,
+                        iconRes = Res.drawable.ic_refresh,
                         onClick = onRestartApp,
                     )
                     SettingNavigationItem(
                         title = stringResource(R.string.crash_exit_app),
                         summary = stringResource(R.string.crash_exit_app_summary),
-                        iconRes = R.drawable.ic_exit_to_app,
+                        iconRes = Res.drawable.ic_exit_to_app,
                         onClick = onExitApp,
                     )
                 }

@@ -14,6 +14,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_alert
+import io.github.daisukikaffuchino.han1meviewer.ic_count_down
+import io.github.daisukikaffuchino.han1meviewer.ic_format_list_bulleted
+import io.github.daisukikaffuchino.han1meviewer.ic_h_text
+import io.github.daisukikaffuchino.han1meviewer.ic_online_manage
+import io.github.daisukikaffuchino.han1meviewer.ic_share
+import io.github.daisukikaffuchino.han1meviewer.ic_share_first
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingNavigationItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingSliderItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingSwitchItem
@@ -92,7 +100,7 @@ private fun HKeyframeSettingsContent(
                 title = stringResource(R.string.h_keyframes_enable),
                 summary = state.hKeyframesSummary,
                 checked = state.hKeyframesEnable,
-                iconRes = R.drawable.ic_h_text,
+                iconRes = Res.drawable.ic_h_text,
                 onCheckedChange = onHKeyframesEnableChange,
             )
         }
@@ -104,7 +112,7 @@ private fun HKeyframeSettingsContent(
         ) {
             SettingNavigationItem(
                 title = stringResource(R.string.h_keyframe_manage),
-                iconRes = R.drawable.ic_format_list_bulleted,
+                iconRes = Res.drawable.ic_format_list_bulleted,
                 onClick = onOpenHKeyframeManage,
             )
         }
@@ -117,7 +125,7 @@ private fun HKeyframeSettingsContent(
                 title = stringResource(R.string.shared_h_keyframes_enable),
                 summary = stringResource(R.string.shared_h_keyframes_enable_tip),
                 checked = state.sharedHKeyframesEnable,
-                iconRes = R.drawable.ic_share,
+                iconRes = Res.drawable.ic_share,
                 onCheckedChange = onSharedHKeyframesEnableChange,
             )
             SettingsAnimatedVisibility(visible = state.sharedHKeyframesEnable) {
@@ -130,13 +138,13 @@ private fun HKeyframeSettingsContent(
                         title = stringResource(R.string.shared_h_keyframes_use_first),
                         summary = stringResource(R.string.shared_h_keyframes_use_first_tip),
                         checked = state.sharedHKeyframesUseFirst,
-                        iconRes = R.drawable.ic_share_first,
+                        iconRes = Res.drawable.ic_share_first,
                         onCheckedChange = onSharedHKeyframesUseFirstChange,
                     )
                     SettingNavigationItem(
                         title = stringResource(R.string.shared_h_keyframe_manage),
                         summary = stringResource(R.string.shared_h_keyframe_manage_tip),
-                        iconRes = R.drawable.ic_online_manage,
+                        iconRes = Res.drawable.ic_online_manage,
                         onClick = onOpenSharedHKeyframeManage,
                     )
                 }
@@ -150,7 +158,7 @@ private fun HKeyframeSettingsContent(
             SettingSwitchItem(
                 title = stringResource(R.string.show_prompt_when_countdown),
                 checked = state.showCommentWhenCountdown,
-                iconRes = R.drawable.ic_count_down,
+                iconRes = Res.drawable.ic_count_down,
                 onCheckedChange = onShowCommentWhenCountdownChange,
             )
             SettingSliderItem(
@@ -158,7 +166,7 @@ private fun HKeyframeSettingsContent(
                 summary = state.whenCountdownRemindSummary,
                 value = state.whenCountdownRemind,
                 valueRange = 5..30,
-                iconRes = R.drawable.ic_alert,
+                iconRes = Res.drawable.ic_alert,
                 onValueChange = onWhenCountdownRemindChange,
             )
         }
