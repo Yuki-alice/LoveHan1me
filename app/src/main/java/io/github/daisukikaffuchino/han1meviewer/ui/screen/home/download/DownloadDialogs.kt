@@ -35,12 +35,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_delete
+import io.github.daisukikaffuchino.han1meviewer.ic_edit
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.DownloadGroupEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.VideoWithCategories
 import io.github.daisukikaffuchino.han1meviewer.logic.model.DownloadHeaderNode
@@ -148,7 +151,7 @@ fun CreateGroupDialog(
                                     )
                                 ) {
                                     Icon(
-                                        painter = painterResource(R.drawable.ic_delete),
+                                        painter = painterResource(Res.drawable.ic_delete),
                                         contentDescription = stringResource(R.string.delete_group),
                                         modifier = Modifier.size(18.dp),
                                     )
@@ -236,7 +239,7 @@ fun GroupRenameDialog(
                     if (group != null && group.id != DownloadGroupEntity.DEFAULT_GROUP_ID) {
                         TextButton(onClick = { onDelete(header) }) {
                             Icon(
-                                painter = painterResource(R.drawable.ic_delete),
+                                painter = painterResource(Res.drawable.ic_delete),
                                 contentDescription = null
                             )
                             Text(stringResource(R.string.delete_group))
@@ -252,7 +255,7 @@ fun GroupRenameDialog(
                         }
                     }) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_edit),
+                            painter = painterResource(Res.drawable.ic_edit),
                             contentDescription = null
                         )
                         Text(stringResource(R.string.confirm))
@@ -307,7 +310,7 @@ fun MoveGroupDialog(
                                     .clickable { onConfirm(video, group.id) },
                                 leadingContent = {
                                     Icon(
-                                        painter = painterResource(R.drawable.ic_edit),
+                                        painter = painterResource(Res.drawable.ic_edit),
                                         contentDescription = null,
                                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                                     )

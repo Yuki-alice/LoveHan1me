@@ -45,11 +45,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.h_chan_load_failed
+import io.github.daisukikaffuchino.han1meviewer.h_chan_loading
+import io.github.daisukikaffuchino.han1meviewer.ic_delete
+import io.github.daisukikaffuchino.han1meviewer.ic_edit_square
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeInfo
 import io.github.daisukikaffuchino.han1meviewer.logic.state.PageLoadingState
 import io.github.daisukikaffuchino.han1meviewer.logic.state.WebsiteState
@@ -231,8 +236,8 @@ private fun PlaylistSheetContent(
                 RetryableImage(
                     model = playlist.first().coverUrl,
                     contentDescription = playlist.first().title,
-                    placeholder = painterResource(R.drawable.h_chan_loading),
-                    error = painterResource(R.drawable.h_chan_load_failed),
+                    placeholder = painterResource(Res.drawable.h_chan_loading),
+                    error = painterResource(Res.drawable.h_chan_load_failed),
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -284,7 +289,7 @@ private fun PlaylistSheetContent(
                         modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
-                            painterResource(R.drawable.ic_delete),
+                            painterResource(Res.drawable.ic_delete),
                             stringResource(R.string.delete)
                         )
                     }
@@ -294,7 +299,7 @@ private fun PlaylistSheetContent(
                         modifier = Modifier.size(40.dp)
                     ) {
                         Icon(
-                            painterResource(R.drawable.ic_edit_square),
+                            painterResource(Res.drawable.ic_edit_square),
                             stringResource(R.string.edit)
                         )
                     }

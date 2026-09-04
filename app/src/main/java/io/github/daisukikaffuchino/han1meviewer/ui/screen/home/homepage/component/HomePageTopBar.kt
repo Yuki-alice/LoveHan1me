@@ -10,7 +10,7 @@ import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -22,6 +22,10 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.sp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_menu
+import io.github.daisukikaffuchino.han1meviewer.ic_newspaper
+import io.github.daisukikaffuchino.han1meviewer.ic_search
 import io.github.daisukikaffuchino.han1meviewer.ui.component.IconButton
 import io.github.daisukikaffuchino.han1meviewer.ui.component.appbar.HanimeTopAppBar
 import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
@@ -53,7 +57,7 @@ fun HomePageTopBar(
             {
                 IconButton(onClick = onOpenDrawer) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_menu),
+                        painter = painterResource(Res.drawable.ic_menu),
                         contentDescription = stringResource(R.string.open_menu),
                     )
                 }
@@ -65,13 +69,13 @@ fun HomePageTopBar(
             Row {
                 IconButton(onClick = onSearchClick) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_search),
+                        painter = painterResource(Res.drawable.ic_search),
                         contentDescription = stringResource(R.string.global_search),
                     )
                 }
                 IconButton(onClick = onNavigateToPreview) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_newspaper),
+                        painter = painterResource(Res.drawable.ic_newspaper),
                         contentDescription = stringResource(R.string.hanime_list),
                     )
                 }

@@ -32,7 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -40,6 +40,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.h_chan_load_failed
+import io.github.daisukikaffuchino.han1meviewer.h_chan_loading
+import io.github.daisukikaffuchino.han1meviewer.ic_close
+import io.github.daisukikaffuchino.han1meviewer.ic_pause
+import io.github.daisukikaffuchino.han1meviewer.ic_play_arrow
+import io.github.daisukikaffuchino.han1meviewer.ic_refresh
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.HanimeDownloadEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.state.DownloadState
 import io.github.daisukikaffuchino.han1meviewer.ui.component.CardContainerSurface
@@ -107,8 +114,8 @@ fun DownloadingItemCard(
                 AsyncImage(
                     model = item.coverUri ?: item.coverUrl,
                     contentDescription = item.title,
-                    placeholder = painterResource(R.drawable.h_chan_loading),
-                    error = painterResource(R.drawable.h_chan_load_failed),
+                    placeholder = painterResource(Res.drawable.h_chan_loading),
+                    error = painterResource(Res.drawable.h_chan_load_failed),
                     modifier = Modifier
                         .width(136.dp)
                         .aspectRatio(16f / 9f)
@@ -190,7 +197,7 @@ fun DownloadingItemCard(
                         modifier = Modifier.size(36.dp)
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_close),
+                            painter = painterResource(Res.drawable.ic_close),
                             contentDescription = stringResource(R.string.cancel_download),
                             modifier = Modifier.size(20.dp),
                             tint = MaterialTheme.colorScheme.outline
@@ -204,7 +211,7 @@ fun DownloadingItemCard(
                                 modifier = Modifier.size(36.dp)
                             ) {
                                 Icon(
-                                    painter = painterResource(R.drawable.ic_pause),
+                                    painter = painterResource(Res.drawable.ic_pause),
                                     contentDescription = stringResource(R.string.pause_all),
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -219,7 +226,7 @@ fun DownloadingItemCard(
                                 modifier = Modifier.size(36.dp)
                             ) {
                                 Icon(
-                                    painter = painterResource(R.drawable.ic_play_arrow),
+                                    painter = painterResource(Res.drawable.ic_play_arrow),
                                     contentDescription = stringResource(R.string.continues),
                                     modifier = Modifier.size(20.dp)
                                 )
@@ -232,7 +239,7 @@ fun DownloadingItemCard(
                                 modifier = Modifier.size(36.dp)
                             ) {
                                 Icon(
-                                    painter = painterResource(R.drawable.ic_refresh),
+                                    painter = painterResource(Res.drawable.ic_refresh),
                                     contentDescription = stringResource(R.string.retry),
                                     modifier = Modifier.size(20.dp)
                                 )

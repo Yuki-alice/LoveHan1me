@@ -35,12 +35,20 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_add
+import io.github.daisukikaffuchino.han1meviewer.ic_close
+import io.github.daisukikaffuchino.han1meviewer.ic_download
+import io.github.daisukikaffuchino.han1meviewer.ic_format_list_bulleted
+import io.github.daisukikaffuchino.han1meviewer.ic_menu
+import io.github.daisukikaffuchino.han1meviewer.ic_pause
+import io.github.daisukikaffuchino.han1meviewer.ic_play_arrow
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.DownloadGroupEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.HanimeDownloadEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.VideoWithCategories
@@ -340,7 +348,7 @@ private fun DownloadFabMenu(
                         modifier = Modifier.size(56.dp),
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_close),
+                            painter = painterResource(Res.drawable.ic_close),
                             contentDescription = stringResource(R.string.close),
                         )
                     }
@@ -352,7 +360,7 @@ private fun DownloadFabMenu(
                         },
                     ) {
                         Icon(
-                            painter = painterResource(R.drawable.ic_menu),
+                            painter = painterResource(Res.drawable.ic_menu),
                             contentDescription = stringResource(R.string.download),
                         )
                     }
@@ -365,7 +373,7 @@ private fun DownloadFabMenu(
                     text = { Text(stringResource(R.string.start_all)) },
                     icon = {
                         Icon(
-                            painter = painterResource(R.drawable.ic_play_arrow),
+                            painter = painterResource(Res.drawable.ic_play_arrow),
                             contentDescription = null,
                         )
                     },
@@ -379,7 +387,7 @@ private fun DownloadFabMenu(
                     text = { Text(stringResource(R.string.pause_all)) },
                     icon = {
                         Icon(
-                            painter = painterResource(R.drawable.ic_pause),
+                            painter = painterResource(Res.drawable.ic_pause),
                             contentDescription = null,
                         )
                     },
@@ -394,7 +402,7 @@ private fun DownloadFabMenu(
                     text = { Text(stringResource(R.string.edit)) },
                     icon = {
                         Icon(
-                            painter = painterResource(R.drawable.ic_format_list_bulleted),
+                            painter = painterResource(Res.drawable.ic_format_list_bulleted),
                             contentDescription = null,
                         )
                     },
@@ -408,7 +416,7 @@ private fun DownloadFabMenu(
                     text = { Text(stringResource(R.string.create_new_group)) },
                     icon = {
                         Icon(
-                            painter = painterResource(R.drawable.ic_add),
+                            painter = painterResource(Res.drawable.ic_add),
                             contentDescription = null,
                         )
                     },
@@ -422,7 +430,7 @@ private fun DownloadFabMenu(
                     text = { Text(stringResource(R.string.read_download_dir_title)) },
                     icon = {
                         Icon(
-                            painter = painterResource(R.drawable.ic_download),
+                            painter = painterResource(Res.drawable.ic_download),
                             contentDescription = null,
                         )
                     },

@@ -5,6 +5,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
 plugins {
     alias(libs.plugins.com.android.application)
+    alias(libs.plugins.jetbrains.compose)
     alias(libs.plugins.org.jetbrains.kotlin.plugin.parcelize)
     alias(libs.plugins.org.jetbrains.kotlin.plugin.serialization)
     alias(libs.plugins.com.google.devtools.ksp)
@@ -123,6 +124,9 @@ androidComponents {
 dependencies {
     // KMP 共享模块：P1 起，无平台耦合的 model / state / exception 已下沉到 :shared
     implementation(project(":shared"))
+
+    // P6d-1：R.drawable→Res.drawable 适配需 CMP resources（painterResource/DrawableResource/Res）
+    implementation(compose.components.resources)
 
     implementation(libs.aboutlibraries.core)
     implementation(libs.androidx.biometric)

@@ -33,7 +33,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -41,6 +41,9 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.h_chan_default_avatar
+import io.github.daisukikaffuchino.han1meviewer.ic_switch
 import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.utils.VibrationUtil
 
@@ -116,9 +119,9 @@ fun MainDrawerHeader(
                             },
                         ),
                     contentScale = ContentScale.Crop,
-                    placeholder = painterResource(id = R.drawable.h_chan_default_avatar),
-                    fallback = painterResource(id = R.drawable.h_chan_default_avatar),
-                    error = painterResource(id = R.drawable.h_chan_default_avatar),
+                    placeholder = painterResource(Res.drawable.h_chan_default_avatar),
+                    fallback = painterResource(Res.drawable.h_chan_default_avatar),
+                    error = painterResource(Res.drawable.h_chan_default_avatar),
                 )
                 Column(
                     modifier = Modifier
@@ -169,7 +172,7 @@ fun MainDrawerHeader(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_switch),
+                            painter = painterResource(Res.drawable.ic_switch),
                             contentDescription = stringResource(R.string.switch_site)
                         )
                     }

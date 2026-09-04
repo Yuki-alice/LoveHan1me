@@ -22,12 +22,16 @@ import io.github.daisukikaffuchino.han1meviewer.ui.component.HapticTextButton as
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_download
+import io.github.daisukikaffuchino.han1meviewer.ic_security_update
+import io.github.daisukikaffuchino.han1meviewer.ic_warning
 import io.github.daisukikaffuchino.han1meviewer.logic.AppUpdateInfo
 import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 
@@ -58,7 +62,7 @@ fun AppUpdateCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Icon(
-                    painter = painterResource(R.drawable.ic_security_update),
+                    painter = painterResource(Res.drawable.ic_security_update),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp),
@@ -78,7 +82,7 @@ fun AppUpdateCard(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_warning),
+                        painter = painterResource(Res.drawable.ic_warning),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.error,
                         modifier = Modifier.size(20.dp),
@@ -113,7 +117,7 @@ fun AppUpdateCard(
                 }
                 Button(onClick = onUpdateClick) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_download),
+                        painter = painterResource(Res.drawable.ic_download),
                         contentDescription = null,
                         modifier = Modifier.size(18.dp),
                     )

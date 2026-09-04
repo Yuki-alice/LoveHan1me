@@ -40,11 +40,15 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_chevron_left
+import io.github.daisukikaffuchino.han1meviewer.ic_chevron_right
+import io.github.daisukikaffuchino.han1meviewer.ic_comment
 import io.github.daisukikaffuchino.han1meviewer.logic.exception.HanimeNotFoundException
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimePreview
 import io.github.daisukikaffuchino.han1meviewer.logic.state.WebsiteState
@@ -129,7 +133,7 @@ fun PreviewContent(
                             }
                         ) {
                             Icon(
-                                painter = painterResource(R.drawable.ic_comment),
+                                painter = painterResource(Res.drawable.ic_comment),
                                 contentDescription = stringResource(R.string.comment),
                             )
                         }
@@ -340,7 +344,7 @@ private fun PreviewHeaderSection(
                 modifier = Modifier.weight(1f)
             ) {
                 Icon(
-                    painterResource(R.drawable.ic_chevron_left),
+                    painterResource(Res.drawable.ic_chevron_left),
                     contentDescription = null
                 )
                 Spacer(Modifier.width(8.dp))
@@ -355,7 +359,7 @@ private fun PreviewHeaderSection(
                 Text(nextLabel)
                 Spacer(Modifier.width(8.dp))
                 Icon(
-                    painterResource(R.drawable.ic_chevron_right),
+                    painterResource(Res.drawable.ic_chevron_right),
                     contentDescription = null
                 )
             }

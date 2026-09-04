@@ -3,12 +3,19 @@ package io.github.daisukikaffuchino.han1meviewer.ui.screen.home.download
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.res.stringResource
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_check_circle
+import io.github.daisukikaffuchino.han1meviewer.ic_download
+import io.github.daisukikaffuchino.han1meviewer.ic_error_outline
+import io.github.daisukikaffuchino.han1meviewer.ic_pause
+import io.github.daisukikaffuchino.han1meviewer.ic_play_arrow
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.DownloadGroupEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.VideoWithCategories
 import io.github.daisukikaffuchino.han1meviewer.logic.model.DownloadHeaderNode
 import io.github.daisukikaffuchino.han1meviewer.logic.model.DownloadItemNode
 import io.github.daisukikaffuchino.han1meviewer.logic.model.DownloadedNode
 import io.github.daisukikaffuchino.han1meviewer.logic.state.DownloadState
+import org.jetbrains.compose.resources.DrawableResource
 
 /**
  * 将已下载视频列表按分组 ID 转换为 [DownloadHeaderNode] 列表。
@@ -86,16 +93,16 @@ fun downloadStateText(state: DownloadState, progress: Int): String = when (state
 }
 
 /**
- * 下载状态对应的图标资源 ID。
+ * 下载状态对应的图标资源。
  *
  * @param state 下载状态
- * @return 图标 drawable 资源 ID
+ * @return 图标 drawable 资源
  */
-fun downloadStateIcon(state: DownloadState): Int = when (state) {
-    DownloadState.Queued -> R.drawable.ic_play_arrow
-    DownloadState.Downloading -> R.drawable.ic_pause
-    DownloadState.Paused -> R.drawable.ic_play_arrow
-    DownloadState.Failed -> R.drawable.ic_error_outline
-    DownloadState.Finished -> R.drawable.ic_check_circle
-    DownloadState.Unknown -> R.drawable.ic_download
+fun downloadStateIcon(state: DownloadState): DrawableResource = when (state) {
+    DownloadState.Queued -> Res.drawable.ic_play_arrow
+    DownloadState.Downloading -> Res.drawable.ic_pause
+    DownloadState.Paused -> Res.drawable.ic_play_arrow
+    DownloadState.Failed -> Res.drawable.ic_error_outline
+    DownloadState.Finished -> Res.drawable.ic_check_circle
+    DownloadState.Unknown -> Res.drawable.ic_download
 }

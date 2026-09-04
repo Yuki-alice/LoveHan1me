@@ -43,10 +43,12 @@ import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_chevron_left
+import io.github.daisukikaffuchino.han1meviewer.ic_chevron_right
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.HKeyframeEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeInfo
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlaybackEngine
@@ -431,9 +433,9 @@ private fun RelatedCollapseIndicator(
     ) {
         Icon(
             painter = if (collapsed) {
-                painterResource(R.drawable.ic_chevron_left)
+                painterResource(Res.drawable.ic_chevron_left)
             } else {
-                painterResource(R.drawable.ic_chevron_right)
+                painterResource(Res.drawable.ic_chevron_right)
             },
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurfaceVariant,

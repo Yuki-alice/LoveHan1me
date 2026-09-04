@@ -22,12 +22,18 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ic_close
+import io.github.daisukikaffuchino.han1meviewer.ic_delete
+import io.github.daisukikaffuchino.han1meviewer.ic_move_group
+import io.github.daisukikaffuchino.han1meviewer.ic_remove_selection
+import io.github.daisukikaffuchino.han1meviewer.ic_select_all
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.DownloadGroupEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.VideoWithCategories
 import io.github.daisukikaffuchino.han1meviewer.logic.model.DownloadHeaderNode
@@ -267,7 +273,7 @@ private fun BatchActionBar(
             ) {
                 IconButton(onClick = onExitMultiSelect) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_close),
+                        painter = painterResource(Res.drawable.ic_close),
                         contentDescription = stringResource(R.string.close),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -289,9 +295,9 @@ private fun BatchActionBar(
                 ) {
                     Icon(
                         painter = if (isAllSelected) {
-                            painterResource(R.drawable.ic_remove_selection)
+                            painterResource(Res.drawable.ic_remove_selection)
                         } else {
-                            painterResource(R.drawable.ic_select_all)
+                            painterResource(Res.drawable.ic_select_all)
                         },
                         contentDescription = if (isAllSelected) {
                             stringResource(R.string.deselect_all)
@@ -306,7 +312,7 @@ private fun BatchActionBar(
                     enabled = hasSelection
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_move_group),
+                        painter = painterResource(Res.drawable.ic_move_group),
                         contentDescription = stringResource(R.string.move_group),
                         tint = if (hasSelection) {
                             MaterialTheme.colorScheme.primary
@@ -321,7 +327,7 @@ private fun BatchActionBar(
                     enabled = hasSelection
                 ) {
                     Icon(
-                        painter = painterResource(R.drawable.ic_delete),
+                        painter = painterResource(Res.drawable.ic_delete),
                         contentDescription = stringResource(R.string.delete),
                         tint = if (hasSelection) {
                             MaterialTheme.colorScheme.onPrimary

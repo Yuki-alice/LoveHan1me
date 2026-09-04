@@ -26,7 +26,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -34,6 +34,12 @@ import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.h_chan_load_failed
+import io.github.daisukikaffuchino.han1meviewer.h_chan_loading
+import io.github.daisukikaffuchino.han1meviewer.ic_ext_link
+import io.github.daisukikaffuchino.han1meviewer.ic_play_arrow
+import io.github.daisukikaffuchino.han1meviewer.ic_play_circle
 import io.github.daisukikaffuchino.han1meviewer.logic.model.GetchuPreviewDetail
 import io.github.daisukikaffuchino.han1meviewer.ui.component.CardContainerSurface
 import io.github.daisukikaffuchino.han1meviewer.ui.component.OutlinedButton
@@ -75,8 +81,8 @@ internal fun GetchuPreviewDetailContent(
                             modifier = Modifier.fillMaxSize(),
                             contentScale = ContentScale.Crop,
                             alignment = Alignment.TopCenter,
-                            placeholder = painterResource(R.drawable.h_chan_loading),
-                            error = painterResource(R.drawable.h_chan_load_failed)
+                            placeholder = painterResource(Res.drawable.h_chan_loading),
+                            error = painterResource(Res.drawable.h_chan_load_failed)
                         )
 
                         Box(
@@ -148,7 +154,7 @@ internal fun GetchuPreviewDetailContent(
                                     modifier = Modifier.weight(1f),
                                     onClick = { onNavigateToVideoUrl(detail.videoUrls.first()) }
                                 ) {
-                                    Icon(painterResource(R.drawable.ic_play_arrow), contentDescription = null)
+                                    Icon(painterResource(Res.drawable.ic_play_arrow), contentDescription = null)
                                     Spacer(Modifier.width(4.dp))
                                     Text(stringResource(R.string.play_trailer))
                                 }
@@ -158,7 +164,7 @@ internal fun GetchuPreviewDetailContent(
                                  modifier = Modifier.weight(1f),
                                  onClick = { uriHandler.openUri(detail.productUrl) }
                              ) {
-                                 Icon(painterResource(R.drawable.ic_ext_link), contentDescription = null)
+                                 Icon(painterResource(Res.drawable.ic_ext_link), contentDescription = null)
                                  Spacer(Modifier.width(4.dp))
                                  Text(stringResource(R.string.jump_to_webpage))
                              }
@@ -174,7 +180,7 @@ internal fun GetchuPreviewDetailContent(
                                             containerColor = MaterialTheme.colorScheme.surfaceVariant
                                         )
                                     ) {
-                                        Icon(painterResource(R.drawable.ic_play_circle), contentDescription = null)
+                                        Icon(painterResource(Res.drawable.ic_play_circle), contentDescription = null)
                                         Spacer(Modifier.width(8.dp))
                                         Text("${stringResource(R.string.play_trailer)} ${index + 2}")
                                     }

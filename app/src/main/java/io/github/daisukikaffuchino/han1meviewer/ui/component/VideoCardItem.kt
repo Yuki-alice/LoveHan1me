@@ -37,7 +37,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.res.dimensionResource
-import androidx.compose.ui.res.painterResource
+import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -45,6 +45,12 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.h_chan_load_failed
+import io.github.daisukikaffuchino.han1meviewer.h_chan_loading
+import io.github.daisukikaffuchino.han1meviewer.ic_access_time
+import io.github.daisukikaffuchino.han1meviewer.ic_play_circle
+import io.github.daisukikaffuchino.han1meviewer.ic_thumb_up_off_alt
 import io.github.daisukikaffuchino.han1meviewer.getHanimeShareText
 import io.github.daisukikaffuchino.han1meviewer.logic.model.VideoItemType
 import io.github.daisukikaffuchino.han1meviewer.ui.activity.MainActivity
@@ -137,8 +143,8 @@ fun VideoCardItem(
                         model = videoItem.coverUrl,
                         contentDescription = videoItem.title,
                         modifier = Modifier.fillMaxSize(),
-                        placeholder = painterResource(R.drawable.h_chan_loading),
-                        error = painterResource(R.drawable.h_chan_load_failed),
+                        placeholder = painterResource(Res.drawable.h_chan_loading),
+                        error = painterResource(Res.drawable.h_chan_load_failed),
                         contentScale = ContentScale.FillWidth,
                     )
 
@@ -181,7 +187,7 @@ fun VideoCardItem(
                     ) {
                         videoItem.views?.let {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_play_circle),
+                                painter = painterResource(Res.drawable.ic_play_circle),
                                 contentDescription = null,
                                 tint = Color.White,
                                 modifier = Modifier.size(iconSize),
@@ -197,7 +203,7 @@ fun VideoCardItem(
                         Spacer(modifier = Modifier.weight(1f))
                         videoItem.duration?.let {
                             Icon(
-                                painter = painterResource(id = R.drawable.ic_access_time),
+                                painter = painterResource(Res.drawable.ic_access_time),
                                 contentDescription = null,
                                 tint = Color.White,
                                 modifier = Modifier.size(iconSize),
@@ -228,7 +234,7 @@ fun VideoCardItem(
                                     .padding(horizontal = 12.dp, vertical = 6.dp)
                             ) {
                                 Icon(
-                                    painter = painterResource(id = R.drawable.ic_play_circle),
+                                    painter = painterResource(Res.drawable.ic_play_circle),
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onPrimary,
                                     modifier = Modifier.size(18.dp)
@@ -278,7 +284,7 @@ fun VideoCardItem(
                 ) {
                     videoItem.reviews?.takeIf { it.isNotEmpty() }?.let { reviewsText ->
                         Icon(
-                            painter = painterResource(id = R.drawable.ic_thumb_up_off_alt),
+                            painter = painterResource(Res.drawable.ic_thumb_up_off_alt),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(iconSize),
