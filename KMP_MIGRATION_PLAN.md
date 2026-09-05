@@ -991,3 +991,43 @@ BaseGridConfigDialog、HA1_GITHUB_URL 均为编译期才暴露——**"纯净文
 ③ kotlin.io.encoding 的 API 形态（`encode(ByteArray): String`）与 android.util.Base64 差异较大，
 靠 javap stdlib 确认而非猜测。
 
+
+## P6d-4E settings 批次收口完成记录（2026-09-05，commit a1b393a + 5fb36ec，tag p6d4b-done）
+
+**E1（a1b393a）**：OpenSourceLicensesScreen + SettingsScaffold + TopLevelBackStack 下沉。
+关键动作：**aboutlibraries 14.2.0 → 15.2.0**（14.x compose 模块仅 Android 变体；15.2.0 core/compose
+为 KMP 产物且要求 Compose 1.12/Kotlin 2.4——与项目版本精确对齐，:app 侧 API 零破坏）；
+`R.raw.aboutlibraries`（库插件生成的 aar 内嵌资源）→ `composeResources/files/aboutlibraries.json`
+（137KB，取自 :app 构建产物）+ `Res.readBytes` 加载（README 标准姿势）；
+`parseHtmlToAnnotatedString` expect（CMP 1.12 ui-text 无跨平台 fromHtml——实测 jar 0 命中；
+android actual 用 HtmlCompat + Spanned 转换保留粗斜体/下划线/链接/前景色，desktop/iOS 去标签降级）。
+
+**E2（5fb36ec）**：**HomeSettingsRoute（736 行）下沉 jvmMain** + BackupManager + OnlineListsBackup 下沉 jvmMain。
+HomeSettingsRoute 的平台面全部收敛（13 个 expect/actual，消费 HomePlatformActions 组）：
+缓存（getCacheDirSize/clearCacheDir）、语言（applyAppLanguage）、启动器图标（switchLauncherIcon）、
+版本（appVersionDisplay/appVersionNameRaw/appVersionCodeRaw）、深链（supportsPerAppLinks/
+openPerAppLinksSettings）、PiP（isPipPermissionGranted/openPipPermissionSettings）、
+应用锁前置（isDeviceSecure）、截屏保护/重建（applySecureMode/recreateActivity——
+**CurrentActivityHolder** 注入 :app HanimeApplication.onActivityResumed）、
+备份选择器（rememberBackupExport/ImportLauncher——Android 包装 ActivityResult、桌面 JFileChooser、iOS no-op）、
+备份文本读写（writeBackupText/readBackupText）。
+BackupManager：`exportTo(context,uri)`→`exportTo(uri)`，流经 **openBackupSink/Source expect（okio）**
+（commonMain 不能引 java.io——首轮 expect 签名用了 java.io 直接编译失败，改 okio）；
+`.instance` 数据库入口全部换 Han1meDatabases；`maxConcurrentDownloadCount` 恢复走
+DownloadWorkController 新增 `updateDownloadLimit`（provider 注册制，:app 实现转发，默认空实现）。
+
+**裁决：DownloadSettingsRoute 留 :app**（SafFileManager 540 行深耦合 + WorkManager——下载目录
+能力本属 P7 平台专属收口范围；桌面下载目录用系统对话框是 P7 交付）。配套：HomeSettingsRouteScreen
+开放 `downloadSettingsContent: @Composable () -> Unit = {}` 参数，:app TopNavigation 7 处调用注入
+`DownloadSettingsRouteScreen(embedded = true)`；NetworkSettingsRoute 嵌入保留在 jvmMain 内部直连。
+
+**验收（主模型亲跑）**：五端增量 ✅ / `:app:assembleDebug` ✅ 25s / clean 全量六端 ✅ 1m4s /
+桌面 70s 存活 ✅ 0 异常。
+
+**settings 批次最终结算**：26 文件中 **24 下沉**（含 BackupManager/OnlineListsBackup 两个 logic 文件），
+2 个留 :app（DownloadSettingsRoute + SafFileManager——P7 下载目录能力）；新增 expect/actual 17 组。
+:app 剩余约 108 文件 / 22k 行（video 三件套 4.6k + search/home 批次 + 平台壳）。
+
+**踩坑增补**：① sed 全局删 `activity = activity,` 行时误伤 HomeRouteScreen（home 批次顺延文件）的
+同名传参——**按行删除类操作必须限定函数块范围**；② heredoc 内含 `${...()}` 在 zsh 触发 Bad
+substitution，复杂替换一律写临时脚本文件；③ expect 签名禁止 java.io/*，跨平台流用 okio。
