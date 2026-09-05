@@ -23,3 +23,33 @@ expect fun appVersionDisplay(): String
 
 /** Android S+ 才有「应用默认打开」设置页（桌面/iOS 无此概念，false 隐藏入口） */
 expect fun supportsPerAppLinks(): Boolean
+
+/** 备份导出/导入：按平台语义打开 uri 对应流（Android=contentResolver，桌面=File），失败/null 由调用方静默跳过 */
+expect suspend fun openBackupSink(uri: String): okio.Sink?
+expect suspend fun openBackupSource(uri: String): okio.Source?
+
+/** 备份文本读写（local/online lists 的 json） */
+expect suspend fun writeBackupText(uri: String, content: String): Boolean
+expect suspend fun readBackupText(uri: String): String?
+
+/** 截屏保护立即生效（Android=FLAG_SECURE，桌面/iOS no-op） */
+expect fun applySecureMode(enabled: Boolean)
+
+/** 重建当前 Activity（语言/主题切换后，Android 语义） */
+expect fun recreateActivity()
+
+/** 原始版本号（BackupData 头信息用，区别于展示串 appVersionDisplay） */
+expect fun appVersionNameRaw(): String
+expect fun appVersionCodeRaw(): Int
+
+/** 跳转系统「应用默认打开」设置页（Android S+，桌面/iOS no-op） */
+expect fun openPerAppLinksSettings()
+
+/** PiP 权限是否已授予（Android AppOps 检查；桌面/iOS 无 PiP，true 使开关走普通路径） */
+expect fun isPipPermissionGranted(): Boolean
+
+/** 跳转系统 PiP 设置页（桌面/iOS no-op） */
+expect fun openPipPermissionSettings()
+
+/** 设备是否已设置锁屏凭据（应用锁前置检查；桌面/iOS 无系统锁屏概念） */
+expect fun isDeviceSecure(): Boolean

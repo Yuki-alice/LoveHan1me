@@ -283,10 +283,10 @@ fun TopNavigation(
                 fallbackDestination = HomeSettingsRoute,
             ) {
                 HomeSettingsRouteScreen(
-                    activity = activity,
                     page = HomeSettingsPage.VideoPlayback,
                     onNavigateToHKeyframes = { backStack.add(HKeyframesRoute) },
                     onNavigateToSharedHKeyframes = { backStack.add(SharedHKeyframesRoute) },
+                    downloadSettingsContent = { DownloadSettingsRouteScreen(embedded = true) },
                 )
             }
         }
@@ -297,8 +297,8 @@ fun TopNavigation(
                 fallbackDestination = HomeSettingsRoute,
             ) {
                 HomeSettingsRouteScreen(
-                    activity = activity,
                     page = HomeSettingsPage.NetworkDownload,
+                    downloadSettingsContent = { DownloadSettingsRouteScreen(embedded = true) },
                 )
             }
         }
@@ -309,8 +309,8 @@ fun TopNavigation(
                 fallbackDestination = HomeSettingsRoute,
             ) {
                 HomeSettingsRouteScreen(
-                    activity = activity,
                     page = HomeSettingsPage.Appearance,
+                    downloadSettingsContent = { DownloadSettingsRouteScreen(embedded = true) },
                 )
             }
         }
@@ -321,8 +321,8 @@ fun TopNavigation(
                 fallbackDestination = HomeSettingsRoute,
             ) {
                 HomeSettingsRouteScreen(
-                    activity = activity,
                     page = HomeSettingsPage.InterfaceInteraction,
+                    downloadSettingsContent = { DownloadSettingsRouteScreen(embedded = true) },
                 )
             }
         }
@@ -333,8 +333,8 @@ fun TopNavigation(
                 fallbackDestination = HomeSettingsRoute,
             ) {
                 HomeSettingsRouteScreen(
-                    activity = activity,
                     page = HomeSettingsPage.DataPrivacy,
+                    downloadSettingsContent = { DownloadSettingsRouteScreen(embedded = true) },
                 )
             }
         }
@@ -345,8 +345,8 @@ fun TopNavigation(
                 fallbackDestination = HomeSettingsRoute,
             ) {
                 HomeSettingsRouteScreen(
-                    activity = activity,
                     page = HomeSettingsPage.DeveloperOptions,
+                    downloadSettingsContent = { DownloadSettingsRouteScreen(embedded = true) },
                 )
             }
         }
@@ -357,11 +357,11 @@ fun TopNavigation(
                 fallbackDestination = HomeSettingsRoute,
             ) {
                 HomeSettingsRouteScreen(
-                    activity = activity,
                     page = HomeSettingsPage.About,
                     onNavigateToOpenSourceLicenses = {
                         backStack.add(OpenSourceLicensesRoute)
                     },
+                    downloadSettingsContent = { DownloadSettingsRouteScreen(embedded = true) },
                 )
             }
         }

@@ -17,4 +17,8 @@ object AndroidDownloadWorkController : DownloadWorkController {
 
     override fun runningCount(): Flow<Int> =
         HanimeDownloadWorker.getRunningWorkInfoCount(application)
+
+    override fun updateDownloadLimit(count: Int) {
+        HanimeDownloadManager.maxConcurrentDownloadCount = count
+    }
 }

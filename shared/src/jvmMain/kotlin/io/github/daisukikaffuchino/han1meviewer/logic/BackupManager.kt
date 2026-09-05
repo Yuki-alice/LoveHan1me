@@ -1,11 +1,16 @@
 package io.github.daisukikaffuchino.han1meviewer.logic
 
-import android.content.Context
-import android.net.Uri
-import androidx.glance.appwidget.updateAll
-import io.github.daisukikaffuchino.han1meviewer.BuildConfig
-import io.github.daisukikaffuchino.han1meviewer.HanimeApplication
 import io.github.daisukikaffuchino.han1meviewer.logic.datastore.DataStoreManager
+import io.github.daisukikaffuchino.han1meviewer.logic.dao.Han1meDatabases
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.appVersionCodeRaw
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.appVersionNameRaw
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.applyAppLanguage
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.openBackupSource
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.downloadWorkController
+import okio.buffer
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.openBackupSink
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.switchLauncherIcon
+import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.updateCheckInWidget
 import io.github.daisukikaffuchino.han1meviewer.logic.network.HanimeNetwork
 import io.github.daisukikaffuchino.han1meviewer.logic.network.HProxySelector
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
@@ -20,9 +25,6 @@ import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.DownloadCa
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.DownloadGroupEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.HanimeCategoryCrossRef
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.HanimeDownloadEntity
-import io.github.daisukikaffuchino.han1meviewer.ui.widget.CheckInWidget
-import io.github.daisukikaffuchino.han1meviewer.util.AppLanguageManager
-import io.github.daisukikaffuchino.han1meviewer.worker.HanimeDownloadManager
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.OutputStream
@@ -39,9 +41,9 @@ object BackupManager {
     @Serializable
     private data class BackupData(
         val version: Int = BACKUP_VERSION,
-        val appVersionCode: Int = BuildConfig.VERSION_CODE,
-        val appVersionName: String = BuildConfig.VERSION_NAME,
-        val exportedAt: Long = System.currentTimeMillis(),
+        val appVersionCode: Int = appVersionCodeRaw(),
+        val appVersionName: String = appVersionNameRaw(),
+        val exportedAt: Long = currentEpochMillis(),
         val settings: Map<String, PreferenceValue>? = null,
         val hKeyframes: List<HKeyframeEntity>? = null,
         val checkInRecords: List<CheckInRecordEntity>? = null,
@@ -73,33 +75,33 @@ object BackupManager {
         data class StringSetValue(val value: Set<String>) : PreferenceValue
     }
 
-    suspend fun exportTo(context: Context, uri: Uri) {
-        context.contentResolver.openOutputStream(uri)?.use { outputStream ->
-            exportTo(context, outputStream)
+    suspend fun exportTo(uri: String) {
+        openBackupSink(uri)?.buffer()?.use { sink ->
+            exportTo(sink.outputStream())
         } ?: error("Unable to open backup file")
     }
 
-    suspend fun importFrom(context: Context, uri: Uri) {
-        val backup = context.contentResolver.openInputStream(uri)?.use { inputStream ->
-            json.decodeFromString<BackupData>(inputStream.bufferedReader().readText())
+    suspend fun importFrom(uri: String) {
+        val backup = openBackupSource(uri)?.buffer()?.use { source ->
+            json.decodeFromString<BackupData>(source.readUtf8())
         } ?: error("Unable to open backup file")
 
         backup.hKeyframes?.let { hKeyframes ->
-            MiscellanyDatabase.instance.hKeyframeDao.apply {
+            Han1meDatabases.miscellany.hKeyframeDao.apply {
                 deleteAll()
                 insertAll(hKeyframes)
             }
         }
 
         backup.checkInRecords?.let { checkInRecords ->
-            CheckInRecordDatabase.instance.checkInDao().apply {
+            Han1meDatabases.checkInRecord.checkInDao().apply {
                 deleteAll()
                 insertAll(checkInRecords)
             }
         }
 
         backup.watchHistories?.let { watchHistories ->
-            HistoryDatabase.instance.watchHistory.apply {
+            Han1meDatabases.history.watchHistory.apply {
                 deleteAll()
                 insertAll(watchHistories)
             }
@@ -125,7 +127,7 @@ object BackupManager {
                 crossRef.videoId in downloadIds && crossRef.categoryId in categoryIds
             }
 
-            DownloadDatabase.instance.apply {
+            Han1meDatabases.download.apply {
                 downloadCategoryDao.deleteAllCrossRefs()
                 hanimeDownloadDao.deleteAll()
                 downloadCategoryDao.deleteAllCategories()
@@ -140,31 +142,28 @@ object BackupManager {
 
         backup.settings?.let { settings ->
             DataStoreManager.restoreBackup(settings.mapValues { (_, value) -> value.rawValue })
-            AppLanguageManager.setAppLanguage(SettingsRepository.current.appLanguage)
+            applyAppLanguage(SettingsRepository.current.appLanguage)
             HProxySelector.rebuildNetwork()
             HanimeNetwork.rebuildNetwork()
-            HanimeDownloadManager.maxConcurrentDownloadCount =
-                SettingsRepository.current.downloadCountLimit
-            (context.applicationContext as? HanimeApplication)?.switchLauncher(
-                SettingsRepository.current.fakeLauncherIcon
-            )
+            downloadWorkController().updateDownloadLimit(SettingsRepository.current.downloadCountLimit)
+            switchLauncherIcon(SettingsRepository.current.fakeLauncherIcon)
         }
 
-        runCatching { CheckInWidget().updateAll(context) }
+        runCatching { updateCheckInWidget() }
     }
 
-    private suspend fun exportTo(context: Context, outputStream: OutputStream) {
+    private suspend fun exportTo(outputStream: OutputStream) {
         val backup = BackupData(
             settings = DataStoreManager.exportBackup().mapValuesNotNull { (_, value) ->
                 value.toPreferenceValue()
             },
-            hKeyframes = MiscellanyDatabase.instance.hKeyframeDao.getAll(),
-            checkInRecords = CheckInRecordDatabase.instance.checkInDao().getAllRecords(),
-            watchHistories = HistoryDatabase.instance.watchHistory.getAll(),
-            downloadGroups = DownloadDatabase.instance.downloadGroupDao.getAllGroupsOnce(),
-            downloads = DownloadDatabase.instance.hanimeDownloadDao.getAll(),
-            downloadCategories = DownloadDatabase.instance.downloadCategoryDao.getAllCategoriesOnce(),
-            downloadCategoryCrossRefs = DownloadDatabase.instance.downloadCategoryDao.getAllCrossRefs(),
+            hKeyframes = Han1meDatabases.miscellany.hKeyframeDao.getAll(),
+            checkInRecords = Han1meDatabases.checkInRecord.checkInDao().getAllRecords(),
+            watchHistories = Han1meDatabases.history.watchHistory.getAll(),
+            downloadGroups = Han1meDatabases.download.downloadGroupDao.getAllGroupsOnce(),
+            downloads = Han1meDatabases.download.hanimeDownloadDao.getAll(),
+            downloadCategories = Han1meDatabases.download.downloadCategoryDao.getAllCategoriesOnce(),
+            downloadCategoryCrossRefs = Han1meDatabases.download.downloadCategoryDao.getAllCrossRefs(),
         )
         outputStream.bufferedWriter().use { writer ->
             writer.write(json.encodeToString(backup))

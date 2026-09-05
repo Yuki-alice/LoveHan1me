@@ -1,10 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings
 
-import android.annotation.SuppressLint
-import android.content.Context
-import android.os.Build
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -33,7 +28,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.DrawableResource
@@ -42,14 +36,31 @@ import org.jetbrains.compose.resources.getString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.glance.appwidget.updateAll
-import io.github.daisukikaffuchino.han1meviewer.BuildConfig
 import io.github.daisukikaffuchino.han1meviewer.HanimeConstants
 import io.github.daisukikaffuchino.han1meviewer.HA1_GITHUB_FORUM_URL
 import io.github.daisukikaffuchino.han1meviewer.HA1_GITHUB_ISSUE_URL
-import io.github.daisukikaffuchino.han1meviewer.HanimeApplication
+import io.github.daisukikaffuchino.han1meviewer.logic.BackupManager
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.appVersionDisplay
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.applyAppLanguage
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.applySecureMode
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.clearCacheDir
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.getCacheDirSize
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.isDeviceSecure
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.isPipPermissionGranted
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.openPipPermissionSettings
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.recreateActivity
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.readBackupText
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.restartApp
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.supportsPerAppLinks
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.switchLauncherIcon
+import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.updateCheckInWidget
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.writeBackupText
+import io.github.daisukikaffuchino.han1meviewer.logic.currentEpochMillis
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.openPerAppLinksSettings
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.rememberBackupExportLauncher
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.rememberBackupImportLauncher
+import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.updateCheckInWidget
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.action_app_open_by_default_settings_not_support
 import io.github.daisukikaffuchino.han1meviewer.backup_export_failed
@@ -97,7 +108,6 @@ import io.github.daisukikaffuchino.han1meviewer.ic_launcher_xxt
 import io.github.daisukikaffuchino.han1meviewer.ic_launcher_new
 import io.github.daisukikaffuchino.han1meviewer.ic_launcher_cornhub
 import io.github.daisukikaffuchino.han1meviewer.ic_launcher_calc
-import io.github.daisukikaffuchino.han1meviewer.logic.BackupManager
 import io.github.daisukikaffuchino.han1meviewer.logic.LocalListRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.OnlineListsBackup
 import io.github.daisukikaffuchino.han1meviewer.logic.model.AppLanguage
@@ -106,7 +116,6 @@ import io.github.daisukikaffuchino.han1meviewer.logic.model.PaletteStyle
 import io.github.daisukikaffuchino.han1meviewer.logic.model.ThemeAccent
 import io.github.daisukikaffuchino.han1meviewer.logic.model.ThemeMode
 import io.github.daisukikaffuchino.han1meviewer.logic.model.VideoLandscapeLayoutStyle
-import io.github.daisukikaffuchino.han1meviewer.ui.activity.MainActivity
 import io.github.daisukikaffuchino.han1meviewer.ui.component.ConfirmDialog
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.HomeSettingsPage
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.HomeSettingsScreen
@@ -115,27 +124,22 @@ import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage.defaultH
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage.hiddenHomeCategoryKeys
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage.homeCategoryOrder
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage.saveHomeCategoryPreferences
-import io.github.daisukikaffuchino.han1meviewer.ui.widget.CheckInWidget
-import io.github.daisukikaffuchino.han1meviewer.util.AppLanguageManager
-import io.github.daisukikaffuchino.utils.ActivityManager
-import io.github.daisukikaffuchino.utils.folderSize
 import io.github.daisukikaffuchino.utils.SonnerToast
-import io.github.daisukikaffuchino.utils.toastText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-@SuppressLint("ResourceType")
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeSettingsRouteScreen(
-    activity: MainActivity,
     page: HomeSettingsPage,
     onNavigateToHKeyframes: () -> Unit = {},
     onNavigateToSharedHKeyframes: () -> Unit = {},
     onNavigateToOpenSourceLicenses: () -> Unit = {},
+    // P6d-4E：下载设置页依赖 :app 的 SAF（SafFileManager/WorkManager），由 Android 壳注入；
+    // 桌面/iOS 下载目录能力随 P7 提供，默认空占位
+    downloadSettingsContent: @Composable () -> Unit = {},
 ) {
-    val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
     val coroutineScope = rememberCoroutineScope()
     // P6d-3-C3：回调内非 suspend，固定串在此预解析
@@ -151,116 +155,70 @@ fun HomeSettingsRouteScreen(
     var showRestartConfirmDialog by remember { mutableStateOf(false) }
     var showLauncherPicker by remember { mutableStateOf(false) }
     var showApplyDeepLinksDialog by remember { mutableStateOf(false) }
-    var pendingImportUri by remember { mutableStateOf<android.net.Uri?>(null) }
+    var pendingImportUri by remember { mutableStateOf<String?>(null) }
 
-    val exportLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
+    val exportLauncher = rememberBackupExportLauncher { uri ->
+        uri ?: return@rememberBackupExportLauncher
         coroutineScope.launch(Dispatchers.IO) {
-            runCatching { BackupManager.exportTo(context, uri) }
-                .onSuccess { withContext(Dispatchers.Main) { SonnerToast.success(getString(Res.string.backup_export_success)) } }
-                .onFailure { withContext(Dispatchers.Main) { SonnerToast.error(getString(Res.string.backup_export_failed)) } }
+            runCatching { BackupManager.exportTo(uri) }
+                .onSuccess { SonnerToast.success(getString(Res.string.backup_export_success)) }
+                .onFailure { SonnerToast.error(getString(Res.string.backup_export_failed)) }
         }
     }
-    val importLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        pendingImportUri = uri
-    }
-    val localListsExportLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
+    val importLauncher = rememberBackupImportLauncher { pendingImportUri = it }
+    val localListsExportLauncher = rememberBackupExportLauncher { uri ->
+        uri ?: return@rememberBackupExportLauncher
         coroutineScope.launch(Dispatchers.IO) {
             runCatching {
                 val jsonText = LocalListRepository.exportLocalListsJson()
-                context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { writer ->
-                    writer.write(jsonText)
-                } ?: error("Unable to open output file")
+                check(writeBackupText(uri, jsonText)) { "Unable to open output file" }
             }.onSuccess {
-                withContext(Dispatchers.Main) {
-                    SonnerToast.success(getString(Res.string.local_data_export_success))
-                }
+                SonnerToast.success(getString(Res.string.local_data_export_success))
             }.onFailure {
-                withContext(Dispatchers.Main) {
-                    SonnerToast.error(
-                        it.message ?: getString(Res.string.local_data_export_failed)
-                    )
-                }
+                SonnerToast.error(it.message ?: getString(Res.string.local_data_export_failed))
             }
         }
     }
-    val localListsImportLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
+    val localListsImportLauncher = rememberBackupImportLauncher { uri ->
+        uri ?: return@rememberBackupImportLauncher
         coroutineScope.launch(Dispatchers.IO) {
             runCatching {
-                val jsonText = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use {
-                    it.readText()
-                } ?: error("Unable to open input file")
+                val jsonText = readBackupText(uri) ?: error("Unable to open input file")
                 LocalListRepository.importLocalListsJson(jsonText, merge = true)
             }.onSuccess {
-                withContext(Dispatchers.Main) {
-                    SonnerToast.success(getString(Res.string.local_data_import_success))
-                }
+                SonnerToast.success(getString(Res.string.local_data_import_success))
             }.onFailure {
-                withContext(Dispatchers.Main) {
-                    SonnerToast.error(
-                        it.message ?: getString(Res.string.local_data_import_failed)
-                    )
-                }
+                SonnerToast.error(it.message ?: getString(Res.string.local_data_import_failed))
             }
         }
     }
-    val onlineListsExportLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.CreateDocument("application/json")
-    ) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
+    val onlineListsExportLauncher = rememberBackupExportLauncher { uri ->
+        uri ?: return@rememberBackupExportLauncher
         coroutineScope.launch(Dispatchers.IO) {
             runCatching {
                 val jsonText = OnlineListsBackup.exportOnlineListsJson()
-                context.contentResolver.openOutputStream(uri)?.bufferedWriter()?.use { writer ->
-                    writer.write(jsonText)
-                } ?: error("Unable to open output file")
+                check(writeBackupText(uri, jsonText)) { "Unable to open output file" }
             }.onSuccess {
-                withContext(Dispatchers.Main) {
-                    SonnerToast.success(getString(Res.string.online_data_export_success))
-                }
+                SonnerToast.success(getString(Res.string.online_data_export_success))
             }.onFailure {
-                withContext(Dispatchers.Main) {
-                    SonnerToast.error(
-                        it.message ?: getString(Res.string.online_data_export_failed)
-                    )
-                }
+                SonnerToast.error(it.message ?: getString(Res.string.online_data_export_failed))
             }
         }
     }
-    val onlineListsImportLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.OpenDocument()
-    ) { uri ->
-        uri ?: return@rememberLauncherForActivityResult
+    val onlineListsImportLauncher = rememberBackupImportLauncher {
         if (!SettingsRepository.isAlreadyLogin) {
             SonnerToast.warning(loginFirstText)
-            return@rememberLauncherForActivityResult
+            return@rememberBackupImportLauncher
         }
+        val uri = it ?: return@rememberBackupImportLauncher
         coroutineScope.launch(Dispatchers.IO) {
             runCatching {
-                val jsonText = context.contentResolver.openInputStream(uri)?.bufferedReader()?.use {
-                    it.readText()
-                } ?: error("Unable to open input file")
+                val jsonText = readBackupText(uri) ?: error("Unable to open input file")
                 OnlineListsBackup.importOnlineListsJson(jsonText)
             }.onSuccess {
-                withContext(Dispatchers.Main) {
-                    SonnerToast.success(getString(Res.string.online_data_import_success))
-                }
+                SonnerToast.success(getString(Res.string.online_data_import_success))
             }.onFailure {
-                withContext(Dispatchers.Main) {
-                    SonnerToast.error(
-                        it.message ?: getString(Res.string.online_data_import_failed)
-                    )
-                }
+                SonnerToast.error(it.message ?: getString(Res.string.online_data_import_failed))
             }
         }
     }
@@ -269,7 +227,7 @@ fun HomeSettingsRouteScreen(
     val fakeNameCornhub = stringResource(Res.string.app_name_fake_cornhub)
     val fakeNameXXT = stringResource(Res.string.app_name_fake_xxt)
 
-    val launcherItems = remember(context) {
+    val launcherItems = remember {
         listOf(
             LauncherItem(
                 name = hanimeAppName,
@@ -298,7 +256,7 @@ fun HomeSettingsRouteScreen(
 
     LaunchedEffect(cacheKey) {
         cacheSummary = withContext(Dispatchers.IO) {
-            generateClearCacheSummary(context.cacheDir?.folderSize ?: 0L).toString()
+            generateClearCacheSummary(getCacheDirSize()).toString()
         }
     }
     // P6d-3-C2：builder 在 remember{} 内无法调资源，标签在外层预解析后传入
@@ -307,14 +265,13 @@ fun HomeSettingsRouteScreen(
     val followSystemLabel = stringResource(Res.string.follow_system)
     val versionSummaryTop = stringResource(
         Res.string.current_version,
-        "${BuildConfig.VERSION_NAME}(${BuildConfig.VERSION_CODE})"
+        appVersionDisplay()
     )
     val uiState = remember(
-        settings, cacheSummary, launcherItems, context,
+        settings, cacheSummary, launcherItems,
         traditionalChineseLabel, simplifiedChineseLabel, followSystemLabel, versionSummaryTop,
     ) {
         buildHomeSettingsUiState(
-            context = context,
             videoLanguageLabels = mapOf(
                 "zht" to traditionalChineseLabel,
                 "zhs" to simplifiedChineseLabel,
@@ -365,9 +322,9 @@ fun HomeSettingsRouteScreen(
             coroutineScope.launch { SettingsRepository.setPaletteStyle(PaletteStyle.fromId(id)) }
         },
         onAllowPipModeChange = { enabled ->
-            if (enabled && !isPipPermissionGranted(context)) {
+            if (enabled && !isPipPermissionGranted()) {
                 SonnerToast.warning(requestPipText)
-                openPipPermissionSettings(context)
+                openPipPermissionSettings()
                 coroutineScope.launch { SettingsRepository.update { it.copy(allowPipMode = false) } }
                 return@HomeSettingsScreen
             }
@@ -401,7 +358,7 @@ fun HomeSettingsRouteScreen(
         onCheckInEnabledChange = {
             coroutineScope.launch {
                 SettingsRepository.setCheckInEnabled(it)
-                CheckInWidget().updateAll(context)
+                updateCheckInWidget()
             }
         },
         onDisableCommentsChange = {
@@ -421,7 +378,7 @@ fun HomeSettingsRouteScreen(
         },
         onUseLockScreenChange = { value ->
             if (value) {
-                if (!isDeviceSecureCompat(context)) {
+                if (!isDeviceSecure()) {
                     SonnerToast.warning(notSetLockText)
                     return@HomeSettingsScreen
                 }
@@ -431,7 +388,7 @@ fun HomeSettingsRouteScreen(
         onSecureModeChange = { enabled ->
             coroutineScope.launch {
                 SettingsRepository.update { it.copy(secureMode = enabled) }
-                activity.setSecureMode(enabled)
+                applySecureMode(enabled)
             }
         },
         onAlwaysShowUpdateCardChange = { enabled ->
@@ -453,15 +410,18 @@ fun HomeSettingsRouteScreen(
             )
         },
         networkSettingsContent = { NetworkSettingsRouteScreen(embedded = true) },
-        downloadSettingsContent = { DownloadSettingsRouteScreen(embedded = true) },
+        downloadSettingsContent = downloadSettingsContent,
         onOpenAppLanguageSettings = { value ->
             val language = AppLanguage.fromPreference(value)
-            if (AppLanguageManager.current(context) != language) {
-                coroutineScope.launch { AppLanguageManager.select(context, language) }
+            if (SettingsRepository.current.appLanguage != language) {
+                coroutineScope.launch {
+                    SettingsRepository.setLanguage(language)
+                    applyAppLanguage(language)
+                }
             }
         },
         onOpenApplyDeepLinks = {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+            if (!supportsPerAppLinks()) {
                 SonnerToast.warning(deepLinksWarnText)
             } else {
                 showApplyDeepLinksDialog = true
@@ -470,35 +430,32 @@ fun HomeSettingsRouteScreen(
         onOpenFakeLauncherIcon = { showLauncherPicker = true },
         onOpenOpenSourceLicense = onNavigateToOpenSourceLicenses,
         onClearCache = {
-            val cacheDir = context.cacheDir
-            val folderSize = cacheDir?.folderSize ?: 0L
-            if (folderSize == 0L) {
-                SonnerToast.info(cacheEmptyText)
-                return@HomeSettingsScreen
+            coroutineScope.launch {
+                if (getCacheDirSize() == 0L) SonnerToast.info(cacheEmptyText)
+                else showClearCacheConfirm = true
             }
-            showClearCacheConfirm = true
         },
         onExportBackup = {
-            exportLauncher.launch("Han1meViewer-backup-${System.currentTimeMillis()}.json")
+            exportLauncher("Han1meViewer-backup-${currentEpochMillis()}.json")
         },
         onImportBackup = {
-            importLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+            importLauncher()
         },
         onExportLocalLists = {
-            localListsExportLauncher.launch(
-                "Han1meViewer-local-lists-${System.currentTimeMillis()}.json"
+            localListsExportLauncher(
+                "Han1meViewer-local-lists-${currentEpochMillis()}.json"
             )
         },
         onImportLocalLists = {
-            localListsImportLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+            localListsImportLauncher()
         },
         onExportOnlineLists = {
             if (!SettingsRepository.isAlreadyLogin) {
                 SonnerToast.warning(loginFirstText)
                 return@HomeSettingsScreen
             }
-            onlineListsExportLauncher.launch(
-                "Han1meViewer-online-lists-${System.currentTimeMillis()}.json"
+            onlineListsExportLauncher(
+                "Han1meViewer-online-lists-${currentEpochMillis()}.json"
             )
         },
         onImportOnlineLists = {
@@ -506,7 +463,7 @@ fun HomeSettingsRouteScreen(
                 SonnerToast.warning(loginFirstText)
                 return@HomeSettingsScreen
             }
-            onlineListsImportLauncher.launch(arrayOf("application/json", "text/*", "*/*"))
+            onlineListsImportLauncher()
         },
         onSubmitBug = { uriHandler.openUri(HA1_GITHUB_ISSUE_URL) },
         onOpenForum = { uriHandler.openUri(HA1_GITHUB_FORUM_URL) },
@@ -522,11 +479,11 @@ fun HomeSettingsRouteScreen(
             val uri = pendingImportUri ?: return@ConfirmDialog
             pendingImportUri = null
             coroutineScope.launch(Dispatchers.IO) {
-                runCatching { BackupManager.importFrom(context, uri) }
+                runCatching { BackupManager.importFrom(uri) }
                     .onSuccess {
                         withContext(Dispatchers.Main) {
                             SonnerToast.success(getString(Res.string.backup_import_success))
-                            activity.recreate()
+                            recreateActivity()
                         }
                     }
                     .onFailure {
@@ -548,12 +505,9 @@ fun HomeSettingsRouteScreen(
         onConfirm = {
             showClearCacheConfirm = false
             coroutineScope.launch(Dispatchers.IO) {
-                val cacheDir = context.cacheDir
-                val success = cacheDir?.deleteRecursively() == true
-                withContext(Dispatchers.Main) {
-                    cacheKey++
-                    if (success) SonnerToast.success(getString(Res.string.clear_success)) else SonnerToast.error(getString(Res.string.clear_failed))
-                }
+                val success = clearCacheDir()
+                cacheKey++
+                if (success) SonnerToast.success(getString(Res.string.clear_success)) else SonnerToast.error(getString(Res.string.clear_failed))
             }
         },
         onDismiss = { showClearCacheConfirm = false },
@@ -571,8 +525,8 @@ fun HomeSettingsRouteScreen(
                     Text(stringResource(Res.string.apply_deep_links_summary))
                     Text(stringResource(Res.string.apply_deep_links_tips))
                     Image(
-                        // P6d-1：R.raw 留 :app（范围红线），此处保留 androidx Int 重载，全限定避免与 CMP 同名 import 冲突
-                        painter = androidx.compose.ui.res.painterResource(R.raw.apply_deep_links),
+                        // P6d-4：教学截图迁 composeResources/drawable（原 res/raw/apply_deep_links.png）
+                        painter = painterResource(Res.drawable.apply_deep_links),
                         contentDescription = null,
                         modifier = Modifier.fillMaxWidth(),
                     )
@@ -582,8 +536,8 @@ fun HomeSettingsRouteScreen(
                 TextButton(
                     onClick = {
                         showApplyDeepLinksDialog = false
-                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                            coroutineScope.launch { openApplyDeepLinksSettings(context, activity) }
+                        if (supportsPerAppLinks()) {
+                            openPerAppLinksSettings()
                         }
                     },
                 ) {
@@ -606,7 +560,7 @@ fun HomeSettingsRouteScreen(
         dismissText = stringResource(Res.string.cancel),
         cancelable = false,
         onConfirm = {
-            ActivityManager.restart(killProcess = true)
+            restartApp(killProcess = true)
         },
         onDismiss = { showRestartConfirmDialog = false },
     )
@@ -632,7 +586,7 @@ fun HomeSettingsRouteScreen(
                             onClick = {
                                 coroutineScope.launch {
                                     SettingsRepository.setLauncherIcon(item.alias)
-                                    (context.applicationContext as? HanimeApplication)?.switchLauncher(item.alias)
+                                    switchLauncherIcon(item.alias)
                                     SonnerToast.info(getString(Res.string.fake_icon_hint))
                                     showLauncherPicker = false
                                 }
@@ -667,7 +621,6 @@ private data class LauncherItem(
 )
 
 private fun buildHomeSettingsUiState(
-    context: Context,
     videoLanguageLabels: Map<String, String>,
     followSystemLabel: String,
     launcherItems: List<LauncherItem>,
@@ -678,7 +631,7 @@ private fun buildHomeSettingsUiState(
     val currentItem = launcherItems.find { it.alias == currentAlias } ?: launcherItems.first()
     val videoLanguageLabel = videoLanguageLabels[SettingsRepository.videoLanguage]
         ?: SettingsRepository.videoLanguage
-    val appLanguage = AppLanguageManager.current(context)
+    val appLanguage = SettingsRepository.current.appLanguage
     val appLanguageLabel = when (appLanguage) {
         AppLanguage.SYSTEM -> followSystemLabel
         AppLanguage.ENGLISH -> "English"
@@ -712,7 +665,7 @@ private fun buildHomeSettingsUiState(
         fakeLauncherIconName = currentItem.name,
         cacheSummary = cacheSummary,
         versionSummary = versionSummary,
-        dynamicColorEnabled = Build.VERSION.SDK_INT >= Build.VERSION_CODES.S,
+        dynamicColorEnabled = supportsPerAppLinks(),
         themeAccentColorId = SettingsRepository.current.themeAccent.id,
         appPaletteStyleId = SettingsRepository.current.paletteStyle.id,
         searchGridColumnsSummary = listOf(
