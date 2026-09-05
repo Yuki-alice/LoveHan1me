@@ -1,6 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings
 
-import android.content.Context
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -11,12 +10,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.platform.LocalContext
 import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.logic.currentEpochMillis
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.copy_to_clipboard
 import io.github.daisukikaffuchino.han1meviewer.default_
@@ -42,7 +40,6 @@ import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.SettingsViewModel
 import io.github.daisukikaffuchino.utils.rememberCopyTextToClipboard
 import io.github.daisukikaffuchino.utils.decodeFromStringByBase64
 import io.github.daisukikaffuchino.utils.SonnerToast
-import io.github.daisukikaffuchino.utils.toastText
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
@@ -112,7 +109,7 @@ fun HKeyframesRouteScreen(
             confirmText = stringResource(Res.string.confirm),
             dismissText = stringResource(Res.string.cancel),
             onConfirm = {
-                viewModel.insertHKeyframes(entity.copy(lastModifiedTime = System.currentTimeMillis()))
+                viewModel.insertHKeyframes(entity.copy(lastModifiedTime = currentEpochMillis()))
                 sharedHKeyframeEntity = null
             },
             onDismiss = { sharedHKeyframeEntity = null },
@@ -180,7 +177,6 @@ fun HKeyframeSettingsRouteScreen(
     onNavigateToSharedHKeyframes: () -> Unit,
     embedded: Boolean = false,
 ) {
-    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
     // P6d-3-C2：builder 在 remember{} 内无法调 stringResource，字符串在外层预解析后传入
@@ -191,7 +187,7 @@ fun HKeyframeSettingsRouteScreen(
         stringResource(Res.string.will_remind_before_d_seconds),
         stringResource(Res.string.default_),
     )
-    val uiState = remember(settings, context, enableTipTop, disableTipTop, countdownSummaryTop) {
+    val uiState = remember(settings, enableTipTop, disableTipTop, countdownSummaryTop) {
         buildHKeyframeSettingsUiState(enableTipTop, disableTipTop, countdownSummaryTop)
     }
 
