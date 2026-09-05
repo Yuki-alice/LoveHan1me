@@ -927,3 +927,67 @@ P6d-3 的 C 步涉及 92 个文件，是本轮风险最高的操作，必须遵�
 5. **保留项白名单**：`R.raw.*`（3）、`R.dimen.*`（2）、`R.array.loading_hints`（1）、`R.font.roboto`（1）
    以及框架强制要求的 Int（worker `setSmallIcon`、`Icon.createWithResource`、`media3.cast.R`）不动。
 
+## P6d-4 settings 批次下沉完成记录（2026-09-05，git 从 p6d4-start 起 4 commits，A/B/C/D）
+
+> 由主模型亲自执行。勘察（§9.1 同口径重扫）确认 P6d-3 横切解锁后，settings 相关 26 文件中
+> **13 个完全 CLEAN**，本批共下沉 21 个，剩 4 个大文件顺延（见顺延项）。
+
+**A（16 文件，commit af8b863）**：
+13 纯净文件（NetworkSettingsScreen 900 / HomeSettingsScreen 842 / MpvPlayerSettings 300 /
+HomeCategoryLayoutDialog 272 / PlayerSettings 240 / HKeyframeSettings 233 / 三个 grid dialog /
+SettingsMainScreen / DownloadSettingsScreen / AboutComponents / HomeSettingsUiState / GridRangeOption）
++ AppearancePickers（`android.R.color.system_accent1_500` 直取改为既有 `rememberSystemAccentColorOrNull()`，
+androidMain actual 逐字节等价、SDK 判断内聚）+ BaseGridConfigDialog（`String.format(Locale.US,"%.1f")`
+改 locale 无关整数缩放实现，HALF_UP 语义一致）。preview 剥离 12 块（P6d-1 惯例）。
+配套：`DohConfig` jvmMain→commonMain（纯 Kotlin+SettingsRepository）、`HProxyTypes` 常量上移
+（HProxySelector companion 转发保持调用点零改动）、GitHub 三常量下沉 BasicConstants、
+`BuildConfig.DEBUG` → `isDebugBuild()`（SettingsMainScreen 开发者选项入口）。
+
+**B（commit d7cd13a）**：MpvPlayerSettingsRoute（context 为死参数，remember key 残留）/
+PlayerSettingsRoute（GMS `GoogleApiAvailability` → `isCastAvailable()` expect，android actual 经
+`Han1meDatabaseContext`，desktop/iOS 恒 false——Cast 本就 Android 专属）下沉；`SettingsRouteUtils`
+拆分为 commonMain（6 个纯函数；`parseAsHtml`→等价去标签——**CMP 1.12 ui-text 无跨平台 fromHtml**，
+实测 jar 0 命中，且原调用点 `.toString()` span 从未生效）与 :app `SettingsPlatformUtils`
+（Keyguard/AppOps/Intent 四函数）；utils 库 `TextUtil.kt` 内联（formatFileSize/formatBytesPerSecond/
+decodeFromStringByBase64，`"%.Nf".format` 在 commonMain 不可用 → toPlainFixed 整数缩放实现）。
+
+**C（commit 535b0a2）**：HKeyframesSettingsRoute 下沉（base64 编解码全 common 化——编码端
+`android.util.Base64.NO_WRAP` → `kotlin.io.encoding.Base64.Default`（实测 API：`encode(ByteArray): String`），
+解码端 TextUtil 的 Mime）；`createTextClipEntry` expect + 三端 actual（android ClipData /
+desktop AWT StringSelection / iOS no-op 降级 P7）+ `rememberCopyTextToClipboard` common 化；
+`System.currentTimeMillis` → `currentEpochMillis()`。
+
+**D（commit 后续）**：**NetworkSettingsRoute 下沉到 `jvmMain`**（非 commonMain——OkHttp/InetAddress/
+Executors/HDns 为 JVM 依赖，且该页本就属"P7 对 iOS 隐藏"范围）：Handler/Executor 轮询链协程化
+（IO 协程直写 Compose 快照状态，合法）、`SimpleUri` 纯字符串切片替代 android.net.Uri 用法子集
+（宽容解析语义对齐）、`restartApp()` expect/actual（android 原 ActivityManager.restart 照搬 /
+desktop exitProcess / iOS no-op）、`logout()/login()/clearWebCookies()` 下沉 jvmMain
+（**CookieManager 清理经 expect 隔离**；jvmMain 的 expect 只需 android+desktop actual，iOS 不编译该源集）。
+
+**新增平台抽象清单**（全部有实际消费者或留待顺延批次）：
+`isCastAvailable` / `createTextClipEntry` / `restartApp` / `clearWebCookies` / `getCacheDirSize` /
+`clearCacheDir` / `applyAppLanguage` / `switchLauncherIcon` / `appVersionDisplay` / `supportsPerAppLinks`。
+
+**验收（主模型亲跑）**：六端增量 ✅ / clean 全量六端 ✅ / `:app:assembleDebug` ✅ 21s /
+桌面 70s 存活 ✅（0 异常，DataStore+Coil 初始化正常）。
+
+**顺延项（P6d-4E，settings 批次剩余 4 文件）**：
+
+1. **HomeSettingsRoute**（736 行，硬骨头）：耦合 MainActivity 参数（setSecureMode=recreate=
+   FLAG_SECURE/currentActivity，androidMain 需建 CurrentActivityHolder 并在 HanimeApplication
+   onActivityResumed 赋值）、**BackupManager + 6 个 SAF launcher**（建议 expect 化
+   rememberBackupExport/ImportLauncher + write/readBackupText，desktop 走 JFileChooser）、
+   Glance 刷新（→ 已备 `updateCheckInWidget()`）、`R.raw.apply_deep_links.png`（迁
+   composeResources/drawable + `painterResource(Res.drawable.x)`）。平台抽象已全部备好
+   （HomePlatformActions 5+1 expect 已建并验证编译），仅剩文件改造。
+2. **DownloadSettingsRoute**（322 行）：SAF 目录选择 ×10（SafFileManager :app 常驻——同型 expect 化）。
+3. **OpenSourceLicensesScreen**（457 行）：aboutlibraries 14.2.0 的 KMP artifact 调研
+   （P6 原计划项）；`R.raw.aboutlibraries` JSON 需迁 composeResources/files。
+4. **SettingsNavHost**（56 行，SettingsScaffold）：已确认纯净，上述 Route 全部下沉后即可搬。
+
+**教训（本批踩坑）**：① 同包/同文件内引用不做 import 扫描会漏（AppearancePickers 四 Picker、
+BaseGridConfigDialog、HA1_GITHUB_URL 均为编译期才暴露——**"纯净文件"判定必须以编译为准**）；
+② 一次 commit 在编译未绿时溜进了 `&&` 链（已 amend 修正）——commit 必须放在编译断言显式成功之后；
+③ kotlin.io.encoding 的 API 形态（`encode(ByteArray): String`）与 android.util.Base64 差异较大，
+靠 javap stdlib 确认而非猜测。
+
