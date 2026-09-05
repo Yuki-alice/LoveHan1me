@@ -1,6 +1,7 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.dialog
 
 import androidx.compose.foundation.BorderStroke
+import kotlin.math.roundToInt
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -36,7 +37,6 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.reset
@@ -44,7 +44,6 @@ import io.github.daisukikaffuchino.han1meviewer.confirm
 import io.github.daisukikaffuchino.han1meviewer.cancel
 import io.github.daisukikaffuchino.han1meviewer.ic_add
 import io.github.daisukikaffuchino.han1meviewer.ic_remove
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.model.GridRangeOption
 
 @Composable
@@ -150,7 +149,11 @@ private fun GridConfigInputRow(option: GridRangeOption, isDecimal: Boolean) {
         val finalValue = newValue.coerceAtLeast(0f)
 
         val textValue = if (isDecimal) {
-            String.format(java.util.Locale.US, "%.1f", finalValue)
+            // P6d-4：原 String.format(Locale.US, "%.1f") 的 locale 无关等价实现——
+            // 十倍取整（HALF_UP，roundToInt 语义一致）后按"整数.十分位"拼串，
+            // finalValue 已 coerceAtLeast(0f)，无负数分支
+            val scaled = (finalValue.toDouble() * 10).roundToInt()
+            "${scaled / 10}.${scaled % 10}"
         } else {
             finalValue.toInt().toString()
         }
@@ -287,41 +290,5 @@ private fun GridConfigInputRow(option: GridRangeOption, isDecimal: Boolean) {
                 }
             }
         }
-    }
-}
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-private fun BaseGridConfigDialogPreview() {
-    ComponentPreview {
-        BaseGridConfigDialog(
-            title = "标题",
-            hintText = "Hint",
-            widthHintText = "100px",
-            bucketHintText = "200",
-            options = listOf(
-                GridRangeOption(
-                    label = "300px",
-                    value = "2",
-                    onValueChange = { },
-                    isError = false,
-                    isHighlighted = false,
-                    highlightLabels = listOf("hints")
-                ),
-                GridRangeOption(
-                    label = "100px",
-                    value = "2",
-                    onValueChange = { },
-                    isError = true,
-                    isHighlighted = true,
-                    highlightLabels = listOf("hints")
-                )
-            ),
-            isDecimal = true,
-            canConfirm = true,
-            onDismiss = {},
-            onReset = {},
-            onConfirm = {}
-        )
     }
 }

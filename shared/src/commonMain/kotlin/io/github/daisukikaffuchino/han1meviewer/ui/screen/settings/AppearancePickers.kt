@@ -2,7 +2,6 @@
 
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.settings
 
-import android.os.Build
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
@@ -45,12 +44,10 @@ import androidx.compose.ui.graphics.CompositingStrategy
 import androidx.compose.ui.graphics.drawscope.ContentDrawScope
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.colorResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.Res
@@ -73,7 +70,6 @@ import io.github.daisukikaffuchino.han1meviewer.ic_dark_mode
 import io.github.daisukikaffuchino.han1meviewer.bg_settings_pad_new
 import io.github.daisukikaffuchino.han1meviewer.bg_settings_pad_classic
 import io.github.daisukikaffuchino.han1meviewer.ui.component.immediateClickable
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.AppPaletteStyle
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.ThemeAccentColor
@@ -81,6 +77,7 @@ import io.github.daisukikaffuchino.han1meviewer.ui.theme.colors
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.label
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.animatedShape
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.expressiveColorScheme
+import io.github.daisukikaffuchino.han1meviewer.ui.theme.rememberSystemAccentColorOrNull
 
 @Composable
 fun ThemeAccentColorPicker(
@@ -195,11 +192,10 @@ fun AppPalettePicker(
         else -> isSystemInDarkTheme()
     }
     val accentColor = ThemeAccentColor.fromId(accentColorId)
-    val keyColor = if (dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-        colorResource(android.R.color.system_accent1_500)
-    } else {
-        accentColor.colors.first()
-    }
+    // P6d-4：原 android.R.color.system_accent1_500 直取改为既有 expect（androidMain 实现逐字节等价，
+    // SDK_INT>=S 判断已内聚）；桌/iOS 返回 null 回退主题首色，与原 Android <S 行为一致
+    val keyColor = (if (dynamicColor) rememberSystemAccentColorOrNull() else null)
+        ?: accentColor.colors.first()
     PickerContainer(
         title = stringResource(Res.string.palette_style),
         description = stringResource(Res.string.palette_style_summary),
@@ -491,16 +487,4 @@ private fun ContentDrawScope.drawFadedEdge(
         ),
         blendMode = BlendMode.DstIn,
     )
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun AppearancePickersPreview() {
-    ComponentPreview {
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            ThemeAccentColorPicker(0, {})
-            DarkModePicker("follow_system", {})
-            AppPalettePicker(1, 0, false, "follow_system", {})
-        }
-    }
 }

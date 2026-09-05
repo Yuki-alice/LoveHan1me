@@ -8,9 +8,8 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.BuildConfig
+import io.github.daisukikaffuchino.utils.isDebugBuild
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.settings_video_playback_summary
 import io.github.daisukikaffuchino.han1meviewer.settings_video_playback
@@ -38,7 +37,6 @@ import io.github.daisukikaffuchino.han1meviewer.ic_palette
 import io.github.daisukikaffuchino.han1meviewer.ic_video_settings
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingNavigationItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyColumn
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
 
 @Composable
@@ -113,7 +111,7 @@ fun SettingsMainScreen(
                 onClick = onOpenDataPrivacy,
             )
         }
-        if (BuildConfig.DEBUG) {
+        if (isDebugBuild()) {
             item {
                 SettingNavigationItem(
                     title = stringResource(Res.string.developer_options),
@@ -133,13 +131,5 @@ fun SettingsMainScreen(
                 onClick = onOpenAbout,
             )
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun SettingsMainScreenPreview() {
-    ComponentPreview {
-        SettingsMainScreen({}, {}, {}, {}, {}, {}, {}, {})
     }
 }

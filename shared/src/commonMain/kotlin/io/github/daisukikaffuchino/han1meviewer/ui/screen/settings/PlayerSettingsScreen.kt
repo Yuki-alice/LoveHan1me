@@ -10,9 +10,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.enable_google_cast_summary
 import io.github.daisukikaffuchino.han1meviewer.google_cast_unavailable_summary
@@ -44,7 +42,6 @@ import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingSwitchItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.segmentedGroup
 import io.github.daisukikaffuchino.han1meviewer.ui.component.segmentedSection
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyColumn
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 
 data class PlayerSettingsUiState(
     val kernel: String,
@@ -195,45 +192,5 @@ fun PlayerSettingsScreen(
                 SettingsPlainBox(stringResource(Res.string.google_cast_warning))
             }
         }
-    }
-}
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 760)
-@Composable
-private fun PlayerSettingsScreenPreview() {
-    ComponentPreview {
-        PlayerSettingsScreen(
-            state = PlayerSettingsUiState(
-                kernel = "ExoPlayer",
-                kernelDisplay = "ExoPlayer",
-                mpvSettingsEnabled = false,
-                mpvSettingsSummary = stringResource(Res.string.mpv_settings_disabled_summary),
-                enableGoogleCast = false,
-                googleCastAvailable = true,
-                showBottomProgress = true,
-                playerSpeed = "1.0",
-                playerSpeedLabel = "1.0x",
-                longPressSpeedTimes = "2.5",
-                longPressSpeedTimesLabel = "2.5倍",
-                slideSensitivity = 5,
-                slideSensitivitySummary = stringResource(Res.string.current_slide_sensitivity,
-                    stringResource(Res.string.moderate)
-                ),
-            ),
-            kernelOptions = listOf(
-                "MediaPlayer" to "MediaPlayer",
-                "ExoPlayer" to "ExoPlayer",
-                "MpvPlayer" to "MpvPlayer"
-            ),
-            speedOptions = listOf("1.0x" to "1.0", "1.25x" to "1.25", "1.5x" to "1.5"),
-            longPressSpeedOptions = listOf("2.0倍" to "2", "2.5倍" to "2.5", "3.0倍" to "3"),
-            onKernelChange = {},
-            onEnableGoogleCastChange = {},
-            onShowBottomProgressChange = {},
-            onPlayerSpeedChange = {},
-            onLongPressSpeedChange = {},
-            onSlideSensitivityChange = {},
-            onOpenMpvSettings = {},
-        )
     }
 }

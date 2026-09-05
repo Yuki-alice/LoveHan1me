@@ -29,7 +29,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.view_node_latency
@@ -82,14 +81,13 @@ import io.github.daisukikaffuchino.han1meviewer.ic_hosts
 import io.github.daisukikaffuchino.han1meviewer.ic_router
 import io.github.daisukikaffuchino.han1meviewer.ic_vpn
 import io.github.daisukikaffuchino.han1meviewer.logic.network.DohConfig
-import io.github.daisukikaffuchino.han1meviewer.logic.network.HProxySelector
+import io.github.daisukikaffuchino.han1meviewer.logic.network.HProxyTypes
 import io.github.daisukikaffuchino.han1meviewer.ui.component.ChoiceDialog
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingNavigationItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingSwitchItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsSectionTitle
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsSegmentedGroup
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyColumn
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 
 data class NetworkSettingsUiState(
     val domainName: String,
@@ -117,10 +115,10 @@ data class DohTestResultUi(
 )
 
 enum class ProxyTypeOption(val value: Int) {
-    Direct(HProxySelector.TYPE_DIRECT),
-    System(HProxySelector.TYPE_SYSTEM),
-    Http(HProxySelector.TYPE_HTTP),
-    Socks(HProxySelector.TYPE_SOCKS),
+    Direct(HProxyTypes.TYPE_DIRECT),
+    System(HProxyTypes.TYPE_SYSTEM),
+    Http(HProxyTypes.TYPE_HTTP),
+    Socks(HProxyTypes.TYPE_SOCKS),
 }
 
 @Composable
@@ -804,96 +802,5 @@ private fun CustomMirrorPathModeOption(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
         }
-    }
-}
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun NetworkSettingsScreenPreview() {
-    ComponentPreview {
-        NetworkSettingsScreen(
-            state = NetworkSettingsUiState(
-                domainName = "https://hanime1.me/",
-                domainDisplay = "hanime1.me (默认)",
-                proxySummary = "系统代理",
-                useBuiltInHosts = false,
-                useCustomMirrorSite = false,
-                customMirrorSite = "",
-                appendCustomMirrorPath = true,
-                useDoH = false,
-                dohSummary = "关闭",
-                delaySummary = "启用内建Hosts后可侦测延迟状况\n不启用为实际解析位址",
-            ),
-            domainOptions = listOf(
-                "hanime1.me (默认)" to "https://hanime1.me/",
-                "hanime1.com (备用)" to "https://hanime1.com/",
-            ),
-            currentHost = "https://hanime1.me/",
-            delayResults = listOf(
-                DelayResultUi("1.1.1.1", 82),
-                DelayResultUi("8.8.8.8", 164),
-                DelayResultUi("9.9.9.9", -1),
-            ),
-            dohTestResults = listOf(
-                DohTestResultUi("hanime1.me", listOf("1.1.1.1"), 82, ""),
-            ),
-            isDelayTesting = false,
-            isDohTesting = false,
-            useCustomMirrorSite = false,
-            customMirrorSite = "",
-            appendCustomMirrorPath = true,
-            customMirrorTestResult = null,
-            isCustomMirrorTesting = false,
-            proxyType = HProxySelector.TYPE_SYSTEM,
-            proxyIp = "",
-            proxyPort = -1,
-            dohEnabled = false,
-            dohPreset = "cloudflare",
-            dohCustomUrl = "",
-            dohBootstrapIps = "1.1.1.1, 8.8.8.8",
-            dohTimeoutSeconds = 10,
-            onDomainChange = {},
-            onSaveCustomMirrorSite = { _, _, _ -> },
-            onTestCustomMirrorSite = { _, _ -> },
-            onUseBuiltInHostsChange = {},
-            onSaveCustomHosts = {},
-            customHostsData = "",
-            onSaveDohSettings = { _, _, _, _, _ -> },
-            onOpenDelayTest = {},
-            onOpenDohTest = {},
-            onDismissDelayTest = {},
-            onDismissDohTest = {},
-            onApplyProxy = { _, _, _ -> },
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun DelayTestDialogPreview() {
-    ComponentPreview {
-        DelayTestDialog(
-            currentHost = "https://hanime1.me/",
-            results = listOf(
-                DelayResultUi("1.1.1.1", 82),
-                DelayResultUi("8.8.8.8", 164),
-                DelayResultUi("9.9.9.9", -1),
-            ),
-            onDismiss = { }
-        )
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun ProxyDialogPreview() {
-    ComponentPreview {
-        ProxyDialog(
-            initialType = 1,
-            initialIp = "1.1.1.1",
-            initialPort = 8080,
-            onDismiss = { },
-            onConfirm = { _, _, _ -> },
-        )
     }
 }

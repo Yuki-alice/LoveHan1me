@@ -30,13 +30,7 @@ const val VIDEO_COMMENT_PREFIX = "video"
 
 const val PREVIEW_COMMENT_PREFIX = "preview"
 
-// github url
-
-const val HA1_GITHUB_URL = "https://github.com/daisukiKaffuChino/Han1meViewer"
-
-const val HA1_GITHUB_ISSUE_URL = "$HA1_GITHUB_URL/issues"
-
-const val HA1_GITHUB_FORUM_URL = "$HA1_GITHUB_URL/discussions"
+// github url 三常量已下沉 shared commonMain（BasicConstants.kt，P6d-4），包名不变调用点零改动
 // for Shared Preference
 
 const val LOGIN_COOKIE = "cookie"

@@ -12,7 +12,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.mpv_tls_verify_summary
@@ -55,7 +54,6 @@ import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingSwitchItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.segmentedGroup
 import io.github.daisukikaffuchino.han1meviewer.ui.component.segmentedSection
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyColumn
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 
 data class MpvPlayerSettingsUiState(
     val profile: String,
@@ -248,52 +246,4 @@ private fun CustomParamsDialog(
             }
         },
     )
-}
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun MpvPlayerSettingsScreenPreview() {
-    ComponentPreview {
-        MpvPlayerSettingsScreen(
-            state = MpvPlayerSettingsUiState(
-                profile = "fast",
-                profileDisplay = "效能優先 (fast)",
-                enableGpuNextRenderer = false,
-                interpolation = false,
-                deband = true,
-                framedrop = true,
-                hwdec = "Auto",
-                hwdecDisplay = "利用硬體加速提升播放效能 (Auto)",
-                cacheSecs = 60,
-                cacheSecsSummary = "調整快取大小以適應網路波動 (60 S)",
-                tlsVerify = true,
-                networkTimeout = 10,
-                networkTimeoutSummary = "控制請求等待時間 (10 S)",
-                customParams = "",
-            ),
-            profileOptions = listOf(
-                "效能優先 (fast)" to "fast",
-                "畫質優先 (gpu-hq)" to "gpu-hq",
-            ),
-            hwdecOptions = listOf(
-                "自動選擇 (auto)" to "Auto",
-                "硬體解碼 (HW: mediacodec-copy)" to "HW",
-            ),
-            activeDialog = null,
-            onOpenProfileDialog = {},
-            onOpenHwdecDialog = {},
-            onOpenCustomParamsDialog = {},
-            onDismissDialog = {},
-            onProfileChange = {},
-            onEnableGpuNextRendererChange = {},
-            onInterpolationChange = {},
-            onDebandChange = {},
-            onFramedropChange = {},
-            onHwdecChange = {},
-            onCacheSecsChange = {},
-            onTlsVerifyChange = {},
-            onNetworkTimeoutChange = {},
-            onCustomParamsChange = {},
-        )
-    }
 }

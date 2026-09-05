@@ -12,7 +12,6 @@ import androidx.compose.runtime.Composable
 import org.jetbrains.compose.resources.StringResource
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.when_countdown_remind
@@ -43,7 +42,6 @@ import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsAnimatedVis
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsSectionTitle
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsSegmentedGroup
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyColumn
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
 
 data class HKeyframeSettingsUiState(
@@ -203,30 +201,5 @@ private fun HKeyframeAnimatedSection(
             SettingsSegmentedGroup(content = content)
             Spacer(Modifier.size(HanimeDefaults.Spacing.small))
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun HKeyframeSettingsScreenPreview() {
-    ComponentPreview {
-        HKeyframeSettingsScreen(
-            state = HKeyframeSettingsUiState(
-                hKeyframesEnable = true,
-                hKeyframesSummary = "开启后，播放器顶部会显示🥵",
-                sharedHKeyframesEnable = true,
-                sharedHKeyframesUseFirst = false,
-                showCommentWhenCountdown = false,
-                whenCountdownRemind = 10,
-                whenCountdownRemindSummary = "将会在 10 秒前倒数计时提醒 (預設)",
-            ),
-            onHKeyframesEnableChange = {},
-            onOpenHKeyframeManage = {},
-            onSharedHKeyframesEnableChange = {},
-            onSharedHKeyframesUseFirstChange = {},
-            onOpenSharedHKeyframeManage = {},
-            onShowCommentWhenCountdownChange = {},
-            onWhenCountdownRemindChange = {},
-        )
     }
 }

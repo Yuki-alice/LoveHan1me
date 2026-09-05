@@ -4,7 +4,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.runtime.Composable
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.pref_export_downloads_title
@@ -22,7 +21,6 @@ import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingSliderItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsSectionTitle
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsSegmentedGroup
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyColumn
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 
 data class DownloadSettingsUiState(
     val downloadPathSummary: String,
@@ -90,28 +88,5 @@ fun DownloadSettingsScreen(
         ) {
             item { content() }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun DownloadSettingsScreenPreview() {
-    ComponentPreview {
-        DownloadSettingsScreen(
-            state = DownloadSettingsUiState(
-                downloadPathSummary = "/storage/emulated/0/Android/data/.../files",
-                downloadCountLimit = 2,
-                downloadCountLimitSummary = "2",
-                downloadSpeedLimitIndex = 0,
-                downloadSpeedLimitSummary = "无限制",
-            ),
-            maxDownloadCountLimit = 10,
-            maxDownloadSpeedLimitIndex = 5,
-            onOpenDownloadPath = {},
-            onRestoreDefaultPath = {},
-            onImportDownloadedFiles = {},
-            onDownloadCountLimitChange = {},
-            onDownloadSpeedLimitChange = {},
-        )
     }
 }

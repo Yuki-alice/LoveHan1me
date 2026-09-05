@@ -29,10 +29,11 @@ class HProxySelector : ProxySelector() {
     }
 
     companion object {
-        const val TYPE_DIRECT = 0
-        const val TYPE_SYSTEM = 1
-        const val TYPE_HTTP = 2
-        const val TYPE_SOCKS = 3
+        // P6d-4：常量本体上移 commonMain（HProxyTypes），此处转发保持调用点零改动
+        const val TYPE_DIRECT = HProxyTypes.TYPE_DIRECT
+        const val TYPE_SYSTEM = HProxyTypes.TYPE_SYSTEM
+        const val TYPE_HTTP = HProxyTypes.TYPE_HTTP
+        const val TYPE_SOCKS = HProxyTypes.TYPE_SOCKS
 
         private val ipv4Regex =
             Regex("^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$")

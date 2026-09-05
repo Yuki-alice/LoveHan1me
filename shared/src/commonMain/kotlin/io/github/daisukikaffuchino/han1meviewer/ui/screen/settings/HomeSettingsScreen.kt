@@ -18,7 +18,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.HorizontalCardCountConfig
 import io.github.daisukikaffuchino.han1meviewer.HA1_GITHUB_URL
@@ -155,7 +154,6 @@ import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingSwitchItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsAnimatedVisibility
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsSegmentedGroup
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyColumn
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.dialog.HomeCategoryLayoutDialog
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.dialog.HorizontalCardCountDialog
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.dialog.SearchGridColumnsDialog
@@ -743,62 +741,6 @@ private fun SettingsSection(
         SettingsSegmentedGroup(content = content)
     }
 }
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 1000)
-@Composable
-private fun HomeSettingsScreenPreview() {
-    ComponentPreview {
-        HomeSettingsScreen(
-            page = HomeSettingsPage.Appearance,
-            state = previewHomeSettingsState(),
-            isLoggedIn = true,
-            onVideoLanguageChange = {},
-            onVideoQualityChange = {},
-            onDarkModeChange = {},
-            onUseDynamicColorChange = {},
-            onHapticFeedbackChange = {},
-            onFunLoadingHintsChange = {},
-            onThemeAccentColorChange = {},
-            onAppPaletteStyleChange = {},
-            onAllowPipModeChange = {},
-            onAllowResumePlaybackChange = {},
-            onShowPlayedIndicatorChange = {},
-            onSearchArtistIgnoreVideoTypeChange = {},
-            onDisableMobileDataWarningChange = {},
-            onDisablePredictiveBackChange = {},
-            onTabletModeChange = {},
-            onVideoLandscapeLayoutStyleChange = {},
-            onCheckInEnabledChange = {},
-            onDisableCommentsChange = {},
-            onCollapseDownloadedGroupChange = {},
-            onSearchGridColumnsConfigChange = {},
-            onHorizontalCardCountConfigChange = {},
-            onUseLockScreenChange = {},
-            onSecureModeChange = {},
-            onAlwaysShowUpdateCardChange = {},
-            onDisplayDensityChange = {},
-            onTriggerCrash = {},
-            onHomeCategoryPreferencesChange = { _, _ -> },
-            hKeyframeSettingsContent = {},
-            networkSettingsContent = {},
-            downloadSettingsContent = {},
-            onOpenAppLanguageSettings = {},
-            onOpenApplyDeepLinks = {},
-            onOpenFakeLauncherIcon = {},
-            onOpenOpenSourceLicense = {},
-            onClearCache = {},
-            onExportBackup = {},
-            onImportBackup = {},
-            onExportLocalLists = {},
-            onImportLocalLists = {},
-            onExportOnlineLists = {},
-            onImportOnlineLists = {},
-            onSubmitBug = {},
-            onOpenForum = {},
-        )
-    }
-}
-
 private fun previewHomeSettingsState() = HomeSettingsUiState(
     videoLanguage = "zhs",
     videoLanguageLabel = "Simplified Chinese",

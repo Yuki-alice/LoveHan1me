@@ -9,7 +9,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import io.github.daisukikaffuchino.han1meviewer.HorizontalCardCountConfig
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.horizontal_card_count_title
@@ -21,9 +20,7 @@ import io.github.daisukikaffuchino.han1meviewer.horizontal_card_count_dialog_hin
 import io.github.daisukikaffuchino.han1meviewer.horizontal_card_count_current_width_hint
 import io.github.daisukikaffuchino.han1meviewer.horizontal_card_count_current_bucket_hint
 import io.github.daisukikaffuchino.han1meviewer.current_bucket
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.model.GridRangeOption
-
 
 @Composable
 fun HorizontalCardCountDialog(
@@ -132,20 +129,5 @@ private fun horizontalCardCountBucketLabel(widthDp: Int): String {
         widthDp < 600 -> stringResource(Res.string.horizontal_card_count_range_compact)
         widthDp < 840 -> stringResource(Res.string.horizontal_card_count_range_medium)
         else -> stringResource(Res.string.horizontal_card_count_range_expanded)
-    }
-}
-
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-private fun HorizontalCardCountDialogPreview() {
-    ComponentPreview {
-        Surface {
-            HorizontalCardCountDialog(
-                initialConfig = HorizontalCardCountConfig(),
-                onDismiss = {},
-                onConfirm = {}
-            )
-        }
     }
 }

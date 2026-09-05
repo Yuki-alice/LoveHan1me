@@ -8,7 +8,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.search_grid_columns_title
 import io.github.daisukikaffuchino.han1meviewer.search_grid_columns_range_medium
@@ -21,7 +20,6 @@ import io.github.daisukikaffuchino.han1meviewer.search_grid_columns_current_port
 import io.github.daisukikaffuchino.han1meviewer.search_grid_columns_current_landscape
 import io.github.daisukikaffuchino.han1meviewer.search_grid_columns_current_bucket_hint
 import io.github.daisukikaffuchino.han1meviewer.SearchGridColumnsConfig
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.model.GridRangeOption
 import kotlin.math.max
 import kotlin.math.min
@@ -142,18 +140,5 @@ private fun searchGridColumnsBucketLabel(widthDp: Int): String {
         widthDp <= 900 -> stringResource(Res.string.search_grid_columns_range_medium)
         widthDp <= 1200 -> stringResource(Res.string.search_grid_columns_range_expanded)
         else -> stringResource(Res.string.search_grid_columns_range_large)
-    }
-}
-
-
-@Preview(showBackground = true, showSystemUi = true)
-@Composable
-private fun SearchGridColumnsDialogPreview() {
-    ComponentPreview {
-        SearchGridColumnsDialog(
-            initialConfig = SearchGridColumnsConfig(),
-            onDismiss = {},
-            onConfirm = {}
-        )
     }
 }
