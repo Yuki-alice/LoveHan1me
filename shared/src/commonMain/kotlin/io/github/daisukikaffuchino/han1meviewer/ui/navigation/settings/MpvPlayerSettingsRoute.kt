@@ -1,13 +1,11 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings
 
-import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.platform.LocalContext
 import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
@@ -30,7 +28,6 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun MpvPlayerSettingsRouteScreen() {
-    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
     var activeDialog by remember { mutableStateOf<MpvChoiceDialog?>(null) }
@@ -41,7 +38,7 @@ fun MpvPlayerSettingsRouteScreen() {
     val cacheSecsTemplate = stringResource(Res.string.mpv_cache_secs_summary)
     val networkTimeoutTemplate = stringResource(Res.string.mpv_network_timeout_summary)
     val uiState = remember(
-        settings, context, profileFastTop, profileGpuHqTop,
+        settings, profileFastTop, profileGpuHqTop,
         hwdecSummaryTemplate, cacheSecsTemplate, networkTimeoutTemplate,
     ) {
         buildMpvPlayerSettingsUiState(

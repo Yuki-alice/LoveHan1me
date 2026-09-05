@@ -1,17 +1,12 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings
 
-import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.ui.platform.LocalContext
 import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.google.android.gms.common.ConnectionResult
-import com.google.android.gms.common.GoogleApiAvailability
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.current_slide_sensitivity
 import io.github.daisukikaffuchino.han1meviewer.default_
@@ -28,6 +23,7 @@ import io.github.daisukikaffuchino.han1meviewer.mpv_settings_disabled_summary
 import io.github.daisukikaffuchino.han1meviewer.slightly_high
 import io.github.daisukikaffuchino.han1meviewer.slightly_low
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlayerDefaults
+import io.github.daisukikaffuchino.han1meviewer.ui.player.isCastAvailable
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlayerKernel
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.PlayerSettingsScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.PlayerSettingsUiState
@@ -37,7 +33,6 @@ import kotlinx.coroutines.launch
 fun PlayerSettingsRouteScreen(
     onNavigateToMpvSettings: () -> Unit,
 ) {
-    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
     // P6d-3-C2：builder 在 remember{} 内无法调 stringResource，字符串在外层预解析后传入
@@ -65,8 +60,8 @@ fun PlayerSettingsRouteScreen(
         ),
         stringResource(Res.string.current_slide_sensitivity),
     )
-    val uiState = remember(settings, context, longPressDisplayTop, mpvSummaryTop, sensitivitySummaryTop) {
-        buildPlayerSettingsUiState(context, longPressDisplayTop, mpvSummaryTop, sensitivitySummaryTop)
+    val uiState = remember(settings, longPressDisplayTop, mpvSummaryTop, sensitivitySummaryTop) {
+        buildPlayerSettingsUiState(longPressDisplayTop, mpvSummaryTop, sensitivitySummaryTop)
     }
 
     PlayerSettingsScreen(
@@ -112,7 +107,6 @@ fun PlayerSettingsRouteScreen(
 }
 
 private fun buildPlayerSettingsUiState(
-    context: Context,
     longPressDisplay: String,
     mpvSettingsSummary: String,
     slideSensitivitySummary: String,
@@ -126,8 +120,7 @@ private fun buildPlayerSettingsUiState(
         PlayerDefaults.speeds.indexOfFirst { it == currentSpeed }.takeIf { it >= 0 }
             ?: PlayerDefaults.DEFAULT_SPEED_INDEX
     ) { speedLabels[PlayerDefaults.DEFAULT_SPEED_INDEX] }
-    val googleCastAvailable = GoogleApiAvailability.getInstance()
-        .isGooglePlayServicesAvailable(context) == ConnectionResult.SUCCESS
+    val googleCastAvailable = isCastAvailable()
     return PlayerSettingsUiState(
         kernel = kernel,
         kernelDisplay = kernel,

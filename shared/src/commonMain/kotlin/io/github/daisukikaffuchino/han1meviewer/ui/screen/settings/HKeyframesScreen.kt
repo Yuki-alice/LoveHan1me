@@ -24,11 +24,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.video_code
@@ -51,10 +49,9 @@ import io.github.daisukikaffuchino.han1meviewer.logic.entity.HKeyframeEntity
 import io.github.daisukikaffuchino.han1meviewer.ui.component.ConfirmDialog
 import io.github.daisukikaffuchino.han1meviewer.ui.component.content.EmptyContent
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyColumn
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
+import io.github.daisukikaffuchino.han1meviewer.ui.component.rememberHapticFeedback
 import io.github.daisukikaffuchino.han1meviewer.ui.player.formatPlaybackTime
-import io.github.daisukikaffuchino.utils.VibrationUtil
 
 private enum class HKeyframeDialog {
     EditEntity,
@@ -213,7 +210,7 @@ private fun HKeyframeEntityCard(
     onEditKeyframe: (HKeyframeEntity.Keyframe) -> Unit,
     onDeleteKeyframe: (HKeyframeEntity.Keyframe) -> Unit,
 ) {
-    val view = LocalView.current
+    val haptic = rememberHapticFeedback()
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = HanimeDefaults.Corners.large,
@@ -247,7 +244,7 @@ private fun HKeyframeEntityCard(
             Text(
                 text = stringResource(Res.string.h_keyframe_title_prefix) + entity.videoCode,
                 modifier = Modifier.clickable {
-                    VibrationUtil.performHapticFeedback(view)
+                    haptic()
                     onOpenVideo()
                 },
                 color = MaterialTheme.colorScheme.primary,
@@ -399,9 +396,8 @@ private fun ShareEntityDialog(
 ) {
     val content = remember(entity) {
         val toJson = kotlinx.serialization.json.Json.encodeToString(entity)
-        val toBase64 = toJson.encodeToByteArray().let {
-            android.util.Base64.encodeToString(it, android.util.Base64.NO_WRAP)
-        }
+        // P6d-4：原 android.util.Base64 NO_WRAP；kotlin.io.encoding Base64.Default 同为无换行标准编码
+        val toBase64 = kotlin.io.encoding.Base64.Default.encode(toJson.encodeToByteArray())
         ">>>${toBase64}<<<"
     }
     AlertDialog(
@@ -424,30 +420,4 @@ private fun ShareEntityDialog(
             }
         },
     )
-}
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun HKeyframesScreenPreview() {
-    ComponentPreview {
-        HKeyframesScreen(
-            items = listOf(
-                HKeyframeEntity(
-                    videoCode = "123456",
-                    title = "図書室ノ彼女 THE ANIMATION",
-                    keyframes = mutableListOf(
-                        HKeyframeEntity.Keyframe(12_000, "进入正题"),
-                        HKeyframeEntity.Keyframe(36_000, "高能部分"),
-                    ),
-                    createdTime = System.currentTimeMillis(),
-                )
-            ),
-            onOpenVideo = {},
-            onDeleteEntity = {},
-            onUpdateEntityTitle = { _, _ -> },
-            onDeleteKeyframe = { _, _ -> },
-            onUpdateKeyframe = { _, _, _ -> },
-            onCopyShareContent = {},
-        )
-    }
 }

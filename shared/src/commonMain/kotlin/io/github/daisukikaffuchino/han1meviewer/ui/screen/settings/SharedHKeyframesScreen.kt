@@ -12,10 +12,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.here_is_empty
@@ -25,10 +23,9 @@ import io.github.daisukikaffuchino.han1meviewer.logic.entity.HKeyframeHeader
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.HKeyframeType
 import io.github.daisukikaffuchino.han1meviewer.ui.component.content.EmptyContent
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyColumn
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
+import io.github.daisukikaffuchino.han1meviewer.ui.component.rememberHapticFeedback
 import io.github.daisukikaffuchino.han1meviewer.ui.player.formatPlaybackTime
-import io.github.daisukikaffuchino.utils.VibrationUtil
 
 @Composable
 fun SharedHKeyframesScreen(
@@ -70,7 +67,7 @@ private fun SharedEntityCard(
     entity: HKeyframeEntity,
     onOpenVideo: () -> Unit,
 ) {
-    val view = LocalView.current
+    val haptic = rememberHapticFeedback()
     Card(
         shape = HanimeDefaults.Corners.large,
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceContainerLow),
@@ -78,7 +75,7 @@ private fun SharedEntityCard(
         Column(
             modifier = Modifier
                 .clickable {
-                    VibrationUtil.performHapticFeedback(view)
+                    haptic()
                     onOpenVideo()
                 }
                 .padding(12.dp),
@@ -114,27 +111,5 @@ private fun SharedEntityCard(
                 }
             }
         }
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-private fun SharedHKeyframesScreenPreview() {
-    ComponentPreview {
-        SharedHKeyframesScreen(
-            items = listOf(
-                HKeyframeHeader("示例系列", emptyList()),
-                HKeyframeEntity(
-                    videoCode = "123456",
-                    title = "图书室の彼女",
-                    keyframes = mutableListOf(
-                        HKeyframeEntity.Keyframe(12_000, "进入正题"),
-                        HKeyframeEntity.Keyframe(36_000, "高能部分"),
-                    ),
-                    author = "tester",
-                ),
-            ),
-            onOpenVideo = {},
-        )
     }
 }
