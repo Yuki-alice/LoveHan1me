@@ -2,7 +2,6 @@
 
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.settings
 
-import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.expandVertically
@@ -60,21 +59,18 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.AnnotatedString
-import androidx.compose.ui.text.fromHtml
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.mikepenz.aboutlibraries.entity.Developer
 import com.mikepenz.aboutlibraries.entity.Library
 import com.mikepenz.aboutlibraries.entity.License
 import com.mikepenz.aboutlibraries.entity.Scm
-import com.mikepenz.aboutlibraries.ui.compose.android.produceLibraries
+import com.mikepenz.aboutlibraries.ui.compose.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.util.author
 import com.mikepenz.aboutlibraries.ui.compose.util.htmlReadyLicenseContent
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.no_license_items
 import io.github.daisukikaffuchino.han1meviewer.no_licenses_found
@@ -88,7 +84,8 @@ import io.github.daisukikaffuchino.han1meviewer.ic_close
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.animatedShape
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.fadeScale
-import io.github.daisukikaffuchino.utils.VibrationUtil
+import io.github.daisukikaffuchino.han1meviewer.ui.component.rememberHapticFeedback
+import io.github.daisukikaffuchino.utils.parseHtmlToAnnotatedString
 
 private data class DisplayLicense(
     val name: String,
@@ -142,7 +139,10 @@ fun OpenSourceLicensesScreen(
     searchMode: Boolean,
     modifier: Modifier = Modifier,
 ) {
-    val libraries by produceLibraries(R.raw.aboutlibraries)
+    // P6d-4E：原 R.raw.aboutlibraries（库插件生成的 aar 内嵌资源）迁 composeResources/files，
+// 经 Res.readBytes 加载（aboutlibraries README 标准姿势）；清单为 :app 全量依赖，桌面端含
+// Android-only 库的近似问题随 P7 用 exportVariant 精确导出
+val libraries by produceLibraries { Res.readBytes("files/aboutlibraries.json").decodeToString() }
     val uriHandler = LocalUriHandler.current
     val searchFieldState = rememberTextFieldState()
     val transitionSpec = fadeScale()
@@ -332,7 +332,7 @@ private fun LicenseLibraryItem(
     item: LicenseItem,
     onClick: () -> Unit,
 ) {
-    val view = LocalView.current
+    val haptic = rememberHapticFeedback()
     val interactionSource = remember { MutableInteractionSource() }
     val shape = animatedShape(HanimeDefaults.cardShapes(), interactionSource)
     Surface(
@@ -343,7 +343,7 @@ private fun LicenseLibraryItem(
                 interactionSource = interactionSource,
                 indication = ripple(color = MaterialTheme.colorScheme.primary),
                 onClick = {
-                    VibrationUtil.performHapticFeedback(view, HapticFeedbackConstants.CLOCK_TICK)
+                    haptic()
                     onClick()
                 },
             ),
@@ -428,7 +428,7 @@ private fun LicenseContentDialog(
     dialog: SelectedLicenseDialog,
     onDismiss: () -> Unit,
 ) {
-    val view = LocalView.current
+    val haptic = rememberHapticFeedback()
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
@@ -437,14 +437,14 @@ private fun LicenseContentDialog(
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 SelectionContainer {
-                    Text(text = AnnotatedString.fromHtml(dialog.content))
+                    Text(text = parseHtmlToAnnotatedString(dialog.content))
                 }
             }
         },
         confirmButton = {
             FilledTonalButton(
                 onClick = {
-                    VibrationUtil.performHapticFeedback(view, HapticFeedbackConstants.CLOCK_TICK)
+                    haptic()
                     onDismiss()
                 },
                 shapes = ButtonDefaults.shapes(),

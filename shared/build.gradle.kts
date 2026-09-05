@@ -96,6 +96,10 @@ kotlin {
             // 图片：Coil 3 本就多平台，网络层改用 ktor3 实现
             implementation(libs.coil.compose.core)
             implementation(libs.coil.network.ktor3)
+
+            // P6d-4E：开源许可页（15.2.0 起 core/compose 为 KMP 产物，要求 Compose 1.12/Kotlin 2.4 对齐）
+            implementation(libs.aboutlibraries.core)
+            implementation(libs.aboutlibraries.compose.m3)
         }
 
         androidMain.dependencies {
