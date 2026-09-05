@@ -1,8 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings
 
-import android.content.Context
-import android.os.Handler
-import android.os.Looper
 import io.github.daisukikaffuchino.utils.LogUtil
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -16,9 +13,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalContext
 import org.jetbrains.compose.resources.stringResource
-import androidx.core.net.toUri
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.EMPTY_STRING
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
@@ -68,14 +63,14 @@ import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.DelayResultUi
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.DohTestResultUi
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.NetworkSettingsScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.NetworkSettingsUiState
-import io.github.daisukikaffuchino.utils.ActivityManager
-import io.github.daisukikaffuchino.utils.applicationContext
 import io.github.daisukikaffuchino.utils.SonnerToast
-import io.github.daisukikaffuchino.utils.toastText
 import okhttp3.Request
 import java.net.InetAddress
-import java.util.concurrent.Executors
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import io.github.daisukikaffuchino.han1meviewer.logic.currentEpochMillis
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.restartApp
 import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.runBlocking
 
@@ -86,7 +81,6 @@ private enum class DohConflictTarget {
 
 @Composable
 fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
-    val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
     var currentHost by remember { mutableStateOf(SettingsRepository.baseUrl) }
@@ -113,9 +107,6 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
     var pendingDohTimeoutSeconds by remember { mutableIntStateOf(SettingsRepository.dohTimeoutSeconds) }
     val delayResults = remember { mutableStateListOf<DelayResultUi>() }
     val dohTestResults = remember { mutableStateListOf<DohTestResultUi>() }
-    val delayHandler = remember { Handler(Looper.getMainLooper()) }
-    val dohHandler = remember { Handler(Looper.getMainLooper()) }
-    val executor = remember { Executors.newCachedThreadPool() }
     val networkTimeoutText = stringResource(Res.string.network_timeout_text)
     // P6d-3-C2：以下 builder/后台回调在非 @Composable 上下文（remember{}/executor），字符串在此预解析后传入
     val unknownText = stringResource(Res.string.unknow)
@@ -152,57 +143,53 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
     val customMirrorTestingText = stringResource(Res.string.custom_mirror_site_testing)
     fun stopDelayTest() {
         isDelayTesting = false
-        delayHandler.removeCallbacksAndMessages(null)
     }
 
     fun stopDohTest() {
         isDohTesting = false
-        dohHandler.removeCallbacksAndMessages(null)
     }
 
     fun measureDelay(ip: String): Int {
         return try {
-            val start = System.currentTimeMillis()
+            val start = currentEpochMillis()
             val address = InetAddress.getByName(ip)
             val reachable = address.isReachable(2000)
-            if (reachable) (System.currentTimeMillis() - start).toInt() else -1
+            if (reachable) (currentEpochMillis() - start).toInt() else -1
         } catch (_: Exception) {
             -1
         }
     }
 
-    fun testIp(ip: String) {
+    fun scheduleNextTest(ipList: List<String>) {
+        // P6d-4：原 Handler.postDelayed 轮询链改协程循环；IO 线程直写 Compose 快照状态（合法）
         if (!isDelayTesting) return
-        executor.execute {
-            val delay = measureDelay(ip)
-            delayHandler.post {
-                val index = delayResults.indexOfFirst { it.ip == ip }
-                if (index >= 0) {
-                    delayResults[index] = DelayResultUi(ip, delay)
+        coroutineScope.launch(Dispatchers.IO) {
+            while (isDelayTesting) {
+                for (ip in ipList) {
+                    if (!isDelayTesting) return@launch
+                    val delay = measureDelay(ip)
+                    val index = delayResults.indexOfFirst { it.ip == ip }
+                    if (index >= 0) {
+                        delayResults[index] = DelayResultUi(ip, delay)
+                    }
                 }
+                delay(2000L)
             }
         }
     }
 
-    fun scheduleNextTest(ipList: List<String>) {
-        if (!isDelayTesting) return
-        ipList.forEach(::testIp)
-        delayHandler.postDelayed({ scheduleNextTest(ipList) }, 2000)
-    }
-
     fun runDohTest() {
         if (isDohTesting) return
-        val host = SettingsRepository.baseUrl.toUri().host ?: unknownText
+        val host = SimpleUri(SettingsRepository.baseUrl).host ?: unknownText
         currentHost = SettingsRepository.baseUrl
         dohTestResults.clear()
         isDohTesting = true
-        executor.execute {
-            val start = System.currentTimeMillis()
+        coroutineScope.launch(Dispatchers.IO) {
+            val start = currentEpochMillis()
             val result = runCatching { HDns().lookupByDoHOnly(host) }
-            val delay = (System.currentTimeMillis() - start).toInt()
-            dohHandler.post {
-                dohTestResults.clear()
-                result.onSuccess { list ->
+            val delay = (currentEpochMillis() - start).toInt()
+            dohTestResults.clear()
+            result.onSuccess { list ->
                     dohTestResults.add(
                         DohTestResultUi(
                             host = host,
@@ -223,7 +210,6 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
                         )
                     )
                 }
-            }
         }
     }
 
@@ -231,7 +217,6 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
         onDispose {
             stopDelayTest()
             stopDohTest()
-            executor.shutdownNow()
         }
     }
 
@@ -296,7 +281,7 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
             if (isCustomMirrorTesting) return@NetworkSettingsScreen
             isCustomMirrorTesting = true
             customMirrorTestResult = customMirrorTestingText
-            executor.execute {
+            coroutineScope.launch(Dispatchers.IO) {
                 val result = testCustomMirrorSite(
                     normalizedUrl,
                     appendPath,
@@ -309,10 +294,8 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
                     watchFailedTemplate,
                     loadingText,
                 )
-                Handler(Looper.getMainLooper()).post {
-                    customMirrorTestResult = result
-                    isCustomMirrorTesting = false
-                }
+                customMirrorTestResult = result
+                isCustomMirrorTesting = false
             }
         },
         onUseBuiltInHostsChange = { value ->
@@ -356,19 +339,16 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
             }
         },
         onOpenDelayTest = {
-            val host =
-                SettingsRepository.baseUrl.toUri().host ?: unknownText
+            val host = SimpleUri(SettingsRepository.baseUrl).host ?: unknownText
             currentHost = SettingsRepository.baseUrl
             delayResults.clear()
             isDelayTesting = true
-            executor.execute {
+            coroutineScope.launch(Dispatchers.IO) {
                 val ipList = HDns().getCDNList(host)
-                Handler(Looper.getMainLooper()).post {
-                    LogUtil.i("delayTest", ipList.toString())
-                    delayResults.clear()
-                    delayResults.addAll(ipList.map { DelayResultUi(it, -1) })
-                    scheduleNextTest(ipList)
-                }
+                LogUtil.i("delayTest", ipList.toString())
+                delayResults.clear()
+                delayResults.addAll(ipList.map { DelayResultUi(it, -1) })
+                scheduleNextTest(ipList)
             }
         },
         onOpenDohTest = { runDohTest() },
@@ -419,7 +399,7 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
                     )
                 }
                 logout()
-                ActivityManager.restart(killProcess = true)
+                restartApp(killProcess = true)
             }
         },
         onDismiss = {
@@ -451,7 +431,7 @@ fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
         confirmText = stringResource(Res.string.confirm),
         dismissText = stringResource(Res.string.cancel),
         cancelable = false,
-        onConfirm = { ActivityManager.restart(killProcess = true) },
+        onConfirm = { restartApp(killProcess = true) },
         onDismiss = { showHostsRestartConfirm = false },
     )
 
@@ -562,10 +542,30 @@ private fun buildNetworkSettingsUiState(
 
 private fun normalizeCustomMirrorSite(url: String): String? {
     val trimmed = url.trim().trimEnd('/')
-    val uri = runCatching { trimmed.toUri() }.getOrNull() ?: return null
+    val uri = SimpleUri(trimmed)
     if (uri.scheme != "https" || uri.host.isNullOrBlank()) return null
-    if (!uri.query.isNullOrBlank() || !uri.fragment.isNullOrBlank()) return null
+    if (uri.query.isNotEmpty() || uri.fragment.isNotEmpty()) return null
     return url.trim()
+}
+
+/**
+ * P6d-4：本文件对 android.net.Uri 的用法子集（scheme/authority/host/query/fragment）的
+ * 纯字符串切片等价实现——宽容解析、字段缺失返回空串/null、不抛异常。
+ */
+private class SimpleUri(url: String) {
+    private val beforeFragment = url.substringBefore('#')
+    val fragment: String = url.substringAfter('#', "")
+    val query: String = beforeFragment.substringAfter('?', "")
+    private val beforeQuery = beforeFragment.substringBefore('?')
+    private val schemeCandidate = beforeQuery.substringBefore("://", missingDelimiterValue = "")
+    val scheme: String? = schemeCandidate.takeIf { it.isNotEmpty() && it.length < beforeQuery.length }?.lowercase()
+    private val afterScheme = if (scheme != null) beforeQuery.substringAfter("://") else beforeQuery
+    val authority: String = afterScheme.substringBefore('/')
+    val host: String? = authority
+        .substringAfterLast('@', authority)
+        .substringBefore(':')
+        .takeIf { it.isNotBlank() }
+        ?.lowercase()
 }
 
 private fun testCustomMirrorSite(
@@ -650,8 +650,8 @@ private fun testCustomMirrorWatchUrl(
 
 private fun buildCustomMirrorApiBaseUrl(homeUrl: String, appendPath: Boolean): String {
     val url = if (appendPath) homeUrl else {
-        val uri = homeUrl.toUri()
-        "${uri.scheme}://${uri.encodedAuthority}"
+        val uri = SimpleUri(homeUrl)
+        "${uri.scheme}://${uri.authority}"
     }
     return if (url.endsWith('/')) url else "$url/"
 }

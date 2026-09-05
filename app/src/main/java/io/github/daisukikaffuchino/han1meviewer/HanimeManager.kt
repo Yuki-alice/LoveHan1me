@@ -60,19 +60,3 @@ fun getHanimeVideoDownloadLink(videoCode: String) =
 
 // videoUrlRegex 与 String.toVideoCode() 已下沉 shared（HanimeUrlRegex.kt）
 
-// log in and log out
-
-suspend fun logout() {
-    SettingsRepository.update { it.copy(isAlreadyLogin = false, loginCookie = EMPTY_STRING, savedUserId = EMPTY_STRING) }
-    HCookieJar.cookieMap.clear()
-    CookieManager.getInstance().removeAllCookies(null)
-}
-
-suspend fun login(cookies: String) =
-    SettingsRepository.update { it.copy(isAlreadyLogin = true, loginCookie = cookies) }
-
-suspend fun login(cookies: List<String>) {
-    login(cookies.joinToString(";") {
-        it.substringBefore(';')
-    })
-}
