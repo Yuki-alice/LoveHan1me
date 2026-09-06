@@ -53,3 +53,9 @@ expect fun openPipPermissionSettings()
 
 /** 设备是否已设置锁屏凭据（应用锁前置检查；桌面/iOS 无系统锁屏概念） */
 expect fun isDeviceSecure(): Boolean
+
+/** 拉取远端更新 JSON（Android=OkHttp；桌面/iOS 返回 null 走本地缓存降级） */
+expect suspend fun performUpdateJsonRequest(): String?
+
+/** 账号登出（cookie/登录态清理；HomePageViewModel 会话过期等跨平台调用点） */
+expect suspend fun performAccountLogout()

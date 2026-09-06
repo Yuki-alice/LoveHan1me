@@ -44,7 +44,7 @@ import io.github.daisukikaffuchino.han1meviewer.simulated_update_description
 import io.github.daisukikaffuchino.han1meviewer.checking_for_updates
 import io.github.daisukikaffuchino.han1meviewer.logic.state.PageState
 import io.github.daisukikaffuchino.han1meviewer.logic.AppUpdateState
-import io.github.daisukikaffuchino.han1meviewer.logic.AppUpdateInfo
+import io.github.daisukikaffuchino.han1meviewer.logic.model.AppUpdateInfo
 import io.github.daisukikaffuchino.han1meviewer.logic.state.dataOrNull
 import io.github.daisukikaffuchino.han1meviewer.ui.component.PageContent
 import io.github.daisukikaffuchino.han1meviewer.ui.component.PullRefreshOverlay

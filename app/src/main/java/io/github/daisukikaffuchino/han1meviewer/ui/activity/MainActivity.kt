@@ -37,6 +37,8 @@ import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.AccountRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.HanimeScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.LoginRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.TopLevelBackStack
+import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.SearchRoute
+import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.registerArtistSearchNavigator
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.VideoRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.main.MainActivityContent
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage.HomePageViewModel
@@ -110,6 +112,9 @@ class MainActivity : BaseActivity() {
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
+        // P6d-4F：注册跨平台导航（VideoCardItem「搜索该作者」）
+        registerArtistSearchNavigator { query -> mainBackStack.add(SearchRoute(query = query)) }
+
         val useLock = SettingsRepository.current.useLockScreen
 
         if (useLock && isDeviceSecureCompat(this)) {

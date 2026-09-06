@@ -16,15 +16,7 @@ const val APP_NAME = "Han1meViewer"
 
 // 設置發佈日期年份，在搜索的tag裏
 
-/**
- * 發佈日期年份開始於
- */
-const val SEARCH_YEAR_RANGE_START = 1990
-
-/**
- * 發佈日期年份結束於
- */
-const val SEARCH_YEAR_RANGE_END = BuildConfig.SEARCH_YEAR_RANGE_END
+// SEARCH_YEAR_RANGE_START/END 已下沉 shared（BasicConstants.kt，END 改运行时当前年）
 
 const val VIDEO_COMMENT_PREFIX = "video"
 

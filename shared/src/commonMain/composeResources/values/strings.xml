@@ -4,7 +4,7 @@
     <string name="home_page">Home Page</string>
     <string name="latest_hanime">Latest H Anime</string>
     <string name="latest_upload">Latest Upload</string>
-    <string name="they_watched">What They\'re Watching</string>
+    <string name="they_watched">What They're Watching</string>
     <string name="search">Search</string>
     <string name="advanced_search">Advanced Search</string>
     <string name="back">Back</string>
@@ -61,7 +61,7 @@
     <string name="watch_history">Watch History</string>
     <string name="login">Login</string>
     <string name="delete">Delete</string>
-    <string name="here_is_empty">It\'s Empty Here…</string>
+    <string name="here_is_empty">It's Empty Here…</string>
     <string name="play_list">Playlist</string>
     <string name="add_to_fav">Add to Favorites</string>
     <string name="share">Share</string>
@@ -129,7 +129,7 @@
     <string name="will_remind_before_d_seconds">Will remind %1$d seconds before countdown</string>
     <string name="shared_h_keyframes_enable">Use Shared H Keyframes</string>
     <string name="shared_h_keyframe_manage">Manage Shared H Keyframes</string>
-    <string name="shared_h_keyframe_manage_tip">Welcome to submit your H Keyframes on GitHub. If you don\'t know how to submit, there are tutorial documents in the discussion area for reference.</string>
+    <string name="shared_h_keyframe_manage_tip">Welcome to submit your H Keyframes on GitHub. If you don't know how to submit, there are tutorial documents in the discussion area for reference.</string>
     <string name="shared_h_keyframes_enable_tip">Use the H Keyframes shared by kind-hearted people uploaded to GitHub</string>
     <string name="shared">Shared</string>
     <string name="shared_h_keyframes_use_first">Priority to Use Shared H Keyframes</string>
@@ -137,7 +137,7 @@
     <string name="forum">Forum</string>
     <string name="forum_summary">Welcome to vent. Important information will also be posted here</string>
     <string name="submit_bug">Submit Bug</string>
-    <string name="submit_bug_summary">If there\'s a bug, come and submit an issue</string>
+    <string name="submit_bug_summary">If there's a bug, come and submit an issue</string>
     <string name="position_ms">Position (ms)</string>
     <string name="prompt">Prompt</string>
     <string name="modify_h_keyframe">Modify H Keyframe</string>
@@ -152,7 +152,7 @@
     <string name="share_to_others">Share with Others</string>
     <string name="latest_release">Latest Release</string>
     <string name="chinese_subtitle">Chinese Subtitle</string>
-    <string name="ranking_today">Today\'s Ranking</string>
+    <string name="ranking_today">Today's Ranking</string>
     <string name="ranking_this_month">Monthly Ranking</string>
     <string name="start_all">Start All</string>
     <string name="pause_all">Pause All</string>
@@ -180,7 +180,7 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="custom_mirror_site_watch_test_failed_http">search test failed: HTTP %1$d\nURL: %2$s</string>
     <string name="use_built_in_hosts">Use Built-in Hosts</string>
     <string name="network_settings">Network Settings</string>
-    <string name="use_built_in_hosts_summary">Mapping of hosts to IP provided by the app\nCustom hosts take priority if configured\nVPN? What\'s that?</string>
+    <string name="use_built_in_hosts_summary">Mapping of hosts to IP provided by the app\nCustom hosts take priority if configured\nVPN? What's that?</string>
     <string name="custom_hosts">Custom Hosts</string>
     <string name="custom_hosts_format">Multiple IPs separated by commas, e.g. 1.2.3.4,5.6.7.8</string>
     <string name="custom_hosts_empty_summary">Not set (using built-in mapping)</string>
@@ -235,7 +235,7 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="local_favorite_cancelled">Cancelled</string>
     <string name="local_list_notice_title">Local data</string>
     <string name="local_list_notice_message">Local data saved while signed out is stored separately from your online data after signing in. The two are completely independent and are not synchronized in either direction. Continue?</string>
-    <string name="do_not_show_again">Don\'t show again</string>
+    <string name="do_not_show_again">Don't show again</string>
     <string name="default_">Default</string>
     <string name="alternative">Alternative</string>
     <string name="loading">Loading…</string>
@@ -455,7 +455,7 @@ Recommendations are as follows:\n
     <string name="directory_saved">Directory saved: %1$s</string>
     <string name="no_directory_selected">No directory selected, no changes made</string>
     <string name="select_download_folder">Select Your Download Folder</string>
-    <string name="select_folder_message">Use the system file picker to choose a folder:\n\n✓ Choose storage location freely\n✓ Download files saved permanently\n✓ Easy to share with other apps\n✓ Uninstalling the app won\'t affect files\n✓ Resume downloads supported\n\nDo not move, rename, or revoke permission for this folder, or you will need to choose it again. Creating a new folder under Downloads or using a custom folder is recommended.</string>
+    <string name="select_folder_message">Use the system file picker to choose a folder:\n\n✓ Choose storage location freely\n✓ Download files saved permanently\n✓ Easy to share with other apps\n✓ Uninstalling the app won't affect files\n✓ Resume downloads supported\n\nDo not move, rename, or revoke permission for this folder, or you will need to choose it again. Creating a new folder under Downloads or using a custom folder is recommended.</string>
     <string name="restore_default_path">Restore Default Storage Path</string>
     <string name="restore_default_message">Confirm to restore to app internal storage?\n\n● Current downloaded files will not be moved\n● Subsequent downloads will save to app internal\n● Files will be cleared when app is uninstalled\n● After selecting external path, you can use file migration feature</string>
     <string name="default_path_restored">Default storage path restored</string>
@@ -472,7 +472,7 @@ Recommendations are as follows:\n
     <string name="pref_export_downloads_summary">Export all download items from private download directory to custom directory</string>
     <string name="save_failed_title">Save Failed</string>
     <string name="save_failed_message">The video info file failed to save because the custom download path could not be accessed, or for another reason.\nAutomatically switched to the app private path.\nIf you reinstalled the app, try cleaning the Download/Han1meViewer directory and switch download location in settings. Otherwise, continue using the private directory and move files out before uninstalling or clearing data.</string>
-    <string name="whats_wrong_with_him">What\'s his problem?</string>
+    <string name="whats_wrong_with_him">What's his problem?</string>
     <string name="submit">Submit</string>
     <string name="report_reason_hint">Please select a reporting reason first.</string>
     <string name="report_failed">Report failed, reason: %1$s, please contact developer</string>
@@ -564,7 +564,7 @@ Recommendations are as follows:\n
     <string name="current_group_name">Current group name:%1$s</string>
     <string name="group_name_empty">Group name cannot be empty</string>
     <string name="group_renamed">Group renamed to %1$s</string>
-    <string name="modify_video_group">Modify this video\'s group: %1$s</string>
+    <string name="modify_video_group">Modify this video's group: %1$s</string>
     <string name="unknown_error">Unknown error</string>
     <string name="ungrouped">Ungrouped</string>
     <string name="create_new_group">Create New Group</string>
@@ -610,7 +610,7 @@ Recommendations are as follows:\n
     <string name="success_value">Success: %1$s</string>
     <string name="network_timeout_text">Time out</string>
     <string name="paused">Suspended</string>
-    <string name="restart_needed">You need to restart the program, otherwise it won\'t work!</string>
+    <string name="restart_needed">You need to restart the program, otherwise it won't work!</string>
     <string name="played">Watched</string>
     <string name="local">Local</string>
     <string name="current_bucket">Current bucket</string>

@@ -1,6 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.home.preview.getchupreview
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -26,7 +25,6 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.Res
@@ -41,7 +39,6 @@ import io.github.daisukikaffuchino.han1meviewer.ui.component.appbar.HanimeScaffo
 import io.github.daisukikaffuchino.han1meviewer.ui.component.isFirstPageEmpty
 import io.github.daisukikaffuchino.han1meviewer.ui.component.isFirstPageError
 import io.github.daisukikaffuchino.han1meviewer.ui.component.isFirstPageLoading
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.rememberRandomLoadingHint
 import io.github.daisukikaffuchino.han1meviewer.util.toNetworkErrorMessageRes
 import io.github.daisukikaffuchino.han1meviewer.ui.component.HapticTextButton as TextButton
@@ -133,17 +130,4 @@ fun GetchuPreviewScreen(
                 }
             }
         }
-}
-
-@SuppressLint("ViewModelConstructorInComposable")
-@Preview
-@Composable
-private fun GetchuPreviewScreenPreview() {
-    ComponentPreview {
-        GetchuPreviewScreen(
-            onBack = {},
-            onNavigateToDetail = { _ -> },
-            viewModel = GetchuPreviewViewModel()
-        )
-    }
 }

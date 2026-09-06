@@ -1,8 +1,11 @@
 package io.github.daisukikaffuchino.han1meviewer
 
+import kotlinx.datetime.Instant
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.LocalDateTime
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format.char
+import kotlinx.datetime.toLocalDateTime
 
 /**
  * P4：自 :app Constants.kt 下沉的基础常量（Parser 依赖闭包使用，包名不变）。
@@ -21,6 +24,11 @@ val LOCAL_DATE_TIME_FORMAT = LocalDateTime.Format {
 }
 
 // P6d-4：项目仓库地址（原 :app Constants.kt；About/更新相关 UI 依赖，包名不变调用点零改动）
+/** 搜索发布日期年份范围（原 :app Constants；END 原为 BuildConfig 构建年，改运行时当前年，跨年自适应） */
+const val SEARCH_YEAR_RANGE_START = 1990
+
+val SEARCH_YEAR_RANGE_END: Int get() = Instant.fromEpochMilliseconds(io.github.daisukikaffuchino.han1meviewer.logic.currentEpochMillis()).toLocalDateTime(TimeZone.currentSystemDefault()).year
+
 const val HA1_GITHUB_URL = "https://github.com/daisukiKaffuChino/Han1meViewer"
 
 const val HA1_GITHUB_ISSUE_URL = "$HA1_GITHUB_URL/issues"

@@ -68,6 +68,8 @@ kotlin {
 
             // 协程 / 序列化 / 时间
             implementation(libs.coroutines.core)
+            // P6d-4F：桌面 Dispatchers.Main（HomePageViewModel 等下沉后 viewModelScope 需要）
+            implementation(libs.coroutines.swing)
             implementation(libs.datetime)
             implementation(libs.serialization.json)
 

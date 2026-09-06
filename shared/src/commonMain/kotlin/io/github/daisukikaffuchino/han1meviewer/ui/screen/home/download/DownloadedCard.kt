@@ -1,0 +1,388 @@
+package io.github.daisukikaffuchino.han1meviewer.ui.screen.home.download
+
+import io.github.daisukikaffuchino.han1meviewer.ui.component.HanimeAsyncImage
+import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.LocalIndication
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AssistChip
+import androidx.compose.material3.AssistChipDefaults
+import io.github.daisukikaffuchino.han1meviewer.ui.component.rememberHapticFeedback
+import io.github.daisukikaffuchino.han1meviewer.ui.component.HapticButton as Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import io.github.daisukikaffuchino.han1meviewer.ui.component.FilledIconButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalInspectionMode
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import io.github.daisukikaffuchino.han1meviewer.LOCAL_DATE_TIME_FORMAT
+import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.video_count
+import io.github.daisukikaffuchino.han1meviewer.local_playback
+import io.github.daisukikaffuchino.han1meviewer.ext_player
+import io.github.daisukikaffuchino.han1meviewer.expand
+import io.github.daisukikaffuchino.han1meviewer.delete
+import io.github.daisukikaffuchino.han1meviewer.collapse
+import io.github.daisukikaffuchino.han1meviewer.ic_play_arrow
+import io.github.daisukikaffuchino.han1meviewer.ic_format_list_bulleted
+import io.github.daisukikaffuchino.han1meviewer.ic_fold
+import io.github.daisukikaffuchino.han1meviewer.ic_ext_link
+import io.github.daisukikaffuchino.han1meviewer.ic_delete
+import io.github.daisukikaffuchino.han1meviewer.h_chan_loading
+import io.github.daisukikaffuchino.han1meviewer.h_chan_load_failed
+import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.VideoWithCategories
+import io.github.daisukikaffuchino.han1meviewer.logic.model.DownloadHeaderNode
+import io.github.daisukikaffuchino.han1meviewer.ui.component.CardContainerSurface
+import io.github.daisukikaffuchino.han1meviewer.ui.preview.fakeDownloadedNodes
+import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
+import io.github.daisukikaffuchino.han1meviewer.ui.theme.shapeByInteraction
+import io.github.daisukikaffuchino.utils.formatFileSize
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.format
+import kotlinx.datetime.toLocalDateTime
+import kotlin.time.ExperimentalTime
+import kotlin.time.Instant
+
+/**
+ * 已下载视频分组头部卡片。
+ *
+ * @param header 分组节点
+ * @param onToggle 展开/折叠回调
+ * @param onRename 重命名回调
+ */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
+@Composable
+fun DownloadGroupHeader(
+    header: DownloadHeaderNode,
+    onToggle: () -> Unit,
+    onRename: () -> Unit,
+) {
+    val haptic = rememberHapticFeedback()
+    val interactionSource = remember { MutableInteractionSource() }
+    val indication = LocalIndication.current
+    val pressed by interactionSource.collectIsPressedAsState()
+    val cardShape = shapeByInteraction(
+        shapes = HanimeDefaults.cardShapes(),
+        pressed = pressed,
+        animationSpec = HanimeDefaults.shapesDefaultAnimationSpec,
+    )
+    CardContainerSurface(
+        shape = cardShape,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .combinedClickable(
+                    interactionSource = interactionSource,
+                    indication = indication,
+                    onClick = {
+                        haptic()
+                        onToggle()
+                    },
+                    onLongClick = {
+                        haptic()
+                        onRename()
+                    },
+                )
+                .padding(10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            FilledIconButton(onClick = onToggle, modifier = Modifier.size(36.dp)) {
+                Icon(
+                    painter = painterResource(
+                        if (header.isExpanded) Res.drawable.ic_fold
+                        else Res.drawable.ic_format_list_bulleted
+                    ),
+                    contentDescription = null,
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = header.groupKey,
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    text = stringResource(Res.string.video_count, header.originalVideos.size),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+            AssistChip(
+                onClick = {
+                    haptic()
+                    onToggle()
+                },
+                label = {
+                    Text(
+                        if (header.isExpanded) stringResource(Res.string.collapse)
+                        else stringResource(Res.string.expand)
+                    )
+                },
+                colors = AssistChipDefaults.assistChipColors(
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    labelColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                ),
+            )
+        }
+    }
+}
+
+/**
+ * 已下载视频卡片。
+ *
+ * @param item 视频及分组信息
+ * @param onOpenVideo 打开视频详情
+ * @param onLocalPlayback 本地播放
+ * @param onExternalPlayback 外部播放器
+ * @param onDeleteVideo 删除视频
+ * @param onMoveGroup 移动到其他分组
+ * @param isMultiSelect 是否多选模式
+ * @param isSelected 是否已选中
+ * @param onToggleSelect 切换选中状态
+ */
+@OptIn(
+    ExperimentalFoundationApi::class,
+    ExperimentalMaterial3ExpressiveApi::class,
+    ExperimentalTime::class,
+)
+@Composable
+fun DownloadedVideoCard(
+    item: VideoWithCategories,
+    onOpenVideo: () -> Unit,
+    onLocalPlayback: () -> Unit,
+    onExternalPlayback: () -> Unit,
+    onDeleteVideo: () -> Unit,
+    onMoveGroup: () -> Unit,
+    isMultiSelect: Boolean = false,
+    isSelected: Boolean = false,
+    onToggleSelect: (() -> Unit)? = null,
+) {
+    val haptic = rememberHapticFeedback()
+    val addedTime = if (!LocalInspectionMode.current) {
+        remember(item.video.addDate) {
+            Instant.fromEpochMilliseconds(item.video.addDate)
+                .toLocalDateTime(TimeZone.currentSystemDefault())
+                .format(LOCAL_DATE_TIME_FORMAT)
+        }
+    } else {
+        "2024-01-01 12:00"
+    }
+    val interactionSource = remember { MutableInteractionSource() }
+    val indication = LocalIndication.current
+    val pressed by interactionSource.collectIsPressedAsState()
+    val cardShape = shapeByInteraction(
+        shapes = HanimeDefaults.cardShapes(),
+        pressed = pressed,
+        animationSpec = HanimeDefaults.shapesDefaultAnimationSpec,
+    )
+    CardContainerSurface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = cardShape,
+    ) {
+        Column(
+            modifier = Modifier.combinedClickable(
+                interactionSource = interactionSource,
+                indication = indication,
+                onClick = {
+                    haptic()
+                    if (isMultiSelect) {
+                        onToggleSelect?.invoke()
+                    } else {
+                        onOpenVideo()
+                    }
+                },
+                onLongClick = {
+                    if (!isMultiSelect) {
+                        haptic()
+                        onMoveGroup()
+                    }
+                },
+            ),
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(5.dp)
+                    .height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                Box {
+                    HanimeAsyncImage(
+                        model = item.video.coverUri ?: item.video.coverUrl,
+                        contentDescription = item.video.title,
+                        placeholder = painterResource(Res.drawable.h_chan_loading),
+                        error = painterResource(Res.drawable.h_chan_load_failed),
+                        modifier = Modifier
+                            .width(136.dp)
+                            .fillMaxHeight()
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop,
+                    )
+                    if (isMultiSelect) {
+                        Surface(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(4.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            color = if (isSelected)
+                                MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
+                            else
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                        ) {
+                            Checkbox(
+                                checked = isSelected,
+                                onCheckedChange = {
+                                    haptic()
+                                    onToggleSelect?.invoke()
+                                },
+                                modifier = Modifier.size(32.dp),
+                            )
+                        }
+                    }
+                }
+
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(6.dp),
+                ) {
+                    Text(
+                        text = item.video.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.SemiBold,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        text = addedTime,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Row(
+                        modifier = Modifier.height(36.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Surface(
+                            onClick = {
+                                haptic()
+                                onOpenVideo()
+                            },
+                            shape = MaterialTheme.shapes.small,
+                            color = MaterialTheme.colorScheme.tertiaryContainer
+                        ) {
+                            Text(
+                                text = "ID:${item.video.videoCode}",
+                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                                style = MaterialTheme.typography.labelMedium
+                            )
+                        }
+                        Text(
+                            text = item.video.quality,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        VerticalDivider(
+                            modifier = Modifier.height(14.dp),
+                            thickness = 2.dp,
+                            color = MaterialTheme.colorScheme.outline,
+                        )
+                        Text(
+                            text = item.video.length.formatFileSize(),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                }
+            }
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                FilledIconButton(
+                    onClick = onDeleteVideo,
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_delete),
+                        contentDescription = stringResource(Res.string.delete)
+                    )
+                }
+
+                Button(
+                    onClick = onExternalPlayback,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColors(),
+                    contentPadding = PaddingValues(8.dp),
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_ext_link),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(stringResource(Res.string.ext_player))
+                    }
+                }
+
+                Button(
+                    onClick = onLocalPlayback,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.textButtonColors(),
+                    contentPadding = PaddingValues(8.dp),
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_play_arrow),
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Text(stringResource(Res.string.local_playback))
+                    }
+                }
+            }
+        }
+    }
+}

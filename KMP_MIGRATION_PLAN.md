@@ -1031,3 +1031,23 @@ DownloadWorkController 新增 `updateDownloadLimit`（provider 注册制，:app 
 **踩坑增补**：① sed 全局删 `activity = activity,` 行时误伤 HomeRouteScreen（home 批次顺延文件）的
 同名传参——**按行删除类操作必须限定函数块范围**；② heredoc 内含 `${...()}` 在 zsh 触发 Bad
 substitution，复杂替换一律写临时脚本文件；③ expect 签名禁止 java.io/*，跨平台流用 okio。
+
+## P6d-4F search/home 批次完成记录（2026-09-05，tag p6d4c-done）
+
+**下沉 45 文件**（search/home/download/subscription/myplaylist/videogrid/homepage 组件 + main 路由 8 个
++ preview 数据源 + Utils/HanimeManager 剩余/ArtistItem/VideoCardItem/AppUpdateChecker/BackupManager 链），
+含配套：SEARCH_YEAR 常量下沉（END 构建年→运行时年）、loading_hints string-array 转 Kotlin 常量
+（**CMP 生成器不支持 string-array 且对新增键静默截断**——combined 与独立键均失败，最终绕过资源系统）、
+`navigateToArtistSearch`/`performAccountLogout`/`isLandscapeOrientation`/`performUpdateJsonRequest`/
+`writeBackupText` 等 expect 组、AppUpdateInfo 拆 commonMain、**kotlinx-coroutines-swing 补桌面 Main**。
+
+**裁决留 :app**：DownloadSettingsRoute（SAF）、SearchScreen+SearchRoute+PreviewImageViewer+getchu 族
+（BackHandler 跨平台/SingletonImageLoader/decorFitsSystemWindows 等 Android 深度耦合，随 P6d-4G）。
+
+**验收（亲跑）**：六端 ✅ / assembleDebug ✅ / 桌面存活 ✅（swing dispatcher 修复后 0 异常）。
+
+**踩坑增补**：① strip 脚本异常分支写回半处理文本导致文件截断（AnnouncementDialog 245→36、
+PreviewImageViewer 259→42）——已改"先收集区间再一次删除"且**全量行数对比排查**确认仅此 2 文件；
+② jvmMain 与 desktopMain 的 actual 会冲突（performUpdateJsonRequest）——jvm 组 actual 只写一份；
+③ :app 的 Android 资源转义 `\'` 会使 CMP 生成器静默丢键；④ zsh 下 python -c 内嵌 `${...()}` 触发
+Bad substitution——复杂脚本一律落盘执行。
