@@ -2,8 +2,8 @@ package io.github.daisukikaffuchino.han1meviewer.ui.navigation.main
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.sharedViewModel
 import io.github.daisukikaffuchino.han1meviewer.copy_to_clipboard
 import io.github.daisukikaffuchino.han1meviewer.getHanimeSearchShareText
 import io.github.daisukikaffuchino.han1meviewer.getHanimeShareText
@@ -20,7 +20,7 @@ fun SubscriptionRouteScreen(
     onNavigateToSearch: (String?) -> Unit,
     onNavigateToVideo: (String) -> Unit,
 ) {
-    val viewModel: MySubscriptionsViewModel = viewModel()
+    val viewModel: MySubscriptionsViewModel = sharedViewModel(::MySubscriptionsViewModel)
     val copyTextToClipboard = rememberCopyTextToClipboard()
     // P6d-3-C3：回调内 toast 转 suspend getString，经 scope 桥接
     val scope = rememberCoroutineScope()

@@ -80,7 +80,7 @@ private enum class DohConflictTarget {
 }
 
 @Composable
-fun NetworkSettingsRouteScreen(embedded: Boolean = false) {
+actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
     val coroutineScope = rememberCoroutineScope()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
     var currentHost by remember { mutableStateOf(SettingsRepository.baseUrl) }

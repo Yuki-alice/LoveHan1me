@@ -1,8 +1,8 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.navigation.main
 
 import androidx.compose.runtime.Composable
-import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.WatchHistoryTabScreen
+import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.sharedViewModel
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage.HomePageViewModel
 import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.OnlineWatchHistoryViewModel
 
@@ -11,8 +11,8 @@ fun WatchHistoryRouteScreen(
     onBack: () -> Unit,
     onNavigateToVideo: (String) -> Unit,
 ) {
-    val localViewModel: HomePageViewModel = viewModel()
-    val onlineViewModel: OnlineWatchHistoryViewModel = viewModel()
+    val localViewModel: HomePageViewModel = sharedViewModel(::HomePageViewModel)
+    val onlineViewModel: OnlineWatchHistoryViewModel = sharedViewModel(::OnlineWatchHistoryViewModel)
     WatchHistoryTabScreen(
         localHistoriesFlow = localViewModel.loadAllWatchHistories(),
         onlineItems = onlineViewModel.items,

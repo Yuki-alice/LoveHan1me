@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.Res
+import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.sharedViewModel
 import io.github.daisukikaffuchino.han1meviewer.copy_to_clipboard
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.getHanimeShareText
@@ -27,7 +27,7 @@ fun MyPlaylistRouteScreen(
     // P6d-3-C3：回调内 toast 转 suspend getString，经 scope 桥接
     val scope = rememberCoroutineScope()
     if (isLoggedIn) {
-        val viewModel: MyPlayListViewModel = viewModel(key = "online_playlist")
+        val viewModel: MyPlayListViewModel = sharedViewModel(::MyPlayListViewModel, key = "online_playlist")
         PlaylistScreen(
             viewModel = viewModel,
             navigateBack = onBack,
@@ -38,7 +38,7 @@ fun MyPlaylistRouteScreen(
             },
         )
     } else {
-        val viewModel: LocalPlayListViewModel = viewModel(key = "local_playlist")
+        val viewModel: LocalPlayListViewModel = sharedViewModel(::LocalPlayListViewModel, key = "local_playlist")
         PlaylistScreen(
             viewModel = viewModel,
             navigateBack = onBack,

@@ -3,29 +3,13 @@ package io.github.daisukikaffuchino.han1meviewer.ui.navigation.main
 import android.content.Intent
 import kotlinx.serialization.json.Json
 
-private val loginRequiredDrawerItems = setOf(
-    MainDrawerDestination.Subscription,
-)
+// M2：navigateDrawerDestination 已下沉 shared（同名，此处删除；handleMainIntent 留守）。
 
 const val EXTRA_OPEN_DAILY_CHECK_IN = "openDailyCheckIn"
 const val ACTION_OPEN_CLOUDFLARE_VERIFICATION =
     "io.github.daisukikaffuchino.han1meviewer.action.OPEN_CLOUDFLARE_VERIFICATION"
 const val EXTRA_CLOUDFLARE_URL = "cloudflare_url"
 const val EXTRA_CLOUDFLARE_HOST = "cloudflare_host"
-
-fun TopLevelBackStack<HanimeScreen>.navigateDrawerDestination(
-    destination: MainDrawerDestination,
-    isLoggedIn: Boolean,
-    onRequireLogin: () -> Unit,
-): Boolean {
-    if (destination in loginRequiredDrawerItems && !isLoggedIn) {
-        onRequireLogin()
-        return false
-    }
-
-    addTopLevel(destination.route)
-    return true
-}
 
 fun TopLevelBackStack<HanimeScreen>.handleMainIntent(intent: Intent) {
     if (intent.action == ACTION_OPEN_CLOUDFLARE_VERIFICATION) {

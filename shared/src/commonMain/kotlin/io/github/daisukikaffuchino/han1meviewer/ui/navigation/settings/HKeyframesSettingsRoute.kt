@@ -12,7 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
+import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.sharedViewModel
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.currentEpochMillis
 import io.github.daisukikaffuchino.han1meviewer.Res
@@ -50,7 +50,7 @@ fun HKeyframesRouteScreen(
     showImportDialog: Boolean,
     onImportDialogDismiss: () -> Unit,
 ) {
-    val viewModel: SettingsViewModel = viewModel()
+    val viewModel: SettingsViewModel = sharedViewModel(::SettingsViewModel)
     val copyTextToClipboard = rememberCopyTextToClipboard()
     // P6d-3-C3：回调内 toast 转 suspend getString，经 scope 桥接
     val scope = rememberCoroutineScope()
@@ -161,7 +161,7 @@ private fun ImportSharedHKeyframeDialog(
 fun SharedHKeyframesRouteScreen(
     onOpenVideo: (String) -> Unit,
 ) {
-    val viewModel: SettingsViewModel = viewModel()
+    val viewModel: SettingsViewModel = sharedViewModel(::SettingsViewModel)
     val items by viewModel.loadAllSharedHKeyframes()
         .collectAsStateWithLifecycle(initialValue = emptyList())
 

@@ -3,8 +3,8 @@ package io.github.daisukikaffuchino.han1meviewer.ui.navigation.main
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
+import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.sharedViewModel
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.delete_fav
 import io.github.daisukikaffuchino.han1meviewer.delete_watch_later
@@ -23,7 +23,7 @@ fun FavVideoRouteScreen(
     onNavigateToVideo: (String) -> Unit,
 ) {
     val isLoggedIn by SettingsRepository.loginStateFlow.collectAsStateWithLifecycle()
-    val viewModel: MyListViewModel = viewModel()
+    val viewModel: MyListViewModel = sharedViewModel(::MyListViewModel)
     val fav: FavVideoListController = if (isLoggedIn) viewModel.fav else viewModel.localFav
     val items = fav.favVideoFlow.collectAsStateWithLifecycle().value
     val state = fav.favVideoStateFlow.collectAsStateWithLifecycle().value
@@ -65,7 +65,7 @@ fun WatchLaterRouteScreen(
     onNavigateToVideo: (String) -> Unit,
 ) {
     val isLoggedIn by SettingsRepository.loginStateFlow.collectAsStateWithLifecycle()
-    val viewModel: MyListViewModel = viewModel()
+    val viewModel: MyListViewModel = sharedViewModel(::MyListViewModel)
     val wl: WatchLaterListController =
         if (isLoggedIn) viewModel.watchLater else viewModel.localWatchLater
     val items = wl.watchLaterFlow.collectAsStateWithLifecycle().value

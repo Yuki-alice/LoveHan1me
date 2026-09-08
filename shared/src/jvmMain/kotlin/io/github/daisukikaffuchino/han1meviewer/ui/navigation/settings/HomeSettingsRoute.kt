@@ -131,14 +131,14 @@ import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeSettingsRouteScreen(
+actual fun HomeSettingsRouteScreen(
     page: HomeSettingsPage,
-    onNavigateToHKeyframes: () -> Unit = {},
-    onNavigateToSharedHKeyframes: () -> Unit = {},
-    onNavigateToOpenSourceLicenses: () -> Unit = {},
+    onNavigateToHKeyframes: () -> Unit,
+    onNavigateToSharedHKeyframes: () -> Unit,
+    onNavigateToOpenSourceLicenses: () -> Unit,
     // P6d-4E：下载设置页依赖 :app 的 SAF（SafFileManager/WorkManager），由 Android 壳注入；
     // 桌面/iOS 下载目录能力随 P7 提供，默认空占位
-    downloadSettingsContent: @Composable () -> Unit = {},
+    downloadSettingsContent: @Composable () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
     val coroutineScope = rememberCoroutineScope()
