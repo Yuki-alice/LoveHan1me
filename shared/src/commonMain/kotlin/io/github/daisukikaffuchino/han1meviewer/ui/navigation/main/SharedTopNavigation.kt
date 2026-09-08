@@ -69,6 +69,7 @@ import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.SharedHKe
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.SharedHKeyframesRouteScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.VideoPlaybackSettingsRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage.HomePageViewModel
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.login.FormLoginScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.HomeSettingsPage
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.OpenSourceLicensesScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.SettingsMainScreen
@@ -241,12 +242,15 @@ fun SharedTopNavigation(
             if (injected != null) {
                 navScope.injected()
             } else {
-                NavPlaceholder(
-                    title = "Login",
-                    hint = "WebView 登录暂仅 Android",
+                // M5：默认走共享表单登录（HTTP 直连，与网站 /login 同路径），
+                // 替代原"WebView 登录暂仅 Android"占位。
+                FormLoginScreen(
                     onBack = onBack,
-                    actionLabel = "手动填 Cookie 登录",
-                    onAction = { backStack.add(ManualCookiesRoute) },
+                    onOpenManualCookies = { backStack.add(ManualCookiesRoute) },
+                    onLoginSucceeded = {
+                        backStack.popTo(LoginRoute, inclusive = true)
+                        homeViewModel.getHomePage()
+                    },
                 )
             }
         }
