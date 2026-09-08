@@ -19,7 +19,6 @@ import io.github.daisukikaffuchino.han1meviewer.logic.exception.LoginStateExpire
 import io.github.daisukikaffuchino.han1meviewer.logic.model.Announcement
 import io.github.daisukikaffuchino.han1meviewer.logic.state.PageState
 import io.github.daisukikaffuchino.han1meviewer.logic.state.WebsiteState
-import io.github.daisukikaffuchino.han1meviewer.logout
 import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.AppViewModel
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.HanimeScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.HomeRoute
