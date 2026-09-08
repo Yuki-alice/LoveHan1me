@@ -68,8 +68,6 @@ kotlin {
 
             // 协程 / 序列化 / 时间
             implementation(libs.coroutines.core)
-            // P6d-4F：桌面 Dispatchers.Main（HomePageViewModel 等下沉后 viewModelScope 需要）
-            implementation(libs.coroutines.swing)
             implementation(libs.datetime)
             implementation(libs.serialization.json)
 
@@ -134,6 +132,13 @@ kotlin {
             dependencies {
                 // 桌面端是 JVM，同样可用 OkHttp 引擎复用现有拦截器链
                 implementation(libs.ktor.client.okhttp)
+                // M1：Dispatchers.Main 的桌面实现（Swing EDT，供 viewModelScope）。
+                // 此前误放在 commonMain，导致 iOS 元数据编译解析失败（swing 只有 JVM 变体）。
+                implementation(libs.coroutines.swing)
+                // M3：桌面 mpv 引擎（mediamp，含 Skia 渲染 + 各 OS native）
+                implementation(libs.mediamp.mpv.desktop)
+                // M3：mpv 原生库运行时（按平台解包；mediamp-mpv-runtime 聚合全平台）
+                runtimeOnly(libs.mediamp.mpv.runtime)
             }
         }
 

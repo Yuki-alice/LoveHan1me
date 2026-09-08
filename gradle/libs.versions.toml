@@ -59,6 +59,9 @@ coil3Kmp = "3.6.1"
 # P4：ksoup 坐标切换（原 com.mohamedrejeb.ksoup:ksoup-html 仅 SAX、无 DOM/select；
 # 具 jsoup 兼容 API 的坐标是 Fleeksoft 系，P3a 桌面实跑验证过）
 fleeksoft-ksoup = "0.2.6"
+# M3：桌面 mpv 引擎（animeko 同款；engine + Skia 渲染 + 各 OS native 一体，
+# 仅 desktopMain 依赖，不碰 android/ios）
+mediamp = "0.3.2"
 
 [libraries]
 # 构建期依赖（仅供 build-logic 的 convention plugin 编译时使用）
@@ -171,6 +174,11 @@ coil-network-ktor3 = { module = "io.coil-kt.coil3:coil-network-ktor3", version.r
 coil-compose-core = { module = "io.coil-kt.coil3:coil-compose-core", version.ref = "coil3Kmp" }
 # P6d-2：getchu 特化加载器走 OkHttp（jvmMain 专用，与 core 同版本 3.6.1）
 coil-network-okhttp-kmp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coil3Kmp" }
+
+# M3：桌面 mpv 引擎（含 Skia 渲染面 + 各 OS native；仅 desktopMain 用）
+mediamp-mpv-desktop = { module = "org.openani.mediamp:mediamp-mpv-desktop", version.ref = "mediamp" }
+# M3：mpv 各 OS 原生库（engine 在运行时按平台解包加载；runtimeOnly 即可）
+mediamp-mpv-runtime = { module = "org.openani.mediamp:mediamp-mpv-runtime", version.ref = "mediamp" }
 
 [bundles]
 
