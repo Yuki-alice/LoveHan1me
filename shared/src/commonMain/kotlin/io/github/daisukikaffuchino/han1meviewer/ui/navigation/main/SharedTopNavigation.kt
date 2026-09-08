@@ -1,6 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.navigation.main
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.ContentTransform
 import androidx.compose.animation.EnterTransition
@@ -11,42 +10,44 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
-import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Button
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
-import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalView
-import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.unit.Dp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 import io.github.daisukikaffuchino.han1meviewer.Res
-import io.github.daisukikaffuchino.han1meviewer.search
 import io.github.daisukikaffuchino.han1meviewer.h_keyframes_import_shared
 import io.github.daisukikaffuchino.han1meviewer.ic_add
 import io.github.daisukikaffuchino.han1meviewer.ic_search
-import io.github.daisukikaffuchino.han1meviewer.ui.activity.MainActivity
+import io.github.daisukikaffuchino.han1meviewer.search
 import io.github.daisukikaffuchino.han1meviewer.ui.component.IconButton
+import io.github.daisukikaffuchino.han1meviewer.ui.component.rememberHapticFeedback
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.AboutSettingsRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.AppearanceSettingsRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.DataPrivacySettingsRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.DeveloperOptionsSettingsRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.DownloadSettingsRoute
-import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.DownloadSettingsRouteScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.HKeyframeSettingsRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.HKeyframeSettingsRouteScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.HKeyframesRoute
@@ -62,40 +63,55 @@ import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.NetworkSe
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.OpenSourceLicensesRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.PlayerSettingsRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.PlayerSettingsRouteScreen
-import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.SettingsScaffold
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.SettingsDestinationSpec
+import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.SettingsScaffold
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.SharedHKeyframesRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.SharedHKeyframesRouteScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.VideoPlaybackSettingsRoute
-import io.github.daisukikaffuchino.han1meviewer.ui.screen.account.AccountScreen
-import io.github.daisukikaffuchino.han1meviewer.ui.screen.account.AvatarCropScreen
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage.HomePageViewModel
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.HomeSettingsPage
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.OpenSourceLicensesScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.SettingsMainScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.fadeScale
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.materialSharedAxisX
-import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.UserAccountViewModel
-import io.github.daisukikaffuchino.utils.VibrationUtil
+import io.github.daisukikaffuchino.utils.SonnerToast
+import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
-private const val PageTransitionOffsetFactor = 0.10f
-
+/**
+ * M2：三端共享的导航装配（对标 `:app` `TopNavigation`，去掉 `MainActivity` 依赖；
+ * `:app` 侧保持不动，Android 继续走旧装配）。
+ *
+ * 与 `:app` 版的差异：
+ * - `activity` 参数（VM store / finish / Intent）全部改为回调 + [homeViewModel] 提升；
+ *   原 `viewModel(viewModelStoreOwner = activity)` 与默认 owner 同义，改 sharedViewModel；
+ * - `AccountRoute`（头像 picker）/ `LoginRoute`（WebView）/ `CloudflareRoute`（WebView）/
+ *   `AvatarCropRoute`（cropper）/ `VideoRoute`（播放器 M3）/ `DownloadRoute` +
+ *   `DownloadSettingsRoute`（SAF/WorkManager P7）/ `PreviewCommentRoute`（评论 UI 随 M3）
+ *   为占位（参数回显 + 返回，不崩）；
+ * - `OpenSourceLicensesRoute` 去 `BackHandler`（Android-only；显式搜索按钮可关）；
+ * - `HKeyframesRoute` 的 FAB 触感改跨平台 `rememberHapticFeedback()`；
+ * - 设置页 `downloadSettingsContent` 槽位传空（桌面下载目录 P7）。
+ */
 @OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-fun TopNavigation(
-    activity: MainActivity,
+fun SharedTopNavigation(
     backStack: TopLevelBackStack<HanimeScreen>,
-    isDrawerOpen: Boolean,
+    homeViewModel: HomePageViewModel,
     showHomeNavigationIcon: Boolean,
-    homeContentStartPadding: Dp,
     onOpenDrawer: () -> Unit,
+    platformScreens: PlatformScreens = PlatformScreens(),
 ) {
-    var pendingAvatarCropResult by remember { mutableStateOf<String?>(null) }
-
     val onBack: () -> Unit = { backStack.removeLast() }
     val onNavigateToVideo: (String) -> Unit = { code -> backStack.add(VideoRoute(code)) }
-    val onNavigateToLocalVideo: (String, String?) -> Unit =
-        { code, uri -> backStack.add(VideoRoute(code, uri)) }
+    val scope = rememberCoroutineScope()
+
+    // M4：注入实现使用的共享上下文
+    val navScope = remember(backStack, homeViewModel) {
+        PlatformNavScope(backStack, homeViewModel, onBack)
+    }
+    // 头像裁剪结果在 AccountRoute 与 AvatarCropRoute 之间传递（原 :app TopNavigation 同构）
+    var pendingAvatarCropResult by remember { mutableStateOf<String?>(null) }
 
     fun pageTransition() = NavDisplay.transitionSpec {
         materialSharedAxisX(
@@ -140,26 +156,20 @@ fun TopNavigation(
         predictivePopTransitionSpec = { defaultTransition },
         entryProvider = entryProvider {
         entry<HomeRoute> {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(start = homeContentStartPadding),
-            ) {
-                HomeRouteScreen(
-                    activity = activity,
-                    isDrawerOpen = isDrawerOpen,
+                SharedHomeRouteScreen(
+                    viewModel = homeViewModel,
                     showNavigationIcon = showHomeNavigationIcon,
                     onOpenDrawer = onOpenDrawer,
                     onNavigateToPreview = { backStack.add(PreviewRoute) },
-                    onNavigateToSearch = { query -> backStack.add(SearchRoute(query = query)) },
-                    onNavigateToSearchAdvanced = { params ->
-                        backStack.add(
-                            SearchRoute(advancedSearchJson = Json.encodeToString(params))
-                        )
-                    },
-                    onNavigateToVideo = onNavigateToVideo,
-                )
-            }
+                onNavigateToSearch = { query -> backStack.add(SearchRoute(query = query)) },
+                onNavigateToSearchAdvanced = { params ->
+                    backStack.add(
+                        SearchRoute(advancedSearchJson = Json.encodeToString(params))
+                    )
+                },
+                onNavigateToVideo = onNavigateToVideo,
+                onExit = {},
+            )
         }
         entry<WatchHistoryRoute> {
             WatchHistoryRouteScreen(
@@ -194,67 +204,87 @@ fun TopNavigation(
         }
         entry<DailyCheckInRoute> {
             DailyCheckInRouteScreen(
-                activity = activity,
                 onBack = onBack,
             )
         }
         entry<DownloadRoute> {
-            DownloadRouteScreen(
-                onBack = onBack,
-                onNavigateToVideo = onNavigateToVideo,
-                onNavigateToLocalVideo = onNavigateToLocalVideo,
-            )
+            val injected = platformScreens.download
+            if (injected != null) {
+                navScope.injected()
+            } else {
+                NavPlaceholder(
+                    title = "Download",
+                    hint = "桌面下载随 P7（SAF/WorkManager 无跨平台对等）",
+                    onBack = onBack,
+                )
+            }
         }
         entry<AccountRoute>(metadata = pageTransition()) {
-            val accountViewModel: UserAccountViewModel = viewModel()
-            AccountScreen(
-                viewModel = accountViewModel,
-                onBack = onBack,
-                onOpenAvatarCrop = { sourceUri ->
-                    backStack.add(AvatarCropRoute(sourceUri))
-                },
-                pendingAvatarCropResult = pendingAvatarCropResult,
-                onAvatarCropResultConsumed = { pendingAvatarCropResult = null },
-                onRefreshHome = { activity.viewModel.getHomePage() },
-                onLogout = { activity.showLogoutConfirmDialog(closeCurrentPageOnConfirm = true) },
-            )
+            val injected = platformScreens.account
+            if (injected != null) {
+                navScope.injected(
+                    pendingAvatarCropResult,
+                    { pendingAvatarCropResult = null },
+                )
+            } else {
+                NavPlaceholder(
+                    title = "Account",
+                    hint = "账号页（头像 picker）暂仅 Android",
+                    onBack = onBack,
+                    actionLabel = "手动填 Cookie 登录",
+                    onAction = { backStack.add(ManualCookiesRoute) },
+                )
+            }
         }
         entry<LoginRoute>(metadata = pageTransition()) {
-            LoginRouteScreen(
-                activity = activity,
-                onBack = onBack,
-                onOpenManualCookies = { backStack.add(ManualCookiesRoute) },
-                onLoginSucceeded = {
-                    backStack.popTo(LoginRoute, inclusive = true)
-                    activity.viewModel.getHomePage()
-                },
-            )
+            val injected = platformScreens.login
+            if (injected != null) {
+                navScope.injected()
+            } else {
+                NavPlaceholder(
+                    title = "Login",
+                    hint = "WebView 登录暂仅 Android",
+                    onBack = onBack,
+                    actionLabel = "手动填 Cookie 登录",
+                    onAction = { backStack.add(ManualCookiesRoute) },
+                )
+            }
         }
         entry<ManualCookiesRoute>(metadata = pageTransition()) {
             ManualCookiesRouteScreen(
                 onBack = onBack,
                 onLoginSucceeded = {
                     backStack.popTo(LoginRoute, inclusive = true)
-                    activity.viewModel.getHomePage()
+                    homeViewModel.getHomePage()
                 },
             )
         }
         entry<CloudflareRoute>(metadata = pageTransition()) { route ->
-            CloudflareRouteScreen(
-                activity = activity,
-                route = route,
-                onBack = onBack,
-            )
+            val injected = platformScreens.cloudflare
+            if (injected != null) {
+                navScope.injected(route)
+            } else {
+                NavPlaceholder(
+                    title = "Cloudflare ${route.host}",
+                    hint = "人机验证 WebView 暂仅 Android",
+                    onBack = onBack,
+                )
+            }
         }
         entry<AvatarCropRoute>(metadata = pageTransition()) { route ->
-            AvatarCropScreen(
-                sourceUri = route.sourceUri,
-                onBack = onBack,
-                onConfirm = { file ->
-                    pendingAvatarCropResult = file.absolutePath
+            val injected = platformScreens.avatarCrop
+            if (injected != null) {
+                navScope.injected(route.sourceUri) { croppedPath ->
+                    pendingAvatarCropResult = croppedPath
                     onBack()
-                },
-            )
+                }
+            } else {
+                NavPlaceholder(
+                    title = "AvatarCrop",
+                    hint = "头像裁剪暂仅 Android：${route.sourceUri}",
+                    onBack = onBack,
+                )
+            }
         }
         entry<HomeSettingsRoute> {
             SettingsScaffold(
@@ -286,7 +316,7 @@ fun TopNavigation(
                     page = HomeSettingsPage.VideoPlayback,
                     onNavigateToHKeyframes = { backStack.add(HKeyframesRoute) },
                     onNavigateToSharedHKeyframes = { backStack.add(SharedHKeyframesRoute) },
-                    downloadSettingsContent = { DownloadSettingsRouteScreen(embedded = true) },
+                    downloadSettingsContent = {},
                 )
             }
         }
@@ -298,7 +328,7 @@ fun TopNavigation(
             ) {
                 HomeSettingsRouteScreen(
                     page = HomeSettingsPage.NetworkDownload,
-                    downloadSettingsContent = { DownloadSettingsRouteScreen(embedded = true) },
+                    downloadSettingsContent = {},
                 )
             }
         }
@@ -310,7 +340,7 @@ fun TopNavigation(
             ) {
                 HomeSettingsRouteScreen(
                     page = HomeSettingsPage.Appearance,
-                    downloadSettingsContent = { DownloadSettingsRouteScreen(embedded = true) },
+                    downloadSettingsContent = {},
                 )
             }
         }
@@ -322,7 +352,7 @@ fun TopNavigation(
             ) {
                 HomeSettingsRouteScreen(
                     page = HomeSettingsPage.InterfaceInteraction,
-                    downloadSettingsContent = { DownloadSettingsRouteScreen(embedded = true) },
+                    downloadSettingsContent = {},
                 )
             }
         }
@@ -334,7 +364,7 @@ fun TopNavigation(
             ) {
                 HomeSettingsRouteScreen(
                     page = HomeSettingsPage.DataPrivacy,
-                    downloadSettingsContent = { DownloadSettingsRouteScreen(embedded = true) },
+                    downloadSettingsContent = {},
                 )
             }
         }
@@ -346,7 +376,7 @@ fun TopNavigation(
             ) {
                 HomeSettingsRouteScreen(
                     page = HomeSettingsPage.DeveloperOptions,
-                    downloadSettingsContent = { DownloadSettingsRouteScreen(embedded = true) },
+                    downloadSettingsContent = {},
                 )
             }
         }
@@ -361,27 +391,16 @@ fun TopNavigation(
                     onNavigateToOpenSourceLicenses = {
                         backStack.add(OpenSourceLicensesRoute)
                     },
-                    downloadSettingsContent = { DownloadSettingsRouteScreen(embedded = true) },
+                    downloadSettingsContent = {},
                 )
             }
         }
         entry<OpenSourceLicensesRoute>(metadata = pageTransition()) {
             var searchMode by remember { mutableStateOf(false) }
-            BackHandler(enabled = searchMode) {
-                searchMode = false
-            }
             SettingsScaffold(
                 backStack = backStack,
                 destination = SettingsDestinationSpec.OpenSourceLicenses,
                 fallbackDestination = AboutSettingsRoute,
-                onNavigateBack = {
-                    if (searchMode) {
-                        searchMode = false
-                        true
-                    } else {
-                        false
-                    }
-                },
                 actions = {
                     AnimatedVisibility(
                         visible = !searchMode,
@@ -428,12 +447,15 @@ fun TopNavigation(
             }
         }
         entry<DownloadSettingsRoute>(metadata = pageTransition()) {
-            SettingsScaffold(
-                backStack = backStack,
-                destination = SettingsDestinationSpec.Download,
-                fallbackDestination = NetworkDownloadSettingsRoute,
-            ) {
-                DownloadSettingsRouteScreen()
+            val injected = platformScreens.downloadSettings
+            if (injected != null) {
+                navScope.injected()
+            } else {
+                NavPlaceholder(
+                    title = "DownloadSettings",
+                    hint = "下载目录（SAF）随 P7",
+                    onBack = onBack,
+                )
             }
         }
         entry<MpvPlayerSettingsRoute>(metadata = pageTransition()) {
@@ -447,7 +469,7 @@ fun TopNavigation(
         }
         entry<HKeyframesRoute>(metadata = pageTransition()) {
             var showImportDialog by remember { mutableStateOf(false) }
-            val view = LocalView.current
+            val haptic = rememberHapticFeedback()
             SettingsScaffold(
                 backStack = backStack,
                 destination = SettingsDestinationSpec.HKeyframes,
@@ -455,7 +477,7 @@ fun TopNavigation(
                 floatingActionButton = {
                     FloatingActionButton(
                         onClick = {
-                            VibrationUtil.performHapticFeedback(view)
+                            haptic()
                             showImportDialog = true
                         },
                     ) {
@@ -505,7 +527,6 @@ fun TopNavigation(
         }
         entry<PreviewRoute>(metadata = pageTransition()) {
             PreviewRouteScreen(
-                activity = activity,
                 onBack = onBack,
                 onNavigateToGetchuPreview = {
                     backStack.add(GetchuPreviewRoute)
@@ -532,18 +553,53 @@ fun TopNavigation(
         }
         entry<PreviewCommentRoute>(metadata = pageTransition()) { route ->
             PreviewCommentRouteScreen(
-                activity = activity,
                 route = route,
                 onBack = onBack,
             )
         }
         entry<VideoRoute>(metadata = videoTransition()) { route ->
             VideoRouteScreen(
-                activity = activity,
                 route = route,
+                onBack = onBack,
+                onNavigateHome = { backStack.popTo(HomeRoute) },
+                onNavigateToVideo = onNavigateToVideo,
+                onOpenSearchRoute = { searchRoute -> backStack.add(searchRoute) },
+                onEnqueueDownload = {
+                    scope.launch {
+                        SonnerToast.warning("桌面下载随 P7（当前仅可在线播放）")
+                    }
+                },
             )
         }
         },
     )
+    }
+}
+
+private const val PageTransitionOffsetFactor = 0.10f
+
+@Composable
+private fun NavPlaceholder(
+    title: String,
+    hint: String,
+    onBack: () -> Unit,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null,
+) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(16.dp, Alignment.CenterVertically),
+    ) {
+        Text(text = title, style = MaterialTheme.typography.headlineSmall)
+        Text(text = hint, style = MaterialTheme.typography.bodyMedium)
+        if (actionLabel != null && onAction != null) {
+            Button(onClick = onAction) {
+                Text(actionLabel)
+            }
+        }
+        Button(onClick = onBack) {
+            Text("返回")
+        }
     }
 }

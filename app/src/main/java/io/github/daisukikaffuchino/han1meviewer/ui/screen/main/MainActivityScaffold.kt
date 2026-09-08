@@ -57,104 +57,7 @@ import io.github.daisukikaffuchino.utils.VibrationUtil
 import kotlinx.coroutines.launch
 
 @Composable
-fun MainActivityScaffold(
-    drawerState: DrawerState,
-    drawerEnabled: Boolean,
-    permanentDrawer: Boolean,
-    applyHorizontalSafeInsets: Boolean,
-    selectedDestination: MainDrawerDestination?,
-    avatarUrl: String?,
-    username: String?,
-    isLoggedIn: Boolean,
-    isLoading: Boolean,
-    currentSite: String,
-    checkInEnabled: Boolean,
-    onAvatarClick: () -> Unit,
-    onAvatarLongClick: () -> Unit,
-    onSwitchSiteClick: () -> Unit,
-    onDrawerItemSelected: (MainDrawerDestination) -> Boolean,
-    content: @Composable () -> Unit,
-) {
-    val scope = rememberCoroutineScope()
-    val drawerFraction by animateFloatAsState(
-        targetValue = if (drawerState.currentValue == DrawerValue.Open || drawerState.targetValue == DrawerValue.Open) 1f else 0f,
-        label = "drawer_fraction",
-    )
-    val currentContent by rememberUpdatedState(content)
-    val movableContent = remember {
-        movableContentOf {
-            currentContent()
-        }
-    }
-    val horizontalSafeInsetsModifier = if (applyHorizontalSafeInsets) {
-        Modifier.windowInsetsPadding(
-            WindowInsets.safeDrawing.only(WindowInsetsSides.Horizontal)
-        )
-    } else {
-        Modifier
-    }
-
-    val drawerContent: @Composable ColumnScope.() -> Unit = {
-        MainDrawerContent(
-            selectedDestination = selectedDestination,
-            avatarUrl = avatarUrl,
-            username = username,
-            isLoggedIn = isLoggedIn,
-            isLoading = isLoading,
-            currentSite = currentSite,
-            checkInEnabled = checkInEnabled,
-            onAvatarClick = onAvatarClick,
-            onAvatarLongClick = onAvatarLongClick,
-            onSwitchSiteClick = onSwitchSiteClick,
-            onDrawerItemSelected = onDrawerItemSelected,
-        )
-    }
-
-    if (permanentDrawer) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(HanimeDefaults.Colors.pageSurface)
-                .then(horizontalSafeInsetsModifier),
-        ) {
-            PermanentDrawerSheet(
-                modifier = Modifier.width(280.dp),
-                drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                windowInsets = WindowInsets(0, 0, 0, 0),
-                content = drawerContent,
-            )
-            movableContent()
-        }
-    } else {
-        ModalNavigationDrawer(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(HanimeDefaults.Colors.pageSurface)
-                .then(horizontalSafeInsetsModifier),
-            gesturesEnabled = drawerEnabled,
-            drawerState = drawerState,
-            drawerContent = {
-                ModalDrawerSheet(
-                    drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    windowInsets = WindowInsets(0, 0, 0, 0),
-                    content = drawerContent,
-                )
-            },
-        ) {
-            MainDrawerBody(drawerFraction = drawerFraction, content = movableContent)
-
-            BackHandler(
-                enabled = drawerState.currentValue == DrawerValue.Open ||
-                    drawerState.targetValue == DrawerValue.Open,
-            ) {
-                scope.launch { drawerState.close() }
-            }
-        }
-    }
-}
-
-@Composable
-private fun MainDrawerContent(
+fun MainDrawerContent(
     selectedDestination: MainDrawerDestination?,
     avatarUrl: String?,
     username: String?,
@@ -209,38 +112,6 @@ private fun MainDrawerContent(
             onItemClick = { onDrawerItemSelected(it) },
         )
         Spacer(modifier = Modifier.height(16.dp))
-    }
-}
-
-@Composable
-private fun MainDrawerBody(
-    drawerFraction: Float,
-    content: @Composable () -> Unit,
-) {
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(HanimeDefaults.Colors.pageSurface),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .graphicsLayer {
-                    val scale = 1f - (0.03f * drawerFraction)
-                    scaleX = scale
-                    scaleY = scale
-                    alpha = 1f - (0.08f * drawerFraction)
-                },
-        ) {
-            content()
-            if (drawerFraction > 0f) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.14f * drawerFraction)),
-                )
-            }
-        }
     }
 }
 
@@ -316,32 +187,3 @@ private fun MainDrawerSection(
     }
 }
 
-@Preview(showBackground = true, widthDp = 800, heightDp = 600)
-@Composable
-private fun MainActivityScaffoldPreview() {
-    ComponentPreview {
-        MainActivityScaffold(
-            drawerState = rememberDrawerState(initialValue = DrawerValue.Open),
-            drawerEnabled = true,
-            permanentDrawer = true,
-            applyHorizontalSafeInsets = true,
-            selectedDestination = MainDrawerDestination.Home,
-            avatarUrl = null,
-            username = "Han1meViewer",
-            isLoggedIn = true,
-            isLoading = false,
-            currentSite = "https://hanime1.me/",
-            checkInEnabled = true,
-            onAvatarClick = {},
-            onAvatarLongClick = {},
-            onSwitchSiteClick = {},
-            onDrawerItemSelected = { true },
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(MaterialTheme.colorScheme.background),
-            )
-        }
-    }
-}

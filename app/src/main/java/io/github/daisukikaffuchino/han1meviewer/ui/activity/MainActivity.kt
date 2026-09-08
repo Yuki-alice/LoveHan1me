@@ -40,7 +40,7 @@ import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.TopLevelBackS
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.SearchRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.registerArtistSearchNavigator
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.VideoRoute
-import io.github.daisukikaffuchino.han1meviewer.ui.screen.main.MainActivityContent
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.main.MainActivityShell
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage.HomePageViewModel
 import io.github.daisukikaffuchino.utils.ActivityManager
 import io.github.daisukikaffuchino.utils.isX86_64Device
@@ -83,22 +83,17 @@ class MainActivity : BaseActivity() {
 
     private fun initData() {
         setHanimeContent {
-            MainActivityContent(
-                activity = this,
-                viewModel = viewModel,
+            MainActivityShell(
+                activity = this@MainActivity,
                 pendingNavigationRequests = pendingNavigationRequests,
                 showAuthGuard = showAuthGuard,
-                onOpenAccount = { mainBackStack.add(AccountRoute) },
                 showSiteSwitchConfirm = showSiteSwitchConfirm,
                 logoutDialogCloseCurrentPage = logoutDialogCloseCurrentPage,
-                onLogoutClick = { showLogoutConfirmDialog() },
-                onRequireLogin = { openLogin() },
                 onSwitchSiteClick = { showSiteSwitchConfirm = true },
                 onDismissSiteSwitch = { showSiteSwitchConfirm = false },
                 onConfirmSiteSwitch = ::confirmSiteSwitch,
                 onDismissLogout = { logoutDialogCloseCurrentPage = null },
                 onConfirmLogout = ::confirmLogout,
-                onOpenClipboardVideo = ::showVideoDetailFragment,
             )
         }
     }
