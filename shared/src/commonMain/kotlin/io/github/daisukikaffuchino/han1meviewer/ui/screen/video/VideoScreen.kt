@@ -9,14 +9,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalInspectionMode
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.tooling.preview.Preview
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.loading
 import io.github.daisukikaffuchino.han1meviewer.logic.state.VideoLoadingState
 import io.github.daisukikaffuchino.han1meviewer.ui.component.content.EmptyContent
 import io.github.daisukikaffuchino.han1meviewer.ui.component.content.ErrorContent
 import io.github.daisukikaffuchino.han1meviewer.ui.component.content.LoadingContent
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 
 @Composable
 fun VideoScreen(
@@ -58,41 +56,5 @@ fun VideoScreen(
                 else -> Unit
             }
         }
-    }
-}
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun VideoScreenLoadingPreview() {
-    ComponentPreview {
-        VideoScreen(
-            state = VideoLoadingState.Loading,
-            onRetry = {},
-            content = {},
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun VideoScreenErrorPreview() {
-    ComponentPreview {
-        VideoScreen(
-            state = VideoLoadingState.Error(Throwable("network error")),
-            onRetry = {},
-            content = {},
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun VideoScreenNoContentPreview() {
-    ComponentPreview {
-        VideoScreen(
-            state = VideoLoadingState.NoContent,
-            onRetry = {},
-            content = {},
-        )
     }
 }

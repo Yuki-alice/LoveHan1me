@@ -1,7 +1,13 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.player
 
-// P5-1 占位：桌面真引擎（mpv-libmpv）为后续 P5-2 任务。
+import io.github.daisukikaffuchino.utils.LogUtil
+
+// M3：桌面真引擎（mediamp-mpv；占位 Placeholder 退役）。
+// kernel 参数暂忽略（mpv 通吃 mp4/HLS；Exo/System 语义在桌面无区分）。
 actual fun createPlaybackEngine(
     kernel: PlayerKernel,
     allowCast: Boolean,
-): PlaybackEngine = PlaceholderPlaybackEngine()
+): PlaybackEngine {
+    LogUtil.d("DesktopMpv", "createPlaybackEngine(kernel=$kernel, allowCast=$allowCast)")
+    return DesktopMpvPlaybackEngine()
+}

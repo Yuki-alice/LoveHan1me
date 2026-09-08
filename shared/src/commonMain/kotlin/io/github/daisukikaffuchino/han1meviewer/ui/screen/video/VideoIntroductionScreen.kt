@@ -66,18 +66,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.platform.LocalView
-import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import coil3.compose.AsyncImage
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.ui.component.HanimeAsyncImage
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.sure_to_download
 import io.github.daisukikaffuchino.han1meviewer.sure_to_redownload
@@ -145,8 +141,6 @@ import io.github.daisukikaffuchino.han1meviewer.ui.component.content.LoadingCont
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyColumn
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyRow
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyVerticalGrid
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.fakeVideoIntroduction
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.rememberCardResponsiveWidth
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.rememberRandomLoadingHint
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.SpacingNormal
@@ -155,11 +149,16 @@ import io.github.daisukikaffuchino.han1meviewer.ui.theme.VideoNormalCardMinWidth
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.VideoSimplifiedCardMinWidth
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.shapeByInteraction
 import io.github.daisukikaffuchino.han1meviewer.util.DisplayTextLocalizer
+import io.github.daisukikaffuchino.han1meviewer.ui.component.rememberHapticFeedback
 import io.github.daisukikaffuchino.utils.SonnerToast
-import io.github.daisukikaffuchino.utils.VibrationUtil
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.datetime.LocalDate
+import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
+import kotlinx.datetime.toLocalDateTime
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.formatHm
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.dailycheckin.today
+import kotlin.time.Clock
 
 private val previewSafeDateFormat = LocalDate.Formats.ISO
 
@@ -378,8 +377,7 @@ private fun VideoIntroductionContent(
         }
     }
 
-    val nestedScrollInterop = rememberNestedScrollInteropConnection()
-
+    // M2：AndroidView 互操作连接在 CMP common 不可用；纯 Compose 列表无需它。
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val relatedItems = video.relatedHanimes
         val relatedIsNormal = relatedItems.firstOrNull()?.itemType == HanimeInfo.NORMAL
@@ -396,9 +394,7 @@ private fun VideoIntroductionContent(
 
         LazyColumn(
             state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .nestedScroll(nestedScrollInterop),
+            modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
                 start = 6.dp,
                 top = 12.dp,
@@ -520,7 +516,7 @@ private fun DownloadQualityDialog(
     onOpenOfficial: () -> Unit,
     onSelectQuality: (String) -> Unit,
 ) {
-    val view = LocalView.current
+    val haptic = rememberHapticFeedback()
     val qualities = videoUrls.keys.toList()
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -534,7 +530,7 @@ private fun DownloadQualityDialog(
                             .selectable(
                                 selected = false,
                                 onClick = {
-                                    VibrationUtil.performHapticFeedback(view)
+                                    haptic()
                                     if (quality == io.github.daisukikaffuchino.han1meviewer.HanimeResolution.RES_UNKNOWN) {
                                         onOpenOfficial()
                                     } else {
@@ -575,7 +571,7 @@ private fun DownloadConfirmDialog(
     onConfirm: (Boolean) -> Unit,
     onOpenOfficial: () -> Unit,
 ) {
-    val view = LocalView.current
+    val haptic = rememberHapticFeedback()
     var autoCreateGroup by remember(prompt, video.title) { mutableStateOf(false) }
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -613,7 +609,7 @@ private fun DownloadConfirmDialog(
                         .toggleable(
                             value = autoCreateGroup,
                             onValueChange = { checked ->
-                                VibrationUtil.performHapticFeedback(view)
+                                haptic()
                                 autoCreateGroup = checked
                             },
                         )
@@ -678,12 +674,13 @@ private fun QuickCheckInDialog(
         confirmButton = {
             TextButton(
                 onClick = {
-                    val time = java.time.LocalTime.now()
-                        .format(java.time.format.DateTimeFormatter.ofPattern("HH:mm"))
+                    // M2：java.time 在 commonMain 不可用；改共享 today()/formatHm()
+                    //（HomeRouteScreen 打卡同款写法），输出同为 ISO 日期 + "HH:mm"。
                     onConfirm(
                         CheckInRecordEntity(
-                            date = java.time.LocalDate.now().toString(),
-                            time = time,
+                            date = today().toString(),
+                            time = Clock.System.now()
+                                .toLocalDateTime(TimeZone.currentSystemDefault()).time.formatHm(),
                             type = io.github.daisukikaffuchino.han1meviewer.logic.entity.CheckInType.MASTURBATION.storeName,
                             feeling = feeling,
                         )
@@ -707,7 +704,7 @@ private fun MyListDialog(
     onDismiss: () -> Unit,
     onConfirm: (List<Boolean>) -> Unit,
 ) {
-    val view = LocalView.current
+    val haptic = rememberHapticFeedback()
     var selectedStates by remember(myList.myListInfo) {
         mutableStateOf(myList.myListInfo.map { it.isSelected })
     }
@@ -737,7 +734,7 @@ private fun MyListDialog(
                                 .toggleable(
                                     value = selectedStates[index],
                                     onValueChange = { checked ->
-                                        VibrationUtil.performHapticFeedback(view)
+                                        haptic()
                                         selectedStates =
                                             selectedStates.toMutableList()
                                                 .also { it[index] = checked }
@@ -786,7 +783,7 @@ private fun PlaylistBottomSheet(
     onDismiss: () -> Unit,
     onOpenVideo: (HanimeInfo) -> Unit,
 ) {
-    val view = LocalView.current
+    val haptic = rememberHapticFeedback()
     val playingIndex = remember(playlist) {
         playlist.video.indexOfFirst { it.isPlaying }.coerceAtLeast(0)
     }
@@ -854,7 +851,7 @@ private fun PlaylistBottomSheet(
                             .combinedClickable(
                                 enabled = !item.isPlaying,
                                 onClick = {
-                                    VibrationUtil.performHapticFeedback(view)
+                                    haptic()
                                     onOpenVideo(item)
                                 },
                                 onLongClick = null,
@@ -863,7 +860,7 @@ private fun PlaylistBottomSheet(
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(10.dp),
                     ) {
-                        AsyncImage(
+                        HanimeAsyncImage(
                             model = item.coverUrl,
                             contentDescription = item.title,
                             modifier = Modifier
@@ -940,7 +937,7 @@ private fun ArtistSection(
     onOpenArtist: () -> Unit,
     onToggleSubscribe: () -> Unit,
 ) {
-    val view = LocalView.current
+    val haptic = rememberHapticFeedback()
     val interactionSource = remember { MutableInteractionSource() }
     val pressed by interactionSource.collectIsPressedAsState()
     val cardShape = shapeByInteraction(
@@ -962,7 +959,7 @@ private fun ArtistSection(
                     interactionSource = interactionSource,
                     indication = LocalIndication.current,
                     onClick = {
-                        VibrationUtil.performHapticFeedback(view)
+                        haptic()
                         onOpenArtist()
                     },
                     onLongClick = null,
@@ -971,7 +968,7 @@ private fun ArtistSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            AsyncImage(
+            HanimeAsyncImage(
                 model = artist.avatarUrl,
                 contentDescription = artist.name,
                 modifier = Modifier
@@ -997,7 +994,7 @@ private fun ArtistSection(
                 if (artist.isSubscribed) {
                     OutlinedButton(
                         onClick = {
-                            VibrationUtil.performHapticFeedback(view)
+                            haptic()
                             onToggleSubscribe()
                         },
                         colors = ButtonDefaults.outlinedButtonColors(
@@ -1135,7 +1132,7 @@ private fun VideoRatingButtons(
     video: HanimeVideo,
     onRateVideo: (Boolean) -> Unit,
 ) {
-    val view = LocalView.current
+    val haptic = rememberHapticFeedback()
     val likeContentColor by animateColorAsState(
         targetValue = if (video.isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
         label = "LikeColor"
@@ -1175,7 +1172,7 @@ private fun VideoRatingButtons(
                 .background(likeContainerColor)
                 .combinedClickable(
                     onClick = {
-                        VibrationUtil.performHapticFeedback(view)
+                        haptic()
                         onRateVideo(true)
                     },
                 )
@@ -1212,7 +1209,7 @@ private fun VideoRatingButtons(
                 .background(dislikeContainerColor)
                 .combinedClickable(
                     onClick = {
-                        VibrationUtil.performHapticFeedback(view)
+                        haptic()
                         onRateVideo(false)
                     },
                 ),
@@ -1316,19 +1313,19 @@ private fun VideoActionButton(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
 ) {
-    val view = LocalView.current
+    val haptic = rememberHapticFeedback()
     Column(
         modifier = Modifier
             .widthIn(min = 76.dp)
             .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
             .combinedClickable(
                 onClick = {
-                    VibrationUtil.performHapticFeedback(view)
+                    haptic()
                     onClick()
                 },
                 onLongClick = onLongClick?.let { action ->
                     {
-                        VibrationUtil.performHapticFeedback(view)
+                        haptic()
                         action()
                     }
                 },
@@ -1514,125 +1511,5 @@ private fun SectionHeader(
             }
         }
         HorizontalDivider()
-    }
-}
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 900, device = "id:pixel_tablet")
-@Composable
-private fun VideoIntroductionScreenPreview() {
-    ComponentPreview {
-        VideoIntroductionScreen(
-            video = fakeVideoIntroduction,
-            state = VideoLoadingState.Success(fakeVideoIntroduction),
-            fromDownload = false,
-            hideRelatedInIntro = false,
-            playlistInitialIndex = 1,
-            downloadPrompt = null,
-            onRetry = {},
-            onOpenVideo = {},
-            onOpenArtist = {},
-            onNavigateToSearch = {},
-            onToggleSubscribe = {},
-            onToggleFavorite = {},
-            onRequestManageMyList = { it() },
-            onRateVideo = {},
-            onManageMyList = { _, _ -> },
-            checkInEnabled = true,
-            onQuickCheckIn = {},
-            onPrepareDownload = {},
-            onDismissDownloadPrompt = {},
-            onConfirmDownloadPrompt = {},
-            onRequestOpenOfficialDownloadPage = {},
-            onShare = {},
-            onCopyShareText = {},
-            onOpenWebPage = {},
-            onOpenOriginalComic = {},
-            onShowAllPlaylist = {},
-            onPlaylistScrollChange = {},
-            introFirstVisibleItemIndex = 0,
-            introFirstVisibleItemScrollOffset = 0,
-            onIntroductionScrollChange = { _, _ -> },
-            onIntroductionLinkClick = {},
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun VideoIntroductionScreenLoadingPreview() {
-    ComponentPreview {
-        VideoIntroductionScreen(
-            video = null,
-            state = VideoLoadingState.Loading,
-            fromDownload = false,
-            hideRelatedInIntro = false,
-            playlistInitialIndex = 0,
-            downloadPrompt = null,
-            onRetry = {},
-            onOpenVideo = {},
-            onOpenArtist = {},
-            onNavigateToSearch = {},
-            onToggleSubscribe = {},
-            onToggleFavorite = {},
-            onRequestManageMyList = { it() },
-            onRateVideo = {},
-            onManageMyList = { _, _ -> },
-            checkInEnabled = true,
-            onQuickCheckIn = {},
-            onPrepareDownload = {},
-            onDismissDownloadPrompt = {},
-            onConfirmDownloadPrompt = {},
-            onRequestOpenOfficialDownloadPage = {},
-            onShare = {},
-            onCopyShareText = {},
-            onOpenWebPage = {},
-            onOpenOriginalComic = null,
-            onShowAllPlaylist = null,
-            onPlaylistScrollChange = {},
-            introFirstVisibleItemIndex = 0,
-            introFirstVisibleItemScrollOffset = 0,
-            onIntroductionScrollChange = { _, _ -> },
-            onIntroductionLinkClick = {},
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun VideoIntroductionScreenErrorPreview() {
-    ComponentPreview {
-        VideoIntroductionScreen(
-            video = null,
-            state = VideoLoadingState.Error(Throwable("network error")),
-            fromDownload = false,
-            hideRelatedInIntro = false,
-            playlistInitialIndex = 0,
-            downloadPrompt = null,
-            onRetry = {},
-            onOpenVideo = {},
-            onOpenArtist = {},
-            onNavigateToSearch = {},
-            onToggleSubscribe = {},
-            onToggleFavorite = {},
-            onRequestManageMyList = { it() },
-            onRateVideo = {},
-            onManageMyList = { _, _ -> },
-            checkInEnabled = true,
-            onQuickCheckIn = {},
-            onPrepareDownload = {},
-            onDismissDownloadPrompt = {},
-            onConfirmDownloadPrompt = {},
-            onRequestOpenOfficialDownloadPage = {},
-            onShare = {},
-            onCopyShareText = {},
-            onOpenWebPage = {},
-            onOpenOriginalComic = null,
-            onShowAllPlaylist = null,
-            onPlaylistScrollChange = {},
-            introFirstVisibleItemIndex = 0,
-            introFirstVisibleItemScrollOffset = 0,
-            onIntroductionScrollChange = { _, _ -> },
-            onIntroductionLinkClick = {},
-        )
     }
 }

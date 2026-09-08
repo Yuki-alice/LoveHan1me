@@ -77,4 +77,10 @@ interface PlaybackEngine {
     fun attachSurface(surface: VideoSurface)
     fun detachSurface(surface: VideoSurface)
     fun release()
+
+    /**
+     * M3：超分着色器档位（mpv `glsl-shaders`）。仅 MPV 引擎实现，
+     * 其余默认空实现（调用方无需类型判断）。
+     */
+    fun setSuperResolution(index: Int) {}
 }

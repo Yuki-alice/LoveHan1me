@@ -1,15 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.video
 
-import android.content.Context
-import android.graphics.RenderEffect
-import android.graphics.Shader
-import android.graphics.drawable.Drawable
-import android.graphics.drawable.StateListDrawable
-import android.os.Build
-import android.os.SystemClock
-import android.text.format.DateFormat
-import android.util.StateSet
-import android.view.HapticFeedbackConstants
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -78,27 +68,16 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.DrawableCompat
-import androidx.mediarouter.app.MediaRouteButton
-import coil3.compose.AsyncImage
-import com.google.android.gms.cast.framework.CastButtonFactory
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.h_keyframes_not_enabled
 import io.github.daisukikaffuchino.han1meviewer.enable_google_cast
@@ -150,19 +129,24 @@ import io.github.daisukikaffuchino.han1meviewer.logic.entity.HKeyframeEntity
 import io.github.daisukikaffuchino.han1meviewer.ui.component.FilledIconButton
 import io.github.daisukikaffuchino.han1meviewer.ui.component.FilledTonalButton
 import io.github.daisukikaffuchino.han1meviewer.ui.component.FilledTonalIconButton
+import io.github.daisukikaffuchino.han1meviewer.ui.component.HanimeAsyncImage
 import io.github.daisukikaffuchino.han1meviewer.ui.component.IconButton
+import io.github.daisukikaffuchino.han1meviewer.ui.player.CastRouteButton
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlaybackEngine
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlaybackQuality
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlatformVideoSurface
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlayerDefaults
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
+import io.github.daisukikaffuchino.han1meviewer.ui.player.posterBlur
+import io.github.daisukikaffuchino.han1meviewer.ui.component.rememberHapticFeedback
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
 import io.github.daisukikaffuchino.utils.SonnerToast
-import io.github.daisukikaffuchino.utils.toastText
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import java.util.Date
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import io.github.daisukikaffuchino.han1meviewer.logic.currentEpochMillis
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -239,19 +223,18 @@ fun VideoPlayerUi(
     var displayedSidePanel by remember { mutableStateOf<PlayerSidePanel?>(null) }
     var showUnlockButton by remember { mutableStateOf(false) }
     var unlockButtonTimeoutToken by remember { mutableIntStateOf(0) }
-    val context = LocalContext.current
-    val view = LocalView.current
+    val haptic = rememberHapticFeedback()
     // P6d-3-C2：AndroidView factory 非 @Composable 上下文，描述串外提
     val castButtonDesc = stringResource(Res.string.enable_google_cast)
     // P6d-3-C3：回调内固定串预解析
     val hKeyframesDisabledText = stringResource(Res.string.h_keyframes_not_enabled)
-    var deviceTime by remember(context) {
-        mutableStateOf(DateFormat.getTimeFormat(context).format(Date()))
-    }
+    // M3：原 DateFormat.getTimeFormat(context)（Android-only）；改当前时分，
+    // 24 小时制零填充（与系统 12/24 小时制差异可接受）。
+    var deviceTime by remember { mutableStateOf(formatDeviceTime(currentEpochMillis())) }
 
-    LaunchedEffect(context) {
+    LaunchedEffect(Unit) {
         while (true) {
-            deviceTime = DateFormat.getTimeFormat(context).format(Date())
+            deviceTime = formatDeviceTime(currentEpochMillis())
             delay(60_000L.milliseconds)
         }
     }
@@ -331,7 +314,7 @@ fun VideoPlayerUi(
                                         isLongPressSpeedActive = true
                                         showControlsState = false
                                         suppressTapUntilMs = Long.MAX_VALUE
-                                        view.performHapticFeedback(HapticFeedbackConstants.LONG_PRESS)
+                                        haptic()
                                         latestOnLongPressStart()
                                     }
                                 }
@@ -341,14 +324,14 @@ fun VideoPlayerUi(
                                     isLongPressSpeedActive = false
                                     showControlsState = false
                                     if (suppressTapUntilMs == Long.MAX_VALUE) {
-                                        suppressTapUntilMs = SystemClock.uptimeMillis() + 500L
+                                        suppressTapUntilMs = nowMs() + 500L
                                     }
                                     latestOnLongPressEnd()
                                 }
                             }
                         },
                         onTap = {
-                            if (SystemClock.uptimeMillis() <= suppressTapUntilMs) {
+                            if (nowMs() <= suppressTapUntilMs) {
                                 suppressTapUntilMs = 0L
                             } else {
                                 showControlsState = !showControlsState
@@ -453,7 +436,7 @@ fun VideoPlayerUi(
                                     isLongPressSpeedActive = false
                                     showControlsState = false
                                     if (suppressTapUntilMs == Long.MAX_VALUE) {
-                                        suppressTapUntilMs = SystemClock.uptimeMillis() + 500L
+                                        suppressTapUntilMs = nowMs() + 500L
                                     }
                                     latestOnLongPressEnd()
                                     longPressOwnsDrag = false
@@ -539,7 +522,7 @@ fun VideoPlayerUi(
          * 封面
          */
         if (showPoster && posterUrl != null) {
-            AsyncImage(
+            HanimeAsyncImage(
                 model = posterUrl,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
@@ -627,22 +610,9 @@ fun VideoPlayerUi(
                         Box(
                             modifier = Modifier
                                 .matchParentSize()
-                                .then(
-                                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                        Modifier.graphicsLayer {
-                                            renderEffect =
-                                                RenderEffect
-                                                    .createBlurEffect(
-                                                        32f,
-                                                        32f,
-                                                        Shader.TileMode.CLAMP
-                                                    )
-                                                    .asComposeRenderEffect()
-                                        }
-                                    } else {
-                                        Modifier
-                                    }
-                                )
+                                // M3：Android S+ RenderEffect 模糊改跨平台 posterBlur()，
+                                // 其他平台恒等（见 ui.player.VideoPlatform）。
+                                .posterBlur()
                                 .background(
                                     Color.Black.copy(alpha = 0.18f)
                                 )
@@ -723,18 +693,8 @@ fun VideoPlayerUi(
                     Spacer(modifier = Modifier.width(10.dp))
 
                     if (showCastButton) {
-                        AndroidView(
-                            modifier = Modifier.size(24.dp),
-                            factory = { context ->
-                                MediaRouteButton(context).also { button ->
-                                    button.minimumWidth = 0
-                                    button.minimumHeight = 0
-                                    button.contentDescription = castButtonDesc
-                                    CastButtonFactory.setUpMediaRouteButton(context, button)
-                                    button.setRemoteIndicatorDrawable(createGoogleCastIndicator(context))
-                                }
-                            },
-                        )
+                        // M3：MediaRouteButton + Cast SDK 仅 Android（见 ui.player.VideoPlatform）。
+                        CastRouteButton(contentDescription = castButtonDesc)
                         Spacer(modifier = Modifier.width(6.dp))
                     }
 
@@ -916,22 +876,7 @@ fun VideoPlayerUi(
                     Box(
                         modifier = Modifier
                             .matchParentSize()
-                            .then(
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                    Modifier.graphicsLayer {
-                                        renderEffect =
-                                            RenderEffect
-                                                .createBlurEffect(
-                                                    32f,
-                                                    32f,
-                                                    Shader.TileMode.CLAMP
-                                                )
-                                                .asComposeRenderEffect()
-                                    }
-                                } else {
-                                    Modifier
-                                }
-                            )
+                            .posterBlur()
                             .background(
                                 Color.Black.copy(alpha = 0.18f)
                             )
@@ -1267,25 +1212,8 @@ fun VideoPlayerUi(
     }
 }
 
-private fun createGoogleCastIndicator(context: Context): Drawable = StateListDrawable().apply {
-    addState(
-        intArrayOf(android.R.attr.state_checked),
-        whiteDrawable(context, androidx.media3.cast.R.drawable.media_route_button_connected),
-    )
-    addState(
-        intArrayOf(android.R.attr.state_checkable),
-        whiteDrawable(context, androidx.media3.cast.R.drawable.media_route_button_disconnected),
-    )
-    addState(
-        StateSet.WILD_CARD,
-        whiteDrawable(context, androidx.media3.cast.R.drawable.media_route_button_disconnected),
-    )
-}
-
-private fun whiteDrawable(context: Context, drawableRes: Int): Drawable =
-    requireNotNull(ContextCompat.getDrawable(context, drawableRes)).mutate().also { drawable ->
-        DrawableCompat.setTint(drawable, android.graphics.Color.WHITE)
-    }
+// M3：createGoogleCastIndicator / whiteDrawable 已随 Cast 按钮搬
+// androidMain（ui.player.VideoPlatform.android.kt）。
 
 @Composable
 private fun PlayerMenuChip(
@@ -1352,17 +1280,8 @@ private fun BoxScope.PlayerSidePanelSheet(
         Box(
             modifier = Modifier
                 .matchParentSize()
-                .then(
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                        Modifier.graphicsLayer {
-                            renderEffect = RenderEffect
-                                .createBlurEffect(32f, 32f, Shader.TileMode.CLAMP)
-                                .asComposeRenderEffect()
-                        }
-                    } else {
-                        Modifier
-                    }
-                )
+                // M3：见 posterBlur()（Android S+ RenderEffect，其他平台恒等）。
+                .posterBlur()
                 .background(Color.Black.copy(alpha = 0.72f))
         )
         LazyColumn(
@@ -1734,22 +1653,7 @@ private fun GestureIndicatorOverlay(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .then(
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                                Modifier.graphicsLayer {
-                                    renderEffect =
-                                        RenderEffect
-                                            .createBlurEffect(
-                                                55f,
-                                                55f,
-                                                Shader.TileMode.CLAMP
-                                            )
-                                            .asComposeRenderEffect()
-                                }
-                            } else {
-                                Modifier
-                            }
-                        )
+                        .posterBlur(55f)
                         .background(
                             Color.Black.copy(alpha = 0.32f)
                         )
@@ -1845,121 +1749,13 @@ private fun GestureIndicatorOverlay(
     }
 }
 
-@Preview(
-    showBackground = true,
-    backgroundColor = 0xFF000000,
-    widthDp = 960,
-    heightDp = 540
-)
-@Composable
-private fun VideoPlayerUiPreview() {
-    MaterialTheme(
-        colorScheme = darkColorScheme()
-    ) {
-        VideoPlayerUiPreviewContent()
-    }
-}
+// M3：设备时钟（原 DateFormat 系统格式）与单调时钟的跨平台实现。
+private fun nowMs(): Long = currentEpochMillis()
 
-@Preview(
-    showBackground = true,
-    backgroundColor = 0xFF000000,
-    widthDp = 960,
-    heightDp = 540,
-)
-@Composable
-private fun VideoPlayerUiFullscreenPreview() {
-    MaterialTheme(
-        colorScheme = darkColorScheme(),
-    ) {
-        VideoPlayerUiPreviewContent(isFullscreen = true, isPlaying = true)
-    }
-}
-
-@Preview(
-    showBackground = true,
-    backgroundColor = 0xFF000000,
-    widthDp = 960,
-    heightDp = 540
-)
-@Composable
-private fun VideoPlayerUiLoadingPreview() {
-    MaterialTheme(
-        colorScheme = darkColorScheme()
-    ) {
-        VideoPlayerUiPreviewContent(
-            showLoading = true,
-            isPlaying = true,
-        )
-    }
-}
-
-@Preview(
-    showBackground = true,
-    backgroundColor = 0xFF000000,
-    widthDp = 960,
-    heightDp = 540
-)
-@Composable
-private fun VideoPlayerUiRetryPreview() {
-    ComponentPreview {
-        VideoPlayerUiPreviewContent(
-            showRetry = true,
-        )
-    }
-}
-
-@Preview(
-    showBackground = true,
-    backgroundColor = 0xFF000000,
-    widthDp = 960,
-    heightDp = 540
-)
-@Composable
-private fun GestureIndicatorOverlayPreview() {
-    ComponentPreview {
-        GestureIndicatorOverlay(
-            visible = true,
-            type = GestureIndicatorType.Brightness,
-            percent = 0.5f,
-        )
-    }
-}
-
-@Composable
-private fun VideoPlayerUiPreviewContent(
-    isFullscreen: Boolean = false,
-    isPlaying: Boolean = false,
-    showLoading: Boolean = false,
-    showRetry: Boolean = false,
-) {
-    VideoPlayerUi(
-        title = VideoPlayerUiPreviewData.title,
-        currentTime = VideoPlayerUiPreviewData.currentTime,
-        totalTime = VideoPlayerUiPreviewData.totalTime,
-        progress = VideoPlayerUiPreviewData.progress,
-        bufferedProgress = VideoPlayerUiPreviewData.bufferedProgress,
-        currentVolume = 0.7f,
-        currentBrightness = 0.65f,
-        isFullscreen = isFullscreen,
-        isPlaying = isPlaying,
-        showLoading = showLoading,
-        showRetry = showRetry,
-        qualities = listOf(PlaybackQuality(label = "1080p", uri = "")),
-        selectedQuality = "1080p",
-        superResolutionLabel = stringResource(Res.string.player_anime4k_label),
-        superResolutionOptions = listOf(
-            stringResource(Res.string.super_resolution_off),
-            stringResource(Res.string.super_resolution_performance),
-            stringResource(Res.string.super_resolution_quality),
-        ),
-        hKeyframeLabel = stringResource(Res.string.player_h_keyframe),
-    )
-}
-
-private object VideoPlayerUiPreviewData {
-    const val title = "视频标题标题标题标题"
-    const val currentTime = "12:36"
-    const val totalTime = "24:12"
-    const val progress = 0.45f
-    const val bufferedProgress = 0.72f
+private fun formatDeviceTime(epochMillis: Long): String {
+    val dateTime = kotlinx.datetime.Instant.fromEpochMilliseconds(epochMillis)
+        .toLocalDateTime(TimeZone.currentSystemDefault())
+    val hour = dateTime.hour.toString().padStart(2, '0')
+    val minute = dateTime.minute.toString().padStart(2, '0')
+    return "$hour:$minute"
 }

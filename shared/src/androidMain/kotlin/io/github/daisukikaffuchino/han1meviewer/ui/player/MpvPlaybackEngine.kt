@@ -190,7 +190,7 @@ class MpvPlaybackEngine(
         applySurfaceSize()
     }
 
-    fun setSuperResolution(index: Int) {
+    override fun setSuperResolution(index: Int) {
         val shader = AnimeShaders.getShader(context, index)
         MPVLib.command(arrayOf("change-list", "glsl-shaders", "set", shader))
     }

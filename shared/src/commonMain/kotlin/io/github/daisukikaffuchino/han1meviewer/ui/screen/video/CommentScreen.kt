@@ -1,6 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.video
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -48,13 +47,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalLayoutDirection
-import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.Res
@@ -80,11 +76,10 @@ import io.github.daisukikaffuchino.han1meviewer.ui.component.VideoCommentCard
 import io.github.daisukikaffuchino.han1meviewer.ui.component.content.EmptyContent
 import io.github.daisukikaffuchino.han1meviewer.ui.component.content.ErrorContent
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyColumn
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.fakeCommentList
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
 import io.github.daisukikaffuchino.han1meviewer.util.parseTimeStrToMinutes
 import io.github.daisukikaffuchino.han1meviewer.util.safeSortedBy
-import io.github.daisukikaffuchino.utils.VibrationUtil
+import io.github.daisukikaffuchino.han1meviewer.ui.component.rememberHapticFeedback
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -118,7 +113,7 @@ fun CommentScreen(
     val comments by commentsFlow.collectAsStateWithLifecycle()
     val state by commentStateFlow.collectAsStateWithLifecycle()
     val sortType by currentSortType.collectAsStateWithLifecycle()
-    val view = LocalView.current
+    val haptic = rememberHapticFeedback()
     val containerSize = LocalWindowInfo.current.containerSize
     val maxScreenWidth = containerSize.width.dp
 
@@ -139,7 +134,6 @@ fun CommentScreen(
     val scope = rememberCoroutineScope()
     val loginFirstText = stringResource(Res.string.login_first)
     val commentTooShortText = stringResource(Res.string.comment_too_short)
-    val nestedScrollInterop = rememberNestedScrollInteropConnection()
     LaunchedEffect(reportMessageFlow) {
         reportMessageFlow.collect {
             latestReportMessage = it.text
@@ -162,12 +156,8 @@ fun CommentScreen(
         }
     }
 
-    BackHandler(enabled = replyingComment != null || showCommentBar) {
-        replyingComment = null
-        replyText = TextFieldValue("")
-        showCommentBar = false
-        composeText = TextFieldValue("")
-    }
+    // M2：BackHandler 是 Android-only；桌面无系统返回，回复框有关闭按钮。
+    // （原：返回键优先收起回复/评论框。）
 
     if (showSortSheet) {
         ModalBottomSheet(onDismissRequest = { showSortSheet = false }) {
@@ -243,7 +233,7 @@ fun CommentScreen(
                                 )
                             },
                             onClick = {
-                                VibrationUtil.performHapticFeedback(view)
+                                haptic()
                                 showCommentBar = true
                             },
                         )
@@ -301,9 +291,7 @@ fun CommentScreen(
                     ) {
                         LazyColumn(
                             state = listState,
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .nestedScroll(nestedScrollInterop),
+                            modifier = Modifier.fillMaxSize(),
                             contentPadding = listContentPadding,
                             verticalArrangement = Arrangement.spacedBy(8.dp),
                         ) {
@@ -475,57 +463,4 @@ private fun rememberCommentFabVisibility(listState: LazyListState): androidx.com
             }
         }
     }
-}
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun CommentScreenPreview() {
-    CommentScreen(
-        commentsFlow = MutableStateFlow(fakeCommentList),
-        commentStateFlow = MutableStateFlow(WebsiteState.Success(VideoComments(fakeCommentList.toMutableList()))),
-        reportMessageFlow = flowOf(CommentMessage("")),
-        currentSortType = MutableStateFlow(CommentSortType.LATEST),
-        reportReasons = listOf(
-            ReportReason(
-                lang = ReportReason.Language(
-                    zhrTW = "垃圾訊息",
-                    zhrCN = "垃圾信息",
-                    en = "Spam",
-                ),
-                reasonKey = "spam",
-            )
-        ),
-        isPreviewCommentPrefetched = false,
-        isAlreadyLogin = true,
-        onRefresh = {},
-        onReply = { _, _ -> },
-        onReport = { _, _ -> },
-        onThumbUp = {},
-        onThumbDown = {},
-        onViewMoreReplies = {},
-        onSortChange = {},
-        onComposeComment = {},
-    )
-}
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun CommentScreenEmptyPreview() {
-    CommentScreen(
-        commentsFlow = MutableStateFlow(emptyList()),
-        commentStateFlow = MutableStateFlow(WebsiteState.Success(VideoComments(fakeCommentList.toMutableList()))),
-        reportMessageFlow = flowOf(CommentMessage("")),
-        currentSortType = MutableStateFlow(CommentSortType.LATEST),
-        reportReasons = emptyList(),
-        isPreviewCommentPrefetched = false,
-        isAlreadyLogin = true,
-        onRefresh = {},
-        onReply = { _, _ -> },
-        onReport = { _, _ -> },
-        onThumbUp = {},
-        onThumbDown = {},
-        onViewMoreReplies = {},
-        onSortChange = {},
-        onComposeComment = {},
-    )
 }

@@ -1,25 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.video
 
-import android.Manifest
-import android.app.PendingIntent
-import android.app.PictureInPictureParams
-import android.app.RemoteAction
-import android.content.Context
-import android.content.pm.ActivityInfo
-import android.content.pm.PackageManager
-import android.graphics.Color
-import android.graphics.Rect
-import android.graphics.drawable.Icon
-import android.net.ConnectivityManager
-import android.os.Build
-import android.provider.Settings
-import android.util.Base64
-import android.util.Rational
-import android.view.WindowManager
-import androidx.activity.OnBackPressedCallback
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
@@ -27,29 +7,23 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
-import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.unit.dp
-import androidx.core.content.ContextCompat
-import androidx.core.view.WindowCompat
-import androidx.core.view.WindowInsetsCompat
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
-import io.github.daisukikaffuchino.han1meviewer.BuildConfig
+import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.add_failed
 import io.github.daisukikaffuchino.han1meviewer.add_success
@@ -59,25 +33,17 @@ import io.github.daisukikaffuchino.han1meviewer.large_screen_tablet_mode_hint
 import io.github.daisukikaffuchino.han1meviewer.local_favorite_cancelled
 import io.github.daisukikaffuchino.han1meviewer.modify_failed
 import io.github.daisukikaffuchino.han1meviewer.modify_success
-import io.github.daisukikaffuchino.han1meviewer.msg_deny_download_notification
 import io.github.daisukikaffuchino.han1meviewer.pause_then_long_press
 import io.github.daisukikaffuchino.han1meviewer.video_might_not_exist
 import io.github.daisukikaffuchino.han1meviewer.add_to_h_keyframe
-import io.github.daisukikaffuchino.han1meviewer.allow
-import io.github.daisukikaffuchino.han1meviewer.allow_post_notification
 import io.github.daisukikaffuchino.han1meviewer.cancel
 import io.github.daisukikaffuchino.han1meviewer.confirm
 import io.github.daisukikaffuchino.han1meviewer.current_position_d_ms
-import io.github.daisukikaffuchino.han1meviewer.deny
 import io.github.daisukikaffuchino.han1meviewer.long_press_share_to_copy
 import io.github.daisukikaffuchino.han1meviewer.mobile_data_playback_warning
 import io.github.daisukikaffuchino.han1meviewer.no
 import io.github.daisukikaffuchino.han1meviewer.play_pause
 import io.github.daisukikaffuchino.han1meviewer.player_untitled_video
-import io.github.daisukikaffuchino.han1meviewer.reason_for_download_notification
-import io.github.daisukikaffuchino.han1meviewer.super_resolution_off
-import io.github.daisukikaffuchino.han1meviewer.super_resolution_performance
-import io.github.daisukikaffuchino.han1meviewer.super_resolution_quality
 import io.github.daisukikaffuchino.han1meviewer.sure
 import io.github.daisukikaffuchino.han1meviewer.sure_to_add_to_h_keyframe
 import io.github.daisukikaffuchino.han1meviewer.sure_to_unsubscribe
@@ -85,6 +51,9 @@ import io.github.daisukikaffuchino.han1meviewer.unsubscribe_artist
 import io.github.daisukikaffuchino.han1meviewer.warning
 import io.github.daisukikaffuchino.han1meviewer.player_keyframe_option
 import io.github.daisukikaffuchino.han1meviewer.player_h_keyframe
+import io.github.daisukikaffuchino.han1meviewer.super_resolution_off
+import io.github.daisukikaffuchino.han1meviewer.super_resolution_performance
+import io.github.daisukikaffuchino.han1meviewer.super_resolution_quality
 import io.github.daisukikaffuchino.han1meviewer.player_anime4k_label
 import io.github.daisukikaffuchino.han1meviewer.local_list_notice_title
 import io.github.daisukikaffuchino.han1meviewer.local_list_notice_message
@@ -100,23 +69,24 @@ import io.github.daisukikaffuchino.han1meviewer.logic.model.SearchOption
 import io.github.daisukikaffuchino.han1meviewer.logic.model.VideoLandscapeLayoutStyle
 import io.github.daisukikaffuchino.han1meviewer.logic.state.VideoLoadingState
 import io.github.daisukikaffuchino.han1meviewer.logic.state.WebsiteState
-import io.github.daisukikaffuchino.han1meviewer.ui.activity.MainActivity
+import io.github.daisukikaffuchino.han1meviewer.ui.bridge.NoopVideoPageHost
 import io.github.daisukikaffuchino.han1meviewer.ui.bridge.VideoPageHost
 import io.github.daisukikaffuchino.han1meviewer.ui.component.ConfirmDialog
-import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.HomeRoute
+import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.SearchRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.VideoRoute
+import io.github.daisukikaffuchino.han1meviewer.ui.player.BindOrientationAutoFullscreen
 import io.github.daisukikaffuchino.han1meviewer.ui.player.ComposePlaybackController
-import io.github.daisukikaffuchino.han1meviewer.ui.player.PlaybackEngineFactory
+import io.github.daisukikaffuchino.han1meviewer.ui.player.PlaybackEngine
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlaybackPhase
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlaybackQuality
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlayerKernel
+import io.github.daisukikaffuchino.han1meviewer.ui.player.createPlaybackEngine
+import io.github.daisukikaffuchino.han1meviewer.ui.player.isActiveNetworkMetered
 import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.CommentViewModel
 import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.VideoViewModel
-import io.github.daisukikaffuchino.utils.loadAssetAs
-import io.github.daisukikaffuchino.utils.OrientationManager
+import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.sharedViewModel
+import io.github.daisukikaffuchino.utils.decodeComposeAsset
 import io.github.daisukikaffuchino.utils.SonnerToast
-import io.github.daisukikaffuchino.utils.toastText
-import io.github.daisukikaffuchino.utils.isX86_64Device
 import io.github.daisukikaffuchino.utils.rememberCopyTextToClipboard
 import io.github.daisukikaffuchino.utils.rememberShareText
 import kotlinx.coroutines.launch
@@ -124,24 +94,47 @@ import org.jetbrains.compose.resources.getString
 import kotlin.time.Duration.Companion.milliseconds
 import kotlin.time.ExperimentalTime
 
-@Suppress("DEPRECATION")
+/**
+ * M3：自 `:app` 下沉（视频页宿主：引擎装配 + 播放编排 + 全屏/PiP/亮度/对话框）。
+ *
+ * 与 `:app` 版的差异：
+ * - `activity: MainActivity` 改注入：[platformHost]（窗口操作：PiP/常亮/全屏/亮度/
+ *   系统栏/host 注册，见 [VideoPageHost]）+ [onRegisterPageHost]（Android 侧把内部
+ *   pageHost 注册给 MainActivity 的 PiP 广播）+ [onBack]/[onNavigateHome]/
+ *   [onNavigateToVideo]/[onOpenSearchRoute]/[onEnqueueDownload] 回调；
+ * - 引擎改共享 [createPlaybackEngine]（三端 expect；原 `PlaybackEngineFactory.create`
+ *   留 `:app` 给旧播放链以外的调用方——经查仅本文件使用，见下条）；
+ * - 返回键回调/通知权限申请（ActivityResult）删除：桌面无系统返回，下载通知权限
+ *   在下载实际入队时由平台层处理；
+ * - 陀螺仪自动横竖屏改 [BindOrientationAutoFullscreen]（Android 生效）；
+ * - 移动数据判定改 [isActiveNetworkMetered] expect；
+ * - 镜像站 genre 词典改共享 `decodeComposeAsset("files/...")`；
+ * - 时间格式化 `"%.1f"/"%02d"`（JVM-only）改纯 Kotlin 实现；
+ * - 反篡改块（`svc()`/`getString()` external + Base64Dialog + `isX86_64Device`）
+ *   删除：其 JNI 实现仅存在于 `:app`，桌面/iOS 无对应能力。
+ */
 @OptIn(ExperimentalTime::class)
 @Composable
 fun VideoRouteHostScreen(
-    activity: MainActivity,
     route: VideoRoute,
+    platformHost: VideoPageHost = NoopVideoPageHost,
+    onRegisterPageHost: ((VideoPageHost?) -> Unit)? = null,
+    onBack: () -> Unit,
+    onNavigateHome: () -> Unit,
+    onNavigateToVideo: (String) -> Unit,
+    onOpenSearchRoute: (SearchRoute) -> Unit,
+    onEnqueueDownload: (EnqueueDownloadRequest) -> Unit,
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val uriHandler = LocalUriHandler.current
     val copyTextToClipboard = rememberCopyTextToClipboard()
     val shareText = rememberShareText()
-    val viewModel: VideoViewModel = viewModel()
-    val commentViewModel: CommentViewModel = viewModel()
+    val viewModel: VideoViewModel = sharedViewModel(::VideoViewModel)
+    val commentViewModel: CommentViewModel = sharedViewModel(::CommentViewModel)
     val kernel = remember { PlayerKernel.fromPreference(SettingsRepository.switchPlayerKernel) }
-    val playbackEngine = remember(route.videoCode, route.localUri, kernel) {
-        PlaybackEngineFactory.create(
-            context = activity,
+    val playbackEngine: PlaybackEngine = remember(route.videoCode, route.localUri, kernel) {
+        createPlaybackEngine(
             kernel = kernel,
             allowCast = SettingsRepository.enableGoogleCast &&
                     route.localUri == null && route.videoCode != "-1",
@@ -150,17 +143,15 @@ fun VideoRouteHostScreen(
     val playbackController = remember(playbackEngine) { ComposePlaybackController(playbackEngine) }
     val playbackState by playbackController.state.collectAsStateWithLifecycle()
     val appSettings by SettingsRepository.settings.collectAsStateWithLifecycle()
-    val isLargeScreenDevice =
-        LocalConfiguration.current.smallestScreenWidthDp >= LARGE_SCREEN_MIN_WIDTH_DP
+    // M3：原 LocalConfiguration.smallestScreenWidthDp（Android-only）；
+    // 改窗口 dp 宽（平板阈值语义一致）。
+    val density = LocalDensity.current
+    val windowWidthDp = with(density) { LocalWindowInfo.current.containerSize.width.toDp() }
+    val isLargeScreenDevice = windowWidthDp.value >= LARGE_SCREEN_MIN_WIDTH_DP
     val hostUiState by viewModel.videoHostUiStateFlow.collectAsStateWithLifecycle()
     val videoState by viewModel.hanimeVideoStateFlow.collectAsStateWithLifecycle()
     val video = viewModel.hanimeVideoFlow.collectAsStateWithLifecycle().value
     val relatedItems = video?.relatedHanimes.orEmpty()
-    val restoreLightSystemBars = when (SettingsRepository.useDarkMode) {
-        "always_on" -> false
-        "always_off" -> true
-        else -> !isSystemInDarkTheme()
-    }
 
     LaunchedEffect(playbackController) {
         playbackController.setPlaybackSpeed(SettingsRepository.playerSpeed)
@@ -179,15 +170,14 @@ fun VideoRouteHostScreen(
         }
     }
     val stringLongPressShare = stringResource(Res.string.long_press_share_to_copy)
-    // P6d-3-C2：非 @Composable 上下文（PiP 回调/事件回调）用的字符串，外提到 composable 层
     val pipPlayPauseText = stringResource(Res.string.play_pause)
     val untitledVideoText = stringResource(Res.string.player_untitled_video)
     val genres = remember(SettingsRepository.baseUrl) {
-        loadAssetAs<List<SearchOption>>(
+        decodeComposeAsset<List<SearchOption>>(
             if (SettingsRepository.baseUrl == io.github.daisukikaffuchino.han1meviewer.HanimeConstants.HANIME_URL[3]) {
-                "search_options/genre_av.json"
+                "files/search_options/genre_av.json"
             } else {
-                "search_options/genre.json"
+                "files/search_options/genre.json"
             }
         ).orEmpty()
     }
@@ -204,7 +194,7 @@ fun VideoRouteHostScreen(
     var isFullscreen by remember { mutableStateOf(false) }
     var isPlayerLocked by remember { mutableStateOf(false) }
     var volume by remember { mutableStateOf(1f) }
-    var brightness by remember { mutableStateOf(currentScreenBrightness(activity)) }
+    var brightness by remember { mutableStateOf(platformHost.currentBrightness()) }
     var previousScreenBrightness by remember { mutableStateOf<Float?>(null) }
     var speedBeforeLongPress by remember { mutableStateOf<Float?>(null) }
     var showResumeButton by remember { mutableStateOf(false) }
@@ -212,23 +202,14 @@ fun VideoRouteHostScreen(
     var mobilePlaybackConfirmed by remember(route.videoCode, route.localUri) {
         mutableStateOf(false)
     }
-    var playerBounds by remember { mutableStateOf<Rect?>(null) }
     var showAddHKeyframeDialog by remember { mutableStateOf<Pair<Long, String>?>(null) }
     var hKeyframes by remember { mutableStateOf<HKeyframeEntity?>(null) }
     var superResolutionIndex by remember { mutableStateOf(0) }
     var pendingUnsubscribeArtist by remember { mutableStateOf<HanimeVideo.Artist?>(null) }
     var pendingLocalListAction by remember { mutableStateOf<(() -> Unit)?>(null) }
-    var showNotificationPermissionReason by remember { mutableStateOf(false) }
-    val notificationPermissionLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.RequestPermission()
-    ) { granted ->
-        if (!granted) showNotificationPermissionReason = true
-    }
-    var showDialog by remember { mutableStateOf(false) }
 
-    val actions = remember(activity, scope, viewModel, genres) {
+    val actions = remember(scope, viewModel, genres) {
         VideoRouteActions(
-            context = activity,
             scope = scope,
             viewModel = viewModel,
             genres = genres,
@@ -237,7 +218,9 @@ fun VideoRouteHostScreen(
             setCheckedQuality = { checkedQuality = it },
             onOpenUri = uriHandler::openUri,
             onCopyText = copyTextToClipboard,
+            onOpenSearchRoute = onOpenSearchRoute,
             onRequestUnsubscribe = { pendingUnsubscribeArtist = it },
+            onRequestNotificationPermission = {},
             onRequestLocalListAction = { action ->
                 if (SettingsRepository.localListNoticeDismissed) {
                     action()
@@ -245,114 +228,38 @@ fun VideoRouteHostScreen(
                     pendingLocalListAction = action
                 }
             },
-            onRequestNotificationPermission = {
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                    ContextCompat.checkSelfPermission(
-                        activity,
-                        Manifest.permission.POST_NOTIFICATIONS,
-                    ) != PackageManager.PERMISSION_GRANTED
-                ) {
-                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                }
-            },
+            onEnqueueDownload = onEnqueueDownload,
         )
-    }
-
-    fun setSystemBars(hidden: Boolean) {
-        val controller =
-            WindowCompat.getInsetsController(activity.window, activity.window.decorView)
-        if (hidden) {
-            controller.hide(WindowInsetsCompat.Type.systemBars())
-            controller.systemBarsBehavior =
-                androidx.core.view.WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        } else {
-            activity.window.statusBarColor = Color.BLACK
-            controller.show(WindowInsetsCompat.Type.systemBars())
-            controller.isAppearanceLightStatusBars = false
-            controller.isAppearanceLightNavigationBars = false
-            activity.window.decorView.post {
-                WindowCompat.getInsetsController(activity.window, activity.window.decorView).apply {
-                    isAppearanceLightStatusBars = false
-                    isAppearanceLightNavigationBars = false
-                }
-            }
-        }
     }
 
     fun exitFullscreen() {
         if (!isFullscreen) return
         isFullscreen = false
-        activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-        setSystemBars(false)
-        previousScreenBrightness?.let { brightness ->
-            activity.window.attributes = activity.window.attributes.apply {
-                screenBrightness = brightness
-            }
-            previousScreenBrightness = null
-        }
-        brightness = currentScreenBrightness(activity)
+        platformHost.applyFullscreen(false)
+        previousScreenBrightness?.let { platformHost.applyBrightness(it) }
+        previousScreenBrightness = null
+        brightness = platformHost.currentBrightness()
     }
 
     fun enterFullscreen(forceLandscape: Boolean = false) {
         isFullscreen = true
         val engineState = playbackController.state.value.engine
-        activity.requestedOrientation = if (
-            !forceLandscape &&
-            engineState.videoWidth > 0 &&
-            engineState.videoHeight > engineState.videoWidth
-        ) {
-            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
-        } else {
-            ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
-        }
-        setSystemBars(true)
-    }
-
-    val backCallback = remember(activity) {
-        object : OnBackPressedCallback(false) {
-            override fun handleOnBackPressed() {
-                if (isFullscreen) {
-                    exitFullscreen()
-                } else {
-                    isEnabled = false
-                    activity.onBackPressedDispatcher.onBackPressed()
-                }
-            }
-        }
+        platformHost.applyFullscreen(
+            true,
+            forceLandscape = forceLandscape ||
+                    !(engineState.videoWidth > 0 && engineState.videoHeight > engineState.videoWidth),
+        )
     }
 
     fun updatePipAction() {
-        if (!activity.isInPictureInPictureMode) return
-        val isPlaying = playbackController.state.value.engine.isPlaying
-        val icon = Icon.createWithResource(
-            activity,
-            if (isPlaying) R.drawable.ic_pause else R.drawable.ic_play_arrow,
-        )
-        val intent = PendingIntent.getBroadcast(
-            activity,
-            0,
-            android.content.Intent(MainActivity.ACTION_TOGGLE_PLAY)
-                .setPackage(activity.packageName),
-            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-        )
-        activity.setPictureInPictureParams(
-            PictureInPictureParams.Builder()
-                .setAspectRatio(Rational(16, 9))
-                .setActions(
-                    listOf(
-                        RemoteAction(
-                            icon,
-                            pipPlayPauseText,
-                            pipPlayPauseText,
-                            intent,
-                        )
-                    )
-                )
-                .build()
+        if (!hostUiState.isInPipMode) return
+        platformHost.refreshPipAction(
+            playbackController.state.value.engine.isPlaying,
+            pipPlayPauseText,
         )
     }
 
-    val pageHost = remember(activity, playbackController, viewModel) {
+    val pageHost = remember(platformHost, playbackController, viewModel, pipPlayPauseText) {
         object : VideoPageHost {
             override fun showCommentBadge(count: Int) = viewModel.setCommentBadgeCount(count)
 
@@ -364,33 +271,8 @@ fun VideoRouteHostScreen(
             }
 
             override fun enterPipMode() {
-                val intent = PendingIntent.getBroadcast(
-                    activity,
-                    0,
-                    android.content.Intent(MainActivity.ACTION_TOGGLE_PLAY)
-                        .setPackage(activity.packageName),
-                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
-                )
                 val state = playbackController.state.value.engine
-                activity.enterPictureInPictureMode(
-                    PictureInPictureParams.Builder()
-                        .setAspectRatio(Rational(16, 9))
-                        .setActions(
-                            listOf(
-                                RemoteAction(
-                                    Icon.createWithResource(
-                                        activity,
-                                        if (state.isPlaying) R.drawable.ic_pause else R.drawable.ic_play_arrow,
-                                    ),
-                                    pipPlayPauseText,
-                                    pipPlayPauseText,
-                                    intent,
-                                )
-                            )
-                        )
-                        .apply { playerBounds?.let(::setSourceRectHint) }
-                        .build()
-                )
+                platformHost.enterPipMode(state.isPlaying, pipPlayPauseText)
             }
 
             override fun onPipModeChanged(isInPip: Boolean) {
@@ -405,52 +287,26 @@ fun VideoRouteHostScreen(
         }
     }
 
-    SideEffect {
-        activity.window.statusBarColor = Color.BLACK
-        activity.window.navigationBarColor = Color.TRANSPARENT
-        val controller =
-            WindowCompat.getInsetsController(activity.window, activity.window.decorView)
-        controller.isAppearanceLightStatusBars = false
-        controller.isAppearanceLightNavigationBars = false
-        activity.window.isStatusBarContrastEnforced = false
-        activity.window.isNavigationBarContrastEnforced = false
-    }
-
-    DisposableEffect(activity, playbackController, pageHost) {
-        activity.window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        activity.registerCurrentVideoHost(pageHost)
-        activity.onBackPressedDispatcher.addCallback(lifecycleOwner, backCallback)
+    DisposableEffect(platformHost, playbackController, pageHost) {
+        platformHost.onHostStarted()
+        onRegisterPageHost?.invoke(pageHost)
         onDispose {
-            activity.window.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-            activity.registerCurrentVideoHost(null)
+            onRegisterPageHost?.invoke(null)
+            platformHost.onHostStopped()
             playbackController.release()
-            exitFullscreen()
-            activity.window.statusBarColor = Color.TRANSPARENT
-            activity.window.navigationBarColor = Color.TRANSPARENT
-            WindowCompat.getInsetsController(activity.window, activity.window.decorView).apply {
-                show(WindowInsetsCompat.Type.systemBars())
-                isAppearanceLightStatusBars = restoreLightSystemBars
-                isAppearanceLightNavigationBars = restoreLightSystemBars
+            if (isFullscreen) {
+                platformHost.applyFullscreen(false)
             }
         }
     }
 
-    DisposableEffect(
-        lifecycleOwner,
-        activity,
-        playbackController,
-        route.videoCode,
-        appSettings.tabletMode,
-    ) {
-        val orientationManager = OrientationManager(activity) { orientation ->
-            if (!appSettings.tabletMode) {
-                if (orientation.isLandscape && !isFullscreen) {
-                    enterFullscreen(forceLandscape = true)
-                } else if (!orientation.isLandscape && isFullscreen) {
-                    exitFullscreen()
-                }
-            }
-        }
+    BindOrientationAutoFullscreen(
+        enabled = !appSettings.tabletMode,
+        onLandscape = { enterFullscreen(forceLandscape = true) },
+        onPortrait = { exitFullscreen() },
+    )
+
+    DisposableEffect(lifecycleOwner, playbackController, route.videoCode, appSettings.tabletMode) {
         val lifecycleObserver = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_PAUSE -> {
@@ -466,7 +322,7 @@ fun VideoRouteHostScreen(
                 }
 
                 Lifecycle.Event.ON_STOP -> {
-                    if (!activity.isInPictureInPictureMode &&
+                    if (!hostUiState.isInPipMode &&
                         !playbackController.state.value.engine.isCasting
                     ) {
                         playbackController.pause()
@@ -477,10 +333,8 @@ fun VideoRouteHostScreen(
                 else -> Unit
             }
         }
-        lifecycleOwner.lifecycle.addObserver(orientationManager)
         lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
         onDispose {
-            lifecycleOwner.lifecycle.removeObserver(orientationManager)
             lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
         }
     }
@@ -499,7 +353,7 @@ fun VideoRouteHostScreen(
             viewModel.hanimeVideoStateFlow.collect { state ->
                 when (state) {
                     is VideoLoadingState.Error -> {
-                        state.throwable.localizedMessage?.let(SonnerToast::error)
+                        state.throwable.message?.let(SonnerToast::error)
                         if (state.throwable is ParseException) {
                             uriHandler.openUri(getHanimeVideoLink(route.videoCode))
                         }
@@ -534,7 +388,7 @@ fun VideoRouteHostScreen(
                             if (!viewModel.fromDownload &&
                                 !SettingsRepository.disableMobileDataWarning &&
                                 !mobilePlaybackConfirmed &&
-                                isActiveNetworkMetered(activity)
+                                isActiveNetworkMetered()
                             ) {
                                 pendingPlayback = request
                             } else {
@@ -622,10 +476,6 @@ fun VideoRouteHostScreen(
         updatePipAction()
     }
 
-    LaunchedEffect(isFullscreen) {
-        backCallback.isEnabled = isFullscreen
-    }
-
     LaunchedEffect(showResumeButton) {
         if (showResumeButton) {
             kotlinx.coroutines.delay(5_000L.milliseconds)
@@ -640,11 +490,12 @@ fun VideoRouteHostScreen(
             hKeyframes?.keyframes.orEmpty().mapIndexedNotNull { index, keyframe ->
                 val remaining = keyframe.position - playbackState.engine.positionMs
                 if (remaining in 0L until SettingsRepository.whenCountdownRemind) {
-                    val seconds = remaining / 1000L
-                    val time = if (seconds >= 1L) {
-                        (seconds + 1L).toString()
+                    val time = if (remaining >= 1000L) {
+                        ((remaining / 1000L) + 1L).toString()
                     } else {
-                        "%.1f".format(remaining / 1000f)
+                        // M3：原 "%.1f".format（JVM-only）；整数拼一位小数。
+                        val tenths = remaining / 100L
+                        "${tenths / 10L}.${tenths % 10L}"
                     }
                     if (SettingsRepository.showCommentWhenCountdown && !keyframe.prompt.isNullOrBlank()) {
                         "#${index + 1} ${keyframe.prompt}\n$time"
@@ -704,10 +555,8 @@ fun VideoRouteHostScreen(
         showResumeButton = showResumeButton,
         onPlayClick = playbackController::togglePlayPause,
         onReplay = playbackController::replay,
-        onBackClick = { activity.onBackPressedDispatcher.onBackPressed() },
-        onHomeClick = {
-            activity.mainBackStack.popTo(HomeRoute)
-        },
+        onBackClick = onBack,
+        onHomeClick = onNavigateHome,
         onFullscreenClick = {
             if (isFullscreen) exitFullscreen() else enterFullscreen()
         },
@@ -754,8 +603,7 @@ fun VideoRouteHostScreen(
         selectedSuperResolutionIndex = superResolutionIndex,
         onSuperResolutionSelected = { index ->
             superResolutionIndex = index
-            (playbackEngine as? io.github.daisukikaffuchino.han1meviewer.ui.player.MpvPlaybackEngine)
-                ?.setSuperResolution(index)
+            playbackEngine.setSuperResolution(index)
         },
         hKeyframeLabel = stringResource(Res.string.player_h_keyframe),
         isHKeyframesEnabled = SettingsRepository.hKeyframesEnable,
@@ -805,11 +653,9 @@ fun VideoRouteHostScreen(
         onBrightnessChange = { value ->
             brightness = value
             if (previousScreenBrightness == null) {
-                previousScreenBrightness = activity.window.attributes.screenBrightness
+                previousScreenBrightness = platformHost.currentBrightness()
             }
-            activity.window.attributes = activity.window.attributes.apply {
-                screenBrightness = value.coerceIn(0.01f, 1f)
-            }
+            platformHost.applyBrightness(value.coerceIn(0.01f, 1f))
         },
         onProgressGesture = { value ->
             val duration = playbackState.engine.durationMs
@@ -825,7 +671,7 @@ fun VideoRouteHostScreen(
         } else {
             16f / 9f
         },
-        onPlayerBoundsChanged = { playerBounds = it },
+        onPlayerBoundsChanged = { platformHost.setPipSourceRect(it) },
         tabsContent = {
             VideoRouteContent(
                 videoCode = route.videoCode,
@@ -836,7 +682,7 @@ fun VideoRouteHostScreen(
                 pendingDownloadPrompt = pendingDownloadPrompt,
                 onPendingDownloadPromptChange = { pendingDownloadPrompt = it },
                 onRetry = { viewModel.getHanimeVideo(route.videoCode, route.localUri) },
-                onOpenVideo = { item -> activity.showVideoDetailFragment(item.videoCode) },
+                onOpenVideo = { item -> onNavigateToVideo(item.videoCode) },
                 onOpenArtist = actions::openArtistSearch,
                 onNavigateToSearch = actions::openTagSearch,
                 onToggleSubscribe = actions::toggleArtistSubscription,
@@ -887,7 +733,7 @@ fun VideoRouteHostScreen(
                 relatedItems = relatedItems,
                 onHideRelatedInIntroChange = { viewModel.hideRelatedInIntro = it },
                 onSideRelatedCollapsedChange = { isSideRelatedCollapsed = it },
-                onOpenVideo = { item -> activity.showVideoDetailFragment(item.videoCode) },
+                onOpenVideo = { item -> onNavigateToVideo(item.videoCode) },
             )
         } else {
             null
@@ -955,24 +801,6 @@ fun VideoRouteHostScreen(
     )
 
     ConfirmDialog(
-        visible = showNotificationPermissionReason,
-        title = stringResource(Res.string.allow_post_notification),
-        message = stringResource(Res.string.reason_for_download_notification),
-        confirmText = stringResource(Res.string.allow),
-        dismissText = stringResource(Res.string.deny),
-        onConfirm = {
-            showNotificationPermissionReason = false
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-            }
-        },
-        onDismiss = {
-            showNotificationPermissionReason = false
-            scope.launch { SonnerToast.warning(getString(Res.string.msg_deny_download_notification)) }
-        },
-    )
-
-    ConfirmDialog(
         visible = pendingPlayback != null,
         title = stringResource(Res.string.warning),
         message = stringResource(Res.string.mobile_data_playback_warning),
@@ -995,90 +823,23 @@ fun VideoRouteHostScreen(
         },
         onDismiss = { pendingPlayback = null },
     )
-
-    if (showDialog) {
-        Base64Dialog(onDismiss = { showDialog = false })
-    }
-
-    LaunchedEffect(Unit) {
-        if (!isX86_64Device) {
-            val isFailed = getString() == String(
-                Base64.decode("ZmFpbGVk", Base64.DEFAULT),
-                Charsets.UTF_8
-            )
-
-            when {
-                isFailed -> SonnerToast.error(
-                    String(
-                        Base64.decode(
-                            "5qCh6aqM5bSp5rqD77yM6K+35ZCR5byA5Y+R6ICF5Y+N6aaI",
-                            Base64.DEFAULT
-                        ),
-                        Charsets.UTF_8
-                    )
-                )
-
-                else -> showDialog = !BuildConfig.DEBUG && !svc()
-            }
-        }
-    }
-}
-
-@Composable
-fun Base64Dialog(
-    onDismiss: () -> Unit
-) {
-    val decodedTitle = remember {
-        String(Base64.decode("562+5ZCN5qCh6aqM5aSx6LSl", Base64.DEFAULT), Charsets.UTF_8)
-    }
-    val decodedContent = remember {
-        String(
-            Base64.decode(
-                "5L2g5LiL6L295Yiw5LqG6KKr56+h5pS555qE5bqU55So44CC5pys5bqU55So5byA5rqQ5YWN6LS55peg5bm/5ZGK77yM5Lil56aB5aKZ5YaF5byV5rWB44CB5pCs6L+Q44CB5YCS5Y2W44CC5aaC5p6c5L2g6K6k5Li66L+Z5piv6K+v5oql77yM6K+35ZCR5byA5Y+R6ICF5Y+N6aaI44CC",
-                Base64.DEFAULT
-            ), Charsets.UTF_8
-        )
-    }
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = decodedTitle) },
-        text = { Text(text = decodedContent) },
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(text = androidx.compose.ui.res.stringResource(android.R.string.ok))
-            }
-        }
-    )
 }
 
 private fun playbackProgress(positionMs: Long, durationMs: Long): Float =
     if (durationMs <= 0L) 0f else (positionMs.toFloat() / durationMs).coerceIn(0f, 1f)
-
-private fun currentScreenBrightness(activity: MainActivity): Float {
-    val overrideBrightness = activity.window.attributes.screenBrightness
-    if (overrideBrightness in 0f..1f) return overrideBrightness
-    return runCatching {
-        Settings.System.getInt(
-            activity.contentResolver,
-            Settings.System.SCREEN_BRIGHTNESS,
-        ) / 255f
-    }.getOrDefault(0.5f).coerceIn(0.01f, 1f)
-}
 
 private fun formatPlaybackTime(positionMs: Long): String {
     val totalSeconds = (positionMs / 1000L).coerceAtLeast(0L)
     val hours = totalSeconds / 3600L
     val minutes = (totalSeconds % 3600L) / 60L
     val seconds = totalSeconds % 60L
+    // M3：原 "%d:%02d" String.format（JVM-only）；padStart 等价实现。
     return if (hours > 0L) {
-        "%d:%02d:%02d".format(hours, minutes, seconds)
+        "$hours:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
     } else {
-        "%02d:%02d".format(minutes, seconds)
+        "${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
     }
 }
-
-private external fun svc(): Boolean
-private external fun getString(): String
 
 private data class PendingPlayback(
     val title: String,
@@ -1087,12 +848,6 @@ private data class PendingPlayback(
     val artworkUri: String?,
     val startPositionMs: Long,
 )
-
-private fun isActiveNetworkMetered(context: Context): Boolean {
-    val connectivityManager =
-        context.getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
-    return connectivityManager?.isActiveNetworkMetered == true
-}
 
 private fun realProgressSensitivity(value: Int): Float {
     val clampedValue = value.coerceIn(1, 7)

@@ -1,7 +1,13 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.player
 
-// P5-1 占位：iOS 真引擎（AVPlayer）为后续 P5-2 任务。
+import io.github.daisukikaffuchino.utils.LogUtil
+
+// M3：iOS 真引擎（AVPlayer；占位 Placeholder 退役）。
+// kernel 参数暂忽略（AVPlayer 通吃 HLS/渐进；Exo/Mpv 语义在 iOS 无区分）。
 actual fun createPlaybackEngine(
     kernel: PlayerKernel,
     allowCast: Boolean,
-): PlaybackEngine = PlaceholderPlaybackEngine()
+): PlaybackEngine {
+    LogUtil.d("IosAVPlayer", "createPlaybackEngine(kernel=$kernel, allowCast=$allowCast)")
+    return IosAVPlaybackEngine()
+}

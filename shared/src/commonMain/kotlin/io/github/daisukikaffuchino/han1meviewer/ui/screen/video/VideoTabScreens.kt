@@ -14,7 +14,6 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository.isAlreadyLogin
-import io.github.daisukikaffuchino.han1meviewer.R
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.there_is_a_small_issue
 import io.github.daisukikaffuchino.han1meviewer.VIDEO_COMMENT_PREFIX

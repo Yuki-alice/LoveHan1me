@@ -1,6 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.video
 
-import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -31,11 +30,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.platform.rememberNestedScrollInteropConnection
-import androidx.compose.ui.res.stringArrayResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import io.github.daisukikaffuchino.han1meviewer.Res
@@ -61,8 +57,6 @@ import io.github.daisukikaffuchino.han1meviewer.ui.component.content.EmptyConten
 import io.github.daisukikaffuchino.han1meviewer.ui.component.content.ErrorContent
 import io.github.daisukikaffuchino.han1meviewer.ui.component.content.LoadingContent
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyColumn
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.fakeCommentList
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.rememberRandomLoadingHint
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
 import io.github.daisukikaffuchino.han1meviewer.util.parseTimeStrToMinutes
@@ -148,12 +142,8 @@ fun ChildCommentScreen(
     val sortedComments = remember(comments) {
         comments.safeSortedBy({ parseTimeStrToMinutes(it.date) }, descending = false)
     }
-    val nestedScrollInterop = rememberNestedScrollInteropConnection()
 
-    BackHandler(enabled = replyingComment != null) {
-        replyingComment = null
-        replyText = TextFieldValue("")
-    }
+    // M2：BackHandler 是 Android-only；桌面无系统返回，回复框有关闭按钮。
 
     LaunchedEffect(replyingComment) {
         if (replyingComment != null) {
@@ -246,9 +236,7 @@ fun ChildCommentScreen(
                 },
             ) {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .nestedScroll(nestedScrollInterop),
+                    modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
@@ -309,67 +297,6 @@ fun ChildCommentScreen(
                 reportComment = null
                 selectedReasonIndex = -1
             },
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun ChildCommentScreenPreview() {
-    ComponentPreview {
-        ChildCommentScreen(
-            commentsFlow = MutableStateFlow(fakeCommentList),
-            commentStateFlow = MutableStateFlow(WebsiteState.Success(VideoComments(fakeCommentList.toMutableList()))),
-            reportMessageFlow = flowOf(CommentMessage("")),
-            postReplyStateFlow = flowOf(WebsiteState.Success(Unit)),
-            commentLikeStateFlow = flowOf(
-                WebsiteState.Success(
-                    VideoCommentArgs(
-                        isPositive = true,
-                        commentPosition = 0,
-                        comment = fakeCommentList.first(),
-                    )
-                )
-            ),
-            reportReasons = listOf(
-                ReportReason(
-                    lang = ReportReason.Language(
-                        zhrTW = "垃圾訊息",
-                        zhrCN = "垃圾信息",
-                        en = "Spam",
-                    ),
-                    reasonKey = "spam",
-                )
-            ),
-            isAlreadyLogin = true,
-            onRefresh = {},
-            onReply = { _, _ -> },
-            onReport = { _, _ -> },
-            onThumbUp = {},
-            onThumbDown = {},
-            onCommentLikeSuccess = {},
-        )
-    }
-}
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun ChildCommentScreenEmptyPreview() {
-    ComponentPreview {
-        ChildCommentScreen(
-            commentsFlow = MutableStateFlow(emptyList()),
-            commentStateFlow = MutableStateFlow(WebsiteState.Success(VideoComments(mutableListOf()))),
-            reportMessageFlow = flowOf(CommentMessage("")),
-            postReplyStateFlow = flowOf(WebsiteState.Loading),
-            commentLikeStateFlow = flowOf(WebsiteState.Loading),
-            reportReasons = emptyList(),
-            isAlreadyLogin = true,
-            onRefresh = {},
-            onReply = { _, _ -> },
-            onReport = { _, _ -> },
-            onThumbUp = {},
-            onThumbDown = {},
-            onCommentLikeSuccess = {},
         )
     }
 }

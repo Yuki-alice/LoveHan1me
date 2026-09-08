@@ -1,7 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.video
 
-import android.content.res.Configuration
-import android.graphics.Rect
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
@@ -39,10 +37,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
-import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalView
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.isLandscapeOrientation
 import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -53,7 +51,7 @@ import io.github.daisukikaffuchino.han1meviewer.logic.entity.HKeyframeEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeInfo
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlaybackEngine
 import io.github.daisukikaffuchino.han1meviewer.ui.player.PlaybackQuality
-import io.github.daisukikaffuchino.utils.VibrationUtil
+import io.github.daisukikaffuchino.han1meviewer.ui.component.rememberHapticFeedback
 import kotlin.math.roundToInt
 
 data class ClassicTabletLayoutConfig(
@@ -128,9 +126,8 @@ fun VideoShellContent(
     classicTabletLayout: ClassicTabletLayoutConfig?,
     modifier: Modifier = Modifier,
 ) {
-    val configuration = LocalConfiguration.current
-    val isTabletLandscape =
-        isTabletMode && configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+    // M3：原 LocalConfiguration.orientation（Android-only）；改共享 isLandscapeOrientation expect。
+    val isTabletLandscape = isTabletMode && isLandscapeOrientation()
     val showSideRelated = isTabletLandscape && !isInPipMode && !isFullscreen
     val showClassicSideRelated = showSideRelated && classicTabletLayout != null
     var isSideRelatedCollapsed by rememberSaveable { mutableStateOf(false) }
@@ -175,15 +172,7 @@ fun VideoShellContent(
                     modifier = Modifier
                         .fillMaxSize()
                         .onGloballyPositioned { coordinates ->
-                            val bounds = coordinates.boundsInWindow()
-                            onPlayerBoundsChanged(
-                                Rect(
-                                    bounds.left.roundToInt(),
-                                    bounds.top.roundToInt(),
-                                    bounds.right.roundToInt(),
-                                    bounds.bottom.roundToInt(),
-                                )
-                            )
+                            onPlayerBoundsChanged(coordinates.boundsInWindow())
                         },
                     playbackEngine = playbackEngine,
                     posterUrl = posterUrl,
@@ -274,15 +263,7 @@ fun VideoShellContent(
                             }
                         )
                         .onGloballyPositioned { coordinates ->
-                            val bounds = coordinates.boundsInWindow()
-                            onPlayerBoundsChanged(
-                                Rect(
-                                    bounds.left.roundToInt(),
-                                    bounds.top.roundToInt(),
-                                    bounds.right.roundToInt(),
-                                    bounds.bottom.roundToInt(),
-                                )
-                            )
+                            onPlayerBoundsChanged(coordinates.boundsInWindow())
                         },
                     playbackEngine = playbackEngine,
                     posterUrl = posterUrl,
@@ -420,11 +401,11 @@ private fun RelatedCollapseIndicator(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val view = LocalView.current
+    val haptic = rememberHapticFeedback()
     Row(
         modifier = modifier
             .clickable {
-                VibrationUtil.performHapticFeedback(view)
+                haptic()
                 onClick()
             }
             .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)),
