@@ -148,22 +148,7 @@ fun LoginRouteScreen(
     }
 }
 
-@Composable
-fun ManualCookiesRouteScreen(
-    onBack: () -> Unit,
-    onLoginSucceeded: () -> Unit,
-) {
-    val scope = rememberCoroutineScope()
-    ManualInputCookiesScreen(
-        onBack = onBack,
-        onCookieScanned = { cookie ->
-            scope.launch {
-                login(cookie)
-                onLoginSucceeded()
-            }
-        },
-    )
-}
+// M2：ManualCookiesRouteScreen 已下沉 shared（同名；login() 改内联 update + rebuildNetwork，语义一致）。
 
 @Composable
 fun CloudflareRouteScreen(
