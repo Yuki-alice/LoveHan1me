@@ -18,9 +18,7 @@ const val APP_NAME = "Han1meViewer"
 
 // SEARCH_YEAR_RANGE_START/END 已下沉 shared（BasicConstants.kt，END 改运行时当前年）
 
-const val VIDEO_COMMENT_PREFIX = "video"
-
-const val PREVIEW_COMMENT_PREFIX = "preview"
+// VIDEO_COMMENT_PREFIX / PREVIEW_COMMENT_PREFIX 已下沉 shared commonMain（BasicConstants.kt），包名不变调用点零改动
 
 // github url 三常量已下沉 shared commonMain（BasicConstants.kt，P6d-4），包名不变调用点零改动
 // for Shared Preference

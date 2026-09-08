@@ -21,16 +21,5 @@ fun rememberCopyTextToClipboard(): (CharSequence) -> Unit {
     }
 }
 
-@Composable
-fun rememberShareText(): (CharSequence, CharSequence?) -> Unit {
-    val launcher = rememberLauncherForActivityResult(
-        ActivityResultContracts.StartActivityForResult()
-    ) {}
-    return { content, title ->
-        val shareIntent = Intent(Intent.ACTION_SEND).apply {
-            type = "text/plain"
-            putExtra(Intent.EXTRA_TEXT, content)
-        }
-        launcher.launch(Intent.createChooser(shareIntent, title))
-    }
-}
+// M3：rememberShareText 已下沉 shared（expect + 三端 actual；String 签名）。
+// 调用方（VideoRouteHostScreen 下沉中）改新签名。

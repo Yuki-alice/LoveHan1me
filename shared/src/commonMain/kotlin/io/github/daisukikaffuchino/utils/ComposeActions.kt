@@ -23,3 +23,10 @@ fun rememberCopyTextToClipboard(): (CharSequence) -> Unit {
         }
     }
 }
+
+/**
+ * M3：系统分享面板（原 `:app` `rememberShareText`，Intent chooser）。
+ * 不支持的平台以降级实现提供（见各端 actual）。
+ */
+@Composable
+expect fun rememberShareText(): (String, String?) -> Unit

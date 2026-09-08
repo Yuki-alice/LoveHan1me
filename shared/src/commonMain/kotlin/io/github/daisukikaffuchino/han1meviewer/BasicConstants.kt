@@ -31,6 +31,11 @@ val SEARCH_YEAR_RANGE_END: Int get() = Instant.fromEpochMilliseconds(io.github.d
 
 const val HA1_GITHUB_URL = "https://github.com/daisukiKaffuChino/Han1meViewer"
 
+// M2：评论类型前缀（自 `:app` Constants.kt 下沉，Preview 评论预取用；包名不变调用点零改动）
+const val PREVIEW_COMMENT_PREFIX = "preview"
+
+// M3：视频评论前缀（自 `:app` Constants.kt 下沉，评论 Tab 用；包名不变调用点零改动）
+const val VIDEO_COMMENT_PREFIX = "video"
 const val HA1_GITHUB_ISSUE_URL = "$HA1_GITHUB_URL/issues"
 
 const val HA1_GITHUB_FORUM_URL = "$HA1_GITHUB_URL/discussions"
