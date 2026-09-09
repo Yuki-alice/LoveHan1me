@@ -199,15 +199,23 @@ object DesktopDownloadWorkController : DownloadWorkController {
             httpClient.newCall(request).execute().use { response ->
                 check(response.isSuccessful || response.code == 206) { "HTTP ${response.code}" }
                 val body = response.body ?: throw IOException("empty body")
+                val isPartial = response.code == 206
                 val contentLength = body.contentLength()
-                if (entity.length <= 0 && contentLength > 0) {
-                    // 首次获取总长（Range 请求返回的是剩余长度，补上已下载部分）
-                    val total = if (response.code == 206) downloaded + contentLength else contentLength
-                    dao.update(entity.copy(length = total))
+                // 服务器不支持 Range（返回 200 全量）时必须从头重写，否则文件前段重复损坏
+                if (!isPartial && downloaded > 0) {
+                    LogUtil.d(TAG, "server ignored Range, restart from 0")
+                    downloaded = 0
+                }
+                if (contentLength > 0) {
+                    val total = downloaded + contentLength
+                    if (entity.length != total) {
+                        dao.update(entity.copy(length = total, state = DownloadState.Downloading))
+                    }
                 }
 
                 RandomAccessFile(file, "rwd").use { raf ->
                     raf.seek(downloaded)
+                    raf.setLength(downloaded) // 截断到断点，清除可能的旧尾
                     val buffer = ByteArray(64 * 1024)
                     var lastFlush = 0L
                     body.byteStream().use { input ->
@@ -226,14 +234,12 @@ object DesktopDownloadWorkController : DownloadWorkController {
                 }
             }
 
+            // 正常读完流 = 完成；length 未知（chunked）时用实际字节数回填，否则 UI 进度除零
             val fresh = dao.find(entity.videoCode, entity.quality)
             if (fresh != null) {
-                if (entity.length <= 0 || downloaded >= fresh.length) {
-                    dao.update(fresh.copy(downloadedLength = downloaded, state = DownloadState.Finished))
-                    LogUtil.d(TAG, "finished: ${entity.title}")
-                } else {
-                    dao.update(fresh.copy(downloadedLength = downloaded, state = DownloadState.Paused))
-                }
+                val finalLength = maxOf(fresh.length, downloaded)
+                dao.update(fresh.copy(length = finalLength, downloadedLength = finalLength, state = DownloadState.Finished))
+                LogUtil.d(TAG, "finished: ${entity.title} (${finalLength} bytes)")
             }
         } catch (e: kotlinx.coroutines.CancellationException) {
             // 暂停/删除：pauseTask 已把状态落库，这里只保证不误标失败
@@ -264,3 +270,6 @@ object DesktopDownloadWorkController : DownloadWorkController {
 fun initializeDesktopDownloadQueue() {
     runBlocking { DesktopDownloadWorkController.initialize() }
 }
+
+/** M6-2：跨模块薄封装（[downloadWorkController] 是 internal；供 :desktopApp 冒烟/壳层用）。 */
+fun desktopDownloadWorkController(): DownloadWorkController = DesktopDownloadWorkController

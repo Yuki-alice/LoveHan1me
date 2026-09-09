@@ -17,6 +17,7 @@ import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import io.github.daisukikaffuchino.han1meviewer.App
+import io.github.daisukikaffuchino.han1meviewer.desktop.runSmokeIfRequested
 import io.github.daisukikaffuchino.han1meviewer.ui.crash.installCrashHandler
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.datastore.DataStoreManager
@@ -36,6 +37,8 @@ import kotlinx.coroutines.runBlocking
 fun main() {
     // M5-3：尽早注册未捕获异常处理器（落盘报告 + 退出，下次启动展示崩溃页）
     installCrashHandler()
+    // M6-2：下载引擎端到端冒烟（HAN1ME_SMOKE=download，跑完即退）
+    if (runSmokeIfRequested()) return
     application {
     System.getenv("HAN1ME_P3A_PROXY")?.takeIf { it.isNotBlank() }?.let { hp ->
         val idx = hp.lastIndexOf(':')
