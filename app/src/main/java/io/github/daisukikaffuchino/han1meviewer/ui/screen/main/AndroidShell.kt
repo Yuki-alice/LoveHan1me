@@ -24,6 +24,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.viewmodel.compose.viewModel
 import io.github.daisukikaffuchino.han1meviewer.App
 import io.github.daisukikaffuchino.han1meviewer.HCacheManager
@@ -138,10 +141,21 @@ private fun platformScreens(activity: MainActivity): PlatformScreens = PlatformS
     },
     account = { pendingAvatarCropResult, onAvatarCropResultConsumed ->
         val accountViewModel: UserAccountViewModel = viewModel()
+        // M5-4：头像选择器留在 :app（ActivityResult），经参数注入共享账号页
+        val avatarPickerLauncher = rememberLauncherForActivityResult(
+            ActivityResultContracts.PickVisualMedia()
+        ) { uri ->
+            uri?.let { backStack.add(AvatarCropRoute(it.toString())) }
+        }
         AccountScreen(
             viewModel = accountViewModel,
             onBack = onBack,
             onOpenAvatarCrop = { uri -> backStack.add(AvatarCropRoute(uri)) },
+            onPickAvatarImage = {
+                avatarPickerLauncher.launch(
+                    PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                )
+            },
             pendingAvatarCropResult = pendingAvatarCropResult,
             onAvatarCropResultConsumed = onAvatarCropResultConsumed,
             onRefreshHome = { homeViewModel.getHomePage() },

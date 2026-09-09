@@ -1,8 +1,5 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.account
 
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -44,17 +41,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.platform.LocalView
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import coil3.compose.AsyncImage
-import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.ui.component.HanimeAsyncImage
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.password_not_match
 import io.github.daisukikaffuchino.han1meviewer.username
@@ -90,15 +84,13 @@ import io.github.daisukikaffuchino.han1meviewer.logic.model.UserAccountSubmittin
 import io.github.daisukikaffuchino.han1meviewer.logic.state.WebsiteState
 import io.github.daisukikaffuchino.han1meviewer.ui.component.IconButton
 import io.github.daisukikaffuchino.han1meviewer.ui.component.PageContent
+import io.github.daisukikaffuchino.han1meviewer.ui.component.rememberHapticFeedback
 import io.github.daisukikaffuchino.han1meviewer.ui.component.appbar.HanimeScaffold
 import io.github.daisukikaffuchino.han1meviewer.ui.component.content.ErrorContent
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.rememberRandomLoadingHint
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
 import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.UserAccountViewModel
 import io.github.daisukikaffuchino.utils.SonnerToast
-import io.github.daisukikaffuchino.utils.toastText
-import io.github.daisukikaffuchino.utils.VibrationUtil
 import io.github.daisukikaffuchino.han1meviewer.ui.component.HapticButton as Button
 import io.github.daisukikaffuchino.han1meviewer.ui.component.HapticTextButton as TextButton
 
@@ -108,17 +100,14 @@ fun AccountScreen(
     viewModel: UserAccountViewModel,
     onBack: () -> Unit,
     onOpenAvatarCrop: (String) -> Unit,
+    /** 头像图片选择入口；null 表示平台不支持（UI 隐藏上传入口）。 */
+    onPickAvatarImage: (() -> Unit)?,
     pendingAvatarCropResult: String?,
     onAvatarCropResultConsumed: () -> Unit,
     onRefreshHome: () -> Unit,
     onLogout: () -> Unit,
 ) {
     val uriHandler = LocalUriHandler.current
-    val avatarPickerLauncher = rememberLauncherForActivityResult(
-        ActivityResultContracts.PickVisualMedia()
-    ) { uri ->
-        uri?.let { onOpenAvatarCrop(it.toString()) }
-    }
     val state by viewModel.accountState.collectAsStateWithLifecycle()
     val submittingState by viewModel.submittingState.collectAsStateWithLifecycle()
     val modifyFailed = stringResource(Res.string.modify_failed)
@@ -130,10 +119,9 @@ fun AccountScreen(
     LaunchedEffect(pendingAvatarCropResult) {
         val filePath = pendingAvatarCropResult ?: return@LaunchedEffect
         // P6c：VM 下沉后 updateAvatar(bytes, name)，File 在调用方拆解（读取失败则消费掉结果并忽略）
-        val file = java.io.File(filePath)
-        val bytes = runCatching { file.readBytes() }.getOrNull()
+        val bytes = readFileBytes(filePath)
         if (bytes != null) {
-            viewModel.updateAvatar(bytes, file.name)
+            viewModel.updateAvatar(bytes, filePath.substringAfterLast('/'))
         }
         onAvatarCropResultConsumed()
     }
@@ -198,11 +186,7 @@ fun AccountScreen(
                 contentPadding = paddingValues,
                 onUpdateProfile = viewModel::updateProfile,
                 onUpdatePassword = viewModel::updatePassword,
-                onPickAvatar = {
-                    avatarPickerLauncher.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                    )
-                },
+                onPickAvatar = { onPickAvatarImage?.invoke() },
                 onLogout = onLogout,
                 onOpenPasswordReset = {
                     uriHandler.openUri("${io.github.daisukikaffuchino.han1meviewer.HANIME_BASE_URL}password/reset")
@@ -224,7 +208,7 @@ private fun AccountContent(
     onLogout: () -> Unit,
     onOpenPasswordReset: () -> Unit,
 ) {
-    val view = LocalView.current
+    val hapticFeedback = rememberHapticFeedback()
     val scrollState = rememberScrollState()
 
     var name by rememberSaveable(account.username) { mutableStateOf(account.username) }
@@ -265,7 +249,7 @@ private fun AccountContent(
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     val defaultPlaceholder = painterResource(Res.drawable.h_chan_default_avatar)
-                    AsyncImage(
+                    HanimeAsyncImage(
                         model = account.avatarUrl,
                         contentDescription = account.username,
                         modifier = Modifier
@@ -281,7 +265,7 @@ private fun AccountContent(
 
                     SmallFloatingActionButton(
                         onClick = {
-                            VibrationUtil.performHapticFeedback(view)
+                            hapticFeedback()
                             onPickAvatar()
                         },
                         modifier = Modifier
@@ -572,31 +556,5 @@ private fun AccountContent(
             Spacer(modifier = Modifier.width(8.dp))
             Text(stringResource(Res.string.logout), fontWeight = FontWeight.Medium)
         }
-    }
-}
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun AccountScreenPreview() {
-    ComponentPreview {
-        AccountContent(
-            account = UserAccount(
-                csrfToken = "token",
-                avatarUrl = "https://picsum.photos/200",
-                username = "你的名字",
-                email = "username@gmail.com",
-                userId = "987654",
-                joinedLabel = "加入新1年前",
-                subscriberCount = 0,
-                videoCount = 9,
-            ),
-            contentPadding = PaddingValues(),
-            onUpdateProfile = { _, _ -> },
-            onUpdatePassword = { _, _, _ -> },
-            onPickAvatar = {},
-            onLogout = {},
-            onOpenPasswordReset = {},
-            submittingState = UserAccountSubmittingState.Idle,
-        )
     }
 }

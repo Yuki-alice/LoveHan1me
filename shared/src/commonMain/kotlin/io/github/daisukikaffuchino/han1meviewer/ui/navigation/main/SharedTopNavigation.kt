@@ -70,6 +70,10 @@ import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.SharedHKe
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.VideoPlaybackSettingsRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage.HomePageViewModel
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.login.FormLoginScreen
+import io.github.daisukikaffuchino.han1meviewer.logout
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.account.AccountScreen
+import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.UserAccountViewModel
+import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.sharedViewModel
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.HomeSettingsPage
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.OpenSourceLicensesScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.SettingsMainScreen
@@ -228,12 +232,25 @@ fun SharedTopNavigation(
                     { pendingAvatarCropResult = null },
                 )
             } else {
-                NavPlaceholder(
-                    title = "Account",
-                    hint = "账号页（头像 picker）暂仅 Android",
+                // M5-4：默认走共享账号页（UserAccountViewModel 已在 commonMain）。
+                // 头像上传依赖平台 picker + 裁剪，桌面/iOS 传 null（UI 隐藏上传入口），
+                // 资料/密码等其余账号功能三端一致。
+                val accountViewModel: UserAccountViewModel = sharedViewModel(::UserAccountViewModel)
+                AccountScreen(
+                    viewModel = accountViewModel,
                     onBack = onBack,
-                    actionLabel = "手动填 Cookie 登录",
-                    onAction = { backStack.add(ManualCookiesRoute) },
+                    onOpenAvatarCrop = { backStack.add(AvatarCropRoute(it)) },
+                    onPickAvatarImage = null,
+                    pendingAvatarCropResult = pendingAvatarCropResult,
+                    onAvatarCropResultConsumed = { pendingAvatarCropResult = null },
+                    onRefreshHome = { homeViewModel.getHomePage() },
+                    onLogout = {
+                        scope.launch {
+                            logout()
+                            homeViewModel.getHomePage()
+                            backStack.popTo(HomeRoute)
+                        }
+                    },
                 )
             }
         }
