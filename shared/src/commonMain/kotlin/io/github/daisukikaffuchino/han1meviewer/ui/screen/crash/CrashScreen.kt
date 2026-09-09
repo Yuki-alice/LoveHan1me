@@ -30,7 +30,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import io.github.daisukikaffuchino.han1meviewer.Res
@@ -53,7 +52,6 @@ import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingNavigationIt
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsSectionTitle
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsSegmentedGroup
 import io.github.daisukikaffuchino.han1meviewer.ui.component.appbar.HanimeScaffold
-import io.github.daisukikaffuchino.han1meviewer.ui.preview.ComponentPreview
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.HanimeDefaults
 
 @Composable
@@ -192,29 +190,5 @@ fun CrashScreen(
                 Spacer(modifier = Modifier.size(24.dp))
             }
         }
-    }
-}
-
-@Preview(showBackground = true, widthDp = 420, heightDp = 900)
-@Composable
-private fun CrashScreenPreview() {
-    ComponentPreview {
-        CrashScreen(
-            crashReport = """
-                App: Han1meViewer 26.3.0 (260802)
-                Package: io.github.daisukikaffuchino.han1meviewer.debug
-                Device: Google Pixel
-                Android: 16 (API 36)
-                Thread: main
-
-                ====== beginning of crash ======
-                java.lang.RuntimeException: Crash triggered from developer options
-                    at io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.HomeSettingsRoute
-            """.trimIndent(),
-            packageName = "io.github.daisukikaffuchino.han1meviewer",
-            onCopyLog = {},
-            onRestartApp = {},
-            onExitApp = {},
-        )
     }
 }

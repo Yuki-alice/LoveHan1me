@@ -29,7 +29,12 @@ import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.MainDrawerDes
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.SharedMainDrawer
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.DrawerHost
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.PlatformScreens
+import io.github.daisukikaffuchino.han1meviewer.ui.crash.CRASH_PACKAGE_FILTER
+import io.github.daisukikaffuchino.han1meviewer.ui.crash.clearCrashReport
+import io.github.daisukikaffuchino.han1meviewer.ui.crash.takePendingCrashReport
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.crash.CrashScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.SharedTopNavigation
+import io.github.daisukikaffuchino.utils.rememberCopyTextToClipboard
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.TopLevelBackStack
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.navigateDrawerDestination
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage.HomePageViewModel
@@ -57,6 +62,26 @@ fun App(
     drawerContent: (@Composable (DrawerHost) -> Unit)? = null,
 ) {
     HanimeTheme {
+        // M5-3：上次崩溃残留的报告优先展示（桌面/iOS 崩溃后进程已退出，
+        // 只能在下次启动时告知）。Android 走 CrashActivity，通常无残留。
+        var crashReport by remember { mutableStateOf(takePendingCrashReport()) }
+        if (crashReport != null) {
+            val copyText = rememberCopyTextToClipboard()
+            CrashScreen(
+                crashReport = crashReport ?: "",
+                packageName = CRASH_PACKAGE_FILTER,
+                onCopyLog = { copyText(crashReport ?: "") },
+                onRestartApp = {
+                    clearCrashReport()
+                    crashReport = null
+                },
+                onExitApp = {
+                    clearCrashReport()
+                    onExit()
+                },
+            )
+            return@HanimeTheme
+        }
         SonnerToast.Host()
         val homeViewModel: HomePageViewModel = sharedViewModel(::HomePageViewModel)
         // 复用 ViewModel 持有的回退栈：平台壳（Android intent 导航 / 返回键）与

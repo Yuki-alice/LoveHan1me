@@ -12,6 +12,7 @@ import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import io.github.daisukikaffuchino.han1meviewer.App
+import io.github.daisukikaffuchino.han1meviewer.ui.crash.installCrashHandler
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.datastore.DataStoreManager
 import io.github.daisukikaffuchino.han1meviewer.ui.player.DesktopWindowHolder
@@ -27,7 +28,10 @@ import kotlinx.coroutines.runBlocking
  *  - M2：使用须知/来源确认门控已进共享 App（与 Android 同语义），此处不再自动置位；
  *  - 受限网络下可用环境变量 HAN1ME_P3A_PROXY=host:port 给 JVM 设代理（否则直连）。
  */
-fun main() = application {
+fun main() {
+    // M5-3：尽早注册未捕获异常处理器（落盘报告 + 退出，下次启动展示崩溃页）
+    installCrashHandler()
+    application {
     System.getenv("HAN1ME_P3A_PROXY")?.takeIf { it.isNotBlank() }?.let { hp ->
         val idx = hp.lastIndexOf(':')
         if (idx > 0) {
@@ -69,4 +73,5 @@ fun main() = application {
             ),
         )
     }
+}
 }
