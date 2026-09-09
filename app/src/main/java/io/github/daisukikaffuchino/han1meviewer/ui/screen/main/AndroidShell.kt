@@ -56,11 +56,13 @@ import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.DownloadS
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.NetworkDownloadSettingsRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.SettingsDestinationSpec
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.SettingsScaffold
+import io.github.daisukikaffuchino.han1meviewer.ui.player.rememberAndroidVideoPageHost
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.account.AccountScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.account.AvatarCropScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.viewmodel.UserAccountViewModel
 import io.github.daisukikaffuchino.han1meviewer.understood
 import io.github.daisukikaffuchino.han1meviewer.videoUrlRegex
+import io.github.daisukikaffuchino.han1meviewer.play_pause
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
@@ -122,6 +124,11 @@ fun MainActivityShell(
  */
 @Composable
 private fun platformScreens(activity: MainActivity): PlatformScreens = PlatformScreens(
+    // M5-2：恢复 Android 窗口能力（下沉后该宿主无人注入而成死代码）
+    videoPageHost = rememberAndroidVideoPageHost(
+        activity = activity,
+        pipToggleDescription = stringResource(Res.string.play_pause),
+    ),
     download = {
         DownloadRouteScreen(
             onBack = onBack,

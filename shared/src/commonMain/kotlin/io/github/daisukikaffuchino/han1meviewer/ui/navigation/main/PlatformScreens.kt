@@ -2,6 +2,8 @@ package io.github.daisukikaffuchino.han1meviewer.ui.navigation.main
 
 import androidx.compose.material3.DrawerState
 import androidx.compose.runtime.Composable
+import io.github.daisukikaffuchino.han1meviewer.ui.bridge.NoopVideoPageHost
+import io.github.daisukikaffuchino.han1meviewer.ui.bridge.VideoPageHost
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage.HomePageViewModel
 
 /**
@@ -58,6 +60,16 @@ data class PlatformScreens(
     )? = null,
     /** `DownloadSettingsRoute`：下载设置（依赖 SAF，P7）。实现需自带 Scaffold。 */
     val downloadSettings: (@Composable PlatformNavScope.() -> Unit)? = null,
+
+    /**
+     * 视频页的窗口宿主（PiP / 常亮 / 全屏 / 亮度 / 系统栏）。
+     *
+     * M5-2：`VideoRouteScreen` 下沉后该参数一直沿用默认 [NoopVideoPageHost]，
+     * 导致 :app 的 `AndroidVideoPageHost`（PiP/全屏/亮度/常亮）无人注入、成为死代码。
+     * 收敛后由平台壳注入：Android 传 `rememberAndroidVideoPageHost`，
+     * 桌面传 `DesktopVideoPageHost`（AWT 全屏），iOS 暂用 Noop。
+     */
+    val videoPageHost: VideoPageHost = NoopVideoPageHost,
 )
 
 /**

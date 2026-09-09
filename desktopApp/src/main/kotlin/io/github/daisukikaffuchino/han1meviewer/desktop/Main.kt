@@ -1,10 +1,13 @@
 package io.github.daisukikaffuchino.han1meviewer.desktop
 
+import androidx.compose.runtime.remember
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
+import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.PlatformScreens
+import io.github.daisukikaffuchino.han1meviewer.ui.player.DesktopVideoPageHost
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.network.ktor3.KtorNetworkFetcherFactory
@@ -58,6 +61,12 @@ fun main() = application {
     ) {
         // M3：注入 AWT 窗口，供 Skia 渲染面定位 SkiaLayer（LocalWindow 垫片）。
         DesktopWindowHolder.window = window
-        App(onExit = ::exitApplication)
+        App(
+            onExit = ::exitApplication,
+            // M5-2：注入桌面窗口宿主，播放器全屏走 AWT setFullScreenWindow
+            platformScreens = PlatformScreens(
+                videoPageHost = remember { DesktopVideoPageHost() },
+            ),
+        )
     }
 }

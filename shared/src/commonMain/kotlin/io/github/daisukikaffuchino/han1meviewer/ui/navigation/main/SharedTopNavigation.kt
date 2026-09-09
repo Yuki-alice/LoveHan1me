@@ -564,6 +564,8 @@ fun SharedTopNavigation(
         entry<VideoRoute>(metadata = videoTransition()) { route ->
             VideoRouteScreen(
                 route = route,
+                // M5-2：注入平台窗口宿主（此前漏传，PiP/全屏/亮度/常亮全部静默失效）
+                platformHost = platformScreens.videoPageHost,
                 onBack = onBack,
                 onNavigateHome = { backStack.popTo(HomeRoute) },
                 onNavigateToVideo = onNavigateToVideo,

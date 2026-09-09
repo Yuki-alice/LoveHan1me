@@ -2,6 +2,7 @@ package io.github.daisukikaffuchino.han1meviewer.ui.player
 
 import io.github.daisukikaffuchino.utils.LogUtil
 import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.useContents
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -12,7 +13,13 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import platform.AVFoundation.AVAssetTrack
+import platform.AVFoundation.asset
+import platform.AVFoundation.naturalSize
+import platform.AVFoundation.preferredTransform
+import platform.AVFoundation.tracksWithMediaType
 import platform.AVFoundation.AVPlayer
+import platform.AVFoundation.AVMediaTypeVideo
 import platform.AVFoundation.AVPlayerItem
 import platform.AVFoundation.AVPlayerStatusFailed
 import platform.AVFoundation.AVPlayerStatusReadyToPlay
@@ -127,11 +134,32 @@ class IosAVPlaybackEngine : PlaybackEngine {
         scope.cancel()
     }
 
+    /**
+     * 读取视频轨的天然尺寸。
+     *
+     * M5-2：此前 [PlaybackEngineState] 的 videoWidth/Height 恒为 0，导致依赖宽高比的
+     * UI（播放器尺寸自适应、竖屏视频判定）在 iOS 上失效。
+     *
+     * 注意 [AVAssetTrack.naturalSize] 不含旋转信息：手机竖拍/横拍素材需要按
+     * `preferredTransform` 判断是否交换宽高，否则 1080x1920 的竖屏片源会被误判为横屏。
+     */
+    private fun readVideoSize(): Pair<Int, Int> {
+        val track = avPlayer.currentItem?.asset
+            ?.tracksWithMediaType(AVMediaTypeVideo)
+            ?.firstOrNull() as? AVAssetTrack ?: return 0 to 0
+        val size = track.naturalSize
+        val width = size.useContents { width.toInt() }
+        val height = size.useContents { height.toInt() }
+        val rotated = kotlin.math.abs(track.preferredTransform.useContents { b }) > 0.5
+        return if (rotated) height to width else width to height
+    }
+
     private fun publishState() {
         val item = avPlayer.currentItem
         val status = avPlayer.status
         val itemError = item?.error
         val failed = status == AVPlayerStatusFailed || itemError != null
+        val (videoWidth, videoHeight) = readVideoSize()
         val positionMs = (CMTimeGetSeconds(avPlayer.currentTime()) * 1000).toLong()
             .coerceAtLeast(0L)
         val durationSec = item?.let { CMTimeGetSeconds(it.duration) } ?: Double.NaN
@@ -157,8 +185,8 @@ class IosAVPlaybackEngine : PlaybackEngine {
             durationMs = durationMs,
             bufferedPositionMs = positionMs,
             playbackSpeed = avPlayer.rate,
-            videoWidth = 0,
-            videoHeight = 0,
+            videoWidth = videoWidth,
+            videoHeight = videoHeight,
             hasRenderedFirstFrame = positionMs > 0L,
             errorMessage = if (failed) {
                 itemError?.localizedDescription ?: "AVPlayer error"
