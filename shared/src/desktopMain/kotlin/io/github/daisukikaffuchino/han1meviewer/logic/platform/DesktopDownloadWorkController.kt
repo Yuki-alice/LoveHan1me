@@ -5,6 +5,7 @@ import io.github.daisukikaffuchino.han1meviewer.DESKTOP_USER_AGENT
 import io.github.daisukikaffuchino.han1meviewer.USER_AGENT
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.dao.Han1meDatabases
+import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.DownloadGroupEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.HanimeDownloadEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeVideo
 import io.github.daisukikaffuchino.han1meviewer.logic.state.DownloadState
@@ -62,6 +63,9 @@ object DesktopDownloadWorkController : DownloadWorkController {
     }
 
     override suspend fun initialize() {
+        // 全新桌面库按 v5 直接建表不走 Migration4To5，download_groups 为空会导致外键拒绝
+        runCatching { Han1meDatabases.download.downloadGroupDao.insertDefaultGroup() }
+            .onFailure { LogUtil.w(TAG, "insertDefaultGroup failed in initialize", it) }
         runCatching {
             Han1meDatabases.download.hanimeDownloadDao.loadAllDownloadingHanimeOnce()
                 .filter { it.state == DownloadState.Downloading || it.state == DownloadState.Queued }
@@ -88,7 +92,11 @@ object DesktopDownloadWorkController : DownloadWorkController {
         val q = quality ?: video.videoUrls.keys.firstOrNull() ?: return@withContext
         val link = video.videoUrls[q]?.link ?: return@withContext
         val suffix = video.videoUrls[q]?.suffix ?: "mp4"
-        val dao = Han1meDatabases.download.hanimeDownloadDao
+        val db = Han1meDatabases.download
+        val dao = db.hanimeDownloadDao
+
+        // 全新桌面库按 v5 直接建表不走 Migration4To5，download_groups 为空会导致外键拒绝
+        db.downloadGroupDao.insertDefaultGroup()
 
         if (redownload) {
             dao.delete(videoCode, q)
@@ -96,8 +104,16 @@ object DesktopDownloadWorkController : DownloadWorkController {
             return@withContext
         }
 
+        // 防御：调用方传入的 groupId 对应分组可能已被删除，降级为默认分组
+        val safeGroupId = if (db.downloadGroupDao.getGroupById(groupId) != null) {
+            groupId
+        } else {
+            LogUtil.w(TAG, "groupId=$groupId not found, fallback to DEFAULT_GROUP_ID")
+            DownloadGroupEntity.DEFAULT_GROUP_ID
+        }
+
         val entity = HanimeDownloadEntity(
-            groupId = groupId,
+            groupId = safeGroupId,
             coverUrl = video.coverUrl,
             title = video.title,
             addDate = Instant.now().toEpochMilli(),
