@@ -1,9 +1,19 @@
 package io.github.daisukikaffuchino.han1meviewer
 
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.ComposeUIViewController
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.datastore.DataStoreManager
+import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.PlatformScreens
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.web.CloudflareVerificationWebView
 import kotlinx.coroutines.runBlocking
+import org.jetbrains.compose.resources.stringResource
 import platform.UIKit.UIViewController
 
 /**
@@ -24,5 +34,26 @@ fun MainViewController(): UIViewController {
             SettingsRepository.install(DataStoreManager)
         }
     }
-    return ComposeUIViewController { App() }
+    return ComposeUIViewController {
+        App(
+            // M5-5：CF 人机验证走系统 WebKit（WKWebView 直嵌），替代占位页
+            platformScreens = PlatformScreens(
+                cloudflare = { route ->
+                    Column(modifier = Modifier.fillMaxSize()) {
+                        Text(
+                            text = stringResource(Res.string.complete_cloudflare_verification_with_warning),
+                            modifier = Modifier.padding(12.dp),
+                        )
+                        CloudflareVerificationWebView(
+                            url = route.url,
+                            onVerificationPassed = { onBack() },
+                            modifier = Modifier
+                                .weight(1f)
+                                .fillMaxSize(),
+                        )
+                    }
+                },
+            ),
+        )
+    }
 }

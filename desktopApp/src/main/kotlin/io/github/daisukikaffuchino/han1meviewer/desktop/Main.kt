@@ -1,6 +1,11 @@
 package io.github.daisukikaffuchino.han1meviewer.desktop
 
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.LaunchedEffect
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.web.CloudflareKcef
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.web.CloudflareVerificationWindow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -70,6 +75,17 @@ fun main() {
             // M5-2：注入桌面窗口宿主，播放器全屏走 AWT setFullScreenWindow
             platformScreens = PlatformScreens(
                 videoPageHost = remember { DesktopVideoPageHost() },
+                // M5-5：CF 验证独立弹窗（KCEF/Chromium；首次使用会下载 CEF 运行时）
+                cloudflare = { route ->
+                    LaunchedEffect(Unit) {
+                        withContext(Dispatchers.IO) { CloudflareKcef.ensureInit() }
+                    }
+                    CloudflareVerificationWindow(
+                        url = route.url,
+                        host = route.host,
+                        onPassed = { onBack() },
+                    )
+                },
             ),
         )
     }

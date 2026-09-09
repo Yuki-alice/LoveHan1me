@@ -8,6 +8,8 @@ plugins {
 
 dependencies {
     implementation(project(":shared"))
+    // M5-5：PlatformScreens 槽位 lambda 引用 CloudflareRoute（NavKey 子类型），需运行时可见
+    implementation(libs.navigation3.runtime.cmp)
     implementation(compose.desktop.currentOs)
     implementation(compose.material)
     // P6c-D：骨架屏用 shared 同款 CMP material3（与 :shared 版本一致，含 Expressive opt-in）

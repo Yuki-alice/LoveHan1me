@@ -13,6 +13,8 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url = uri("https://jitpack.io/") }
+        // M5-5：KCEF/JCEF 的 JOGL（gluegen-rt/jogl-all）只发布在 JogAmp 官方仓库
+        maven { url = uri("https://jogamp.org/deployment/maven/") }
     }
 }
 rootProject.name = "Han1meViewer"
