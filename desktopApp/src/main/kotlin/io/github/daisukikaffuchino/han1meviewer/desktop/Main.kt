@@ -56,6 +56,9 @@ fun main() {
         DataStoreManager.initialize()
         SettingsRepository.install(DataStoreManager)
         LogUtil.d("Desktop", "main: DataStore+SettingsRepository ready, baseUrl=${SettingsRepository.baseUrl}")
+        // M6-2：恢复未完成的下载队列（Room 里的 Downloading/Queued 任务）
+        io.github.daisukikaffuchino.han1meviewer.logic.platform.initializeDesktopDownloadQueue()
+        LogUtil.d("Desktop", "main: download queue restored")
     }
     setSingletonImageLoaderFactory { context ->
         ImageLoader.Builder(context)

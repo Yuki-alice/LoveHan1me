@@ -14,4 +14,4 @@ private object NoOpDownloadWorkController : DownloadWorkController {
 }
 
 internal actual fun videoCacheStore(): VideoCacheStore = NoOpVideoCacheStore
-internal actual fun downloadWorkController(): DownloadWorkController = NoOpDownloadWorkController
+internal actual fun downloadWorkController(): DownloadWorkController = DesktopDownloadWorkController

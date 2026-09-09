@@ -69,6 +69,7 @@ import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.SharedHKe
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.SharedHKeyframesRouteScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.settings.VideoPlaybackSettingsRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.home.homepage.HomePageViewModel
+import io.github.daisukikaffuchino.han1meviewer.logic.platform.downloadWorkController
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.login.FormLoginScreen
 import io.github.daisukikaffuchino.han1meviewer.logout
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.account.AccountScreen
@@ -589,9 +590,15 @@ fun SharedTopNavigation(
                 onNavigateHome = { backStack.popTo(HomeRoute) },
                 onNavigateToVideo = onNavigateToVideo,
                 onOpenSearchRoute = { searchRoute -> backStack.add(searchRoute) },
-                onEnqueueDownload = {
+                onEnqueueDownload = { request ->
                     scope.launch {
-                        SonnerToast.warning("桌面下载随 P7（当前仅可在线播放）")
+                        downloadWorkController().addTask(
+                            video = request.video,
+                            videoCode = request.videoCode,
+                            quality = request.quality,
+                            groupId = request.groupId,
+                            redownload = request.redownload,
+                        )
                     }
                 },
             )

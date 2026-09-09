@@ -32,6 +32,18 @@ interface DownloadWorkController {
     /** M6：删除某视频的产物文件夹（删除已下载记录时调用） */
     fun deleteVideoFolder(videoCode: String) {}
 
+    /**
+     * M6-2：发起下载（视频页「下载」按钮）。[video] 携带各清晰度直链
+     * （[io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeVideo.videoUrls]）。
+     */
+    suspend fun addTask(
+        video: io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeVideo,
+        videoCode: String,
+        quality: String?,
+        groupId: Int,
+        redownload: Boolean = false,
+    ) {}
+
     /** M6：从下载目录导入已有视频（Android=SAF 扫描；桌面/iOS 返回 false） */
     suspend fun importDownloaded(): Boolean = false
 }

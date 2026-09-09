@@ -2,6 +2,7 @@ package io.github.daisukikaffuchino.han1meviewer.logic.platform
 
 import androidx.work.WorkManager
 import io.github.daisukikaffuchino.han1meviewer.logic.dao.Han1meDatabases
+import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeVideo
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.HanimeDownloadEntity
 import io.github.daisukikaffuchino.han1meviewer.util.SafFileManager
 import io.github.daisukikaffuchino.han1meviewer.worker.HanimeDownloadManager
@@ -42,6 +43,28 @@ object AndroidDownloadWorkController : DownloadWorkController {
 
     override fun deleteVideoFolder(videoCode: String) {
         SafFileManager.deleteDownloadVideoFolder(application, videoCode)
+    }
+
+    override suspend fun addTask(
+        video: io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeVideo,
+        videoCode: String,
+        quality: String?,
+        groupId: Int,
+        redownload: Boolean,
+    ) {
+        val q = quality ?: video.videoUrls.keys.firstOrNull() ?: return
+        HanimeDownloadManager.addTask(
+            HanimeDownloadWorker.Args(
+                quality = q,
+                downloadUrl = video.videoUrls[q]?.link,
+                videoType = video.videoUrls[q]?.suffix,
+                hanimeName = video.title,
+                videoCode = videoCode,
+                coverUrl = video.coverUrl,
+                groupId = groupId,
+            ),
+            redownload = redownload,
+        )
     }
 
     override suspend fun importDownloaded(): Boolean = withContext(Dispatchers.IO) {
