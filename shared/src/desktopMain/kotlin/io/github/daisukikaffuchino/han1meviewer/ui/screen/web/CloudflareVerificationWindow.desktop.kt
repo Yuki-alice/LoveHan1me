@@ -20,6 +20,7 @@ import com.multiplatform.webview.web.rememberWebViewState
 import dev.datlag.kcef.KCEF
 import dev.datlag.kcef.KCEFCookieManager
 import io.github.daisukikaffuchino.han1meviewer.DESKTOP_USER_AGENT
+import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.network.HCookieJar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -94,6 +95,10 @@ fun CloudflareVerificationWindow(
                     }.getOrNull()
                 }
                 HCookieJar.cookieMap[host] = okhttpCookies.toMutableList()
+                // M7-2：验证产物落盘 DataStore，跨进程重启后由 loadForRequest 从
+                // 持久化层恢复注入（对齐 iOS 端 IosCookieBridge.persist 语义）。
+                val cookieHeader = cefCookies.joinToString("; ") { "${it.name}=${it.value}" }
+                SettingsRepository.setCloudFlareCookie(cookieHeader, host)
                 open = false
                 onPassed()
                 break
