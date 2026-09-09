@@ -39,6 +39,8 @@ fun main() {
     installCrashHandler()
     // M6-2：下载引擎端到端冒烟（HAN1ME_SMOKE=download，跑完即退）
     if (runSmokeIfRequested()) return
+    // M7-2：CF cookie 落盘冒烟（HAN1ME_SMOKE=cookie-write / cookie-read，跑完即退）
+    if (runCookieSmokeIfRequested()) return
     application {
     System.getenv("HAN1ME_P3A_PROXY")?.takeIf { it.isNotBlank() }?.let { hp ->
         val idx = hp.lastIndexOf(':')
