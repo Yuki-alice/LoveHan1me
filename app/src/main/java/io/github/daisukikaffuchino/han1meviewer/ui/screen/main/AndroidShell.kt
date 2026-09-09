@@ -1,6 +1,8 @@
 package io.github.daisukikaffuchino.han1meviewer.ui.screen.main
 
+import android.content.ClipData
 import android.content.Intent
+import io.github.daisukikaffuchino.utils.getDownloadedHanimeVideoUri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
@@ -34,6 +36,7 @@ import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.confirm_switch_site
 import io.github.daisukikaffuchino.han1meviewer.detect_ha1_related_link_in_clipboard
 import io.github.daisukikaffuchino.han1meviewer.enter
+import io.github.daisukikaffuchino.han1meviewer.ext_player
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.state.PageState
 import io.github.daisukikaffuchino.han1meviewer.no
@@ -133,10 +136,28 @@ private fun platformScreens(activity: MainActivity): PlatformScreens = PlatformS
         pipToggleDescription = stringResource(Res.string.play_pause),
     ),
     download = {
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val externalPlayerChooserTitle = stringResource(Res.string.ext_player)
         DownloadRouteScreen(
             onBack = onBack,
             onNavigateToVideo = { code -> backStack.add(VideoRoute(code)) },
             onNavigateToLocalVideo = { code, uri -> backStack.add(VideoRoute(code, uri)) },
+            onExternalPlayback = { videoUriPath, onNotExist ->
+                val externalUri = context.getDownloadedHanimeVideoUri(videoUriPath) { onNotExist() }
+                if (externalUri != null) {
+                    val intent = Intent(Intent.ACTION_VIEW).apply {
+                        setDataAndType(externalUri, "video/*")
+                        clipData = ClipData.newRawUri("video", externalUri)
+                        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    }
+                    context.startActivity(
+                        Intent.createChooser(intent, externalPlayerChooserTitle).apply {
+                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                        },
+                    )
+                }
+            },
+            onImportDownloaded = {},
         )
     },
     account = { pendingAvatarCropResult, onAvatarCropResultConsumed ->

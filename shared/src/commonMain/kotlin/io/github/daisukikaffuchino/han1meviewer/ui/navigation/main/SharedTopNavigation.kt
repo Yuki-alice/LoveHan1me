@@ -217,10 +217,12 @@ fun SharedTopNavigation(
             if (injected != null) {
                 navScope.injected()
             } else {
-                NavPlaceholder(
-                    title = "Download",
-                    hint = "桌面下载随 P7（SAF/WorkManager 无跨平台对等）",
+                // M6：默认走共享下载页（Room KMP 三端同库，浏览/分组/删除全可用）；
+                // 外部播放/SAF 导入为 Android 专属回调（null），引擎发起随 P7 各端补齐
+                DownloadRouteScreen(
                     onBack = onBack,
+                    onNavigateToVideo = { code -> backStack.add(VideoRoute(code)) },
+                    onNavigateToLocalVideo = { code, uri -> backStack.add(VideoRoute(code, uri)) },
                 )
             }
         }
