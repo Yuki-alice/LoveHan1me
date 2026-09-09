@@ -65,7 +65,13 @@ fun CloudflareVerificationWebView(
             delay(1_500)
             val extracted = extractCookies()
             IosCookieBridge.put(extracted)
-            if (IosCookieBridge.snapshot().keys.any { it.startsWith("cf_") }) {
+            val verified = IosCookieBridge.snapshot().keys.any { it.startsWith("cf_") }
+            if (verified) {
+                // M7-2：验证产物落盘 DataStore，跨进程重启后由
+                // BridgeCookiesStorage 从持久化层恢复注入（对齐 jvm 端语义）。
+                NSURL.URLWithString(url)?.host?.let { host ->
+                    IosCookieBridge.persist(host, IosCookieBridge.snapshot())
+                }
                 onVerificationPassed()
                 break
             }

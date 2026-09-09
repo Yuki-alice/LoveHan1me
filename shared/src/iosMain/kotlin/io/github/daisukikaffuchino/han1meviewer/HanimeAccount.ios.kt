@@ -2,9 +2,12 @@ package io.github.daisukikaffuchino.han1meviewer
 
 // M5：iOS 平台 actual。
 actual fun clearMemoryCookies() {
-    // iOS 网络层 Cookie 存于 Ktor HttpCookies（内存态，随 HttpClient 实例）。
-    // TODO(M-后续)：抽共享 CookiesStorage 注入引擎，登出时同步清除，
-    //  否则登出后内存中的旧 session cookie 会残留至进程结束。
+    // M7-2：登出时清空内存桥，同时清掉 DataStore 中已持久化的 CF cookie，
+    // 避免登出后旧 cf_clearance 继续随请求注入（对齐 Android 端登出语义）。
+    io.github.daisukikaffuchino.han1meviewer.logic.network.IosCookieBridge.clear()
+    kotlinx.coroutines.runBlocking {
+        io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository.setCloudFlareCookie("", "")
+    }
 }
 
 actual fun clearWebCookies() {
