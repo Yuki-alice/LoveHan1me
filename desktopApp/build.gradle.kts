@@ -27,7 +27,7 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "me.lovehan1me.desktop.MainKt"
+        mainClass = "lovehan1me.desktop.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)

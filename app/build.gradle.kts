@@ -76,7 +76,7 @@ android {
     lint {
         disable += setOf("EnsureInitializerMetadata")
     }
-    namespace = "me.lovehan1me"
+    namespace = "lovehan1me"
 
     @Suppress("UnstableApiUsage")
     androidResources {

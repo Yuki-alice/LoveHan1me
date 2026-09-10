@@ -172,5 +172,5 @@ kotlin {
 // P4：composeRes 资源基建（公共 Res 类 + 固定包名；:app 的 R 与 shared composeRes 双轨，P6 收敛）
 compose.resources {
     publicResClass = true
-    packageOfResClass = "me.lovehan1me"
+    packageOfResClass = "lovehan1me"
 }

@@ -1,0 +1,11 @@
+package lovehan1me.logic.platform
+
+import lovehan1me.HCacheManager
+import lovehan1me.logic.model.HanimeVideo
+import lovehan1me.utils.application
+import kotlinx.coroutines.flow.Flow
+
+object AndroidVideoCacheStore : VideoCacheStore {
+    override fun load(videoCode: String): Flow<HanimeVideo?> =
+        HCacheManager.loadHanimeVideoInfo(application, videoCode)
+}
