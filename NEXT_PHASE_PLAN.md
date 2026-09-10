@@ -118,7 +118,54 @@
 - [x] M7-4
 - [ ] M8-1
 - [ ] M8-2
-- [ ] M8-3
+- [x] M8-3
+
+## M8-3 功能对齐差异矩阵（2026-09-10，代码事实审计）
+
+> 图例：✅=代码完备且有真机/模拟器实测证据；🟡=代码完备但缺实测，或平台降级；❌=缺失/占位。
+> 审计基线：35 路由（`SharedTopNavigation.kt` entry×35）三端同一套；网络/解析三端同栈（`NetworkRepo.kt` + `Parser.kt` + Ktor），差异只在平台壳。
+> 实测证据缩写：A真机=Redmi 真机 dump/log（M8-1b）、D烟=desktopApp 冒烟（M6-2）、i sim=iOS 模拟器（M7/M7-4）。
+
+| 功能项 | Android | 桌面 | iOS |
+|---|---|---|---|
+| 首页浏览（Banner/多分区） | ✅ A真机首页 dump 出卡片 | 🟡 共享 `HomePageViewModel`，缺 UI 实测 | 🟡 i sim 首页 200+解析正常（M7），缺完整导航实测 |
+| 分类/标签分区（里番/2D/3D…） | ✅ 同上（同一屏） | 🟡 同上 | 🟡 同上 |
+| 基础搜索 | 🟡 共享 `SearchScreen`+`Parser.hanimeSearch`，未真机搜过 | 🟡 同左 | 🟡 同左 |
+| 高级搜索/标签组合 | 🟡 共享 `AdvancedSearchSheet`+`getHanimeSearchResult`，未验 | 🟡 同左 | 🟡 同左 |
+| 视频页播放 | ✅ A真机在线+本地均出画（Exo，`ExoPlaybackEngine.kt`） | ✅ D烟 mpv 出画（M3，`DesktopMpvPlaybackEngine.kt`） | ✅ i sim 真播实测（M7-4，`IosAVPlaybackEngine.kt`） |
+| 简介/相关推荐 | ✅ A真机简介页 dump（`VideoIntroductionScreen.kt`） | 🟡 共享页，缺实测 | 🟡 共享页，缺实测 |
+| 评论列表/发表 | 🟡 列表 A真机 logcat 见过（`getComments`），发表未验 | 🟡 共享 `CommentScreen`+`postComment`，未验 | 🟡 同左 |
+| 收藏（喜欢/稍后看/播放清单） | 🟡 `addToMyFavVideo`/`addToMyList`+共享 UI，未验 | 🟡 同左 | 🟡 同左 |
+| 观看历史（本地+在线） | 🟡 共享屏+`getOnlineWatchHistories`，未验 | 🟡 同左 | 🟡 同左 |
+| 订阅（艺术家） | 🟡 `getMySubscriptions`/`subscribeArtist`+共享屏，未验 | 🟡 同左 | 🟡 同左 |
+| 登录 | 🟡 WebView 槽位（`:app AuthRouteScreens.kt`）+共享表单，未走通一次 | 🟡 共享表单+KCEF CF 窗，未验 | 🟡 共享表单+WKWebView CF（M7-2 代码），未验 |
+| CF 人机验证 | ✅ A真机 WebView 多次触发+通过（`CloudflareRouteScreen`） | 🟡 KCEF 独立窗（M5-5，`Main.kt:84`），缺实测 | 🟡 WKWebView 直嵌（M5-5），代码级 |
+| 头像上传/裁剪 | 🟡 picker+crop 槽位（`AvatarCropScreen.kt`），未验 | ❌ 槽位 null→占位（`SharedTopNavigation.kt:298`） | ❌ 同左 |
+| 每日打卡 | 🟡 共享路由+Widget（`CheckInWidgetProvider.kt`）+系统日历（`SystemCalendar.android.kt`），未验 | 🟡 路由有，日历 `=false`（`SystemCalendar.desktop.kt`） | 🟡 路由有，日历 `=false`（`SystemCalendar.ios.kt`） |
+| 下载队列/续传/分组 | 🟡 WorkManager 桥：发起/完成/本地播/删除已验，通知/杀恢复/暂停待验（M8-1b） | 🟡 引擎 D烟 PASS（M6-2），目录配置占位（`DownloadSettingsRoute:473` null 回退） | 🟡 引擎 i sim 烟 PASS（M8-1a），无导入/外部播 |
+| 下载导入（SAF 扫描） | 🟡 `AndroidDownloadWorkController.importDownloaded` 真实现，未验 | ❌ `=false`（`DesktopDownloadWorkController.kt:165`） | ❌ `=false`（`IosDownloadWorkController.kt`） |
+| 外部播放器 | 🟡 ACTION_VIEW chooser（`AndroidShell.kt:145`），未验 | ❌ 无槽位 | ❌ 无槽位 |
+| 设置（主题/语言/播放器/网络） | 🟡 共享设置屏全套，未逐项点验 | 🟡 同左 | 🟡 设置 Hub iOS 降级占位（`PlatformSettingsRoutes.ios.kt:15`，P7 再定） |
+| 备份/恢复 | 🟡 `BackupManager.kt`（jvmMain），未验 | 🟡 同左 | ❌ 无 iOS 语义（同上文件） |
+| 投屏 Cast | 🟡 `CastPlaybackEngine.kt`+Play 服务门控，待实测（无 receiver 无法断言） | ❌ `isCastAvailable()=false`（`CastAvailability.desktop.kt`） | ❌ `isCastAvailable()=false`（`CastAvailability.ios.kt`） |
+| 画中画 PiP | 🟡 真实现但 `shouldEnterPip()=false`（`AndroidVideoPageHost.kt:88`） | ❌ 明确不支持（`DesktopVideoPageHost.kt:12` 注释） | ❌ `NoopVideoPageHost` |
+| 桌面小组件 | 🟡 打卡 Widget 代码，未验 | ❌ 平台无语义 | ❌ 平台无语义 |
+| 全屏/横竖屏/亮度/常亮 | 🟡 `AndroidVideoPageHost` 真实现，未逐项验 | 🟡 仅 AWT 全屏（`DesktopVideoPageHost.kt:31`） | ❌ Noop |
+| 预告/新番时间表 | 🟡 共享 11 个 Getchu 文件+`Parser.hanimePreview`，未验 | 🟡 同左 | 🟡 同左 |
+| 弹幕/HKeyframes 基建 | 🟡 路由/DB 就绪（M9 前置） | 🟡 同左 | 🟡 路由有；内核切换对 AVPlayer 无效（`PlaybackEngineFactory.ios.kt` 忽略 kernel，选 MPV 仍播 AVPlayer，易误导） |
+
+计数：Android ✅5 🟡20 ❌0；桌面 ✅1 🟡18 ❌6；iOS ✅1 🟡16 ❌8。
+
+### 缺口清单（用户价值×实现成本排序）
+
+1. （M8 后续，紧邻）Android 通知权限申请：全新安装无 `POST_NOTIFICATIONS`→前台/完成通知全灭（M8-1b 实证）；修法=下载确认处申请一次，约 10 行 `:app` 内。
+2. （M8 后续）三端登录成功链路实测（M7-2 遗留）：代码三端完备，缺一次走通；若暴露 CF/会话结构性问题则升级阻塞。
+3. （M8 后续）下载收尾：Android 杀恢复/暂停（M8-1b 余项）＋桌面目录配置占位＋iOS 无导入/外部播（后两者需原生能力，成本中）。
+4. （M8 后续）iOS 设置 Hub 降级占位→真页＋备份（`PlatformSettingsRoutes.ios.kt:15` P7 项）；附带修 iOS MPV 内核选项误导（隐藏或禁用，成本低）。
+5. （M9 前置）🟡转✅走查：搜索/收藏/历史/评论发表/打卡/预告，按屏走查即可，多为零代码。
+6. （M10/远期）头像上传桌面/iOS、投屏桌面/iOS、PiP 桌面/iOS：价值低、需原生能力；桌面小组件：平台无语义，不做。
+7. 环境债（非代码）：Clash 类规则代理出口漂移会使 IP 绑定的 `cf_clearance` 循环失效（M8-1b 实证：节点 `後藤 一里`→`ムラサメ`切换即复现/自愈）；验证环境优先固定节点。
+
 - [ ] M9-1
 - [ ] M9-2
 - [ ] M9-3
