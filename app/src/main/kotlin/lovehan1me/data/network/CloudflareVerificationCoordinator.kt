@@ -4,9 +4,9 @@ import android.content.Context
 import android.content.Intent
 import androidx.core.net.toUri
 import lovehan1me.ui.activity.MainActivity
-import lovehan1me.ui.navigation.main.ACTION_OPEN_CLOUDFLARE_VERIFICATION
-import lovehan1me.ui.navigation.main.EXTRA_CLOUDFLARE_HOST
-import lovehan1me.ui.navigation.main.EXTRA_CLOUDFLARE_URL
+import lovehan1me.app.navigation.main.ACTION_OPEN_CLOUDFLARE_VERIFICATION
+import lovehan1me.app.navigation.main.EXTRA_CLOUDFLARE_HOST
+import lovehan1me.app.navigation.main.EXTRA_CLOUDFLARE_URL
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 

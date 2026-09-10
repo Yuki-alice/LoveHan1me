@@ -1,0 +1,302 @@
+package lovehan1me.feature.video
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.platform.LocalWindowInfo
+import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.text.input.TextFieldValue
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import lovehan1me.Res
+import lovehan1me.sending_reply
+import lovehan1me.send_success
+import lovehan1me.send_failed
+import lovehan1me.reply_child_comment
+import lovehan1me.login_first
+import lovehan1me.load_reply_failed
+import lovehan1me.comment_too_short
+import lovehan1me.comment_not_found
+import lovehan1me.comment_count
+import lovehan1me.child_comment
+import lovehan1me.core.domain.model.ReportReason
+import lovehan1me.core.domain.model.VideoCommentArgs
+import lovehan1me.core.domain.model.VideoComments
+import lovehan1me.core.domain.state.WebsiteState
+import lovehan1me.ui.component.CommentReplyBar
+import lovehan1me.ui.component.CommentReportDialog
+import lovehan1me.ui.component.PageContent
+import lovehan1me.ui.component.VideoCommentCard
+import lovehan1me.ui.component.content.EmptyContent
+import lovehan1me.ui.component.content.ErrorContent
+import lovehan1me.ui.component.content.LoadingContent
+import lovehan1me.ui.component.lazy.LazyColumn
+import lovehan1me.ui.screen.rememberRandomLoadingHint
+import lovehan1me.ui.theme.HanimeDefaults
+import lovehan1me.core.util.parseTimeStrToMinutes
+import lovehan1me.core.util.safeSortedBy
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.launch
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun ChildCommentScreen(
+    commentsFlow: StateFlow<List<VideoComments.VideoComment>>,
+    commentStateFlow: StateFlow<WebsiteState<VideoComments>>,
+    reportMessageFlow: Flow<CommentMessage>,
+    postReplyStateFlow: Flow<WebsiteState<Unit>>,
+    commentLikeStateFlow: Flow<WebsiteState<VideoCommentArgs>>,
+    reportReasons: List<ReportReason>,
+    isAlreadyLogin: Boolean,
+    onRefresh: () -> Unit,
+    onReply: (VideoComments.VideoComment, String) -> Unit,
+    onReport: (VideoComments.VideoComment, ReportReason) -> Unit,
+    onThumbUp: (VideoComments.VideoComment) -> Unit,
+    onThumbDown: (VideoComments.VideoComment) -> Unit,
+    // P6c：VM handleCommentLike 下沉后为 suspend（collect 上下文调用，语义不变）
+    onCommentLikeSuccess: suspend (VideoCommentArgs) -> Unit,
+    onReplyStateChange: (Boolean) -> Unit = {},
+) {
+    val comments by commentsFlow.collectAsStateWithLifecycle()
+    val state by commentStateFlow.collectAsStateWithLifecycle()
+    val containerSize = LocalWindowInfo.current.containerSize
+    val maxScreenWidth = containerSize.width.dp
+
+    var replyingComment by remember { mutableStateOf<VideoComments.VideoComment?>(null) }
+    var replyText by remember { mutableStateOf(TextFieldValue("")) }
+    var reportComment by remember { mutableStateOf<VideoComments.VideoComment?>(null) }
+    var selectedReasonIndex by remember { mutableIntStateOf(-1) }
+    val snackbarHostState = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+
+    val loginFirstText = stringResource(Res.string.login_first)
+    val sendFailedText = stringResource(Res.string.send_failed)
+    val sendSuccessText = stringResource(Res.string.send_success)
+    val sendingReplyText = stringResource(Res.string.sending_reply)
+    val commentTooShortText = stringResource(Res.string.comment_too_short)
+
+    LaunchedEffect(reportMessageFlow) {
+        reportMessageFlow.collect { message ->
+            if (message.text.isNotBlank()) {
+                snackbarHostState.showSnackbar(message.text)
+            }
+        }
+    }
+
+    LaunchedEffect(postReplyStateFlow) {
+        postReplyStateFlow.collect { replyState ->
+            when (replyState) {
+                is WebsiteState.Error -> snackbarHostState.showSnackbar(sendFailedText)
+                WebsiteState.Loading -> snackbarHostState.showSnackbar(sendingReplyText)
+                is WebsiteState.Success -> {
+                    snackbarHostState.showSnackbar(sendSuccessText)
+                    onRefresh()
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(commentLikeStateFlow) {
+        commentLikeStateFlow.collect { likeState ->
+            when (likeState) {
+                is WebsiteState.Error -> {
+                    snackbarHostState.showSnackbar(likeState.throwable.message ?: "unknown")
+                }
+
+                WebsiteState.Loading -> Unit
+
+                is WebsiteState.Success -> onCommentLikeSuccess(likeState.info)
+            }
+        }
+    }
+
+    val sortedComments = remember(comments) {
+        comments.safeSortedBy({ parseTimeStrToMinutes(it.date) }, descending = false)
+    }
+
+    // M2：BackHandler 是 Android-only；桌面无系统返回，回复框有关闭按钮。
+
+    LaunchedEffect(replyingComment) {
+        if (replyingComment != null) {
+            onReplyStateChange(true)
+        }
+    }
+
+    Scaffold(
+        modifier = Modifier.widthIn(max = maxScreenWidth)
+            .background(color = HanimeDefaults.Colors.pageSurface),
+        containerColor = HanimeDefaults.Colors.pageSurface,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        bottomBar = {
+            AnimatedVisibility(
+                visible = replyingComment != null,
+                enter = slideInVertically { it } + fadeIn(),
+                exit = slideOutVertically { it } + fadeOut(),
+            ) {
+                CommentReplyBar(
+                    text = replyText,
+                    onTextChange = { replyText = it },
+                    onSend = {
+                        replyingComment?.let { target ->
+                            val prefix = "@${target.username}"
+                            val contentLength =
+                                replyText.text.trim().removePrefix(prefix).trimStart().length
+                            if (contentLength < 5) {
+                                scope.launch { snackbarHostState.showSnackbar(commentTooShortText) }
+                            } else {
+                                onReply(target, replyText.text)
+                                replyingComment = null
+                                replyText = TextFieldValue("")
+                            }
+                        }
+                    },
+                    placeholder = stringResource(Res.string.reply_child_comment),
+                )
+            }
+        },
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            Text(
+                text = stringResource(Res.string.child_comment),
+                style = MaterialTheme.typography.headlineSmall,
+            )
+
+            if (sortedComments.isNotEmpty()) {
+                Text(
+                    text = stringResource(Res.string.comment_count, sortedComments.size),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+            }
+
+            val initialLoading = state is WebsiteState.Loading && sortedComments.isEmpty()
+            val initialError = state is WebsiteState.Error && sortedComments.isEmpty()
+            val loadingHint = rememberRandomLoadingHint()
+            PageContent(
+                isLoading = initialLoading,
+                isError = initialError,
+                isEmpty = sortedComments.isEmpty(),
+                errorMessage = (state as? WebsiteState.Error)?.throwable?.message ?: "",
+                onRetry = onRefresh,
+                loading = {
+                    LoadingContent(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 24.dp),
+                        message = loadingHint,
+                    )
+                },
+                error = {
+                    ErrorContent(
+                        title = stringResource(Res.string.load_reply_failed),
+                        message = (state as WebsiteState.Error).throwable.message,
+                        onRetry = onRefresh,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 24.dp),
+                    )
+                },
+                empty = {
+                    EmptyContent(hint = stringResource(Res.string.comment_not_found))
+                },
+            ) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(sortedComments, key = { it.stableKey }) { comment ->
+                        VideoCommentCard(
+                            comment = comment,
+                            onReply = {
+                                if (!isAlreadyLogin) {
+                                    scope.launch { snackbarHostState.showSnackbar(loginFirstText) }
+                                } else {
+                                    replyingComment = comment
+                                    replyText = TextFieldValue("@${comment.username} ")
+                                }
+                            },
+                            onThumbUp = {
+                                if (!isAlreadyLogin) {
+                                    scope.launch { snackbarHostState.showSnackbar(loginFirstText) }
+                                } else {
+                                    onThumbUp(comment)
+                                }
+                            },
+                            onThumbDown = {
+                                if (!isAlreadyLogin) {
+                                    scope.launch { snackbarHostState.showSnackbar(loginFirstText) }
+                                } else {
+                                    onThumbDown(comment)
+                                }
+                            },
+                            onReport = {
+                                if (!isAlreadyLogin) {
+                                    scope.launch { snackbarHostState.showSnackbar(loginFirstText) }
+                                } else {
+                                    reportComment = comment
+                                }
+                            },
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (reportComment != null) {
+        CommentReportDialog(
+            reportReasons = reportReasons,
+            selectedReasonIndex = selectedReasonIndex,
+            onSelectReason = { selectedReasonIndex = it },
+            onConfirm = {
+                val reason = reportReasons.getOrNull(selectedReasonIndex)
+                val target = reportComment
+                if (reason != null && target != null) {
+                    onReport(target, reason)
+                }
+                reportComment = null
+                selectedReasonIndex = -1
+            },
+            onDismiss = {
+                reportComment = null
+                selectedReasonIndex = -1
+            },
+        )
+    }
+}

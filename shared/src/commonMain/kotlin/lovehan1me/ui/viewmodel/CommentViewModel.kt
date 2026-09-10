@@ -16,7 +16,7 @@ import lovehan1me.report_failed
 import lovehan1me.report_success
 import lovehan1me.thumb_down_success
 import lovehan1me.thumb_up_success
-import lovehan1me.ui.screen.video.CommentSortType
+import lovehan1me.feature.video.CommentSortType
 import lovehan1me.ui.viewmodel.CsrfTokenProvider.csrfToken
 import lovehan1me.core.util.SonnerToast
 import lovehan1me.core.util.decodeComposeAsset

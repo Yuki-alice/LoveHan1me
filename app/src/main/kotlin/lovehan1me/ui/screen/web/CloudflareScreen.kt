@@ -23,7 +23,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import lovehan1me.Res
 import lovehan1me.complete_cloudflare_verification
 import lovehan1me.ui.component.appbar.HanimeScaffold
-import lovehan1me.ui.preview.ComponentPreview
+import lovehan1me.feature.preview.ComponentPreview
 
 
 @Composable

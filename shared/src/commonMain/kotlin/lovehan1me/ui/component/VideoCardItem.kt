@@ -55,9 +55,9 @@ import lovehan1me.ic_thumb_up_off_alt
 import lovehan1me.getHanimeShareText
 import lovehan1me.core.domain.model.VideoItemType
 import lovehan1me.ui.component.rememberHapticFeedback
-import lovehan1me.ui.navigation.main.SearchRoute
-import lovehan1me.ui.navigation.main.navigateToArtistSearch
-import lovehan1me.ui.preview.fakeVideosItem
+import lovehan1me.app.navigation.main.SearchRoute
+import lovehan1me.app.navigation.main.navigateToArtistSearch
+import lovehan1me.feature.preview.fakeVideosItem
 import lovehan1me.ui.screen.RetryableImage
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction

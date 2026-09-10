@@ -14,8 +14,8 @@ import lovehan1me.R
 import lovehan1me.Res
 import lovehan1me.copy_to_clipboard
 import lovehan1me.crash_no_logs
-import lovehan1me.ui.crash.CrashHandler
-import lovehan1me.ui.screen.crash.CrashScreen
+import lovehan1me.app.crash.CrashHandler
+import lovehan1me.app.crash.CrashScreen
 import lovehan1me.core.util.ActivityManager
 import lovehan1me.core.util.SonnerToast
 import lovehan1me.core.util.toastText

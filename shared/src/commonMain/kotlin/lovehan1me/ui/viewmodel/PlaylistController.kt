@@ -6,7 +6,7 @@ import lovehan1me.core.domain.model.MyListItems
 import lovehan1me.core.domain.model.Playlists
 import lovehan1me.core.domain.state.PageLoadingState
 import lovehan1me.core.domain.state.WebsiteState
-import lovehan1me.ui.screen.home.myplaylist.PlaylistUiState
+import lovehan1me.feature.home.myplaylist.PlaylistUiState
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 

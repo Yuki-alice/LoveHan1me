@@ -19,7 +19,7 @@ import lovehan1me.core.platform.setVideoCacheStoreProvider
 import lovehan1me.data.network.CloudflareVerificationCoordinator
 import lovehan1me.data.network.CloudflareVerifier
 import lovehan1me.data.network.HProxySelector
-import lovehan1me.ui.crash.CrashHandler
+import lovehan1me.app.crash.CrashHandler
 import lovehan1me.core.util.AnimeShaders
 import lovehan1me.core.util.AppLanguageManager
 import lovehan1me.core.util.ActivityManager

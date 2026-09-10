@@ -11,17 +11,17 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
-import lovehan1me.ui.navigation.main.PlatformScreens
-import lovehan1me.ui.player.DesktopVideoPageHost
+import lovehan1me.app.navigation.main.PlatformScreens
+import lovehan1me.feature.player.DesktopVideoPageHost
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import lovehan1me.App
 import lovehan1me.desktop.runSmokeIfRequested
-import lovehan1me.ui.crash.installCrashHandler
+import lovehan1me.app.crash.installCrashHandler
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.datastore.DataStoreManager
-import lovehan1me.ui.player.DesktopWindowHolder
+import lovehan1me.feature.player.DesktopWindowHolder
 import lovehan1me.core.util.LogUtil
 import kotlinx.coroutines.runBlocking
 

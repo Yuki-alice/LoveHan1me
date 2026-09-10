@@ -45,7 +45,7 @@ import lovehan1me.data.database.dao.Han1meDatabases
 import lovehan1me.data.database.entity.CheckInRecordEntity
 import lovehan1me.data.database.entity.CheckInType
 import lovehan1me.ui.activity.MainActivity
-import lovehan1me.ui.navigation.main.EXTRA_OPEN_DAILY_CHECK_IN
+import lovehan1me.app.navigation.main.EXTRA_OPEN_DAILY_CHECK_IN
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.getString
