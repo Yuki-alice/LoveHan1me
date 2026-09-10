@@ -1,0 +1,96 @@
+package me.lovehan1me
+import android.content.Context
+import android.os.Environment
+import me.lovehan1me.utils.LogUtil
+import java.io.File
+
+object HFileManager {
+
+    const val HANIME_DOWNLOAD_FOLDER = "hanime_download"
+    const val DEF_VIDEO_TYPE = "mp4"
+    const val DEF_VIDEO_COVER_TYPE = "png"
+    val illegalCharsRegex = Regex("""["*/:<>?\\|\x00-\x1F\x7F]""")
+
+
+    /**
+     * 获取 App 的下载主目录。
+     * 使用 [me.lovehan1me.util.SafFileManager] 可自定义目录
+     */
+    fun getAppDownloadFolder(context: Context): File {
+        return File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), APP_NAME)
+    }
+
+
+    /**
+     * 获取某视频的下载目录
+     */
+    fun getDownloadVideoFolder(context: Context, videoCode: String): File {
+        val folder = File(getAppDownloadFolder(context), "$HANIME_DOWNLOAD_FOLDER/$videoCode")
+        return folder
+    }
+
+    /**
+     * 获取视频文件
+     */
+    fun getDownloadVideoFile(
+        context: Context,
+        videoCode: String,
+        title: String,
+        quality: String,
+        suffix: String = DEF_VIDEO_TYPE
+    ): File {
+        return File(
+            getDownloadVideoFolder(context, videoCode),
+            createVideoName(title, quality, suffix)
+        )
+    }
+
+    /**
+     * 获取视频封面文件
+     */
+    fun getDownloadVideoCoverFile(
+        context: Context,
+        videoCode: String,
+        title: String,
+        suffix: String = DEF_VIDEO_COVER_TYPE
+    ): File {
+        return File(
+            getDownloadVideoFolder(context, videoCode),
+            createVideoCoverName(title, suffix)
+        )
+    }
+
+    /**
+     * 替换非法文件名字符
+     */
+    private fun String.replaceAllIllegalChars(): String =
+        illegalCharsRegex.replace(this, "_")
+
+    fun createVideoName(title: String, quality: String, suffix: String): String =
+        "${title.replaceAllIllegalChars()}_${quality}.$suffix"
+
+    fun createVideoCoverName(title: String, suffix: String): String =
+        "${title.replaceAllIllegalChars()}.$suffix"
+
+    /**
+     * 创建目录并在其中写入 .nomedia 文件，防止被媒体扫描器扫描到让你尴尬
+     */
+    @Deprecated("下载工具已经创建了nomedia，没必要重复创建")
+    private fun File.makeFolderNoMedia() {
+        if (!exists() && !mkdirs()) {
+            LogUtil.w("HFileManager", "⚠️ 目录创建失败: $absolutePath")
+            return
+        }
+
+        if (!isDirectory) {
+            LogUtil.w("HFileManager", "⚠️ 已存在但不是文件夹: $absolutePath")
+            return
+        }
+
+        val noMedia = File(this, ".nomedia")
+        if (!noMedia.exists()) {
+            runCatching { noMedia.createNewFile() }
+                .onFailure { LogUtil.w("HFileManager", "⚠️ 创建 .nomedia 失败: ${it.message}") }
+        }
+    }
+}

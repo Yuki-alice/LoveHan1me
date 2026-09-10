@@ -9,7 +9,7 @@
 # 构建时通过脚本阶段先调 Gradle 编译共享框架 :shared（baseName=ComposeApp）。
 name: iosApp
 options:
-  bundleIdPrefix: io.github.daisukikaffuchino
+  bundleIdPrefix: me.lovehan1me
   deploymentTarget:
     iOS: "15.0"
   createIntermediateGroups: true
@@ -28,7 +28,7 @@ targets:
       path: iosApp/Info.plist
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: io.github.daisukikaffuchino.han1meviewer.ios
+        PRODUCT_BUNDLE_IDENTIFIER: me.lovehan1me.ios
         PRODUCT_NAME: Han1meViewer
         # Kotlin/Native 共享框架的输出目录（Gradle 按 sdk 与架构落盘）
         FRAMEWORK_SEARCH_PATHS:

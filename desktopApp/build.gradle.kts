@@ -27,7 +27,7 @@ dependencies {
 
 compose.desktop {
     application {
-        mainClass = "io.github.daisukikaffuchino.han1meviewer.desktop.MainKt"
+        mainClass = "me.lovehan1me.desktop.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)

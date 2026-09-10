@@ -41,7 +41,7 @@ plugins {
 val androidCompileSdk = providers.gradleProperty("han1me.android.compileSdk").getOrElse("37").toInt()
 val androidMinSdk = providers.gradleProperty("han1me.android.minSdk").getOrElse("29").toInt()
 val namespaceBase = providers.gradleProperty("han1me.namespace.base")
-    .getOrElse("io.github.daisukikaffuchino.han1meviewer")
+    .getOrElse("me.lovehan1me")
 val iosEnabled = providers.gradleProperty("han1me.ios.enabled").getOrElse("true").toBoolean()
 
 // namespace 由基础包名 + 模块路径自动派生：":shared" -> "<base>.shared"

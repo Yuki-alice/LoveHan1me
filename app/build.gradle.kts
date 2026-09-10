@@ -18,7 +18,7 @@ android {
     compileSdk = 37
 
     defaultConfig {
-        applicationId = "io.github.daisukikaffuchino.han1meviewer"
+        applicationId = "me.lovehan1me"
         minSdk = 29
         targetSdk = 37
         versionCode = 260805
@@ -76,7 +76,7 @@ android {
     lint {
         disable += setOf("EnsureInitializerMetadata")
     }
-    namespace = "io.github.daisukikaffuchino.han1meviewer"
+    namespace = "me.lovehan1me"
 
     @Suppress("UnstableApiUsage")
     androidResources {

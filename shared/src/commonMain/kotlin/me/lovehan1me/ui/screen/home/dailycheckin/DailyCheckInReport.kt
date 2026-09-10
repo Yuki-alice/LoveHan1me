@@ -1,0 +1,576 @@
+package me.lovehan1me.ui.screen.home.dailycheckin
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Card
+import me.lovehan1me.ui.component.FilledIconButton
+import androidx.compose.material3.Icon
+import me.lovehan1me.ui.component.IconButton
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import me.lovehan1me.ui.component.HapticTextButton as TextButton
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import me.lovehan1me.Res
+import me.lovehan1me.wed
+import me.lovehan1me.tue
+import me.lovehan1me.thu
+import me.lovehan1me.sun
+import me.lovehan1me.sat
+import me.lovehan1me.report_year_month_format
+import me.lovehan1me.report_year_format
+import me.lovehan1me.report_year
+import me.lovehan1me.report_total
+import me.lovehan1me.report_portrait
+import me.lovehan1me.report_no_data
+import me.lovehan1me.report_month_format
+import me.lovehan1me.report_month
+import me.lovehan1me.report_max_day
+import me.lovehan1me.report_legend_more
+import me.lovehan1me.report_legend_less
+import me.lovehan1me.report_landscape
+import me.lovehan1me.report_days
+import me.lovehan1me.previous_year
+import me.lovehan1me.previous_month
+import me.lovehan1me.next_year
+import me.lovehan1me.next_month
+import me.lovehan1me.mon
+import me.lovehan1me.fri
+import me.lovehan1me.checkin_report
+import me.lovehan1me.checkin_count_format
+import me.lovehan1me.ic_screen_rotation
+import me.lovehan1me.ic_chevron_right
+import me.lovehan1me.ic_chevron_left
+import me.lovehan1me.ic_calendar_view_week
+import me.lovehan1me.ic_calendar_month
+import me.lovehan1me.ic_alarm
+import me.lovehan1me.ui.component.appbar.HanimeScaffold
+import me.lovehan1me.ui.viewmodel.MonthlyStats
+import kotlinx.datetime.LocalDate
+
+/**
+ * 贡献报表弹窗。以日历热力图形式展示年/月打卡分布。
+ *
+ * @param selectedYear 当前选择的年份
+ * @param viewMode 视图模式 "year" 或 "month"
+ * @param selectedMonth 当前选择的月份
+ * @param yearRecords 年度打卡记录
+ * @param yearStats 年度统计数据
+ * @param onYearChange 年份变更回调
+ * @param onViewModeChange 视图模式变更回调
+ * @param onMonthChange 月份变更回调
+ * @param onDismiss 关闭弹窗回调
+ * @param isFullscreen 是否全屏显示
+ * @param onToggleFullscreen 全屏切换回调
+ * @param onLoadYearRecords 加载指定年份记录的回调
+ */
+@Composable
+fun ContributionReportDialog(
+    selectedYear: Int,
+    viewMode: String,
+    selectedMonth: Int,
+    yearRecords: Map<LocalDate, Int>,
+    yearStats: MonthlyStats,
+    onYearChange: (Int) -> Unit,
+    onViewModeChange: (String) -> Unit,
+    onMonthChange: (Int) -> Unit,
+    onDismiss: () -> Unit,
+    isFullscreen: Boolean = false,
+    onToggleFullscreen: () -> Unit = {},
+    onLoadYearRecords: (Int) -> Unit,
+) {
+    val today = today()
+
+    LaunchedEffect(selectedYear) {
+        onLoadYearRecords(selectedYear)
+    }
+
+    Dialog(
+        onDismissRequest = onDismiss,
+        properties = DialogProperties(usePlatformDefaultWidth = false)
+    ) {
+        HanimeScaffold(
+            modifier = Modifier.fillMaxSize(),
+            title = stringResource(Res.string.checkin_report),
+            onBack = onDismiss,
+            actions = {
+                TextButton(onClick = { onViewModeChange("year") }) {
+                    Text(
+                        stringResource(Res.string.report_year),
+                        fontWeight = if (viewMode == "year") FontWeight.Bold else FontWeight.Normal,
+                        color = if (viewMode == "year") MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                TextButton(onClick = { onViewModeChange("month") }) {
+                    Text(
+                        stringResource(Res.string.report_month),
+                        fontWeight = if (viewMode == "month") FontWeight.Bold else FontWeight.Normal,
+                        color = if (viewMode == "month") MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.onSurface
+                    )
+                }
+                FilledIconButton(onClick = onToggleFullscreen) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_screen_rotation),
+                        contentDescription = if (isFullscreen)
+                            stringResource(Res.string.report_portrait)
+                        else
+                            stringResource(Res.string.report_landscape),
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            },
+        ) { innerPadding ->
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .verticalScroll(rememberScrollState())
+            ) {
+                if (viewMode == "year") {
+                    YearContributionView(
+                        year = selectedYear,
+                        records = yearRecords,
+                        today = today,
+                        onYearChange = onYearChange
+                    )
+                } else {
+                    MonthContributionView(
+                        year = selectedYear,
+                        month = selectedMonth,
+                        records = yearRecords,
+                        today = today,
+                        onYearChange = onYearChange,
+                        onMonthChange = onMonthChange
+                    )
+                }
+
+                val filteredRecords = if (viewMode == "year") {
+                    yearRecords.filterKeys { it.year == selectedYear }
+                } else {
+                    yearRecords.filterKeys {
+                        it.year == selectedYear && it.monthNumber == selectedMonth
+                    }
+                }
+                val totalCount = filteredRecords.values.sum()
+                val totalDays = filteredRecords.count { it.value > 0 }
+                val maxDay = filteredRecords.maxByOrNull { it.value }?.value ?: 0
+
+                if (totalDays > 0) {
+                    StatsCard(
+                        items = listOf(
+                            StatsItem(
+                                Res.drawable.ic_calendar_month,
+                                stringResource(Res.string.report_total),
+                                totalCount.toString(),
+                            ),
+                            StatsItem(
+                                Res.drawable.ic_alarm,
+                                stringResource(Res.string.report_days),
+                                totalDays.toString(),
+                            ),
+                            StatsItem(
+                                Res.drawable.ic_calendar_view_week,
+                                stringResource(Res.string.report_max_day),
+                                maxDay.toString(),
+                            ),
+                        ),
+                        horizontalPadding = 16.dp,
+                        verticalPadding = 16.dp,
+                    )
+                } else {
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Text(
+                        text = stringResource(Res.string.report_no_data),
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.fillMaxWidth(),
+                        textAlign = TextAlign.Center
+                    )
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                val stats = if (viewMode == "year") yearStats else yearStats
+                if (stats.typeCounts.isNotEmpty()) {
+                    Card(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 12.dp, vertical = 10.dp),
+                            horizontalArrangement = Arrangement.SpaceEvenly
+                        ) {
+                            stats.typeCounts.entries
+                                .sortedByDescending { it.value }
+                                .take(5)
+                                .forEach { (type, count) ->
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(text = typeEmoji(type), fontSize = 20.sp)
+                                        Text(
+                                            text = count.toString(),
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Text(
+                                            text = type,
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(16.dp))
+
+                ContributionLegend()
+
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+        }
+    }
+}
+
+/**
+ * GitHub 风格年度热力图。
+ *
+ * @param year 目标年份
+ * @param records 各日期打卡记录数
+ * @param today 今天的日期
+ * @param onYearChange 年份切换回调
+ */
+@Composable
+fun YearContributionView(
+    year: Int,
+    records: Map<LocalDate, Int>,
+    today: LocalDate,
+    onYearChange: (Int) -> Unit,
+) {
+    val weeks = remember(year) { buildYearWeeks(year) }
+    val monthFormat = stringResource(Res.string.report_month_format)
+    val monthLabels = remember(year) { buildMonthLabels(year, weeks, monthFormat) }
+    val dayLabels = listOf(
+        stringResource(Res.string.mon), stringResource(Res.string.tue),
+        stringResource(Res.string.wed), stringResource(Res.string.thu),
+        stringResource(Res.string.fri), stringResource(Res.string.sat),
+        stringResource(Res.string.sun)
+    )
+    val cellSize = 14.dp
+    val cellPadding = 1.dp
+    val columnWidth = cellSize + cellPadding * 2
+    val labelColWidth = 24.dp
+    val scrollState = rememberScrollState()
+    val contributionColors = rememberContributionColors()
+
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = { onYearChange(year - 1) }) {
+                Icon(
+                    painterResource(Res.drawable.ic_chevron_left),
+                    stringResource(Res.string.previous_year)
+                )
+            }
+            Text(
+                text = stringResource(Res.string.report_year_format, year),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            IconButton(
+                onClick = { onYearChange(year + 1) },
+                enabled = year < today.year
+            ) {
+                Icon(
+                    painterResource(Res.drawable.ic_chevron_right),
+                    stringResource(Res.string.next_year)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Column(modifier = Modifier.horizontalScroll(scrollState)) {
+            Row(
+                modifier = Modifier.height(20.dp),
+                verticalAlignment = Alignment.Bottom
+            ) {
+                Spacer(modifier = Modifier.width(labelColWidth))
+                Box(modifier = Modifier.width(columnWidth * weeks.size)) {
+                    monthLabels.forEach { (label, weekIdx) ->
+                        Text(
+                            text = label,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier
+                                .offset(x = columnWidth * weekIdx)
+                                .width(columnWidth * 4)
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            for (dayIdx in 0..6) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = dayLabels[dayIdx],
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.width(labelColWidth),
+                        textAlign = TextAlign.Center
+                    )
+                    weeks.forEach { week ->
+                        val date = week.getOrNull(dayIdx)
+                        val count = date?.let { records[it] } ?: 0
+                        val level = getContributionLevel(count)
+                        val isToday = date == today
+                        Box(
+                            modifier = Modifier
+                                .size(cellSize)
+                                .padding(cellPadding)
+                                .clip(RoundedCornerShape(2.dp))
+                                .background(
+                                    if (count > 0) contributionColors[level]
+                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                                )
+                                .then(
+                                    if (isToday) Modifier.border(
+                                        1.5.dp,
+                                        MaterialTheme.colorScheme.primary,
+                                        RoundedCornerShape(2.dp)
+                                    ) else Modifier
+                                )
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 月度打卡网格视图。
+ *
+ * @param year 目标年份
+ * @param month 目标月份
+ * @param records 各日期打卡记录数
+ * @param today 今天的日期
+ * @param onYearChange 年份切换回调
+ * @param onMonthChange 月份切换回调
+ */
+@Composable
+fun MonthContributionView(
+    year: Int,
+    month: Int,
+    records: Map<LocalDate, Int>,
+    today: LocalDate,
+    onYearChange: (Int) -> Unit,
+    onMonthChange: (Int) -> Unit,
+) {
+    val yearMonth = YearMonth.of(year, month)
+    val daysInMonth = yearMonth.lengthOfMonth()
+    // java DayOfWeek.value（周一=1..周日=7）≡ kotlinx ordinal+1
+    val firstDayOfWeek = yearMonth.atDay(1).dayOfWeek.ordinal + 1
+    val dayLabels = listOf(
+        stringResource(Res.string.mon), stringResource(Res.string.tue),
+        stringResource(Res.string.wed), stringResource(Res.string.thu),
+        stringResource(Res.string.fri), stringResource(Res.string.sat),
+        stringResource(Res.string.sun)
+    )
+    val contributionColors = rememberContributionColors()
+
+    Column {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = {
+                if (month == 1) {
+                    onYearChange(year - 1)
+                    onMonthChange(12)
+                } else {
+                    onMonthChange(month - 1)
+                }
+            }) {
+                Icon(
+                    painterResource(Res.drawable.ic_chevron_left),
+                    stringResource(Res.string.previous_month)
+                )
+            }
+            Text(
+                text = stringResource(Res.string.report_year_month_format, year, month),
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold
+            )
+            IconButton(
+                onClick = {
+                    val now = YearMonth.now()
+                    val current = YearMonth.of(year, month)
+                    if (current.isBefore(now)) {
+                        if (month == 12) {
+                            onYearChange(year + 1)
+                            onMonthChange(1)
+                        } else {
+                            onMonthChange(month + 1)
+                        }
+                    }
+                },
+                enabled = YearMonth.of(year, month).isBefore(YearMonth.now())
+            ) {
+                Icon(
+                    painterResource(Res.drawable.ic_chevron_right),
+                    stringResource(Res.string.next_month)
+                )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround
+        ) {
+            dayLabels.forEach { day ->
+                Text(
+                    text = day,
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(vertical = 4.dp)
+                )
+            }
+        }
+
+        LazyVerticalGrid(
+            columns = GridCells.Fixed(7),
+            userScrollEnabled = false,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(((firstDayOfWeek - 1 + daysInMonth + 6) / 7 * 52).dp)
+        ) {
+            items(firstDayOfWeek - 1) {
+                Spacer(modifier = Modifier.size(48.dp))
+            }
+            items(daysInMonth) { day ->
+                val date = yearMonth.atDay(day + 1)
+                val count = records[date] ?: 0
+                val level = getContributionLevel(count)
+                val isToday = date == today
+                val cellBg = if (count > 0) contributionColors[level]
+                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+
+                Box(
+                    modifier = Modifier
+                        .size(44.dp)
+                        .padding(3.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(cellBg)
+                        .then(
+                            if (isToday) Modifier.border(
+                                2.dp,
+                                MaterialTheme.colorScheme.primary,
+                                RoundedCornerShape(8.dp)
+                            ) else Modifier
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Text(
+                            text = (day + 1).toString(),
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
+                            color = if (count > 0)
+                                MaterialTheme.colorScheme.onPrimaryContainer
+                            else
+                                MaterialTheme.colorScheme.onSurface
+                        )
+                        if (count > 0) {
+                            Text(
+                                text = stringResource(Res.string.checkin_count_format, count),
+                                fontSize = 10.sp,
+                                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.7f)
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 热力图图例，展示颜色与打卡次数的对应关系。
+ */
+@Composable
+fun ContributionLegend() {
+    val contributionColors = rememberContributionColors()
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = stringResource(Res.string.report_legend_less),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(modifier = Modifier.width(4.dp))
+        contributionColors.forEach { color ->
+            Box(
+                modifier = Modifier
+                    .size(14.dp)
+                    .padding(1.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(
+                        if (color == Color.Transparent)
+                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                        else color
+                    )
+            )
+        }
+        Spacer(modifier = Modifier.width(4.dp))
+        Text(
+            text = stringResource(Res.string.report_legend_more),
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
