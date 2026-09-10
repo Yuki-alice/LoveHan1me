@@ -65,6 +65,15 @@ object AndroidDownloadWorkController : DownloadWorkController {
             ),
             redownload = redownload,
         )
+        // M8-1b：恢复迁移前 VideoRouteActions 的入队即写 info.json（本地播放读它）；
+        // 写失败不阻塞入队（读侧有 DB 兜底）。
+        runCatching {
+            io.github.daisukikaffuchino.han1meviewer.HCacheManager.saveHanimeVideoInfo(
+                application, videoCode, video,
+            )
+        }.onFailure {
+            io.github.daisukikaffuchino.utils.LogUtil.w("AndroidDownload", "save info.json failed: $videoCode", it)
+        }
     }
 
     override suspend fun importDownloaded(): Boolean = withContext(Dispatchers.IO) {

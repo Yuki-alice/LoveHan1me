@@ -6,6 +6,7 @@ import android.content.Context
 import io.github.daisukikaffuchino.utils.LogUtil
 import androidx.annotation.WorkerThread
 import io.github.daisukikaffuchino.han1meviewer.logic.DatabaseRepo
+import io.github.daisukikaffuchino.han1meviewer.HanimeLink
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeVideo
 import io.github.daisukikaffuchino.han1meviewer.util.SafFileManager
 import kotlinx.coroutines.Dispatchers
@@ -135,8 +136,20 @@ object HCacheManager {
                         else -> null
                     }
                 }.getOrNull()
+                // M8-1b：迁移后 saveHanimeVideoInfo 调用点丢失，存量 info.json 缺失时
+                // 此处曾 emit(null) → NoContent →「可能该影片不存在」。缺失则用 DB 行兜底，
+                // 播放仅需 title/videoUrls/cover（下文 copy 回填），简介等元数据为空。
+                val base = info ?: HanimeVideo(
+                    title = entity.title,
+                    coverUrl = entity.coverUrl,
+                    chineseTitle = null,
+                    introduction = null,
+                    uploadTime = null,
+                    videoUrls = linkedMapOf(),
+                    tags = emptyList(),
+                )
                 emit(
-                    info?.copy(
+                    base.copy(
                         videoUrls = linkedMapOf(
                             entity.quality to HanimeLink(
                                 entity.videoUri, HFileManager.DEF_VIDEO_TYPE
