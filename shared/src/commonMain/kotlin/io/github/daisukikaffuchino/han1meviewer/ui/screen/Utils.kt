@@ -13,9 +13,7 @@ import androidx.compose.ui.layout.ContentScale
 import coil3.compose.AsyncImage
 import coil3.compose.LocalPlatformContext
 import io.github.daisukikaffuchino.han1meviewer.ui.component.rememberHanimeImageLoader
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalInspectionMode
-import androidx.compose.ui.platform.LocalWindowInfo
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -25,9 +23,10 @@ import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.model.AppLanguage
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.loading
+import io.github.daisukikaffuchino.han1meviewer.ui.adaptive.columnsForMinItemWidth
+import io.github.daisukikaffuchino.han1meviewer.ui.adaptive.rememberContentWidthDp
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.SpacingLarge
 import io.github.daisukikaffuchino.han1meviewer.ui.theme.SpacingNormal
-import io.github.daisukikaffuchino.han1meviewer.ui.theme.VideoNormalCardMinWidth
 
 @Composable
 fun RetryableImage(
@@ -68,22 +67,16 @@ fun RetryableImage(
 }
 
 @Composable
-fun getColumnCount(itemWidth: Int): Int {
-    val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
-    val screenWidthPx = windowInfo.containerSize.width
-    val screenWidthDp = with(density) { screenWidthPx.toDp() }
-    return maxOf(2, (screenWidthDp / itemWidth.dp).toInt())
-}
+fun getColumnCount(itemWidth: Int): Int =
+    columnsForMinItemWidth(rememberContentWidthDp(), itemWidth.dp)
 
 @Composable
 fun rememberCardResponsiveWidth(
     horizontalPadding: Dp = SpacingLarge,
     itemSpacing: Dp = SpacingNormal
 ): Pair<Dp, Float> {
-    val containerWidth = LocalWindowInfo.current.containerSize.width
-    val density = LocalDensity.current
-    val currentWidthDp = with(density) { containerWidth.toDp() }
+    // 内容区可用宽度（常驻抽屉 / 侧栏占宽已扣除），而非整窗宽度。
+    val currentWidthDp = rememberContentWidthDp()
 
     val isPreview = LocalInspectionMode.current
     val itemsToShow = if (!isPreview) {
@@ -99,20 +92,19 @@ fun rememberCardResponsiveWidth(
     return Pair(cardWidth, safeItemsToShow)
 }
 
+/**
+ * 视频网格列数。
+ *
+ * 由宽度自适应决定——**不再被「平板模式」开关门控**。桌面/平板窗口宽度随时变化，
+ * 要求用户手动打开开关才会多列属于响应式错位（此前桌面把窗口拉宽也仍是 2 列）。
+ * 档位取自设置里的四档配置，阈值统一在 `ui/adaptive/WindowSize` 定义；
+ * 宽度取内容区可用宽度，常驻抽屉占宽已扣除。
+ */
 @Composable
 fun rememberVideoGridColumns(): Int {
-    val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
-    val screenWidthPx = windowInfo.containerSize.width
-    val screenWidthDp = with(density) { screenWidthPx.toDp() }
-
-    val isPreview = LocalInspectionMode.current
-
-    return if (!isPreview && SettingsRepository.tabletMode) {
-        SettingsRepository.searchGridColumnsConfig.columnsForWidthDp(screenWidthDp.value.toInt())
-    } else {
-        maxOf(2, ((screenWidthDp + SpacingNormal) / (VideoNormalCardMinWidth + SpacingNormal)).toInt())
-    }
+    // 预览环境拿不到真实窗口宽度，代入常见手机竖屏宽度（→ compact → 2 列）。
+    val widthDp = if (LocalInspectionMode.current) 411.dp else rememberContentWidthDp()
+    return SettingsRepository.searchGridColumnsConfig.columnsForWidthDp(widthDp.value.toInt())
 }
 
 @Composable

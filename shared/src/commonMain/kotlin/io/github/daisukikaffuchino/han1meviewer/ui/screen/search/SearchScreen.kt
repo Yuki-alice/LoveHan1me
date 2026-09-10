@@ -67,10 +67,8 @@ import androidx.compose.ui.input.nestedscroll.NestedScrollSource
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.Layout
 import androidx.compose.ui.layout.onSizeChanged
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalSoftwareKeyboardController
-import androidx.compose.ui.platform.LocalWindowInfo
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.ImeAction
@@ -645,16 +643,14 @@ fun SearchResultsGrid(
         val normalCardWidth = VideoNormalCardMinWidth
         val simplifiedCardWidth = VideoSimplifiedCardMinWidth
         val useNormalGrid = videos.firstOrNull()?.itemType == NORMAL
-        val density = LocalDensity.current
-        val screenWidthDp =
-            with(density) { LocalWindowInfo.current.containerSize.width.toDp().value.toInt() }
-        val columns = if (SettingsRepository.tabletMode) {
-            GridCells.Fixed(SettingsRepository.searchGridColumnsConfig.columnsForWidthDp(screenWidthDp))
-        } else {
-            GridCells.Adaptive(
-                minSize = if (useNormalGrid) normalCardWidth else simplifiedCardWidth,
-            )
-        }
+        // 列数一律交给 GridCells.Adaptive 按**可用宽度**自适应（它本身即响应式，
+        // 且同时适配 normal / simplified 两类卡片的最小宽度）。
+        // 此前「平板模式」开启时改用固定列数，反而丢掉了自适应：窗口宽度变化不再影响
+        // 列数，宽桌上会得到过大的卡片。该岔路已移除——网格密度改由统一的四档配置
+        // 驱动首页 / 历史 / 订阅网格（见 rememberVideoGridColumns）。
+        val columns = GridCells.Adaptive(
+            minSize = if (useNormalGrid) normalCardWidth else simplifiedCardWidth,
+        )
 
         LazyVerticalGrid(
             columns = columns,

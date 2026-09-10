@@ -16,9 +16,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.ui.unit.dp
+import io.github.daisukikaffuchino.han1meviewer.ui.adaptive.rememberContentWidthDp
 import io.github.daisukikaffuchino.han1meviewer.ui.component.HanimeAsyncImage
 import io.github.daisukikaffuchino.han1meviewer.logic.model.HanimeInfo
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyRow
@@ -39,13 +38,11 @@ fun PreviewTourRow(
 ) {
     val listState = rememberLazyListState()
     val scope = rememberCoroutineScope()
-    val windowInfo = LocalWindowInfo.current
-    val density = LocalDensity.current
-    val edgePadding = remember(windowInfo.containerSize) {
-        with(density) {
-            val containerWidthDp = windowInfo.containerSize.width.toDp()
-            ((containerWidthDp - 92.dp) / 2).coerceAtLeast(16.dp)
-        }
+    // 居中留白按**内容区可用宽度**计算（常驻抽屉占宽已扣除）；用整窗宽度会让
+    // 卡片在宽窗下偏离中心。
+    val contentWidthDp = rememberContentWidthDp()
+    val edgePadding = remember(contentWidthDp) {
+        ((contentWidthDp - 92.dp) / 2).coerceAtLeast(16.dp)
     }
 
     LaunchedEffect(selectedIndex, latestHanime.size) {

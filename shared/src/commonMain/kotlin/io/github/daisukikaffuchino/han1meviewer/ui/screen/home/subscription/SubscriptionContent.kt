@@ -40,8 +40,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
@@ -51,6 +49,8 @@ import io.github.daisukikaffuchino.han1meviewer.subscribed_artists_count
 import io.github.daisukikaffuchino.han1meviewer.ic_arrow_forward
 import io.github.daisukikaffuchino.han1meviewer.logic.model.SubscriptionItem
 import io.github.daisukikaffuchino.han1meviewer.logic.state.PageLoadingState
+import io.github.daisukikaffuchino.han1meviewer.ui.adaptive.columnsForMinItemWidth
+import io.github.daisukikaffuchino.han1meviewer.ui.adaptive.rememberContentWidthDp
 import io.github.daisukikaffuchino.han1meviewer.ui.component.ArtistItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.LoadMoreFooter
 import io.github.daisukikaffuchino.han1meviewer.ui.component.VideoCardItem
@@ -82,14 +82,14 @@ fun SubscriptionContent(
     artistRows: Int,
     modifier: Modifier = Modifier,
 ) {
-    val density = LocalDensity.current
-    val windowInfo = LocalWindowInfo.current
-    val screenWidthPx = windowInfo.containerSize.width
-    val screenWidthDp = with(density) { screenWidthPx.toDp() }
+    // 内容区可用宽度（常驻抽屉占宽已扣除），而非整窗宽度。
+    val contentWidthDp = rememberContentWidthDp()
     val videoColumns = rememberVideoGridColumns()
-    val artistColumns = maxOf(
-        3,
-        ((screenWidthDp + SpacingNormal) / (ArtistIconSize + SpacingNormal)).toInt()
+    val artistColumns = columnsForMinItemWidth(
+        availableWidth = contentWidthDp,
+        minItemWidth = ArtistIconSize,
+        spacing = SpacingNormal,
+        minColumns = 3,
     )
     var currentPage by remember { mutableIntStateOf(1) }
     val pageSize = 60

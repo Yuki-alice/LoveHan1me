@@ -154,6 +154,8 @@ import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingSwitchItem
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsAnimatedVisibility
 import io.github.daisukikaffuchino.han1meviewer.ui.component.SettingsSegmentedGroup
 import io.github.daisukikaffuchino.han1meviewer.ui.component.lazy.LazyColumn
+import io.github.daisukikaffuchino.han1meviewer.ui.adaptive.WindowWidthSizeClass
+import io.github.daisukikaffuchino.han1meviewer.ui.adaptive.rememberContentWidthSizeClass
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.dialog.HomeCategoryLayoutDialog
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.dialog.HorizontalCardCountDialog
 import io.github.daisukikaffuchino.han1meviewer.ui.screen.settings.dialog.SearchGridColumnsDialog
@@ -233,6 +235,11 @@ fun HomeSettingsScreen(
     var showHomeCategoryDialog by rememberSaveable { mutableStateOf(false) }
     var showUsageTerms by rememberSaveable { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
+    // 网格列数 / 横向卡片数量已改为按宽度自适应（不再被「平板模式」门控），因此宽屏
+    // 也应暴露这两个设置——此前仅当「平板模式」开启才可见，属于自适应被开关门控时代的
+    // 遗留。窄屏仍维持原样，避免给手机用户多加条目。
+    val showDensitySettings =
+        state.tabletMode || rememberContentWidthSizeClass() >= WindowWidthSizeClass.Expanded
 
     ChoiceDialog(
         visible = activeDialog == HomeSettingsChoiceDialog.VideoLanguage,
@@ -523,7 +530,7 @@ fun HomeSettingsScreen(
                             iconRes = Res.drawable.ic_pet_supplies,
                             onCheckedChange = onFunLoadingHintsChange,
                         )
-                        SettingsAnimatedVisibility(visible = state.tabletMode) {
+                        SettingsAnimatedVisibility(visible = showDensitySettings) {
                             SettingNavigationItem(
                                 title = stringResource(Res.string.search_grid_columns_title),
                                 summary = stringResource(Res.string.search_grid_columns_summary),

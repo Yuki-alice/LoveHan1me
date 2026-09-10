@@ -13,9 +13,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalUriHandler
-import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -24,6 +22,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
+import io.github.daisukikaffuchino.han1meviewer.ui.adaptive.WindowWidthSizeClass
+import io.github.daisukikaffuchino.han1meviewer.ui.adaptive.rememberContentWidthSizeClass
 import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.add_failed
 import io.github.daisukikaffuchino.han1meviewer.add_success
@@ -143,11 +143,12 @@ fun VideoRouteHostScreen(
     val playbackController = remember(playbackEngine) { ComposePlaybackController(playbackEngine) }
     val playbackState by playbackController.state.collectAsStateWithLifecycle()
     val appSettings by SettingsRepository.settings.collectAsStateWithLifecycle()
-    // M3：原 LocalConfiguration.smallestScreenWidthDp（Android-only）；
-    // 改窗口 dp 宽（平板阈值语义一致）。
-    val density = LocalDensity.current
-    val windowWidthDp = with(density) { LocalWindowInfo.current.containerSize.width.toDp() }
-    val isLargeScreenDevice = windowWidthDp.value >= LARGE_SCREEN_MIN_WIDTH_DP
+    // 大屏判定：改用统一断点 + **内容区可用宽度**。
+    // 演进链：原 LocalConfiguration.smallestScreenWidthDp（Android 设备物理属性，桌面无此语义）
+    // → 窗口 dp 宽 → 内容区宽。常驻抽屉会占掉约 360dp，用整窗宽会在 1000dp 窗口
+    // （内容区仅约 640dp）误判为大屏。
+    val isLargeScreenDevice =
+        rememberContentWidthSizeClass() >= WindowWidthSizeClass.Medium
     val hostUiState by viewModel.videoHostUiStateFlow.collectAsStateWithLifecycle()
     val videoState by viewModel.hanimeVideoStateFlow.collectAsStateWithLifecycle()
     val video = viewModel.hanimeVideoFlow.collectAsStateWithLifecycle().value
@@ -853,5 +854,3 @@ private fun realProgressSensitivity(value: Int): Float {
     val clampedValue = value.coerceIn(1, 7)
     return 4f - (clampedValue - 1) * (3.5f / 6f)
 }
-
-private const val LARGE_SCREEN_MIN_WIDTH_DP = 600

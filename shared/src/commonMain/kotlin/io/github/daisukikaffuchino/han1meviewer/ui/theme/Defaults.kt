@@ -24,6 +24,17 @@ object HanimeDefaults {
         val contentVertical = medium
     }
 
+    /**
+     * 宽屏限宽（响应式设计的一部分）。
+     *
+     * 三端共用一份 UI，桌面全屏可达 2000dp+：文本密集型页面（设置 / 表单）若让行宽
+     * 拉满，可读性会明显下降。上限大于可用宽度时不产生任何影响，故窄屏天然安全。
+     */
+    object Widths {
+        /** 设置 / 表单类页面的内容最大宽度。 */
+        val contentMax = 840.dp
+    }
+
     object Corners {
         val medium: CornerBasedShape
             @Composable get() = MaterialTheme.shapes.medium

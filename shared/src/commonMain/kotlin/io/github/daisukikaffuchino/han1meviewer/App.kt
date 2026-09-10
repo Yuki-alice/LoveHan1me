@@ -1,10 +1,14 @@
 package io.github.daisukikaffuchino.han1meviewer
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PermanentDrawerSheet
 import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
@@ -16,22 +20,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.platform.LocalWindowInfo
-import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.ui.component.UsageNoticeDialog
+import io.github.daisukikaffuchino.han1meviewer.ui.adaptive.ProvideContentWidth
+import io.github.daisukikaffuchino.han1meviewer.ui.adaptive.WindowWidthSizeClass
+import io.github.daisukikaffuchino.han1meviewer.ui.adaptive.rememberWindowWidthSizeClass
 import io.github.daisukikaffuchino.han1meviewer.ui.component.HapticTextButton as TextButton
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.HomeRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.LoginRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.AccountRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.HanimeScreen
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.MainDrawerDestination
-import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.SharedMainDrawer
+import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.CloudflareRoute
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.DrawerHost
+import io.github.daisukikaffuchino.han1meviewer.logic.network.CloudflareChallenges
+import io.github.daisukikaffuchino.han1meviewer.ui.screen.main.MainDrawerContent
+import io.github.daisukikaffuchino.han1meviewer.logic.state.PageState
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.PlatformScreens
 import io.github.daisukikaffuchino.han1meviewer.ui.crash.CRASH_PACKAGE_FILTER
 import io.github.daisukikaffuchino.han1meviewer.ui.crash.clearCrashReport
@@ -102,6 +109,17 @@ fun App(
             }
         }
 
+        // CF 挑战统一恢复入口：NetworkRepo 判定挑战页时经总线送达，此处压栈各端
+        // 既有验证 UI（桌面 KCEF 弹窗 / iOS WKWebView / Android WebView）。
+        // 去重：栈上已有 CF 页不再压（Android 拦截器链路自带开屏，重试失败才到这里）。
+        LaunchedEffect(backStack) {
+            CloudflareChallenges.requests.collect { challenge ->
+                if (backStack.backStack.none { it is CloudflareRoute }) {
+                    backStack.add(CloudflareRoute(challenge.url, challenge.host))
+                }
+            }
+        }
+
         var showUsageNotice by remember { mutableStateOf(!SettingsRepository.usageNoticeAccepted) }
         var showSourceDialog by remember {
             mutableStateOf(
@@ -124,17 +142,20 @@ fun App(
 
         if (appAccessGranted) {
             // 宽屏常驻抽屉（对齐参考 MainActivityContent:124 的横屏常驻规则；桌面无
-            // orientation 语义，改用容器宽度 ≥840dp——与卡片/网格 expanded 档同阈值；
-            // 窄屏保持 Modal）。与参考的差异：不限首页路由，宽窗下 chrome 全程稳定。
+            // orientation 语义，改用宽度分档实现——阈值统一收敛到 ui/adaptive/WindowSize，
+            // 不再散落魔数；窄屏保持 Modal）。与参考的差异：不限首页路由，宽窗下 chrome 全程稳定。
             // 抽屉内容维持平台差异（手机富头 drawerContent / 桌面简版 SharedMainDrawer）。
-            val density = LocalDensity.current
-            val windowWidthDp =
-                with(density) { LocalWindowInfo.current.containerSize.width.toDp() }
-            val usePermanentDrawer = windowWidthDp >= 840.dp
+            val usePermanentDrawer =
+                rememberWindowWidthSizeClass() >= WindowWidthSizeClass.Expanded
             LaunchedEffect(usePermanentDrawer) {
                 if (usePermanentDrawer) drawerState.close()
             }
-            val drawerSheetContent: @Composable () -> Unit = {
+            // 抽屉**内容**（不含 sheet 外壳）。外壳由本函数按宽度分档统一提供——
+            // 平台注入的 drawerContent 只负责内容、不得自建 sheet。
+            // 缘由：[MainDrawerContent] 是裸 Column，自身没有背景；此前共享默认分支
+            // （桌面 / iOS）直接调用它而没有包 sheet，导致抽屉全透明、页面内容透过抽屉
+            // 显示（Android 侧因 :app 自己包了 ModalDrawerSheet 才看起来正常）。
+            val drawerInnerContent: @Composable () -> Unit = {
                 if (drawerContent != null) {
                     drawerContent(
                         DrawerHost(
@@ -162,12 +183,28 @@ fun App(
                         )
                     )
                 } else {
-                    SharedMainDrawer(
-                        selected = MainDrawerDestination.fromRoute(backStack.topLevelKey),
+                    // 无平台注入（桌面/iOS）时同样用富内容：与手机同一套，仅
+                    // onAvatarLongClick（登出）/onSwitchSiteClick（切站）传 null
+                    // （Android 专属能力；切站列隐藏，长按无动作）。
+                    val homeState by homeViewModel.homePageFlow.collectAsStateWithLifecycle()
+                    val checkInEnabled by SettingsRepository.checkInEnabledFlow.collectAsStateWithLifecycle()
+                    MainDrawerContent(
+                        selectedDestination = MainDrawerDestination.fromRoute(backStack.topLevelKey),
+                        avatarUrl = (homeState as? PageState.Success)?.info?.page?.avatarUrl,
+                        username = (homeState as? PageState.Success)?.info?.page?.username,
                         isLoggedIn = isLoggedIn,
-                        username = null,
-                        onDestinationClick = { destination ->
-                            val handled = backStack.navigateDrawerDestination(
+                        isLoading = isLoggedIn && homeState is PageState.Loading,
+                        currentSite = SettingsRepository.baseUrl,
+                        checkInEnabled = checkInEnabled,
+                        onAvatarClick = {
+                            scope.launch { drawerState.close() }
+                            if (isLoggedIn) backStack.add(AccountRoute)
+                            else backStack.add(LoginRoute)
+                        },
+                        onAvatarLongClick = null,
+                        onSwitchSiteClick = null,
+                        onDrawerItemSelected = { destination ->
+                            backStack.navigateDrawerDestination(
                                 destination = destination,
                                 isLoggedIn = isLoggedIn,
                                 onRequireLogin = {
@@ -176,45 +213,56 @@ fun App(
                                     }
                                 },
                             )
-                            if (handled) {
-                                scope.launch { drawerState.close() }
-                            }
-                        },
-                        onAccountClick = {
-                            scope.launch { drawerState.close() }
-                            backStack.add(AccountRoute)
-                        },
-                        onLoginClick = {
-                            scope.launch { drawerState.close() }
-                            backStack.add(LoginRoute)
                         },
                     )
                 }
             }
             if (usePermanentDrawer) {
+                // 常驻抽屉占宽约 360dp：在 content 槽内测量真实内容区宽度并下发，
+                // 供网格列数 / 卡片密度按**实际可用宽度**分档（此前读整窗宽会超算列数，
+                // 840dp 窗口下内容区仅约 480dp 却按 840dp 算，卡片被压扁）。
                 PermanentNavigationDrawer(
-                    drawerContent = { drawerSheetContent() },
+                    drawerContent = {
+                        PermanentDrawerSheet(
+                            drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                            windowInsets = WindowInsets(0, 0, 0, 0),
+                        ) {
+                            drawerInnerContent()
+                        }
+                    },
                 ) {
-                    SharedTopNavigation(
-                        backStack = backStack,
-                        homeViewModel = homeViewModel,
-                        showHomeNavigationIcon = false,
-                        onOpenDrawer = { scope.launch { drawerState.open() } },
-                        platformScreens = platformScreens,
-                    )
+                    ProvideContentWidth {
+                        SharedTopNavigation(
+                            backStack = backStack,
+                            homeViewModel = homeViewModel,
+                            showHomeNavigationIcon = false,
+                            onOpenDrawer = { scope.launch { drawerState.open() } },
+                            platformScreens = platformScreens,
+                        )
+                    }
                 }
             } else {
+                // 模态抽屉悬浮覆盖、不侵占内容宽度，故此处内容宽度≈整窗宽度。
                 ModalNavigationDrawer(
                     drawerState = drawerState,
-                    drawerContent = { drawerSheetContent() },
+                    drawerContent = {
+                        ModalDrawerSheet(
+                            drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                            windowInsets = WindowInsets(0, 0, 0, 0),
+                        ) {
+                            drawerInnerContent()
+                        }
+                    },
                 ) {
-                    SharedTopNavigation(
-                        backStack = backStack,
-                        homeViewModel = homeViewModel,
-                        showHomeNavigationIcon = true,
-                        onOpenDrawer = { scope.launch { drawerState.open() } },
-                        platformScreens = platformScreens,
-                    )
+                    ProvideContentWidth {
+                        SharedTopNavigation(
+                            backStack = backStack,
+                            homeViewModel = homeViewModel,
+                            showHomeNavigationIcon = true,
+                            onOpenDrawer = { scope.launch { drawerState.open() } },
+                            platformScreens = platformScreens,
+                        )
+                    }
                 }
             }
         }

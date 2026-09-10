@@ -1,16 +1,19 @@
 package io.github.daisukikaffuchino.han1meviewer
 
+import io.github.daisukikaffuchino.han1meviewer.ui.adaptive.WindowWidthBreakpoints
+
 data class HorizontalCardCountConfig(
     val narrowCount: Float = DEFAULT_NARROW_COUNT,
     val compactCount: Float = DEFAULT_COMPACT_COUNT,
     val mediumCount: Float = DEFAULT_MEDIUM_COUNT,
     val expandedCount: Float = DEFAULT_EXPANDED_COUNT,
 ) {
+    /** 阈值统一到 [WindowWidthBreakpoints]（唯一断点源）。 */
     fun countForWidthDp(screenWidthDp: Int): Float {
         return when {
-            screenWidthDp < 350 -> narrowCount
-            screenWidthDp < 600 -> compactCount
-            screenWidthDp < 840 -> mediumCount
+            screenWidthDp < WindowWidthBreakpoints.Narrow -> narrowCount
+            screenWidthDp < WindowWidthBreakpoints.Medium -> compactCount
+            screenWidthDp < WindowWidthBreakpoints.Expanded -> mediumCount
             else -> expandedCount
         }
     }

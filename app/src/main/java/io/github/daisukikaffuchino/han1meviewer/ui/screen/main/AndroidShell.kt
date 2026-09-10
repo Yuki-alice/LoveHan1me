@@ -7,11 +7,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalDrawerSheet
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
@@ -220,13 +217,16 @@ private fun platformScreens(activity: MainActivity): PlatformScreens = PlatformS
 )
 
 /**
- * Android 完整抽屉（头像 / 用户名 / 当前站点 / 切换站点 / 打卡入口）。
+ * Android 完整抽屉的**内容**（头像 / 用户名 / 当前站点 / 切换站点 / 打卡入口）。
  *
- * 共享 `SharedMainDrawer` 是最小版，此处复用 `MainActivityScaffold` 里的
- * [MainDrawerContent] 注入，保证切换后抽屉功能不降级。
+ * 共享 `SharedMainDrawer` 是最小版，此处复用下沉到 commonMain 的
+ * [MainDrawerContent]，保证切换后抽屉功能不降级。
  *
- * 已知差异：平板横屏的常驻抽屉（`PermanentDrawerSheet`）暂由普通抽屉代替，
- * 随共享层补齐窗口尺寸能力后恢复。
+ * **契约（重要）**：本函数只提供内容，**不要自建 sheet 外壳**。
+ * `App()` 会按窗口宽度分档统一包 `PermanentDrawerSheet` / `ModalDrawerSheet`——
+ * 自建会出现「sheet 套 sheet」的双层背景。
+ * 顺带收益：平板横屏的常驻抽屉（`PermanentDrawerSheet`）现在由共享层提供，
+ * 不再降级为普通抽屉（原已知差异已消除）。
  */
 @Composable
 private fun AndroidDrawer(
@@ -252,30 +252,25 @@ private fun AndroidDrawer(
     BackHandler(enabled = host.drawerState.isOpen) {
         scope.launch { host.drawerState.close() }
     }
-    ModalDrawerSheet(
-        drawerContainerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        windowInsets = WindowInsets(0, 0, 0, 0),
-    ) {
-        MainDrawerContent(
-            selectedDestination = MainDrawerDestination.fromRoute(host.backStack.topLevelKey),
-            avatarUrl = headerAvatarUrl,
-            username = headerUsername,
-            isLoggedIn = host.isLoggedIn,
-            isLoading = headerIsLoading,
-            currentSite = SettingsRepository.baseUrl,
-            checkInEnabled = checkInEnabled,
-            onAvatarClick = {
-                if (host.isLoggedIn) host.onOpenAccount() else host.onRequireLogin()
-            },
-            onAvatarLongClick = onLogoutClick,
-            onSwitchSiteClick = onSwitchSiteClick,
-            onDrawerItemSelected = { destination ->
-                val handled = host.onDrawerItemSelected(destination)
-                if (handled) scope.launch { host.drawerState.close() }
-                handled
-            },
-        )
-    }
+    MainDrawerContent(
+        selectedDestination = MainDrawerDestination.fromRoute(host.backStack.topLevelKey),
+        avatarUrl = headerAvatarUrl,
+        username = headerUsername,
+        isLoggedIn = host.isLoggedIn,
+        isLoading = headerIsLoading,
+        currentSite = SettingsRepository.baseUrl,
+        checkInEnabled = checkInEnabled,
+        onAvatarClick = {
+            if (host.isLoggedIn) host.onOpenAccount() else host.onRequireLogin()
+        },
+        onAvatarLongClick = onLogoutClick,
+        onSwitchSiteClick = onSwitchSiteClick,
+        onDrawerItemSelected = { destination ->
+            val handled = host.onDrawerItemSelected(destination)
+            if (handled) scope.launch { host.drawerState.close() }
+            handled
+        },
+    )
 }
 
 /** Android 专属覆盖层：应用锁遮罩、剪贴板链接检测、intent 导航、平台对话框。 */
