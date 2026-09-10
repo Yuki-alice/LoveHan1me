@@ -159,6 +159,13 @@ kotlin {
             // iOS 端只能走 Darwin 引擎，自定义 DNS / DoH 需降级为系统解析
             implementation(libs.ktor.client.darwin)
         }
+
+        // M7-4：iOS 播放引擎真实验证（iosSimulatorArm64Test 跑在模拟器上）
+        val iosTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
     }
 }
 
