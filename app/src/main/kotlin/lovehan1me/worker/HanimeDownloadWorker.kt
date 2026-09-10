@@ -204,7 +204,6 @@ class HanimeDownloadWorker(
      * 区分，否则 Worker 结束时 stopForeground 连带清掉同 id 的结果通知
      * （M8 后续通知验证：完成通知闪现即消失）。
      */
-    private val resultNotificationId = downloadId + 1
 
     private val mainScope = CoroutineScope(Dispatchers.Main.immediate)
     private val dbScope = CoroutineScope(Dispatchers.IO)
@@ -326,7 +325,6 @@ class HanimeDownloadWorker(
                         ?: return@withContext run {
                             LogUtil.d(TAG, "entity is null, create new raf failed")
                             val reason = getString(Res.string.download_error_file_info)
-                            showFailureNotification(reason)
                             mainScope.launch {
                                 SonnerToast.error(
                                     getString(Res.string.download_task_failed_s_reason_s, hanimeName, reason)
@@ -347,7 +345,6 @@ class HanimeDownloadWorker(
 
             if (entity.downloadedLength >= entity.length && entity.length > 0) {
                 DatabaseRepo.HanimeDownload.update(entity.copy(state = DownloadState.Finished))
-                showSuccessNotification()
                 return@withContext Result.success(
                     workDataOf(DownloadState.STATE to DownloadState.Finished.mask)
                 )
@@ -408,7 +405,6 @@ class HanimeDownloadWorker(
                     val canWrite = (requestNeedRange && response.code == 206) || (!requestNeedRange && response.isSuccessful)
                     if (!canWrite) {
                         val reason = response.toDownloadErrorMessage(requestNeedRange)
-                        showFailureNotification(reason)
                         mainScope.launch {
                             SonnerToast.error(getString(Res.string.download_task_failed_s_reason_s, hanimeName, reason))
                         }
@@ -464,7 +460,6 @@ class HanimeDownloadWorker(
                     throw IOException("Download incomplete: $downloadedLength/${entity.length}")
                 }
 
-                showSuccessNotification()
                 result = Result.success(
                     workDataOf(DownloadState.STATE to DownloadState.Finished.mask)
                 )
@@ -478,7 +473,6 @@ class HanimeDownloadWorker(
                     )
                 } else if (e.isRetryableNetworkError() && runAttemptCount < MAX_WORK_RETRY_COUNT) {
                     val reason = e.toDownloadErrorMessage()
-                    showRetryNotification(reason)
                     mainScope.launch {
                         SonnerToast.warning(getString(Res.string.download_task_retrying_s_reason_s, hanimeName, reason))
                     }
@@ -486,7 +480,6 @@ class HanimeDownloadWorker(
                     Result.retry()
                 } else {
                     val reason = e.toDownloadErrorMessage()
-                    showFailureNotification(reason)
                     e.printStackTrace()
                     mainScope.launch {
                         SonnerToast.error(getString(Res.string.download_task_failed_s_reason_s, hanimeName, reason))
@@ -624,64 +617,7 @@ class HanimeDownloadWorker(
         )
     }
 
-    @SuppressLint("MissingPermission")
-    private suspend fun showSuccessNotification() {
-        notificationManager.notify(
-            resultNotificationId, NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
-                .setSmallIcon(R.drawable.ic_check_circle)
-                .setContentTitle(getString(Res.string.download_task_completed))
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true)
-                .setContentText(getString(Res.string.download_completed_s, hanimeName))
-                .build()
-        )
-    }
-
-    @SuppressLint("MissingPermission")
-    private suspend fun showFileExistsFailureNotification(fileName: String) {
-        notificationManager.notify(
-            resultNotificationId, NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
-                .setSmallIcon(R.drawable.ic_cancel_circle)
-                .setContentTitle(getString(Res.string.this_data_exists))
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setContentText(getString(Res.string.download_failed_s_exists, fileName))
-                .build()
-        )
-    }
-
-    @SuppressLint("MissingPermission")
-    private suspend fun showFailureNotification(errMsg: String? = null) {
-        notificationManager.notify(
-            resultNotificationId, NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
-                .setSmallIcon(R.drawable.ic_cancel_circle)
-                .setContentTitle(getString(Res.string.download_task_failed))
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true)
-                .setContentText(
-                    getString(
-                        Res.string.download_task_failed_s_reason_s,
-                        hanimeName, errMsg ?: getString(Res.string.unknown_download_error)
-                    )
-                )
-                .build()
-        )
-    }
-
-    @SuppressLint("MissingPermission")
-    private suspend fun showRetryNotification(reason: String) {
-        notificationManager.notify(
-            resultNotificationId, NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
-                .setSmallIcon(R.drawable.ic_download)
-                .setContentTitle(getString(Res.string.download_task_retrying))
-                .setPriority(NotificationCompat.PRIORITY_HIGH)
-                .setAutoCancel(true)
-                .setContentText(
-                    getString(
-                        Res.string.download_task_retrying_s_reason_s,
-                        hanimeName, reason
-                    )
-                )
-                .build()
-        )
-    }
+    // 阶段一决策⑥：下载「结果通知」（完成/失败/重试/文件已存在）已全端移除。
+    // 这三类提示统一走共享层 SonnerToast（各端一致）；上面保留的进度通知
+    // 是 WorkManager 前台服务（ForegroundInfo）的必需载体，不能删。
 }

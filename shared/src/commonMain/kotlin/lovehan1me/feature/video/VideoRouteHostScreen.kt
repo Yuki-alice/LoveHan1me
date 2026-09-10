@@ -134,11 +134,7 @@ fun VideoRouteHostScreen(
     val commentViewModel: CommentViewModel = sharedViewModel(::CommentViewModel)
     val kernel = remember { PlayerKernel.fromPreference(SettingsRepository.switchPlayerKernel) }
     val playbackEngine: PlaybackEngine = remember(route.videoCode, route.localUri, kernel) {
-        createPlaybackEngine(
-            kernel = kernel,
-            allowCast = SettingsRepository.enableGoogleCast &&
-                    route.localUri == null && route.videoCode != "-1",
-        )
+        createPlaybackEngine(kernel = kernel)
     }
     val playbackController = remember(playbackEngine) { ComposePlaybackController(playbackEngine) }
     val playbackState by playbackController.state.collectAsStateWithLifecycle()
@@ -266,8 +262,7 @@ fun VideoRouteHostScreen(
 
             override fun shouldEnterPip(): Boolean {
                 val state = playbackController.state.value.engine
-                return !state.isCasting &&
-                        state.phase == PlaybackPhase.Ready &&
+                return state.phase == PlaybackPhase.Ready &&
                         (state.isPlaying || state.positionMs > 0L)
             }
 
@@ -323,9 +318,7 @@ fun VideoRouteHostScreen(
                 }
 
                 Lifecycle.Event.ON_STOP -> {
-                    if (!hostUiState.isInPipMode &&
-                        !playbackController.state.value.engine.isCasting
-                    ) {
+                    if (!hostUiState.isInPipMode) {
                         playbackController.pause()
                         exitFullscreen()
                     }
@@ -544,9 +537,6 @@ fun VideoRouteHostScreen(
         currentBrightness = brightness,
         isPlaying = playbackState.engine.isPlaying,
         isPlaybackEnded = playbackState.engine.phase == PlaybackPhase.Ended,
-        showCastButton = playbackState.engine.isCastSupported,
-        isCasting = playbackState.engine.isCasting,
-        castDeviceName = playbackState.engine.castDeviceName,
         isLocked = isPlayerLocked,
         showPoster = !playbackState.engine.hasRenderedFirstFrame,
         showLoading =
@@ -592,7 +582,7 @@ fun VideoRouteHostScreen(
         playbackSpeed = playbackState.engine.playbackSpeed,
         onPlaybackSpeedSelected = playbackController::setPlaybackSpeed,
         superResolutionLabel = stringResource(Res.string.player_anime4k_label),
-        superResolutionOptions = if (kernel == PlayerKernel.MpvPlayer && !playbackState.engine.isCasting) {
+        superResolutionOptions = if (kernel == PlayerKernel.MpvPlayer) {
             listOf(
                 stringResource(Res.string.super_resolution_off),
                 stringResource(Res.string.super_resolution_performance),

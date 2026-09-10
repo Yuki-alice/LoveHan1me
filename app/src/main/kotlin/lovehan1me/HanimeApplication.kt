@@ -75,20 +75,17 @@ class HanimeApplication : Application(), Application.ActivityLifecycleCallbacks 
         switchLauncher(selected)
     }
 
+    /**
+     * 只保留下载前台服务必需的渠道。
+     * 阶段一决策⑥：应用更新渠道原先「创建了但从未发过通知」，属死代码，已删。
+     */
     private fun initNotificationChannel() {
         val nm = NotificationManagerCompat.from(this)
-
         val hanimeDownloadChannel = NotificationChannelCompat.Builder(
             DOWNLOAD_NOTIFICATION_CHANNEL,
-            NotificationManagerCompat.IMPORTANCE_HIGH
+            NotificationManagerCompat.IMPORTANCE_LOW
         ).setName("Hanime Download").build()
         nm.createNotificationChannel(hanimeDownloadChannel)
-
-        val appUpdateChannel = NotificationChannelCompat.Builder(
-            UPDATE_NOTIFICATION_CHANNEL,
-            NotificationManagerCompat.IMPORTANCE_HIGH
-        ).setName("App Update").build()
-        nm.createNotificationChannel(appUpdateChannel)
     }
     fun switchLauncher(alias: String) {
         val pm = packageManager

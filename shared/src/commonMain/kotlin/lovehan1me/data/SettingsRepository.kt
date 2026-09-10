@@ -44,7 +44,6 @@ object SettingsRepository : SettingsStore {
     val savedUserId get() = current.savedUserId
     val cloudFlareCookieHost get() = current.cloudFlareCookieHost.lowercase()
     val switchPlayerKernel get() = current.playerKernel.value
-    val enableGoogleCast get() = current.enableGoogleCast
     val showBottomProgress get() = current.showBottomProgress
     val playerSpeed get() = current.playerSpeed
     val slideSensitivity get() = current.slideSensitivity

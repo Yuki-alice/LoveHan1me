@@ -48,8 +48,6 @@ data class PlayerSettingsUiState(
     val kernelDisplay: String,
     val mpvSettingsEnabled: Boolean,
     val mpvSettingsSummary: String,
-    val enableGoogleCast: Boolean,
-    val googleCastAvailable: Boolean,
     val showBottomProgress: Boolean,
     val playerSpeed: String,
     val playerSpeedLabel: String,
@@ -72,7 +70,6 @@ fun PlayerSettingsScreen(
     speedOptions: List<Pair<String, String>>,
     longPressSpeedOptions: List<Pair<String, String>>,
     onKernelChange: (String) -> Unit,
-    onEnableGoogleCastChange: (Boolean) -> Unit,
     onShowBottomProgressChange: (Boolean) -> Unit,
     onPlayerSpeedChange: (String) -> Unit,
     onLongPressSpeedChange: (String) -> Unit,
@@ -168,28 +165,6 @@ fun PlayerSettingsScreen(
                     iconRes = Res.drawable.ic_speed_flash,
                     onValueChange = onSlideSensitivityChange,
                 )
-            }
-        }
-
-        segmentedSection(titleRes = Res.string.player_settings_casting) {
-            segmentedGroup {
-                SettingSwitchItem(
-                    title = stringResource(Res.string.enable_google_cast),
-                    summary = stringResource(
-                        if (state.googleCastAvailable) {
-                            Res.string.enable_google_cast_summary
-                        } else {
-                            Res.string.google_cast_unavailable_summary
-                        }
-                    ),
-                    checked = state.enableGoogleCast,
-                    iconRes = Res.drawable.ic_cast,
-                    onCheckedChange = onEnableGoogleCastChange,
-                    enabled = state.googleCastAvailable,
-                )
-            }
-            item {
-                SettingsPlainBox(stringResource(Res.string.google_cast_warning))
             }
         }
     }

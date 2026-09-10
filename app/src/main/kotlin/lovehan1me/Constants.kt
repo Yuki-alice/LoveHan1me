@@ -35,7 +35,6 @@ const val ALREADY_LOGIN = "already_login"
 
 const val DOWNLOAD_NOTIFICATION_CHANNEL = "download_channel"
 
-const val UPDATE_NOTIFICATION_CHANNEL = "update_channel"
 
 // File
 

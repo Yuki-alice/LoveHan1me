@@ -31,9 +31,6 @@
         android:supportsRtl="true"
         android:theme="@style/Theme.Hanime"
         tools:targetApi="34">
-        <meta-data
-            android:name="com.google.android.gms.cast.framework.OPTIONS_PROVIDER_CLASS_NAME"
-            android:value="lovehan1me.cast.HanimeCastOptionsProvider" />
 
         <service
             android:name="androidx.work.impl.foreground.SystemForegroundService"

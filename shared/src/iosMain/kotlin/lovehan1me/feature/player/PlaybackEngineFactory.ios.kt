@@ -6,8 +6,7 @@ import lovehan1me.core.util.LogUtil
 // kernel 参数暂忽略（AVPlayer 通吃 HLS/渐进；Exo/Mpv 语义在 iOS 无区分）。
 actual fun createPlaybackEngine(
     kernel: PlayerKernel,
-    allowCast: Boolean,
 ): PlaybackEngine {
-    LogUtil.d("IosAVPlayer", "createPlaybackEngine(kernel=$kernel, allowCast=$allowCast)")
+    LogUtil.d("IosAVPlayer", "createPlaybackEngine(kernel=$kernel)")
     return IosAVPlaybackEngine()
 }

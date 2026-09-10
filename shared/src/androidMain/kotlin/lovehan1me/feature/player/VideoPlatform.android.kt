@@ -3,52 +3,21 @@ package lovehan1me.feature.player
 import android.content.Context
 import android.graphics.RenderEffect
 import android.graphics.Shader
-import android.graphics.drawable.Drawable
-import android.graphics.drawable.StateListDrawable
 import android.net.ConnectivityManager
 import android.os.Build
-import android.util.StateSet
-import androidx.compose.foundation.layout.size
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.asComposeRenderEffect
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.viewinterop.AndroidView
-import androidx.core.content.ContextCompat
-import androidx.core.graphics.drawable.DrawableCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.mediarouter.app.MediaRouteButton
-import com.google.android.gms.cast.framework.CastButtonFactory
 import lovehan1me.data.database.dao.Han1meDatabaseContext
 import lovehan1me.core.platform.CurrentActivityHolder
 import lovehan1me.core.util.OrientationManager
 
 // M3：原 `:app` VideoPlayerUi / VideoRouteHostScreen 内联的 Android-only 代码，原样归位。
-
-@Composable
-actual fun CastRouteButton(
-    contentDescription: String,
-    modifier: Modifier,
-) {
-    val context = LocalContext.current
-    AndroidView(
-        modifier = modifier.size(24.dp),
-        factory = { ctx ->
-            MediaRouteButton(ctx).also { button ->
-                button.minimumWidth = 0
-                button.minimumHeight = 0
-                button.contentDescription = contentDescription
-                CastButtonFactory.setUpMediaRouteButton(ctx, button)
-                button.setRemoteIndicatorDrawable(createGoogleCastIndicator(ctx))
-            }
-        },
-    )
-}
 
 actual fun Modifier.posterBlur(radiusPx: Float): Modifier = this.then(
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -91,23 +60,3 @@ actual fun BindOrientationAutoFullscreen(
         }
     }
 }
-
-private fun createGoogleCastIndicator(context: Context): Drawable = StateListDrawable().apply {
-    addState(
-        intArrayOf(android.R.attr.state_checked),
-        whiteDrawable(context, androidx.media3.cast.R.drawable.media_route_button_connected),
-    )
-    addState(
-        intArrayOf(android.R.attr.state_checkable),
-        whiteDrawable(context, androidx.media3.cast.R.drawable.media_route_button_disconnected),
-    )
-    addState(
-        StateSet.WILD_CARD,
-        whiteDrawable(context, androidx.media3.cast.R.drawable.media_route_button_disconnected),
-    )
-}
-
-private fun whiteDrawable(context: Context, drawableRes: Int): Drawable =
-    requireNotNull(ContextCompat.getDrawable(context, drawableRes)).mutate().also { drawable ->
-        DrawableCompat.setTint(drawable, android.graphics.Color.WHITE)
-    }

@@ -99,8 +99,6 @@ import lovehan1me.player_h_keyframe
 import lovehan1me.player_gesture_volume
 import lovehan1me.player_gesture_progress
 import lovehan1me.player_gesture_brightness
-import lovehan1me.player_casting_to
-import lovehan1me.player_cast_device
 import lovehan1me.player_auto_quality
 import lovehan1me.player_anime4k_label
 import lovehan1me.playback_finished
@@ -131,7 +129,6 @@ import lovehan1me.ui.component.FilledTonalButton
 import lovehan1me.ui.component.FilledTonalIconButton
 import lovehan1me.ui.component.HanimeAsyncImage
 import lovehan1me.ui.component.IconButton
-import lovehan1me.feature.player.CastRouteButton
 import lovehan1me.feature.player.PlaybackEngine
 import lovehan1me.feature.player.PlaybackQuality
 import lovehan1me.feature.player.PlatformVideoSurface
@@ -167,9 +164,6 @@ fun VideoPlayerUi(
     isFullscreen: Boolean = false,
     isPlaying: Boolean = false,
     isPlaybackEnded: Boolean = false,
-    showCastButton: Boolean = false,
-    isCasting: Boolean = false,
-    castDeviceName: String? = null,
     isLocked: Boolean = false,
     showPoster: Boolean = false,
     showResumeButton: Boolean = false,
@@ -224,8 +218,6 @@ fun VideoPlayerUi(
     var showUnlockButton by remember { mutableStateOf(false) }
     var unlockButtonTimeoutToken by remember { mutableIntStateOf(0) }
     val haptic = rememberHapticFeedback()
-    // P6d-3-C2：AndroidView factory 非 @Composable 上下文，描述串外提
-    val castButtonDesc = stringResource(Res.string.enable_google_cast)
     // P6d-3-C3：回调内固定串预解析
     val hKeyframesDisabledText = stringResource(Res.string.h_keyframes_not_enabled)
     // M3：原 DateFormat.getTimeFormat(context)（Android-only）；改当前时分，
@@ -366,7 +358,7 @@ fun VideoPlayerUi(
                     .aspectRatio(safeAspectRatio)
             }
 
-            if (playbackEngine != null && !isCasting) {
+            if (playbackEngine != null) {
                 key(playbackEngine, safeAspectRatio) {
                     Box(
                         modifier = videoModifier
@@ -386,23 +378,6 @@ fun VideoPlayerUi(
                 Box(
                     modifier = videoModifier.background(Color.Black)
                 )
-            }
-
-            if (isCasting) {
-                Surface(
-                    modifier = Modifier.offset(y = (-48).dp),
-                    shape = RoundedCornerShape(6.dp),
-                    color = Color.Black.copy(alpha = 0.72f),
-                ) {
-                    Text(
-                        text = stringResource(Res.string.player_casting_to,
-                            castDeviceName ?: stringResource(Res.string.player_cast_device),
-                        ),
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
-                    )
-                }
             }
         }
         Box(
@@ -691,12 +666,6 @@ fun VideoPlayerUi(
                     )
 
                     Spacer(modifier = Modifier.width(10.dp))
-
-                    if (showCastButton) {
-                        // M3：MediaRouteButton + Cast SDK 仅 Android（见 ui.player.VideoPlatform）。
-                        CastRouteButton(contentDescription = castButtonDesc)
-                        Spacer(modifier = Modifier.width(6.dp))
-                    }
 
                     if (isFullscreen) {
                         PlayerMenuChip(

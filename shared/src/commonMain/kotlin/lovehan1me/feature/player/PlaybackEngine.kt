@@ -49,9 +49,6 @@ data class PlaybackEngineState(
     val videoHeight: Int = 0,
     val hasRenderedFirstFrame: Boolean = false,
     val errorMessage: String? = null,
-    val isCastSupported: Boolean = false,
-    val isCasting: Boolean = false,
-    val castDeviceName: String? = null,
 )
 
 data class PlaybackRequest(

@@ -6,8 +6,7 @@ import lovehan1me.core.util.LogUtil
 // kernel 参数暂忽略（mpv 通吃 mp4/HLS；Exo/System 语义在桌面无区分）。
 actual fun createPlaybackEngine(
     kernel: PlayerKernel,
-    allowCast: Boolean,
 ): PlaybackEngine {
-    LogUtil.d("DesktopMpv", "createPlaybackEngine(kernel=$kernel, allowCast=$allowCast)")
+    LogUtil.d("DesktopMpv", "createPlaybackEngine(kernel=$kernel)")
     return DesktopMpvPlaybackEngine()
 }

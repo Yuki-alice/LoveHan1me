@@ -11,10 +11,8 @@ import lovehan1me.Res
 import lovehan1me.current_slide_sensitivity
 import lovehan1me.default_
 import lovehan1me.d_speed_times
-import lovehan1me.enable_google_cast_summary
 import lovehan1me.extremely_high
 import lovehan1me.extremely_low
-import lovehan1me.google_cast_unavailable_summary
 import lovehan1me.high
 import lovehan1me.low
 import lovehan1me.moderate
@@ -23,7 +21,6 @@ import lovehan1me.mpv_settings_disabled_summary
 import lovehan1me.slightly_high
 import lovehan1me.slightly_low
 import lovehan1me.feature.player.PlayerDefaults
-import lovehan1me.feature.player.isCastAvailable
 import lovehan1me.feature.player.PlayerKernel
 import lovehan1me.feature.settings.PlayerSettingsScreen
 import lovehan1me.feature.settings.PlayerSettingsUiState
@@ -87,9 +84,6 @@ fun PlayerSettingsRouteScreen(
         onKernelChange = {
             coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(playerKernel = lovehan1me.core.domain.model.PlayerKernel.fromValue(it)) } }
         },
-        onEnableGoogleCastChange = {
-            coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(enableGoogleCast = it) } }
-        },
         onShowBottomProgressChange = {
             coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(showBottomProgress = it) } }
         },
@@ -120,14 +114,11 @@ private fun buildPlayerSettingsUiState(
         PlayerDefaults.speeds.indexOfFirst { it == currentSpeed }.takeIf { it >= 0 }
             ?: PlayerDefaults.DEFAULT_SPEED_INDEX
     ) { speedLabels[PlayerDefaults.DEFAULT_SPEED_INDEX] }
-    val googleCastAvailable = isCastAvailable()
     return PlayerSettingsUiState(
         kernel = kernel,
         kernelDisplay = kernel,
         mpvSettingsEnabled = isMpvPlayer,
         mpvSettingsSummary = mpvSettingsSummary,
-        enableGoogleCast = SettingsRepository.enableGoogleCast,
-        googleCastAvailable = googleCastAvailable,
         showBottomProgress = SettingsRepository.showBottomProgress,
         playerSpeed = currentSpeed.toString(),
         playerSpeedLabel = speedDisplay,

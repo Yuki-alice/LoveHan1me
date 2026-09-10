@@ -18,6 +18,11 @@ class DesktopVideoPageHost : VideoPageHost {
         // 桌面无启动器角标
     }
 
+    /**
+     * 阶段一决策⑨：画中画仅手机端（Android + iOS）。桌面端**恒不进入 PiP**——
+     * 桌面多窗口语义不同于移动端 PiP，且无 RemoteAction / 系统栏，没有对等能力。
+     * 故下面的 [enterPipMode] / [onPipModeChanged] 是接口要求的空覆写，不是遗漏实现。
+     */
     override fun shouldEnterPip(): Boolean = false
 
     override fun enterPipMode() {}
