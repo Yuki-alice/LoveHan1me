@@ -14,6 +14,7 @@ import io.github.daisukikaffuchino.han1meviewer.logic.model.MyListType
 import io.github.daisukikaffuchino.han1meviewer.logic.model.OnlineWatchHistorySort
 import io.github.daisukikaffuchino.han1meviewer.logic.model.VideoCommentArgs
 import io.github.daisukikaffuchino.han1meviewer.logic.model.VideoComments
+import io.github.daisukikaffuchino.han1meviewer.logic.network.CloudflareChallenges
 import io.github.daisukikaffuchino.han1meviewer.logic.network.HanimeNetwork
 import io.github.daisukikaffuchino.han1meviewer.logic.state.PageLoadingState
 import io.github.daisukikaffuchino.han1meviewer.logic.state.VideoLoadingState
@@ -596,8 +597,14 @@ object NetworkRepo {
                     "you have been blocked" in body ->
                         throw IPBlockedException(getString(Res.string.cloudflare_ip_block_warning))
 
-                    "Just a moment" in body ->
+                    "Just a moment" in body -> {
+                        // 三端统一 CF 恢复触发（桌面 KCEF 窗 / iOS WKWebView 槽位至此可达；
+                        // Android 拦截器链路不受影响，见 CloudflareChallenges 文档）。
+                        runCatching {
+                            CloudflareChallenges.request(call.request.url.toString())
+                        }
                         throw CloudflareBlockedException(getString(Res.string.cloudflare_network_mismatch))
+                    }
 
                     else ->
                         throw HanimeNotFoundException(getString(Res.string.video_might_not_exist)) // 主要出現在影片界面，當你v數不大時會報403
