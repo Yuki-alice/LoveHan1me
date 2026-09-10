@@ -22,7 +22,7 @@ import lovehan1me.animation_2_5d
 import lovehan1me.amateur_nomask
 import lovehan1me.ai_generated
 import lovehan1me.ai_decensored
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import org.jetbrains.compose.resources.StringResource
 
 const val HOME_CATEGORY_LATEST_HANIME = "latest_hanime"

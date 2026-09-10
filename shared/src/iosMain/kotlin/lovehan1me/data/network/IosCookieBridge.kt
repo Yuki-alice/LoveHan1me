@@ -1,6 +1,6 @@
 package lovehan1me.data.network
 
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import io.ktor.client.plugins.cookies.CookiesStorage
 import io.ktor.http.Cookie
 import io.ktor.http.Url

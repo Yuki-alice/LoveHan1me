@@ -21,7 +21,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.repeatOnLifecycle
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.ui.adaptive.WindowWidthSizeClass
 import lovehan1me.ui.adaptive.rememberContentWidthSizeClass
 import lovehan1me.Res
@@ -60,7 +60,7 @@ import lovehan1me.local_list_notice_message
 import lovehan1me.do_not_show_again
 import lovehan1me.continues
 import lovehan1me.getHanimeVideoLink
-import lovehan1me.logic.DatabaseRepo
+import lovehan1me.data.DatabaseRepo
 import lovehan1me.data.database.entity.HKeyframeEntity
 import lovehan1me.data.database.entity.WatchHistoryEntity
 import lovehan1me.core.domain.exception.ParseException

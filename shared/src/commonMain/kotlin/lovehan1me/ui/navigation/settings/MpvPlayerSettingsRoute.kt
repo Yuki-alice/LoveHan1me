@@ -8,7 +8,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.Res
 import lovehan1me.mpv_cache_secs_summary
 import lovehan1me.mpv_hwdec_summary

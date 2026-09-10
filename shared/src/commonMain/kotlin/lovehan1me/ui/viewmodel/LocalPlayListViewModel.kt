@@ -1,9 +1,9 @@
 package lovehan1me.ui.viewmodel
-import lovehan1me.logic.ioDispatcher
+import lovehan1me.core.platform.ioDispatcher
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import lovehan1me.logic.LocalListRepository
+import lovehan1me.data.LocalListRepository
 import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.core.domain.model.ModifiedPlaylistArgs
 import lovehan1me.core.domain.model.MyListItems

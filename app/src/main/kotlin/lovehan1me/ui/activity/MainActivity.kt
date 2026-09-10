@@ -25,7 +25,7 @@ import androidx.lifecycle.lifecycleScope
 import lovehan1me.HanimeConstants.ANIME_URL
 import lovehan1me.HanimeConstants.HANIME_URL
 import lovehan1me.BuildConfig
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.R
 import lovehan1me.Res
 import lovehan1me.auth_request

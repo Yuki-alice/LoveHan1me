@@ -3,7 +3,7 @@ package lovehan1me.ui.viewmodel
 import lovehan1me.core.util.LogUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import lovehan1me.logic.ioDispatcher
+import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.core.platform.downloadWorkController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch

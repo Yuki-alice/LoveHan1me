@@ -3,7 +3,7 @@ package lovehan1me.ui.viewmodel
 import lovehan1me.core.util.LogUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import lovehan1me.logic.NetworkRepo
+import lovehan1me.data.NetworkRepo
 import lovehan1me.core.domain.model.MySubscriptions
 import lovehan1me.core.domain.model.SubscriptionItem
 import lovehan1me.core.domain.model.SubscriptionVideosItem

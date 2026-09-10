@@ -8,7 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.ComposeUIViewController
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.data.datastore.DataStoreManager
 import lovehan1me.ui.navigation.main.PlatformScreens
 import lovehan1me.ui.screen.web.CloudflareVerificationWebView

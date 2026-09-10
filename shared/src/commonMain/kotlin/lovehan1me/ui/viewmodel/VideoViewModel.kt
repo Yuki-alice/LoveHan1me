@@ -13,11 +13,11 @@ import lovehan1me.Res
 import lovehan1me.add_success
 import lovehan1me.delete_success
 import lovehan1me.interval_must_greater_than_d
-import lovehan1me.logic.DatabaseRepo
-import lovehan1me.logic.LocalListRepository
-import lovehan1me.logic.NetworkRepo
-import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.ioDispatcher
+import lovehan1me.data.DatabaseRepo
+import lovehan1me.data.LocalListRepository
+import lovehan1me.data.NetworkRepo
+import lovehan1me.data.SettingsRepository
+import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.modify_success
 import lovehan1me.data.database.entity.HKeyframeEntity
 import lovehan1me.data.database.entity.WatchHistoryEntity

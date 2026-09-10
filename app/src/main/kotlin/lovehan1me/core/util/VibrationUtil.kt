@@ -2,7 +2,7 @@ package lovehan1me.core.util
 
 import android.view.HapticFeedbackConstants
 import android.view.View
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 
 object VibrationUtil {
     fun performHapticFeedback(

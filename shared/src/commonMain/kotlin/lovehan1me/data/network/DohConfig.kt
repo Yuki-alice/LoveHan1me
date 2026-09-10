@@ -1,6 +1,6 @@
 package lovehan1me.data.network
 
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 
 data class DohPreset(
     val key: String,

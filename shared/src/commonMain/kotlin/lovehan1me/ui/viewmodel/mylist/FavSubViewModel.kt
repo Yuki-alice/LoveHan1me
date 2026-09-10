@@ -1,7 +1,7 @@
 package lovehan1me.ui.viewmodel.mylist
 
-import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.NetworkRepo
+import lovehan1me.data.SettingsRepository
+import lovehan1me.data.NetworkRepo
 import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.core.domain.model.MyListItems
 import lovehan1me.core.domain.model.MyListType

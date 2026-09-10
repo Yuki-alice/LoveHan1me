@@ -102,7 +102,7 @@ import lovehan1me.ic_search
 import lovehan1me.ic_filter_list
 import lovehan1me.ic_close
 import lovehan1me.ic_arrow_back
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.entity.SearchHistoryEntity
 import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.core.domain.model.HanimeInfo.Companion.NORMAL

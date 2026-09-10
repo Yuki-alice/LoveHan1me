@@ -39,7 +39,7 @@ import lovehan1me.ic_visibility
 import lovehan1me.login
 import lovehan1me.login_failed
 import lovehan1me.login_success
-import lovehan1me.logic.NetworkRepo
+import lovehan1me.data.NetworkRepo
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.password
 import lovehan1me.scan_for_cookies

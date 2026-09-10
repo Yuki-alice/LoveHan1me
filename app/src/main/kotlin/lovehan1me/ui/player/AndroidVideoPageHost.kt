@@ -28,7 +28,7 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import lovehan1me.R
 import lovehan1me.Res
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.reason_for_download_notification
 import lovehan1me.ui.activity.MainActivity
 import lovehan1me.ui.bridge.VideoPageHost

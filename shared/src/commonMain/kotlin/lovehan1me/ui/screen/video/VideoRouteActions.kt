@@ -1,7 +1,7 @@
 package lovehan1me.ui.screen.video
 
-import lovehan1me.logic.DatabaseRepo
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.DatabaseRepo
+import lovehan1me.data.SettingsRepository
 import lovehan1me.Res
 import lovehan1me.checkin_success
 import lovehan1me.copy_to_clipboard
@@ -18,7 +18,7 @@ import lovehan1me.core.domain.model.SearchOption
 import lovehan1me.ui.navigation.main.SearchRoute
 import lovehan1me.ui.viewmodel.VideoViewModel
 import lovehan1me.ui.viewmodel.updateCheckInWidget
-import lovehan1me.logic.ioDispatcher
+import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

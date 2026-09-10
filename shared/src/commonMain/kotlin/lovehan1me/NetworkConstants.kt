@@ -1,6 +1,6 @@
 package lovehan1me
 
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 
 /**
  * 网络层常量（P3：自 :app Constants.kt 下沉，包名不变）。

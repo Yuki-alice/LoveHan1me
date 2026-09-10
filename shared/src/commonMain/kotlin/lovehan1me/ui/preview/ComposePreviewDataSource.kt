@@ -1,7 +1,7 @@
 @file:Suppress("UNUSED")
 package lovehan1me.ui.preview
 
-import lovehan1me.logic.currentEpochMillis
+import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.Res
 import lovehan1me.latest_hanime
 import lovehan1me.latest_release

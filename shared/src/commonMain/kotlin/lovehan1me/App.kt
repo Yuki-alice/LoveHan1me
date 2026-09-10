@@ -23,7 +23,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.ui.component.UsageNoticeDialog
 import lovehan1me.ui.adaptive.ProvideContentWidth
 import lovehan1me.ui.adaptive.WindowWidthSizeClass

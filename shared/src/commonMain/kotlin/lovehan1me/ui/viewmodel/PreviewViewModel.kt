@@ -1,9 +1,9 @@
 package lovehan1me.ui.viewmodel
-import lovehan1me.logic.ioDispatcher
+import lovehan1me.core.platform.ioDispatcher
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import lovehan1me.logic.NetworkRepo
+import lovehan1me.data.NetworkRepo
 import lovehan1me.core.domain.model.HanimePreview
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.core.util.TagLocalizer

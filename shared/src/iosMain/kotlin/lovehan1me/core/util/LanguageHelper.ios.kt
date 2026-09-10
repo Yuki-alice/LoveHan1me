@@ -1,6 +1,6 @@
 package lovehan1me.core.util
 
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.core.domain.model.AppLanguage
 import platform.Foundation.NSLocale
 import platform.Foundation.currentLocale

@@ -1,7 +1,7 @@
 package lovehan1me.core.util
 
 import lovehan1me.core.util.LogUtil
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import okhttp3.Cookie
 
 @JvmInline

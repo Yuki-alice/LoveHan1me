@@ -16,7 +16,7 @@ import androidx.compose.runtime.setValue
 import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.EMPTY_STRING
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.Res
 import lovehan1me.alternative
 import lovehan1me.custom
@@ -50,7 +50,7 @@ import lovehan1me.custom_mirror_site_invalid
 import lovehan1me.confirm
 import lovehan1me.cancel
 import lovehan1me.attention
-import lovehan1me.logic.Parser
+import lovehan1me.site.hanime1.Parser
 import lovehan1me.data.network.DohConfig
 import lovehan1me.data.network.HDns
 import lovehan1me.data.network.HProxySelector
@@ -69,7 +69,7 @@ import java.net.InetAddress
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import lovehan1me.logic.currentEpochMillis
+import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.core.platform.restartApp
 import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.runBlocking

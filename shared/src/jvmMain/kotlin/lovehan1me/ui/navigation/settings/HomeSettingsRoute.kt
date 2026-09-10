@@ -39,8 +39,8 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.HanimeConstants
 import lovehan1me.HA1_GITHUB_FORUM_URL
 import lovehan1me.HA1_GITHUB_ISSUE_URL
-import lovehan1me.logic.BackupManager
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.BackupManager
+import lovehan1me.data.SettingsRepository
 import lovehan1me.core.platform.appVersionDisplay
 import lovehan1me.core.platform.applyAppLanguage
 import lovehan1me.core.platform.applySecureMode
@@ -56,7 +56,7 @@ import lovehan1me.core.platform.supportsPerAppLinks
 import lovehan1me.core.platform.switchLauncherIcon
 import lovehan1me.ui.viewmodel.updateCheckInWidget
 import lovehan1me.core.platform.writeBackupText
-import lovehan1me.logic.currentEpochMillis
+import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.core.platform.openPerAppLinksSettings
 import lovehan1me.core.platform.rememberBackupExportLauncher
 import lovehan1me.core.platform.rememberBackupImportLauncher
@@ -108,8 +108,8 @@ import lovehan1me.ic_launcher_xxt
 import lovehan1me.ic_launcher_new
 import lovehan1me.ic_launcher_cornhub
 import lovehan1me.ic_launcher_calc
-import lovehan1me.logic.LocalListRepository
-import lovehan1me.logic.OnlineListsBackup
+import lovehan1me.data.LocalListRepository
+import lovehan1me.data.OnlineListsBackup
 import lovehan1me.core.domain.model.AppLanguage
 import lovehan1me.core.domain.model.DisplayDensity
 import lovehan1me.core.domain.model.PaletteStyle

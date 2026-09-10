@@ -76,8 +76,8 @@ import lovehan1me.advanced_search
 import lovehan1me.ic_search
 import lovehan1me.SEARCH_YEAR_RANGE_END
 import lovehan1me.SEARCH_YEAR_RANGE_START
-import lovehan1me.logic.DatabaseRepo
-import lovehan1me.logic.HanimeAdvancedSearchRepo
+import lovehan1me.data.DatabaseRepo
+import lovehan1me.site.hanime1.HanimeAdvancedSearchRepo
 import lovehan1me.data.database.entity.HanimeAdvancedSearchHistoryEntity
 import lovehan1me.core.domain.model.SearchOption
 import lovehan1me.core.domain.model.SearchOption.Companion.flatten

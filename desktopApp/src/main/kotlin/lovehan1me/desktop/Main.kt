@@ -19,7 +19,7 @@ import coil3.network.ktor3.KtorNetworkFetcherFactory
 import lovehan1me.App
 import lovehan1me.desktop.runSmokeIfRequested
 import lovehan1me.ui.crash.installCrashHandler
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.data.datastore.DataStoreManager
 import lovehan1me.ui.player.DesktopWindowHolder
 import lovehan1me.core.util.LogUtil

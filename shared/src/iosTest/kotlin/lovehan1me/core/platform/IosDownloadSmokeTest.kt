@@ -1,7 +1,7 @@
 package lovehan1me.core.platform
 
 import lovehan1me.HanimeResolution
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.dao.Han1meDatabases
 import lovehan1me.data.datastore.DataStoreManager
 import lovehan1me.data.database.entity.download.DownloadGroupEntity

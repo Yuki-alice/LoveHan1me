@@ -1,7 +1,7 @@
 package lovehan1me.ui.viewmodel.mylist
-import lovehan1me.logic.ioDispatcher
+import lovehan1me.core.platform.ioDispatcher
 
-import lovehan1me.logic.LocalListRepository
+import lovehan1me.data.LocalListRepository
 import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.core.domain.model.MyListItems
 import lovehan1me.core.domain.state.PageLoadingState

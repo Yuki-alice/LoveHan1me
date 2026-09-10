@@ -10,7 +10,7 @@ import lovehan1me.Res
 import lovehan1me.comment
 import lovehan1me.introduction
 import lovehan1me.core.domain.model.HanimeInfo
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.core.domain.state.VideoLoadingState
 import lovehan1me.ui.bridge.VideoPageHost
 import lovehan1me.ui.viewmodel.CommentViewModel

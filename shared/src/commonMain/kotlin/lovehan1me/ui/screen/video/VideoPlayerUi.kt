@@ -146,7 +146,7 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import lovehan1me.logic.currentEpochMillis
+import lovehan1me.core.platform.currentEpochMillis
 import kotlin.math.abs
 import kotlin.time.Duration.Companion.milliseconds
 

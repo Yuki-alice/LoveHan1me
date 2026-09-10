@@ -1,6 +1,6 @@
 package lovehan1me.desktop
 
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.dao.Han1meDatabases
 import lovehan1me.data.database.dao.createDownloadDatabase
 import lovehan1me.data.datastore.DataStoreManager

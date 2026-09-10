@@ -2,7 +2,7 @@ package lovehan1me.core.platform
 
 import lovehan1me.core.util.LogUtil
 import lovehan1me.USER_AGENT
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.dao.Han1meDatabases
 import lovehan1me.data.database.entity.download.DownloadGroupEntity
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity

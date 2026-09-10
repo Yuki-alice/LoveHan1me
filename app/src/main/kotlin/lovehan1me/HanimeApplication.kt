@@ -8,7 +8,7 @@ import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.data.datastore.DataStoreManager
 // DataStoreManager 已下沉共享层，Android 的 Context 初始化入口是 androidMain 的扩展函数
 import lovehan1me.data.datastore.initialize

@@ -1,6 +1,6 @@
 package lovehan1me
 
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 
 /**
  * M5：登录态操作，自 jvmMain 上移至 commonMain，三端共享。

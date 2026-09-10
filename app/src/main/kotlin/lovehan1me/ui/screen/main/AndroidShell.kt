@@ -34,7 +34,7 @@ import lovehan1me.confirm_switch_site
 import lovehan1me.detect_ha1_related_link_in_clipboard
 import lovehan1me.enter
 import lovehan1me.ext_player
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.core.domain.state.PageState
 import lovehan1me.no
 import lovehan1me.save_failed_message

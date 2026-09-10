@@ -27,7 +27,7 @@ val LOCAL_DATE_TIME_FORMAT = LocalDateTime.Format {
 /** 搜索发布日期年份范围（原 :app Constants；END 原为 BuildConfig 构建年，改运行时当前年，跨年自适应） */
 const val SEARCH_YEAR_RANGE_START = 1990
 
-val SEARCH_YEAR_RANGE_END: Int get() = Instant.fromEpochMilliseconds(lovehan1me.logic.currentEpochMillis()).toLocalDateTime(TimeZone.currentSystemDefault()).year
+val SEARCH_YEAR_RANGE_END: Int get() = Instant.fromEpochMilliseconds(lovehan1me.core.platform.currentEpochMillis()).toLocalDateTime(TimeZone.currentSystemDefault()).year
 
 const val HA1_GITHUB_URL = "https://github.com/daisukiKaffuChino/Han1meViewer"
 

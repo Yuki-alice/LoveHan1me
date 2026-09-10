@@ -3,8 +3,8 @@ package lovehan1me.ui.screen.home.preview.getchupreview
 import lovehan1me.core.util.LogUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import lovehan1me.logic.GetchuNetworkRepo.getGetchuPreview
-import lovehan1me.logic.GetchuNetworkRepo.getGetchuPreviewDetail
+import lovehan1me.site.getchu.GetchuNetworkRepo.getGetchuPreview
+import lovehan1me.site.getchu.GetchuNetworkRepo.getGetchuPreviewDetail
 import lovehan1me.core.domain.model.GetchuPreview
 import lovehan1me.core.domain.model.GetchuPreviewDetail
 import lovehan1me.core.domain.state.PageState

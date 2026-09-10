@@ -20,7 +20,7 @@ import com.multiplatform.webview.web.rememberWebViewState
 import dev.datlag.kcef.KCEF
 import dev.datlag.kcef.KCEFCookieManager
 import lovehan1me.DESKTOP_USER_AGENT
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.HCookieJar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive

@@ -22,8 +22,8 @@ import lovehan1me.do_more
 import lovehan1me.exit
 import lovehan1me.finished_masturbating
 import lovehan1me.getHanimeShareText
-import lovehan1me.logic.DatabaseRepo
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.DatabaseRepo
+import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.entity.CheckInType
 import lovehan1me.core.domain.model.Announcement
 import lovehan1me.ui.component.ConfirmDialog

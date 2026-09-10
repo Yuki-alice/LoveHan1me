@@ -1,11 +1,11 @@
 package lovehan1me
 
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 
 import android.content.Context
 import lovehan1me.core.util.LogUtil
 import androidx.annotation.WorkerThread
-import lovehan1me.logic.DatabaseRepo
+import lovehan1me.data.DatabaseRepo
 import lovehan1me.HanimeLink
 import lovehan1me.core.domain.model.HanimeVideo
 import lovehan1me.core.util.SafFileManager

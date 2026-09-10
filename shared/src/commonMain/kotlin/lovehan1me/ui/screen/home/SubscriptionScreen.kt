@@ -33,7 +33,7 @@ import lovehan1me.my_subscribe
 import lovehan1me.load_failed_with_reason
 import lovehan1me.h_chan_sad
 import lovehan1me.ic_table_rows
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.core.domain.model.SubscriptionItem
 import lovehan1me.core.domain.model.SubscriptionVideosItem
 import lovehan1me.core.domain.state.WebsiteState

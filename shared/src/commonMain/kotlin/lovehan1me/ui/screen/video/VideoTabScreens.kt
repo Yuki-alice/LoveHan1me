@@ -12,8 +12,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.SettingsRepository.isAlreadyLogin
+import lovehan1me.data.SettingsRepository
+import lovehan1me.data.SettingsRepository.isAlreadyLogin
 import lovehan1me.Res
 import lovehan1me.there_is_a_small_issue
 import lovehan1me.VIDEO_COMMENT_PREFIX

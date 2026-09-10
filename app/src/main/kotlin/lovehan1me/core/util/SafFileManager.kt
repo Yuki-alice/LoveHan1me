@@ -14,7 +14,7 @@ import lovehan1me.HFileManager.HANIME_DOWNLOAD_FOLDER
 import lovehan1me.HFileManager.createVideoCoverName
 import lovehan1me.HFileManager.getAppDownloadFolder
 import lovehan1me.HFileManager.getDownloadVideoCoverFile
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.dao.download.HanimeDownloadDao
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import lovehan1me.core.domain.state.DownloadState

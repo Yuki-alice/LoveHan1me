@@ -39,8 +39,8 @@ import androidx.compose.ui.unit.dp
 import coil3.compose.AsyncImage
 import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Element
-import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.Parser
+import lovehan1me.data.SettingsRepository
+import lovehan1me.site.hanime1.Parser
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.data.network.HanimeNetwork
 import lovehan1me.core.util.LogUtil

@@ -1,9 +1,9 @@
 package lovehan1me.ui.viewmodel
-import lovehan1me.logic.ioDispatcher
+import lovehan1me.core.platform.ioDispatcher
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import lovehan1me.logic.DatabaseRepo
+import lovehan1me.data.DatabaseRepo
 import lovehan1me.data.database.entity.download.DownloadGroupEntity
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import lovehan1me.data.database.entity.download.VideoWithCategories

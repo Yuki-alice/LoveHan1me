@@ -54,7 +54,7 @@ import lovehan1me.ui.component.rememberHapticFeedback
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.preview.fakeAnnouncements
 import lovehan1me.ui.screen.home.homepage.saveImageToGallery
-import lovehan1me.logic.ioDispatcher
+import lovehan1me.core.platform.ioDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 

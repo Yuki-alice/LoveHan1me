@@ -14,7 +14,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 
 // P6d-1：从 :app 下沉（包名不变）。平台相关三件套见 DynamicSchemeProvider：
 // 动态取色（m3color，仅 Android）、系统强调色（Android S+）、系统栏配置（Android）。

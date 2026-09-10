@@ -4,7 +4,7 @@ package lovehan1me
 import lovehan1me.HANIME_BASE_URL
 // EMPTY_STRING 已下沉 shared（BasicConstants.kt）
 import lovehan1me.EMPTY_STRING
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import kotlinx.serialization.json.Json
 
 val HJson = Json {

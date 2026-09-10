@@ -9,7 +9,7 @@ import androidx.compose.runtime.setValue
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.getString
 import lovehan1me.ui.viewmodel.sharedViewModel
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.Res
 import lovehan1me.action_not_support
 import lovehan1me.cancel

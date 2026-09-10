@@ -7,8 +7,8 @@ import androidx.work.WorkInfo
 import androidx.work.WorkManager
 import androidx.work.await
 import androidx.work.workDataOf
-import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.DatabaseRepo
+import lovehan1me.data.SettingsRepository
+import lovehan1me.data.DatabaseRepo
 import lovehan1me.data.database.dao.Han1meDatabases
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import lovehan1me.core.domain.state.DownloadState

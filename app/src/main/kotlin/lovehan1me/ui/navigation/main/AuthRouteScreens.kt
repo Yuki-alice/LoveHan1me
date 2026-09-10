@@ -23,7 +23,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.core.net.toUri
 import lovehan1me.HANIME_LOGIN_URL
 import lovehan1me.HanimeConstants.HANIME_URL
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.R
 import lovehan1me.Res
 import lovehan1me.account_or_password_wrong
@@ -35,7 +35,7 @@ import lovehan1me.version_check_failed
 import lovehan1me.webview_version_too_low
 import lovehan1me.webview_version_unknown
 import lovehan1me.USER_AGENT
-import lovehan1me.logic.NetworkRepo
+import lovehan1me.data.NetworkRepo
 import lovehan1me.data.network.CloudflareVerificationCoordinator
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.login

@@ -3,7 +3,7 @@ package lovehan1me.core.util
 import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.core.domain.model.AppLanguage
 
 object AppLanguageManager {

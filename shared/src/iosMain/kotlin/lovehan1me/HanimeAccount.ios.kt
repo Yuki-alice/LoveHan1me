@@ -6,7 +6,7 @@ actual fun clearMemoryCookies() {
     // 避免登出后旧 cf_clearance 继续随请求注入（对齐 Android 端登出语义）。
     lovehan1me.data.network.IosCookieBridge.clear()
     kotlinx.coroutines.runBlocking {
-        lovehan1me.logic.SettingsRepository.setCloudFlareCookie("", "")
+        lovehan1me.data.SettingsRepository.setCloudFlareCookie("", "")
     }
 }
 

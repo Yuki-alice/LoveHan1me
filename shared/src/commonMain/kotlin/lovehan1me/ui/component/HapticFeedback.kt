@@ -1,7 +1,7 @@
 package lovehan1me.ui.component
 
 import androidx.compose.runtime.Composable
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 
 /**
  * 触感反馈（P6b）：commonMain 抽象，替代原 `VibrationUtil.performHapticFeedback(view)`。

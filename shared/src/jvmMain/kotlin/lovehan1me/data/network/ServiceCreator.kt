@@ -1,6 +1,6 @@
 package lovehan1me.data.network
 
-import lovehan1me.logic.SettingsRepository
+import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.interceptor.GetchuInterceptor
 import lovehan1me.data.network.interceptor.SpeedLimitInterceptor
 import lovehan1me.data.network.interceptor.UrlLoggingInterceptor
