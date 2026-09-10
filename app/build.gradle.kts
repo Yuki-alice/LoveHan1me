@@ -29,21 +29,10 @@ android {
         buildConfigField("String", "VERSION_NAME", "\"${versionName}\"")
         buildConfigField("int", "VERSION_CODE", "$versionCode")
         buildConfigField("int", "SEARCH_YEAR_RANGE_END", "${Config.thisYear}")
-
-        externalNativeBuild {
-            cmake {
-                cppFlags("-std=c++17")
-                abiFilters += "arm64-v8a"
-            }
-        }
     }
 
-    externalNativeBuild {
-        cmake {
-            path = file("src/main/cpp/CMakeLists.txt")
-            version = "3.22.1"
-        }
-    }
+    // NDK/CMake 已移除：src/main/cpp（chino.cpp / kaffu.c）为死代码，全仓无 System.loadLibrary 引用；
+    // 且 NDK 28.2 会在配置阶段触发数百 MB 下载，国内网络下长时间挂起，直接拖垮首次构建。
 
     splits {
         abi {

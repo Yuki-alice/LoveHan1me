@@ -24,6 +24,8 @@ reference/
 # Caches
 .cxx/
 local.properties
+# Gradle 用户目录（因沙箱限制工作区外不可写，故置于工作区内，约 6G）
+.gradle-home/
 
 # Logs
 *.log
