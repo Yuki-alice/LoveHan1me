@@ -40,7 +40,7 @@ import lovehan1me.forgot_dismiss
 import lovehan1me.forgot_confirm
 import lovehan1me.checkin_report
 import lovehan1me.check_in_feature_name
-import lovehan1me.app.navigation.main.cancel
+import lovehan1me.cancel
 import lovehan1me.calendar_dialog_title
 import lovehan1me.calendar_dialog_message
 import lovehan1me.calendar_dialog_confirm

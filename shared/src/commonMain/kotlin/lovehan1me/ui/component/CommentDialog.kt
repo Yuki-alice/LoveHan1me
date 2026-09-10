@@ -33,8 +33,8 @@ import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
 import lovehan1me.whats_wrong_with_him
-import lovehan1me.feature.login.submit
-import lovehan1me.app.navigation.main.cancel
+import lovehan1me.submit
+import lovehan1me.cancel
 import lovehan1me.ic_remove_circle
 import lovehan1me.ic_check_circle
 import lovehan1me.ic_send

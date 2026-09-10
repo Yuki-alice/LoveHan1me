@@ -15,6 +15,8 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.serialization.ExperimentalSerializationApi
 import kotlinx.serialization.json.Json
+import lovehan1me.core.platform.readAssetBytes
+import lovehan1me.core.platform.readAssetText
 
 /**
  * @project Hanime1

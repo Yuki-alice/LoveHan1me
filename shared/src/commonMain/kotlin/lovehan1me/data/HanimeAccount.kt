@@ -1,6 +1,7 @@
 package lovehan1me.data
 
 import lovehan1me.data.SettingsRepository
+import lovehan1me.core.constant.EMPTY_STRING
 
 /**
  * M5：登录态操作，自 jvmMain 上移至 commonMain，三端共享。

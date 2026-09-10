@@ -59,7 +59,7 @@ import lovehan1me.new_password
 import lovehan1me.my_account
 import lovehan1me.modify_success
 import lovehan1me.modify_failed
-import lovehan1me.data.logout
+import lovehan1me.logout
 import lovehan1me.load_failed_retry
 import lovehan1me.forgot_password
 import lovehan1me.email

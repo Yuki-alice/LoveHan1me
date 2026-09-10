@@ -36,7 +36,7 @@ import lovehan1me.modify_success
 import lovehan1me.pause_then_long_press
 import lovehan1me.video_might_not_exist
 import lovehan1me.add_to_h_keyframe
-import lovehan1me.app.navigation.main.cancel
+import lovehan1me.cancel
 import lovehan1me.confirm
 import lovehan1me.current_position_d_ms
 import lovehan1me.long_press_share_to_copy
@@ -48,7 +48,7 @@ import lovehan1me.sure
 import lovehan1me.sure_to_add_to_h_keyframe
 import lovehan1me.sure_to_unsubscribe
 import lovehan1me.unsubscribe_artist
-import lovehan1me.core.util.warning
+import lovehan1me.warning
 import lovehan1me.player_keyframe_option
 import lovehan1me.player_h_keyframe
 import lovehan1me.super_resolution_off

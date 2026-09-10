@@ -44,7 +44,7 @@ import androidx.compose.ui.unit.dp
 import lovehan1me.Res
 import lovehan1me.h_chan_default_avatar
 import lovehan1me.ic_switch
-import lovehan1me.desktop.loading
+import lovehan1me.loading
 import lovehan1me.my_list
 import lovehan1me.not_logged_in
 import lovehan1me.refresh_page_or_login_expired

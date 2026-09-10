@@ -69,7 +69,7 @@ import lovehan1me.custom_hosts
 import lovehan1me.custom
 import lovehan1me.current_node_latency
 import lovehan1me.confirm
-import lovehan1me.app.navigation.main.cancel
+import lovehan1me.cancel
 import lovehan1me.network
 import lovehan1me.debug
 import lovehan1me.builtin_dns

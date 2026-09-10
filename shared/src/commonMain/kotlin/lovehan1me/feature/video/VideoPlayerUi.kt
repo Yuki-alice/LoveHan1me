@@ -87,7 +87,7 @@ import lovehan1me.super_resolution_quality
 import lovehan1me.super_resolution_performance
 import lovehan1me.super_resolution_off
 import lovehan1me.retry
-import lovehan1me.feature.player.replay
+import lovehan1me.replay
 import lovehan1me.prompt
 import lovehan1me.position_ms
 import lovehan1me.player_time_format
@@ -110,7 +110,7 @@ import lovehan1me.here_is_empty
 import lovehan1me.edit
 import lovehan1me.delete
 import lovehan1me.confirm
-import lovehan1me.app.navigation.main.cancel
+import lovehan1me.cancel
 import lovehan1me.ic_volume_up
 import lovehan1me.ic_unlock
 import lovehan1me.ic_refresh

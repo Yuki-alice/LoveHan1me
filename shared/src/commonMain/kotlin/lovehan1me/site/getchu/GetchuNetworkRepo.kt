@@ -12,6 +12,8 @@ import io.ktor.http.isSuccess
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import lovehan1me.core.platform.decodeEucJp
+import lovehan1me.core.platform.ioDispatcher
 
 object GetchuNetworkRepo {
     // P4b：EUC-JP 解码改走 expect/actual（jvmMain Charset / iosMain NSString），常量删除

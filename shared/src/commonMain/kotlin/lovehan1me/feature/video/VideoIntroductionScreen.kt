@@ -95,7 +95,7 @@ import lovehan1me.no
 import lovehan1me.name_with_colon
 import lovehan1me.more
 import lovehan1me.load_failed_retry
-import lovehan1me.core.domain.model.liked
+import lovehan1me.liked
 import lovehan1me.jump_to_webpage
 import lovehan1me.go_to_official
 import lovehan1me.download_video_detail_below
@@ -105,7 +105,7 @@ import lovehan1me.dialog_confirm
 import lovehan1me.dialog_cancel
 import lovehan1me.confirm
 import lovehan1me.check_video_exists_in_download
-import lovehan1me.app.navigation.main.cancel
+import lovehan1me.cancel
 import lovehan1me.blank_brackets
 import lovehan1me.back
 import lovehan1me.auto_create_same_name_download_group

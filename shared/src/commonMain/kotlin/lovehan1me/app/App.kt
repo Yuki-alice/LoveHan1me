@@ -54,6 +54,12 @@ import lovehan1me.ui.theme.HanimeTheme
 import lovehan1me.app.sharedViewModel
 import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.launch
+import lovehan1me.Res
+import lovehan1me.app_source_illegal_message
+import lovehan1me.app_source_illegal_title
+import lovehan1me.app_source_repository_link
+import lovehan1me.app_source_verify
+import lovehan1me.login_first
 
 /**
  * M2：三端共享的真入口（M1 骨架 + 首页 → 全导航）。

@@ -13,13 +13,13 @@ import lovehan1me.app.sharedViewModel
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import lovehan1me.Res
-import lovehan1me.app.navigation.main.cancel
+import lovehan1me.cancel
 import lovehan1me.checkout_exit
 import lovehan1me.confirm_exit_message
 import lovehan1me.confirm_to_exit
 import lovehan1me.copy_to_clipboard
 import lovehan1me.do_more
-import lovehan1me.app.navigation.main.exit
+import lovehan1me.exit
 import lovehan1me.finished_masturbating
 import lovehan1me.data.getHanimeShareText
 import lovehan1me.data.DatabaseRepo

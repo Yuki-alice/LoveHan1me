@@ -39,9 +39,9 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
-import lovehan1me.feature.library.reset
+import lovehan1me.reset
 import lovehan1me.confirm
-import lovehan1me.app.navigation.main.cancel
+import lovehan1me.cancel
 import lovehan1me.ic_add
 import lovehan1me.ic_remove
 import lovehan1me.feature.settings.model.GridRangeOption

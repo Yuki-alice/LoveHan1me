@@ -23,7 +23,7 @@ import lovehan1me.core.domain.model.VideoComments
 import lovehan1me.core.domain.state.PageLoadingState
 import lovehan1me.core.domain.state.VideoLoadingState
 import lovehan1me.core.domain.state.WebsiteState
-import lovehan1me.toVideoCode
+import lovehan1me.site.hanime1.toVideoCode
 import kotlinx.datetime.LocalDate
 // Res.string.login_state_expired 是生成的扩展属性，需按声明文件所在包导入
 import lovehan1me.login_state_expired

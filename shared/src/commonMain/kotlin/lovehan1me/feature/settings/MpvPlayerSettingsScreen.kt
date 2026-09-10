@@ -33,7 +33,7 @@ import lovehan1me.custom_parameters_summary
 import lovehan1me.custom_parameters_example
 import lovehan1me.custom_parameters
 import lovehan1me.confirm
-import lovehan1me.app.navigation.main.cancel
+import lovehan1me.cancel
 import lovehan1me.player_settings_quality_performance
 import lovehan1me.player_settings_network_cache
 import lovehan1me.advanced

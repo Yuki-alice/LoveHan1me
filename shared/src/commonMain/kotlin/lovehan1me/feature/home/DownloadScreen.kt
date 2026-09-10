@@ -50,8 +50,8 @@ import lovehan1me.download
 import lovehan1me.create_new_group
 import lovehan1me.confirm_move_videos
 import lovehan1me.confirm
-import lovehan1me.data.network.close
-import lovehan1me.app.navigation.main.cancel
+import lovehan1me.close
+import lovehan1me.cancel
 import lovehan1me.ic_add
 import lovehan1me.ic_close
 import lovehan1me.ic_download

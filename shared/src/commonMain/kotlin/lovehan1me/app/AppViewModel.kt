@@ -7,6 +7,8 @@ import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.core.platform.downloadWorkController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
+import lovehan1me.data.network.CsrfTokenProvider
+import lovehan1me.data.network.IHCsrfToken
 
 /**
  * @project Han1meViewer

@@ -17,7 +17,7 @@ import lovehan1me.Res
 import lovehan1me.getchu_preview_detail
 import lovehan1me.core.domain.state.PageState
 import lovehan1me.core.domain.state.dataOrNull
-import lovehan1me.pienization
+import lovehan1me.data.pienization
 import lovehan1me.ui.component.PageContent
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.ui.component.isFirstPageEmpty

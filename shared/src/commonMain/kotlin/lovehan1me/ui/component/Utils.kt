@@ -22,7 +22,7 @@ import coil3.request.crossfade
 import lovehan1me.data.SettingsRepository
 import lovehan1me.core.domain.model.AppLanguage
 import lovehan1me.Res
-import lovehan1me.desktop.loading
+import lovehan1me.loading
 import lovehan1me.ui.adaptive.columnsForMinItemWidth
 import lovehan1me.ui.adaptive.rememberContentWidthDp
 import lovehan1me.ui.theme.SpacingLarge

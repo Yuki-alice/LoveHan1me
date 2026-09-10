@@ -50,7 +50,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
-import lovehan1me.app.navigation.main.cancel
+import lovehan1me.cancel
 import lovehan1me.confirm
 import lovehan1me.delete_failed
 import lovehan1me.delete_playlist

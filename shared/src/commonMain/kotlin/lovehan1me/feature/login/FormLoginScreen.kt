@@ -37,11 +37,14 @@ import lovehan1me.email
 import lovehan1me.ic_arrow_back
 import lovehan1me.ic_visibility
 import lovehan1me.login
+// E3 把 HanimeAccount.kt 从扁平包 lovehan1me 挪进 lovehan1me.data，
+// 于是 `login` 同时是「资源访问器」与「写会话的函数」，必须用别名区分。
+import lovehan1me.data.login as persistLogin
 import lovehan1me.login_failed
 import lovehan1me.login_success
 import lovehan1me.data.NetworkRepo
 import lovehan1me.core.domain.state.WebsiteState
-import lovehan1me.feature.login.password
+import lovehan1me.password
 import lovehan1me.scan_for_cookies
 import lovehan1me.try_login_here
 import lovehan1me.core.util.SonnerToast
@@ -90,7 +93,7 @@ fun FormLoginScreen(
                     }
 
                     is WebsiteState.Success -> {
-                        login(state.info)
+                        persistLogin(state.info)
                         isLoggingIn = false
                         SonnerToast.success(getString(Res.string.login_success))
                         onLoginSucceeded()

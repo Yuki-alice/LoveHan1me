@@ -12,7 +12,7 @@ import lovehan1me.app.sharedViewModel
 import lovehan1me.data.SettingsRepository
 import lovehan1me.Res
 import lovehan1me.action_not_support
-import lovehan1me.app.navigation.main.cancel
+import lovehan1me.cancel
 import lovehan1me.confirm
 import lovehan1me.create_group_success
 import lovehan1me.delete

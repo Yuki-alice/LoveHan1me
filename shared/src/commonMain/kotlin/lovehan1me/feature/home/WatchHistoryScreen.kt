@@ -92,7 +92,7 @@ import lovehan1me.delete_success
 import lovehan1me.delete_history
 import lovehan1me.delete_failed
 import lovehan1me.delete
-import lovehan1me.app.navigation.main.cancel
+import lovehan1me.cancel
 import lovehan1me.ic_play_circle
 import lovehan1me.ic_history
 import lovehan1me.ic_delete

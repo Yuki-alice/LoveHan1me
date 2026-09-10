@@ -94,7 +94,7 @@ import lovehan1me.hanime_app_name
 import lovehan1me.go_to_settings
 import lovehan1me.fake_app_icon
 import lovehan1me.confirm
-import lovehan1me.app.navigation.main.cancel
+import lovehan1me.cancel
 import lovehan1me.backup_import_title
 import lovehan1me.backup_import_confirm_message
 import lovehan1me.attention

@@ -28,6 +28,7 @@ import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.io.OutputStream
+import lovehan1me.core.platform.currentEpochMillis
 
 object BackupManager {
     private const val BACKUP_VERSION = 1
