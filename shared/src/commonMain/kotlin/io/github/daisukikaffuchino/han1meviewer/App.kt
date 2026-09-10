@@ -5,6 +5,7 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DrawerValue
 import androidx.compose.material3.ModalNavigationDrawer
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.PermanentNavigationDrawer
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberDrawerState
 import androidx.compose.runtime.Composable
@@ -15,6 +16,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
@@ -119,42 +123,27 @@ fun App(
         }
 
         if (appAccessGranted) {
-            ModalNavigationDrawer(
-                drawerState = drawerState,
-                drawerContent = {
-                    if (drawerContent != null) {
-                        drawerContent(
-                            DrawerHost(
-                                backStack = backStack,
-                                homeViewModel = homeViewModel,
-                                isLoggedIn = isLoggedIn,
-                                drawerState = drawerState,
-                                onDrawerItemSelected = { destination ->
-                                    backStack.navigateDrawerDestination(
-                                        destination = destination,
-                                        isLoggedIn = isLoggedIn,
-                                        onRequireLogin = {
-                                            scope.launch {
-                                                SonnerToast.warning(getString(Res.string.login_first))
-                                            }
-                                        },
-                                    )
-                                },
-                                onOpenAccount = { backStack.add(AccountRoute) },
-                                onRequireLogin = {
-                                    scope.launch {
-                                        SonnerToast.warning(getString(Res.string.login_first))
-                                    }
-                                },
-                            )
-                        )
-                    } else {
-                        SharedMainDrawer(
-                            selected = MainDrawerDestination.fromRoute(backStack.topLevelKey),
+            // 宽屏常驻抽屉（对齐参考 MainActivityContent:124 的横屏常驻规则；桌面无
+            // orientation 语义，改用容器宽度 ≥840dp——与卡片/网格 expanded 档同阈值；
+            // 窄屏保持 Modal）。与参考的差异：不限首页路由，宽窗下 chrome 全程稳定。
+            // 抽屉内容维持平台差异（手机富头 drawerContent / 桌面简版 SharedMainDrawer）。
+            val density = LocalDensity.current
+            val windowWidthDp =
+                with(density) { LocalWindowInfo.current.containerSize.width.toDp() }
+            val usePermanentDrawer = windowWidthDp >= 840.dp
+            LaunchedEffect(usePermanentDrawer) {
+                if (usePermanentDrawer) drawerState.close()
+            }
+            val drawerSheetContent: @Composable () -> Unit = {
+                if (drawerContent != null) {
+                    drawerContent(
+                        DrawerHost(
+                            backStack = backStack,
+                            homeViewModel = homeViewModel,
                             isLoggedIn = isLoggedIn,
-                            username = null,
-                            onDestinationClick = { destination ->
-                                val handled = backStack.navigateDrawerDestination(
+                            drawerState = drawerState,
+                            onDrawerItemSelected = { destination ->
+                                backStack.navigateDrawerDestination(
                                     destination = destination,
                                     isLoggedIn = isLoggedIn,
                                     onRequireLogin = {
@@ -163,29 +152,70 @@ fun App(
                                         }
                                     },
                                 )
-                                if (handled) {
-                                    scope.launch { drawerState.close() }
+                            },
+                            onOpenAccount = { backStack.add(AccountRoute) },
+                            onRequireLogin = {
+                                scope.launch {
+                                    SonnerToast.warning(getString(Res.string.login_first))
                                 }
                             },
-                            onAccountClick = {
-                                scope.launch { drawerState.close() }
-                                backStack.add(AccountRoute)
-                            },
-                            onLoginClick = {
-                                scope.launch { drawerState.close() }
-                                backStack.add(LoginRoute)
-                            },
                         )
-                    }
-                },
-            ) {
-                SharedTopNavigation(
-                    backStack = backStack,
-                    homeViewModel = homeViewModel,
-                    showHomeNavigationIcon = true,
-                    onOpenDrawer = { scope.launch { drawerState.open() } },
-                    platformScreens = platformScreens,
-                )
+                    )
+                } else {
+                    SharedMainDrawer(
+                        selected = MainDrawerDestination.fromRoute(backStack.topLevelKey),
+                        isLoggedIn = isLoggedIn,
+                        username = null,
+                        onDestinationClick = { destination ->
+                            val handled = backStack.navigateDrawerDestination(
+                                destination = destination,
+                                isLoggedIn = isLoggedIn,
+                                onRequireLogin = {
+                                    scope.launch {
+                                        SonnerToast.warning(getString(Res.string.login_first))
+                                    }
+                                },
+                            )
+                            if (handled) {
+                                scope.launch { drawerState.close() }
+                            }
+                        },
+                        onAccountClick = {
+                            scope.launch { drawerState.close() }
+                            backStack.add(AccountRoute)
+                        },
+                        onLoginClick = {
+                            scope.launch { drawerState.close() }
+                            backStack.add(LoginRoute)
+                        },
+                    )
+                }
+            }
+            if (usePermanentDrawer) {
+                PermanentNavigationDrawer(
+                    drawerContent = { drawerSheetContent() },
+                ) {
+                    SharedTopNavigation(
+                        backStack = backStack,
+                        homeViewModel = homeViewModel,
+                        showHomeNavigationIcon = false,
+                        onOpenDrawer = { scope.launch { drawerState.open() } },
+                        platformScreens = platformScreens,
+                    )
+                }
+            } else {
+                ModalNavigationDrawer(
+                    drawerState = drawerState,
+                    drawerContent = { drawerSheetContent() },
+                ) {
+                    SharedTopNavigation(
+                        backStack = backStack,
+                        homeViewModel = homeViewModel,
+                        showHomeNavigationIcon = true,
+                        onOpenDrawer = { scope.launch { drawerState.open() } },
+                        platformScreens = platformScreens,
+                    )
+                }
             }
         }
 
