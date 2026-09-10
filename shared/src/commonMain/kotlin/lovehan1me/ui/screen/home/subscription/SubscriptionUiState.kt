@@ -1,7 +1,7 @@
 package lovehan1me.ui.screen.home.subscription
 
-import lovehan1me.logic.model.SubscriptionItem
-import lovehan1me.logic.model.SubscriptionVideosItem
+import lovehan1me.core.domain.model.SubscriptionItem
+import lovehan1me.core.domain.model.SubscriptionVideosItem
 
 /**
  * 订阅页面 UI 状态。

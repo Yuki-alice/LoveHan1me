@@ -4,9 +4,9 @@ import lovehan1me.logic.ioDispatcher
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import lovehan1me.logic.DatabaseRepo
-import lovehan1me.logic.entity.download.DownloadGroupEntity
-import lovehan1me.logic.entity.download.HanimeDownloadEntity
-import lovehan1me.logic.entity.download.VideoWithCategories
+import lovehan1me.data.database.entity.download.DownloadGroupEntity
+import lovehan1me.data.database.entity.download.HanimeDownloadEntity
+import lovehan1me.data.database.entity.download.VideoWithCategories
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow

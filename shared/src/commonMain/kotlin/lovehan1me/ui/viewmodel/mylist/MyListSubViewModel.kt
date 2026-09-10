@@ -1,11 +1,11 @@
 package lovehan1me.ui.viewmodel.mylist
 
 import lovehan1me.logic.NetworkRepo
-import lovehan1me.logic.model.HanimeInfo
-import lovehan1me.logic.model.MyListItems
-import lovehan1me.logic.model.MyListType
-import lovehan1me.logic.state.PageLoadingState
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.model.HanimeInfo
+import lovehan1me.core.domain.model.MyListItems
+import lovehan1me.core.domain.model.MyListType
+import lovehan1me.core.domain.state.PageLoadingState
+import lovehan1me.core.domain.state.WebsiteState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

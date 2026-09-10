@@ -1,11 +1,11 @@
 package lovehan1me.ui.viewmodel
 
-import lovehan1me.logic.model.HanimeInfo
-import lovehan1me.logic.model.ModifiedPlaylistArgs
-import lovehan1me.logic.model.MyListItems
-import lovehan1me.logic.model.Playlists
-import lovehan1me.logic.state.PageLoadingState
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.model.HanimeInfo
+import lovehan1me.core.domain.model.ModifiedPlaylistArgs
+import lovehan1me.core.domain.model.MyListItems
+import lovehan1me.core.domain.model.Playlists
+import lovehan1me.core.domain.state.PageLoadingState
+import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.screen.home.myplaylist.PlaylistUiState
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow

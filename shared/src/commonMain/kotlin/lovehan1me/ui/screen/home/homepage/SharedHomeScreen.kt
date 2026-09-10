@@ -41,9 +41,9 @@ import lovehan1me.ic_refresh
 import lovehan1me.ic_search
 import lovehan1me.logic.AppUpdateState
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.model.AppUpdateInfo
-import lovehan1me.logic.state.PageState
-import lovehan1me.logic.state.dataOrNull
+import lovehan1me.core.domain.model.AppUpdateInfo
+import lovehan1me.core.domain.state.PageState
+import lovehan1me.core.domain.state.dataOrNull
 import lovehan1me.simulated_update_description
 import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.component.PageContent

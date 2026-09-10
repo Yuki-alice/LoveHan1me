@@ -18,9 +18,9 @@ import androidx.compose.ui.unit.dp
 import lovehan1me.Res
 import lovehan1me.here_is_empty
 import lovehan1me.h_keyframe_title_prefix
-import lovehan1me.logic.entity.HKeyframeEntity
-import lovehan1me.logic.entity.HKeyframeHeader
-import lovehan1me.logic.entity.HKeyframeType
+import lovehan1me.data.database.entity.HKeyframeEntity
+import lovehan1me.data.database.entity.HKeyframeHeader
+import lovehan1me.data.database.entity.HKeyframeType
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.lazy.LazyColumn
 import lovehan1me.ui.theme.HanimeDefaults

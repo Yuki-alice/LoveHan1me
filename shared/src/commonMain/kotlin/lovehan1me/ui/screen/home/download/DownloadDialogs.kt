@@ -52,9 +52,9 @@ import lovehan1me.confirm
 import lovehan1me.cancel
 import lovehan1me.ic_delete
 import lovehan1me.ic_edit
-import lovehan1me.logic.entity.download.DownloadGroupEntity
-import lovehan1me.logic.entity.download.VideoWithCategories
-import lovehan1me.logic.model.DownloadHeaderNode
+import lovehan1me.data.database.entity.download.DownloadGroupEntity
+import lovehan1me.data.database.entity.download.VideoWithCategories
+import lovehan1me.core.domain.model.DownloadHeaderNode
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.component.lazy.LazyColumn
 import lovehan1me.ui.component.verticalScrollbar

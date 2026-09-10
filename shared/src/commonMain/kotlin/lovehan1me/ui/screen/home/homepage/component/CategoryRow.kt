@@ -22,7 +22,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
 import lovehan1me.more
-import lovehan1me.logic.model.HanimeInfo
+import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.ui.component.VideoCardItem
 import lovehan1me.ui.component.lazy.LazyRow
 import lovehan1me.ui.preview.fakeHomePageVideos

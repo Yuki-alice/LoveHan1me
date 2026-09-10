@@ -2,16 +2,16 @@ package lovehan1me.logic
 
 import lovehan1me.HorizontalCardCountConfig
 import lovehan1me.SearchGridColumnsConfig
-import lovehan1me.logic.model.AppLanguage
-import lovehan1me.logic.model.AppSettings
-import lovehan1me.logic.model.DisplayDensity
-import lovehan1me.logic.model.PaletteStyle
-import lovehan1me.logic.model.PlayerKernel
-import lovehan1me.logic.model.SettingsStore
-import lovehan1me.logic.model.ThemeAccent
-import lovehan1me.logic.model.ThemeMode
-import lovehan1me.logic.model.VideoLandscapeLayoutStyle
-import lovehan1me.logic.model.DOWNLOAD_SPEED_BYTES
+import lovehan1me.core.domain.model.AppLanguage
+import lovehan1me.core.domain.model.AppSettings
+import lovehan1me.core.domain.model.DisplayDensity
+import lovehan1me.core.domain.model.PaletteStyle
+import lovehan1me.core.domain.model.PlayerKernel
+import lovehan1me.core.domain.model.SettingsStore
+import lovehan1me.core.domain.model.ThemeAccent
+import lovehan1me.core.domain.model.ThemeMode
+import lovehan1me.core.domain.model.VideoLandscapeLayoutStyle
+import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

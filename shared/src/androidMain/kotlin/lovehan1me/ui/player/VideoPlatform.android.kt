@@ -24,8 +24,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.mediarouter.app.MediaRouteButton
 import com.google.android.gms.cast.framework.CastButtonFactory
-import lovehan1me.logic.dao.Han1meDatabaseContext
-import lovehan1me.logic.platform.CurrentActivityHolder
+import lovehan1me.data.database.dao.Han1meDatabaseContext
+import lovehan1me.core.platform.CurrentActivityHolder
 import lovehan1me.core.util.OrientationManager
 
 // M3：原 `:app` VideoPlayerUi / VideoRouteHostScreen 内联的 Android-only 代码，原样归位。

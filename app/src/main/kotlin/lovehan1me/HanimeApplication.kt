@@ -9,16 +9,16 @@ import android.os.Bundle
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.datastore.DataStoreManager
+import lovehan1me.data.datastore.DataStoreManager
 // DataStoreManager 已下沉共享层，Android 的 Context 初始化入口是 androidMain 的扩展函数
-import lovehan1me.logic.datastore.initialize
-import lovehan1me.logic.platform.AndroidDownloadWorkController
-import lovehan1me.logic.platform.AndroidVideoCacheStore
-import lovehan1me.logic.platform.setDownloadWorkControllerProvider
-import lovehan1me.logic.platform.setVideoCacheStoreProvider
-import lovehan1me.logic.network.CloudflareVerificationCoordinator
-import lovehan1me.logic.network.CloudflareVerifier
-import lovehan1me.logic.network.HProxySelector
+import lovehan1me.data.datastore.initialize
+import lovehan1me.core.platform.AndroidDownloadWorkController
+import lovehan1me.core.platform.AndroidVideoCacheStore
+import lovehan1me.core.platform.setDownloadWorkControllerProvider
+import lovehan1me.core.platform.setVideoCacheStoreProvider
+import lovehan1me.data.network.CloudflareVerificationCoordinator
+import lovehan1me.data.network.CloudflareVerifier
+import lovehan1me.data.network.HProxySelector
 import lovehan1me.ui.crash.CrashHandler
 import lovehan1me.core.util.AnimeShaders
 import lovehan1me.core.util.AppLanguageManager

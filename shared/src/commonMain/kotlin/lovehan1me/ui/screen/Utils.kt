@@ -20,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.model.AppLanguage
+import lovehan1me.core.domain.model.AppLanguage
 import lovehan1me.Res
 import lovehan1me.loading
 import lovehan1me.ui.adaptive.columnsForMinItemWidth

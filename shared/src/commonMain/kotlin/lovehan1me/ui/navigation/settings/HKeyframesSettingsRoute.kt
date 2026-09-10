@@ -30,7 +30,7 @@ import lovehan1me.h_keyframes_import_shared_hint
 import lovehan1me.h_keyframes_import_shared
 import lovehan1me.confirm
 import lovehan1me.cancel
-import lovehan1me.logic.entity.HKeyframeEntity
+import lovehan1me.data.database.entity.HKeyframeEntity
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.screen.settings.HKeyframeSettingsScreen
 import lovehan1me.ui.screen.settings.HKeyframeSettingsUiState

@@ -5,7 +5,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import lovehan1me.logic.state.PageState
+import lovehan1me.core.domain.state.PageState
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.content.ErrorContent
 import lovehan1me.ui.component.content.LoadingContent

@@ -51,12 +51,12 @@ import lovehan1me.confirm
 import lovehan1me.cancel
 import lovehan1me.attention
 import lovehan1me.logic.Parser
-import lovehan1me.logic.network.DohConfig
-import lovehan1me.logic.network.HDns
-import lovehan1me.logic.network.HProxySelector
-import lovehan1me.logic.network.HanimeNetwork
-import lovehan1me.logic.network.ServiceCreator
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.data.network.DohConfig
+import lovehan1me.data.network.HDns
+import lovehan1me.data.network.HProxySelector
+import lovehan1me.data.network.HanimeNetwork
+import lovehan1me.data.network.ServiceCreator
+import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.logout
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.screen.settings.DelayResultUi
@@ -70,7 +70,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import lovehan1me.logic.currentEpochMillis
-import lovehan1me.logic.platform.restartApp
+import lovehan1me.core.platform.restartApp
 import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.runBlocking
 
@@ -372,7 +372,7 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
                 showSocksWarning = true
             }
             coroutineScope.launch {
-                SettingsRepository.update { it.copy(proxyType = lovehan1me.logic.model.ProxyType.fromId(type), proxyIp = ip, proxyPort = port) }
+                SettingsRepository.update { it.copy(proxyType = lovehan1me.core.domain.model.ProxyType.fromId(type), proxyIp = ip, proxyPort = port) }
                 HProxySelector.rebuildNetwork()
                 HanimeNetwork.rebuildNetwork()
             }

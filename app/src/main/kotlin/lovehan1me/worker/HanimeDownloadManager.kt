@@ -9,9 +9,9 @@ import androidx.work.await
 import androidx.work.workDataOf
 import lovehan1me.logic.SettingsRepository
 import lovehan1me.logic.DatabaseRepo
-import lovehan1me.logic.dao.Han1meDatabases
-import lovehan1me.logic.entity.download.HanimeDownloadEntity
-import lovehan1me.logic.state.DownloadState
+import lovehan1me.data.database.dao.Han1meDatabases
+import lovehan1me.data.database.entity.download.HanimeDownloadEntity
+import lovehan1me.core.domain.state.DownloadState
 import lovehan1me.core.util.runSuspendCatching
 import lovehan1me.core.util.applicationContext
 import kotlinx.coroutines.CoroutineScope

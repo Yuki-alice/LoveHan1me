@@ -2,14 +2,14 @@ package lovehan1me.logic
 
 import lovehan1me.core.util.LogUtil
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.dao.Han1meDatabases
-import lovehan1me.logic.entity.HKeyframeEntity
-import lovehan1me.logic.entity.HKeyframeHeader
-import lovehan1me.logic.entity.HKeyframeType
-import lovehan1me.logic.entity.SearchHistoryEntity
-import lovehan1me.logic.entity.WatchHistoryEntity
-import lovehan1me.logic.entity.download.DownloadGroupEntity
-import lovehan1me.logic.entity.download.HanimeDownloadEntity
+import lovehan1me.data.database.dao.Han1meDatabases
+import lovehan1me.data.database.entity.HKeyframeEntity
+import lovehan1me.data.database.entity.HKeyframeHeader
+import lovehan1me.data.database.entity.HKeyframeType
+import lovehan1me.data.database.entity.SearchHistoryEntity
+import lovehan1me.data.database.entity.WatchHistoryEntity
+import lovehan1me.data.database.entity.download.DownloadGroupEntity
+import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow

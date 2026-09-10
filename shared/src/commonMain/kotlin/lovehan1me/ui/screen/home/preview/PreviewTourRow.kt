@@ -19,7 +19,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import lovehan1me.ui.adaptive.rememberContentWidthDp
 import lovehan1me.ui.component.HanimeAsyncImage
-import lovehan1me.logic.model.HanimeInfo
+import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.ui.component.lazy.LazyRow
 import kotlinx.coroutines.launch
 

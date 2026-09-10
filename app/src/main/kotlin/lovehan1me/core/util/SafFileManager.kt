@@ -15,9 +15,9 @@ import lovehan1me.HFileManager.createVideoCoverName
 import lovehan1me.HFileManager.getAppDownloadFolder
 import lovehan1me.HFileManager.getDownloadVideoCoverFile
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.dao.download.HanimeDownloadDao
-import lovehan1me.logic.entity.download.HanimeDownloadEntity
-import lovehan1me.logic.state.DownloadState
+import lovehan1me.data.database.dao.download.HanimeDownloadDao
+import lovehan1me.data.database.entity.download.HanimeDownloadEntity
+import lovehan1me.core.domain.state.DownloadState
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

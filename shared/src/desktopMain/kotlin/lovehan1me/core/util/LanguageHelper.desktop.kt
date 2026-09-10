@@ -1,7 +1,7 @@
 package lovehan1me.core.util
 
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.model.AppLanguage
+import lovehan1me.core.domain.model.AppLanguage
 import java.util.Locale
 
 // Desktop(JVM)：读共享设置 appLanguage（SYSTEM 回退系统 Locale）

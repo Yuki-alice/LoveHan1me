@@ -4,7 +4,7 @@ import lovehan1me.logic.ioDispatcher
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import lovehan1me.logic.DatabaseRepo
-import lovehan1me.logic.entity.HKeyframeEntity
+import lovehan1me.data.database.entity.HKeyframeEntity
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 

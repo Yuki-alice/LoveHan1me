@@ -4,7 +4,7 @@ import android.content.Context
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.model.AppLanguage
+import lovehan1me.core.domain.model.AppLanguage
 
 object AppLanguageManager {
     const val PREFERENCE_KEY = "app_language"

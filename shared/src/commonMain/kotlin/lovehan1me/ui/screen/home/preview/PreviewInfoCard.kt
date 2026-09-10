@@ -30,7 +30,7 @@ import lovehan1me.Res
 import lovehan1me.release_date
 import lovehan1me.play_trailer
 import lovehan1me.brand
-import lovehan1me.logic.model.HanimePreview
+import lovehan1me.core.domain.model.HanimePreview
 import lovehan1me.ui.component.TagChipGroup
 import lovehan1me.ui.component.lazy.LazyRow
 

@@ -3,7 +3,7 @@ package lovehan1me.ui.navigation.main
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.network.HanimeNetwork
+import lovehan1me.data.network.HanimeNetwork
 import lovehan1me.ui.screen.login.ManualInputCookiesScreen
 import kotlinx.coroutines.launch
 

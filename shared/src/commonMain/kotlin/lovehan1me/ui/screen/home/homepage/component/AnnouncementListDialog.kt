@@ -22,7 +22,7 @@ import androidx.compose.ui.unit.dp
 import lovehan1me.Res
 import lovehan1me.close
 import lovehan1me.announcement_list
-import lovehan1me.logic.model.Announcement
+import lovehan1me.core.domain.model.Announcement
 import lovehan1me.ui.component.lazy.LazyColumn
 import lovehan1me.ui.preview.fakeAnnouncements
 

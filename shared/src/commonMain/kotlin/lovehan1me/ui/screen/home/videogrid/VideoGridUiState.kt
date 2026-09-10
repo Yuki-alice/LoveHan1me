@@ -1,7 +1,7 @@
 package lovehan1me.ui.screen.home.videogrid
 
-import lovehan1me.logic.model.HanimeInfo
-import lovehan1me.logic.state.PageLoadingState
+import lovehan1me.core.domain.model.HanimeInfo
+import lovehan1me.core.domain.state.PageLoadingState
 
 /**
  * 视频网格页面的 UI 状态。

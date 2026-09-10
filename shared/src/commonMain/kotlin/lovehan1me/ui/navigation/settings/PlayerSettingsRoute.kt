@@ -85,7 +85,7 @@ fun PlayerSettingsRouteScreen(
             stringResource(Res.string.d_speed_times, 4f) to "4",
         ),
         onKernelChange = {
-            coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(playerKernel = lovehan1me.logic.model.PlayerKernel.fromValue(it)) } }
+            coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(playerKernel = lovehan1me.core.domain.model.PlayerKernel.fromValue(it)) } }
         },
         onEnableGoogleCastChange = {
             coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(enableGoogleCast = it) } }

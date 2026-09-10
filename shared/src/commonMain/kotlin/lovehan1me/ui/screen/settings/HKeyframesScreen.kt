@@ -45,7 +45,7 @@ import lovehan1me.delete
 import lovehan1me.copy_
 import lovehan1me.confirm
 import lovehan1me.cancel
-import lovehan1me.logic.entity.HKeyframeEntity
+import lovehan1me.data.database.entity.HKeyframeEntity
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.lazy.LazyColumn

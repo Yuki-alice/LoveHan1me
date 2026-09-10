@@ -50,8 +50,8 @@ import lovehan1me.ic_close
 import lovehan1me.ic_pause
 import lovehan1me.ic_play_arrow
 import lovehan1me.ic_refresh
-import lovehan1me.logic.entity.download.HanimeDownloadEntity
-import lovehan1me.logic.state.DownloadState
+import lovehan1me.data.database.entity.download.HanimeDownloadEntity
+import lovehan1me.core.domain.state.DownloadState
 import lovehan1me.ui.component.CardContainerSurface
 import lovehan1me.ui.component.FilledTonalIconButton
 import lovehan1me.ui.component.IconButton

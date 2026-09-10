@@ -78,9 +78,9 @@ import lovehan1me.SEARCH_YEAR_RANGE_END
 import lovehan1me.SEARCH_YEAR_RANGE_START
 import lovehan1me.logic.DatabaseRepo
 import lovehan1me.logic.HanimeAdvancedSearchRepo
-import lovehan1me.logic.entity.HanimeAdvancedSearchHistoryEntity
-import lovehan1me.logic.model.SearchOption
-import lovehan1me.logic.model.SearchOption.Companion.flatten
+import lovehan1me.data.database.entity.HanimeAdvancedSearchHistoryEntity
+import lovehan1me.core.domain.model.SearchOption
+import lovehan1me.core.domain.model.SearchOption.Companion.flatten
 import lovehan1me.ui.component.SelectableTag
 import lovehan1me.ui.component.SettingChoiceItem
 import lovehan1me.ui.component.lazy.LazyColumn

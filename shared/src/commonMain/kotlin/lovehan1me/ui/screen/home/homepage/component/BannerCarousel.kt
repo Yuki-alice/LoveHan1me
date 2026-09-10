@@ -32,11 +32,11 @@ import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import lovehan1me.logic.platform.isLandscapeOrientation
+import lovehan1me.core.platform.isLandscapeOrientation
 import lovehan1me.Res
 import lovehan1me.h_chan_load_failed
 import lovehan1me.h_chan_loading
-import lovehan1me.logic.model.HomePage
+import lovehan1me.core.domain.model.HomePage
 import lovehan1me.ui.preview.fakeBanner
 import lovehan1me.ui.screen.RetryableImage
 

@@ -5,7 +5,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.lerp
-import lovehan1me.logic.entity.CheckInType
+import lovehan1me.data.database.entity.CheckInType
 import kotlinx.datetime.LocalDate
 
 // P6d-2：从 :app DailyCheckInUtils 拆分出的纯函数部分（包名不变）。

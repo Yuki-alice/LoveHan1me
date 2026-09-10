@@ -38,7 +38,7 @@ import lovehan1me.cancel
 import lovehan1me.ic_remove_circle
 import lovehan1me.ic_check_circle
 import lovehan1me.ic_send
-import lovehan1me.logic.model.ReportReason
+import lovehan1me.core.domain.model.ReportReason
 import lovehan1me.ui.component.HapticTextButton as TextButton
 
 

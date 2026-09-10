@@ -41,8 +41,8 @@ import com.fleeksoft.ksoup.Ksoup
 import com.fleeksoft.ksoup.nodes.Element
 import lovehan1me.logic.SettingsRepository
 import lovehan1me.logic.Parser
-import lovehan1me.logic.state.WebsiteState
-import lovehan1me.logic.network.HanimeNetwork
+import lovehan1me.core.domain.state.WebsiteState
+import lovehan1me.data.network.HanimeNetwork
 import lovehan1me.core.util.LogUtil
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers

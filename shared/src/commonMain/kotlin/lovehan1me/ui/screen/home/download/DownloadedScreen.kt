@@ -42,10 +42,10 @@ import lovehan1me.ic_delete
 import lovehan1me.ic_move_group
 import lovehan1me.ic_remove_selection
 import lovehan1me.ic_select_all
-import lovehan1me.logic.entity.download.DownloadGroupEntity
-import lovehan1me.logic.entity.download.VideoWithCategories
-import lovehan1me.logic.model.DownloadHeaderNode
-import lovehan1me.logic.model.DownloadItemNode
+import lovehan1me.data.database.entity.download.DownloadGroupEntity
+import lovehan1me.data.database.entity.download.VideoWithCategories
+import lovehan1me.core.domain.model.DownloadHeaderNode
+import lovehan1me.core.domain.model.DownloadItemNode
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.component.FilledIconButton
 import lovehan1me.ui.component.IconButton

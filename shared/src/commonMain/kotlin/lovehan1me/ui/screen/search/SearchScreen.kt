@@ -103,11 +103,11 @@ import lovehan1me.ic_filter_list
 import lovehan1me.ic_close
 import lovehan1me.ic_arrow_back
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.entity.SearchHistoryEntity
-import lovehan1me.logic.model.HanimeInfo
-import lovehan1me.logic.model.HanimeInfo.Companion.NORMAL
-import lovehan1me.logic.model.SearchOption
-import lovehan1me.logic.state.PageLoadingState
+import lovehan1me.data.database.entity.SearchHistoryEntity
+import lovehan1me.core.domain.model.HanimeInfo
+import lovehan1me.core.domain.model.HanimeInfo.Companion.NORMAL
+import lovehan1me.core.domain.model.SearchOption
+import lovehan1me.core.domain.state.PageLoadingState
 import lovehan1me.ui.component.FilledIconButton
 import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.component.VideoCardItem

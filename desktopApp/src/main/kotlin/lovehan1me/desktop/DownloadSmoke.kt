@@ -1,14 +1,14 @@
 package lovehan1me.desktop
 
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.dao.Han1meDatabases
-import lovehan1me.logic.dao.createDownloadDatabase
-import lovehan1me.logic.datastore.DataStoreManager
-import lovehan1me.logic.entity.download.DownloadGroupEntity
-import lovehan1me.logic.entity.download.HanimeDownloadEntity
-import lovehan1me.logic.platform.initializeDesktopDownloadQueue
-import lovehan1me.logic.platform.desktopDownloadWorkController
-import lovehan1me.logic.state.DownloadState
+import lovehan1me.data.database.dao.Han1meDatabases
+import lovehan1me.data.database.dao.createDownloadDatabase
+import lovehan1me.data.datastore.DataStoreManager
+import lovehan1me.data.database.entity.download.DownloadGroupEntity
+import lovehan1me.data.database.entity.download.HanimeDownloadEntity
+import lovehan1me.core.platform.initializeDesktopDownloadQueue
+import lovehan1me.core.platform.desktopDownloadWorkController
+import lovehan1me.core.domain.state.DownloadState
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import java.io.File

@@ -42,7 +42,7 @@ import lovehan1me.h_chan_loading
 import lovehan1me.ic_ext_link
 import lovehan1me.ic_play_arrow
 import lovehan1me.ic_play_circle
-import lovehan1me.logic.model.GetchuPreviewDetail
+import lovehan1me.core.domain.model.GetchuPreviewDetail
 import lovehan1me.ui.component.CardContainerSurface
 import lovehan1me.ui.component.OutlinedButton
 import lovehan1me.ui.component.lazy.LazyColumn

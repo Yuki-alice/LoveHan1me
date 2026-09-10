@@ -69,7 +69,7 @@ import lovehan1me.ui.navigation.settings.SharedHKeyframesRoute
 import lovehan1me.ui.navigation.settings.SharedHKeyframesRouteScreen
 import lovehan1me.ui.navigation.settings.VideoPlaybackSettingsRoute
 import lovehan1me.ui.screen.home.homepage.HomePageViewModel
-import lovehan1me.logic.platform.downloadWorkController
+import lovehan1me.core.platform.downloadWorkController
 import lovehan1me.ui.screen.login.FormLoginScreen
 import lovehan1me.logout
 import lovehan1me.ui.screen.account.AccountScreen

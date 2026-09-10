@@ -1,9 +1,9 @@
 package lovehan1me.ui.screen.home.download
 
-import lovehan1me.logic.entity.download.DownloadGroupEntity
-import lovehan1me.logic.entity.download.HanimeDownloadEntity
-import lovehan1me.logic.entity.download.VideoWithCategories
-import lovehan1me.logic.model.DownloadedNode
+import lovehan1me.data.database.entity.download.DownloadGroupEntity
+import lovehan1me.data.database.entity.download.HanimeDownloadEntity
+import lovehan1me.data.database.entity.download.VideoWithCategories
+import lovehan1me.core.domain.model.DownloadedNode
 
 /**
  * 下载页面 UI 状态。

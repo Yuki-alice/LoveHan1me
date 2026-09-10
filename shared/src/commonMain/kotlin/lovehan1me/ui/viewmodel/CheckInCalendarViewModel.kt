@@ -2,9 +2,9 @@ package lovehan1me.ui.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import lovehan1me.logic.dao.CheckInRecordDatabase
-import lovehan1me.logic.dao.Han1meDatabases
-import lovehan1me.logic.entity.CheckInRecordEntity
+import lovehan1me.data.database.dao.CheckInRecordDatabase
+import lovehan1me.data.database.dao.Han1meDatabases
+import lovehan1me.data.database.entity.CheckInRecordEntity
 import lovehan1me.ui.screen.home.dailycheckin.YearMonth
 import lovehan1me.ui.screen.home.dailycheckin.DailyCheckInUiState
 import lovehan1me.ui.screen.home.dailycheckin.plusDays

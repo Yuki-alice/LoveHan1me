@@ -59,10 +59,10 @@ import lovehan1me.ic_format_list_bulleted
 import lovehan1me.ic_menu
 import lovehan1me.ic_pause
 import lovehan1me.ic_play_arrow
-import lovehan1me.logic.entity.download.DownloadGroupEntity
-import lovehan1me.logic.entity.download.HanimeDownloadEntity
-import lovehan1me.logic.entity.download.VideoWithCategories
-import lovehan1me.logic.model.DownloadHeaderNode
+import lovehan1me.data.database.entity.download.DownloadGroupEntity
+import lovehan1me.data.database.entity.download.HanimeDownloadEntity
+import lovehan1me.data.database.entity.download.VideoWithCategories
+import lovehan1me.core.domain.model.DownloadHeaderNode
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.screen.home.download.DownloadEvent
@@ -202,7 +202,7 @@ fun DownloadScreen(
 
             is DownloadEvent.OnSelectAllCurrentGroup -> {
                 val groupVideos =
-                    downloadedNodes.filterIsInstance<lovehan1me.logic.model.DownloadItemNode>()
+                    downloadedNodes.filterIsInstance<lovehan1me.core.domain.model.DownloadItemNode>()
                         .filter { it.parentKey == event.groupKey }
                 selectedVideoIds = if (event.select) {
                     selectedVideoIds + groupVideos.map { it.data.video.id }.toSet()
@@ -282,7 +282,7 @@ fun DownloadScreen(
 
     if (pendingBatchMove) {
         val selectedVideos = downloadedNodes
-            .filterIsInstance<lovehan1me.logic.model.DownloadItemNode>()
+            .filterIsInstance<lovehan1me.core.domain.model.DownloadItemNode>()
             .filter { it.data.video.id in selectedVideoIds }
             .map { it.data }
         if (selectedVideos.isNotEmpty()) {

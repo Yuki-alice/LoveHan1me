@@ -1,6 +1,6 @@
 package lovehan1me.core.util
 
-import lovehan1me.logic.model.SearchOption
+import lovehan1me.core.domain.model.SearchOption
 import lovehan1me.core.util.LanguageHelper
 import lovehan1me.core.util.decodeComposeAsset
 

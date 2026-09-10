@@ -53,7 +53,7 @@ import lovehan1me.ic_access_time
 import lovehan1me.ic_play_circle
 import lovehan1me.ic_thumb_up_off_alt
 import lovehan1me.getHanimeShareText
-import lovehan1me.logic.model.VideoItemType
+import lovehan1me.core.domain.model.VideoItemType
 import lovehan1me.ui.component.rememberHapticFeedback
 import lovehan1me.ui.navigation.main.SearchRoute
 import lovehan1me.ui.navigation.main.navigateToArtistSearch

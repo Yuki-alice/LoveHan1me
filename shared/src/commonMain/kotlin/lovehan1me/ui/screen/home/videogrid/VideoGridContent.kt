@@ -9,7 +9,7 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import lovehan1me.logic.model.HanimeInfo
+import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.ui.component.LoadMoreFooter
 import lovehan1me.ui.component.VideoCardItem
 import lovehan1me.ui.component.lazy.LazyVerticalGrid

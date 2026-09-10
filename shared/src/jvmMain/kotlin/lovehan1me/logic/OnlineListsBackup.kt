@@ -1,15 +1,15 @@
 package lovehan1me.logic
 
 import lovehan1me.EMPTY_STRING
-import lovehan1me.logic.model.HanimeInfo
-import lovehan1me.logic.model.ListItemExport
-import lovehan1me.logic.model.ListsExport
-import lovehan1me.logic.model.MyListType
-import lovehan1me.logic.model.PlaylistExport
-import lovehan1me.logic.model.Playlists
-import lovehan1me.logic.state.PageLoadingState
-import lovehan1me.logic.state.VideoLoadingState
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.model.HanimeInfo
+import lovehan1me.core.domain.model.ListItemExport
+import lovehan1me.core.domain.model.ListsExport
+import lovehan1me.core.domain.model.MyListType
+import lovehan1me.core.domain.model.PlaylistExport
+import lovehan1me.core.domain.model.Playlists
+import lovehan1me.core.domain.state.PageLoadingState
+import lovehan1me.core.domain.state.VideoLoadingState
+import lovehan1me.core.domain.state.WebsiteState
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.serialization.json.Json

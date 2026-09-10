@@ -66,9 +66,9 @@ import lovehan1me.comment_too_short
 import lovehan1me.comment_not_found
 import lovehan1me.comment
 import lovehan1me.ic_reply
-import lovehan1me.logic.model.ReportReason
-import lovehan1me.logic.model.VideoComments
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.model.ReportReason
+import lovehan1me.core.domain.model.VideoComments
+import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.component.CommentReplyBar
 import lovehan1me.ui.component.CommentReportDialog
 import lovehan1me.ui.component.PageContent

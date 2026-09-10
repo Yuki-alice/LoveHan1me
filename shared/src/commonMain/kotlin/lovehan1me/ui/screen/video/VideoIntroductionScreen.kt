@@ -127,11 +127,11 @@ import lovehan1me.ic_check_circle
 import lovehan1me.ic_book
 import lovehan1me.ic_access_time
 import lovehan1me.ResolutionLinkMap
-import lovehan1me.logic.entity.CheckInRecordEntity
+import lovehan1me.data.database.entity.CheckInRecordEntity
 import lovehan1me.logic.LocalListRepository
-import lovehan1me.logic.model.HanimeInfo
-import lovehan1me.logic.model.HanimeVideo
-import lovehan1me.logic.state.VideoLoadingState
+import lovehan1me.core.domain.model.HanimeInfo
+import lovehan1me.core.domain.model.HanimeVideo
+import lovehan1me.core.domain.state.VideoLoadingState
 import lovehan1me.ui.component.ExpandableRichText
 import lovehan1me.ui.component.TagChipGroup
 import lovehan1me.ui.component.VideoCardItem
@@ -681,7 +681,7 @@ private fun QuickCheckInDialog(
                             date = today().toString(),
                             time = Clock.System.now()
                                 .toLocalDateTime(TimeZone.currentSystemDefault()).time.formatHm(),
-                            type = lovehan1me.logic.entity.CheckInType.MASTURBATION.storeName,
+                            type = lovehan1me.data.database.entity.CheckInType.MASTURBATION.storeName,
                             feeling = feeling,
                         )
                     )

@@ -71,9 +71,9 @@ import lovehan1me.sure_to_delete_s
 import lovehan1me.h_chan_loading
 import lovehan1me.ic_delete
 import lovehan1me.ic_edit_square
-import lovehan1me.logic.model.HanimeInfo
-import lovehan1me.logic.state.PageLoadingState
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.model.HanimeInfo
+import lovehan1me.core.domain.state.PageLoadingState
+import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.component.VideoCardItem
 import lovehan1me.ui.component.appbar.HanimeTopAppBar

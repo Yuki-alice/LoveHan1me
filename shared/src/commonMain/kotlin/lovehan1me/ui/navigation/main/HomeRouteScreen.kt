@@ -24,8 +24,8 @@ import lovehan1me.finished_masturbating
 import lovehan1me.getHanimeShareText
 import lovehan1me.logic.DatabaseRepo
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.entity.CheckInType
-import lovehan1me.logic.model.Announcement
+import lovehan1me.data.database.entity.CheckInType
+import lovehan1me.core.domain.model.Announcement
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.component.TripleButtonDialog
 import lovehan1me.ui.screen.home.dailycheckin.formatHm

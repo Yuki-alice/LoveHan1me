@@ -47,8 +47,8 @@ import lovehan1me.Res
 import lovehan1me.swipe_more
 import lovehan1me.subscribed_artists_count
 import lovehan1me.ic_arrow_forward
-import lovehan1me.logic.model.SubscriptionItem
-import lovehan1me.logic.state.PageLoadingState
+import lovehan1me.core.domain.model.SubscriptionItem
+import lovehan1me.core.domain.state.PageLoadingState
 import lovehan1me.ui.adaptive.columnsForMinItemWidth
 import lovehan1me.ui.adaptive.rememberContentWidthDp
 import lovehan1me.ui.component.ArtistItem

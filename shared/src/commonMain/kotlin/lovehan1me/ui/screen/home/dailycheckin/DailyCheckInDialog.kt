@@ -57,8 +57,8 @@ import lovehan1me.egg_round
 import lovehan1me.egg_three
 import lovehan1me.ic_close
 import lovehan1me.ic_delete
-import lovehan1me.logic.entity.CheckInRecordEntity
-import lovehan1me.logic.entity.CheckInType
+import lovehan1me.data.database.entity.CheckInRecordEntity
+import lovehan1me.data.database.entity.CheckInType
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime

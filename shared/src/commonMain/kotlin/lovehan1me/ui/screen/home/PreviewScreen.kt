@@ -21,8 +21,8 @@ import coil3.request.crossfade
 import lovehan1me.ui.component.rememberHanimeImageLoader
 import lovehan1me.PREVIEW_COMMENT_PREFIX
 import lovehan1me.HANIME_BASE_URL
-import lovehan1me.logic.model.HanimePreview
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.model.HanimePreview
+import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.viewmodel.CommentViewModel
 import lovehan1me.ui.viewmodel.PreviewCommentPrefetcher
 import lovehan1me.ui.viewmodel.PreviewViewModel

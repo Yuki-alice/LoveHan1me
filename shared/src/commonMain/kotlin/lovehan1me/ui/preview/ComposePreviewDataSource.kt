@@ -5,22 +5,22 @@ import lovehan1me.logic.currentEpochMillis
 import lovehan1me.Res
 import lovehan1me.latest_hanime
 import lovehan1me.latest_release
-import lovehan1me.logic.entity.download.DownloadGroupEntity
-import lovehan1me.logic.entity.download.HanimeDownloadEntity
-import lovehan1me.logic.entity.download.VideoWithCategories
-import lovehan1me.logic.model.Announcement
-import lovehan1me.logic.model.DownloadHeaderNode
-import lovehan1me.logic.model.DownloadItemNode
-import lovehan1me.logic.model.GetchuPreview
-import lovehan1me.logic.model.GetchuPreviewDetail
-import lovehan1me.logic.model.HanimeInfo
-import lovehan1me.logic.model.HanimePreview
-import lovehan1me.logic.model.HanimeVideo
-import lovehan1me.logic.model.HomePage
-import lovehan1me.logic.model.Playlists
-import lovehan1me.logic.model.SubscriptionItem
-import lovehan1me.logic.model.SubscriptionVideosItem
-import lovehan1me.logic.model.VideoComments
+import lovehan1me.data.database.entity.download.DownloadGroupEntity
+import lovehan1me.data.database.entity.download.HanimeDownloadEntity
+import lovehan1me.data.database.entity.download.VideoWithCategories
+import lovehan1me.core.domain.model.Announcement
+import lovehan1me.core.domain.model.DownloadHeaderNode
+import lovehan1me.core.domain.model.DownloadItemNode
+import lovehan1me.core.domain.model.GetchuPreview
+import lovehan1me.core.domain.model.GetchuPreviewDetail
+import lovehan1me.core.domain.model.HanimeInfo
+import lovehan1me.core.domain.model.HanimePreview
+import lovehan1me.core.domain.model.HanimeVideo
+import lovehan1me.core.domain.model.HomePage
+import lovehan1me.core.domain.model.Playlists
+import lovehan1me.core.domain.model.SubscriptionItem
+import lovehan1me.core.domain.model.SubscriptionVideosItem
+import lovehan1me.core.domain.model.VideoComments
 import lovehan1me.they_watched
 import lovehan1me.ui.screen.home.homepage.HomeCategory
 import kotlinx.datetime.LocalDate
@@ -398,7 +398,7 @@ val fakeDownloadedVideos = fakeHomePageVideos.take(3).mapIndexed { index, item -
             videoUrl = "https://example.com/test$index.mp4",
             length = 100L * 1024 * 1024,
             downloadedLength = 100L * 1024 * 1024,
-            state = lovehan1me.logic.state.DownloadState.Finished,
+            state = lovehan1me.core.domain.state.DownloadState.Finished,
             id = index + 1,
         ),
         categories = emptyList(),

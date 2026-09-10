@@ -11,7 +11,7 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import org.jetbrains.compose.resources.stringResource
 import lovehan1me.Res
 import lovehan1me.loading
-import lovehan1me.logic.state.VideoLoadingState
+import lovehan1me.core.domain.state.VideoLoadingState
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.content.ErrorContent
 import lovehan1me.ui.component.content.LoadingContent

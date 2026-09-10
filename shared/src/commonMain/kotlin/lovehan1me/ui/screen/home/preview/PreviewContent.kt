@@ -57,9 +57,9 @@ import lovehan1me.comment
 import lovehan1me.ic_chevron_left
 import lovehan1me.ic_chevron_right
 import lovehan1me.ic_comment
-import lovehan1me.logic.exception.HanimeNotFoundException
-import lovehan1me.logic.model.HanimePreview
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.exception.HanimeNotFoundException
+import lovehan1me.core.domain.model.HanimePreview
+import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.pienization
 import lovehan1me.ui.component.CardContainerSurface
 import lovehan1me.ui.component.FilledTonalButton

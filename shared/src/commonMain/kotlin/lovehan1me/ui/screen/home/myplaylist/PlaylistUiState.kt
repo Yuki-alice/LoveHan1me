@@ -1,8 +1,8 @@
 package lovehan1me.ui.screen.home.myplaylist
 
-import lovehan1me.logic.model.HanimeInfo
-import lovehan1me.logic.model.Playlists
-import lovehan1me.logic.state.PageLoadingState
+import lovehan1me.core.domain.model.HanimeInfo
+import lovehan1me.core.domain.model.Playlists
+import lovehan1me.core.domain.state.PageLoadingState
 
 /**
  * 播放列表页面 UI 状态。

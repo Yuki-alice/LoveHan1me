@@ -9,9 +9,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.Res
 import lovehan1me.comment
 import lovehan1me.introduction
-import lovehan1me.logic.model.HanimeInfo
+import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.state.VideoLoadingState
+import lovehan1me.core.domain.state.VideoLoadingState
 import lovehan1me.ui.bridge.VideoPageHost
 import lovehan1me.ui.viewmodel.CommentViewModel
 import lovehan1me.ui.viewmodel.VideoViewModel
@@ -27,16 +27,16 @@ fun VideoRouteContent(
     onPendingDownloadPromptChange: (DownloadPromptState?) -> Unit,
     onRetry: () -> Unit,
     onOpenVideo: (HanimeInfo) -> Unit,
-    onOpenArtist: (lovehan1me.logic.model.HanimeVideo.Artist) -> Unit,
+    onOpenArtist: (lovehan1me.core.domain.model.HanimeVideo.Artist) -> Unit,
     onNavigateToSearch: (String) -> Unit,
-    onToggleSubscribe: (lovehan1me.logic.model.HanimeVideo.Artist) -> Unit,
-    onToggleFavorite: (lovehan1me.logic.model.HanimeVideo) -> Unit,
+    onToggleSubscribe: (lovehan1me.core.domain.model.HanimeVideo.Artist) -> Unit,
+    onToggleFavorite: (lovehan1me.core.domain.model.HanimeVideo) -> Unit,
     onRequestManageMyList: (() -> Unit) -> Unit,
-    onRateVideo: (lovehan1me.logic.model.HanimeVideo, Boolean) -> Unit,
-    onManageMyList: (lovehan1me.logic.model.HanimeVideo.MyList?, List<Boolean>) -> Unit,
-    onQuickCheckIn: (lovehan1me.logic.entity.CheckInRecordEntity) -> Unit,
-    onPrepareDownload: (String, lovehan1me.logic.model.HanimeVideo?) -> Unit,
-    onConfirmDownloadPrompt: (lovehan1me.logic.model.HanimeVideo?, Boolean) -> Unit,
+    onRateVideo: (lovehan1me.core.domain.model.HanimeVideo, Boolean) -> Unit,
+    onManageMyList: (lovehan1me.core.domain.model.HanimeVideo.MyList?, List<Boolean>) -> Unit,
+    onQuickCheckIn: (lovehan1me.data.database.entity.CheckInRecordEntity) -> Unit,
+    onPrepareDownload: (String, lovehan1me.core.domain.model.HanimeVideo?) -> Unit,
+    onConfirmDownloadPrompt: (lovehan1me.core.domain.model.HanimeVideo?, Boolean) -> Unit,
     onRequestOpenOfficialDownloadPage: () -> Unit,
     onOpenWebPage: () -> Unit,
     onOpenOriginalComic: (String) -> Unit,

@@ -1,8 +1,8 @@
 package lovehan1me.logic
 
-import lovehan1me.logic.dao.Han1meDatabases
-import lovehan1me.logic.entity.HanimeAdvancedSearchHistoryEntity
-import lovehan1me.logic.model.SearchOption
+import lovehan1me.data.database.dao.Han1meDatabases
+import lovehan1me.data.database.entity.HanimeAdvancedSearchHistoryEntity
+import lovehan1me.core.domain.model.SearchOption
 
 /**
  * 高级搜索历史仓库。

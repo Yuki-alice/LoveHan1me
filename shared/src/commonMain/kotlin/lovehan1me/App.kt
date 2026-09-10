@@ -36,9 +36,9 @@ import lovehan1me.ui.navigation.main.HanimeScreen
 import lovehan1me.ui.navigation.main.MainDrawerDestination
 import lovehan1me.ui.navigation.main.CloudflareRoute
 import lovehan1me.ui.navigation.main.DrawerHost
-import lovehan1me.logic.network.CloudflareChallenges
+import lovehan1me.data.network.CloudflareChallenges
 import lovehan1me.ui.screen.main.MainDrawerContent
-import lovehan1me.logic.state.PageState
+import lovehan1me.core.domain.state.PageState
 import lovehan1me.ui.navigation.main.PlatformScreens
 import lovehan1me.ui.crash.CRASH_PACKAGE_FILTER
 import lovehan1me.ui.crash.clearCrashReport

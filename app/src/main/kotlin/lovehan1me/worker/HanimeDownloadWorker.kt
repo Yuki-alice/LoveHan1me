@@ -45,10 +45,10 @@ import lovehan1me.downloading_s
 import lovehan1me.this_data_exists
 import lovehan1me.unknown_download_error
 import lovehan1me.logic.DatabaseRepo
-import lovehan1me.logic.entity.download.DownloadGroupEntity
-import lovehan1me.logic.entity.download.HanimeDownloadEntity
-import lovehan1me.logic.network.ServiceCreator
-import lovehan1me.logic.state.DownloadState
+import lovehan1me.data.database.entity.download.DownloadGroupEntity
+import lovehan1me.data.database.entity.download.HanimeDownloadEntity
+import lovehan1me.data.network.ServiceCreator
+import lovehan1me.core.domain.state.DownloadState
 import lovehan1me.core.util.HImageMeower
 import lovehan1me.core.util.SafFileManager
 import lovehan1me.core.util.await

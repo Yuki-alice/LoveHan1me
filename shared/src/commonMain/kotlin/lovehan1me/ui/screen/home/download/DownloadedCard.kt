@@ -61,8 +61,8 @@ import lovehan1me.ic_ext_link
 import lovehan1me.ic_delete
 import lovehan1me.h_chan_loading
 import lovehan1me.h_chan_load_failed
-import lovehan1me.logic.entity.download.VideoWithCategories
-import lovehan1me.logic.model.DownloadHeaderNode
+import lovehan1me.data.database.entity.download.VideoWithCategories
+import lovehan1me.core.domain.model.DownloadHeaderNode
 import lovehan1me.ui.component.CardContainerSurface
 import lovehan1me.ui.preview.fakeDownloadedNodes
 import lovehan1me.ui.theme.HanimeDefaults

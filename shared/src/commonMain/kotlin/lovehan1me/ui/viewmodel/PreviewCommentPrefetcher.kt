@@ -2,7 +2,7 @@ package lovehan1me.ui.viewmodel
 
 import lovehan1me.core.util.LogUtil
 import androidx.annotation.IntDef
-import lovehan1me.logic.model.VideoComments
+import lovehan1me.core.domain.model.VideoComments
 
 /**
  * 连通预览页与预览评论页的评论预取器。

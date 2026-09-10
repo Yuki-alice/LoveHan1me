@@ -19,8 +19,8 @@ import lovehan1me.prepare_to_delete_s
 import lovehan1me.empty_content
 import lovehan1me.confirm
 import lovehan1me.cancel
-import lovehan1me.logic.entity.download.HanimeDownloadEntity
-import lovehan1me.logic.state.DownloadState
+import lovehan1me.data.database.entity.download.HanimeDownloadEntity
+import lovehan1me.core.domain.state.DownloadState
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.lazy.LazyColumn

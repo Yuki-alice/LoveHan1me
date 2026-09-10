@@ -1,8 +1,8 @@
 package lovehan1me.ui.screen.home.preview
 
 import androidx.compose.runtime.saveable.listSaver
-import lovehan1me.logic.model.HanimePreview
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.model.HanimePreview
+import lovehan1me.core.domain.state.WebsiteState
 
 /**
  * 预览页面路由状态。

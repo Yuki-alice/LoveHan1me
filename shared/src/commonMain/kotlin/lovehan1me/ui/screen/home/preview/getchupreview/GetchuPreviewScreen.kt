@@ -31,8 +31,8 @@ import lovehan1me.Res
 import lovehan1me.ic_arrow_drop_down
 import lovehan1me.ic_chevron_left
 import lovehan1me.ic_chevron_right
-import lovehan1me.logic.state.PageState
-import lovehan1me.logic.state.dataOrNull
+import lovehan1me.core.domain.state.PageState
+import lovehan1me.core.domain.state.dataOrNull
 import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.component.PageContent
 import lovehan1me.ui.component.appbar.HanimeScaffold

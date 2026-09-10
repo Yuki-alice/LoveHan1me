@@ -34,9 +34,9 @@ import lovehan1me.load_failed_with_reason
 import lovehan1me.h_chan_sad
 import lovehan1me.ic_table_rows
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.model.SubscriptionItem
-import lovehan1me.logic.model.SubscriptionVideosItem
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.model.SubscriptionItem
+import lovehan1me.core.domain.model.SubscriptionVideosItem
+import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.component.ChoiceDialog
 import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.component.PullRefreshOverlay

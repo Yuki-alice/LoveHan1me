@@ -2,7 +2,7 @@ package lovehan1me.ui.player
 
 import kotlinx.coroutines.flow.StateFlow
 
-typealias PlayerKernel = lovehan1me.logic.model.PlayerKernel
+typealias PlayerKernel = lovehan1me.core.domain.model.PlayerKernel
 
 object PlayerDefaults {
     const val DEFAULT_SPEED = 1f

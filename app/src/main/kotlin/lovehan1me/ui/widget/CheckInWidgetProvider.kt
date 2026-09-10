@@ -41,9 +41,9 @@ import lovehan1me.widget_best_streak_format
 import lovehan1me.widget_feature_disabled
 import lovehan1me.widget_month_stats_format
 import lovehan1me.widget_today_label
-import lovehan1me.logic.dao.Han1meDatabases
-import lovehan1me.logic.entity.CheckInRecordEntity
-import lovehan1me.logic.entity.CheckInType
+import lovehan1me.data.database.dao.Han1meDatabases
+import lovehan1me.data.database.entity.CheckInRecordEntity
+import lovehan1me.data.database.entity.CheckInType
 import lovehan1me.ui.activity.MainActivity
 import lovehan1me.ui.navigation.main.EXTRA_OPEN_DAILY_CHECK_IN
 import kotlinx.coroutines.Dispatchers

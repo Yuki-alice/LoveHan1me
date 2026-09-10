@@ -54,8 +54,8 @@ import lovehan1me.import_progress_format
 import lovehan1me.import_progress
 import lovehan1me.confirm_import
 import lovehan1me.cancel
-import lovehan1me.logic.dao.Han1meDatabases
-import lovehan1me.logic.network.interceptor.SpeedLimitInterceptor
+import lovehan1me.data.database.dao.Han1meDatabases
+import lovehan1me.data.network.interceptor.SpeedLimitInterceptor
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.component.TripleButtonDialog
 import lovehan1me.ui.screen.settings.DownloadSettingsScreen

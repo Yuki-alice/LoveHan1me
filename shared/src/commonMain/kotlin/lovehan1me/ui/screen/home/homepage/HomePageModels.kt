@@ -1,9 +1,9 @@
 package lovehan1me.ui.screen.home.homepage
 
 import androidx.compose.runtime.staticCompositionLocalOf
-import lovehan1me.logic.model.Announcement
-import lovehan1me.logic.model.HanimeInfo
-import lovehan1me.logic.model.HomePage
+import lovehan1me.core.domain.model.Announcement
+import lovehan1me.core.domain.model.HanimeInfo
+import lovehan1me.core.domain.model.HomePage
 import org.jetbrains.compose.resources.StringResource
 
 /**

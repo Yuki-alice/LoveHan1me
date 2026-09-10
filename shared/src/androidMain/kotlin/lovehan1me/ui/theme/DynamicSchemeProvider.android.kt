@@ -30,7 +30,7 @@ import com.kyant.m3color.scheme.SchemeNeutral
 import com.kyant.m3color.scheme.SchemeRainbow
 import com.kyant.m3color.scheme.SchemeTonalSpot
 import com.kyant.m3color.scheme.SchemeVibrant
-import lovehan1me.logic.model.PaletteStyle
+import lovehan1me.core.domain.model.PaletteStyle
 
 // Android：Theme.kt 原 expressiveColorScheme 逻辑原样搬入（含 @OptIn 由调用方承担）。
 @Composable

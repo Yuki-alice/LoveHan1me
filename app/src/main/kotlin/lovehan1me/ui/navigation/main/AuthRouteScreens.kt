@@ -36,8 +36,8 @@ import lovehan1me.webview_version_too_low
 import lovehan1me.webview_version_unknown
 import lovehan1me.USER_AGENT
 import lovehan1me.logic.NetworkRepo
-import lovehan1me.logic.network.CloudflareVerificationCoordinator
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.data.network.CloudflareVerificationCoordinator
+import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.login
 import lovehan1me.ui.activity.MainActivity
 import lovehan1me.ui.screen.login.LoginDialog

@@ -10,11 +10,11 @@ import lovehan1me.getHanimeVideoDownloadLink
 import lovehan1me.login_first
 import lovehan1me.no_video_links_found
 import lovehan1me.getHanimeVideoLink
-import lovehan1me.logic.dao.Han1meDatabases
-import lovehan1me.logic.entity.CheckInRecordEntity
-import lovehan1me.logic.entity.download.DownloadGroupEntity
-import lovehan1me.logic.model.HanimeVideo
-import lovehan1me.logic.model.SearchOption
+import lovehan1me.data.database.dao.Han1meDatabases
+import lovehan1me.data.database.entity.CheckInRecordEntity
+import lovehan1me.data.database.entity.download.DownloadGroupEntity
+import lovehan1me.core.domain.model.HanimeVideo
+import lovehan1me.core.domain.model.SearchOption
 import lovehan1me.ui.navigation.main.SearchRoute
 import lovehan1me.ui.viewmodel.VideoViewModel
 import lovehan1me.ui.viewmodel.updateCheckInWidget

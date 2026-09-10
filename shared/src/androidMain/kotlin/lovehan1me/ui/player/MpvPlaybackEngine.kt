@@ -6,7 +6,7 @@ import android.os.ParcelFileDescriptor
 import androidx.core.net.toUri
 import lovehan1me.USER_AGENT
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.network.HProxySelector
+import lovehan1me.data.network.HProxySelector
 import lovehan1me.core.util.AnimeShaders
 import lovehan1me.core.util.AnimeShaders.getCert
 import lovehan1me.core.util.LogUtil

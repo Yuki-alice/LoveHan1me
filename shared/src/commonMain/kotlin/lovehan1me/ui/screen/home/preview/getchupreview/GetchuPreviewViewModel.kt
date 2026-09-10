@@ -5,10 +5,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import lovehan1me.logic.GetchuNetworkRepo.getGetchuPreview
 import lovehan1me.logic.GetchuNetworkRepo.getGetchuPreviewDetail
-import lovehan1me.logic.model.GetchuPreview
-import lovehan1me.logic.model.GetchuPreviewDetail
-import lovehan1me.logic.state.PageState
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.model.GetchuPreview
+import lovehan1me.core.domain.model.GetchuPreviewDetail
+import lovehan1me.core.domain.state.PageState
+import lovehan1me.core.domain.state.WebsiteState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow

@@ -41,9 +41,9 @@ import lovehan1me.delete
 import lovehan1me.close
 import lovehan1me.cancel
 import lovehan1me.ic_help
-import lovehan1me.logic.model.HanimeInfo
-import lovehan1me.logic.state.PageLoadingState
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.model.HanimeInfo
+import lovehan1me.core.domain.state.PageLoadingState
+import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.component.PageContent
 import lovehan1me.ui.component.appbar.HanimeScaffold

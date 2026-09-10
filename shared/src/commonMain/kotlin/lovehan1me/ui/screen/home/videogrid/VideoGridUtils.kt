@@ -1,8 +1,8 @@
 package lovehan1me.ui.screen.home.videogrid
 
 import androidx.compose.foundation.lazy.grid.LazyGridState
-import lovehan1me.logic.model.HanimeInfo
-import lovehan1me.logic.state.PageLoadingState
+import lovehan1me.core.domain.model.HanimeInfo
+import lovehan1me.core.domain.state.PageLoadingState
 
 /**
  * 判断视频网格是否需要加载更多。

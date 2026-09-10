@@ -80,8 +80,8 @@ import lovehan1me.ic_edit_square
 import lovehan1me.ic_hosts
 import lovehan1me.ic_router
 import lovehan1me.ic_vpn
-import lovehan1me.logic.network.DohConfig
-import lovehan1me.logic.network.HProxyTypes
+import lovehan1me.data.network.DohConfig
+import lovehan1me.data.network.HProxyTypes
 import lovehan1me.ui.component.ChoiceDialog
 import lovehan1me.ui.component.SettingNavigationItem
 import lovehan1me.ui.component.SettingSwitchItem

@@ -1,6 +1,6 @@
 package lovehan1me
 
-import lovehan1me.logic.network.HCookieJar
+import lovehan1me.data.network.HCookieJar
 
 // M5：自 jvmMain HanimeAccount.kt 拆出的平台 actual（expect 已上移 commonMain）。
 // 注意：jvmMain 是 android+desktop 的共同父源集，clearWebCookies 的 actual

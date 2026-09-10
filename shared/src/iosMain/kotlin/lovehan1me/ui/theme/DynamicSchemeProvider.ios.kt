@@ -3,7 +3,7 @@ package lovehan1me.ui.theme
 import androidx.compose.material3.ColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
-import lovehan1me.logic.model.PaletteStyle
+import lovehan1me.core.domain.model.PaletteStyle
 
 // P6d-1 占位：iOS 不做动态取色，返回 null 调用方回退固定色板（P7 可选增强）。
 @Composable

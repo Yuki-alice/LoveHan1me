@@ -3,9 +3,9 @@ package lovehan1me.logic
 import lovehan1me.core.util.LogUtil
 import lovehan1me.EMPTY_STRING
 import lovehan1me.GETCHU_BASE_URL
-import lovehan1me.logic.model.GetchuPreview
-import lovehan1me.logic.model.GetchuPreviewDetail
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.model.GetchuPreview
+import lovehan1me.core.domain.model.GetchuPreviewDetail
+import lovehan1me.core.domain.state.WebsiteState
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonObject

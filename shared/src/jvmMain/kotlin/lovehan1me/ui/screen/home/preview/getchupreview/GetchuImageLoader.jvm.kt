@@ -7,8 +7,8 @@ import coil3.ImageLoader
 import coil3.compose.LocalPlatformContext
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import lovehan1me.DESKTOP_USER_AGENT
-import lovehan1me.logic.network.HDns
-import lovehan1me.logic.network.HProxySelector
+import lovehan1me.data.network.HDns
+import lovehan1me.data.network.HProxySelector
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 

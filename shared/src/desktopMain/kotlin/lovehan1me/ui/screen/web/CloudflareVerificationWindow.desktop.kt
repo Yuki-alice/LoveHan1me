@@ -21,7 +21,7 @@ import dev.datlag.kcef.KCEF
 import dev.datlag.kcef.KCEFCookieManager
 import lovehan1me.DESKTOP_USER_AGENT
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.network.HCookieJar
+import lovehan1me.data.network.HCookieJar
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import org.cef.network.CefCookieManager

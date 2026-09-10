@@ -19,7 +19,7 @@ import lovehan1me.hanime_app_name
 import lovehan1me.my_account
 import lovehan1me.ic_person
 import lovehan1me.login
-import lovehan1me.logic.platform.appVersionDisplay
+import lovehan1me.core.platform.appVersionDisplay
 
 /**
  * M2：三端共享的最小抽屉（对标 `:app` `MainActivityScaffold` + `MainDrawerHeader` 的

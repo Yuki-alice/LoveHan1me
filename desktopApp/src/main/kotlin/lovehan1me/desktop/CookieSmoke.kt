@@ -1,7 +1,7 @@
 package lovehan1me.desktop
 
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.datastore.DataStoreManager
+import lovehan1me.data.datastore.DataStoreManager
 import kotlinx.coroutines.runBlocking
 import java.io.File
 

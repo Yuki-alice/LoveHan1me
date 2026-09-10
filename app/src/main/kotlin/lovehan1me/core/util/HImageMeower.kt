@@ -8,7 +8,7 @@ import coil.request.ErrorResult
 import coil.request.ImageRequest
 import coil.request.ImageResult
 import lovehan1me.core.util.applicationContext
-import lovehan1me.logic.network.HDns
+import lovehan1me.data.network.HDns
 import okhttp3.OkHttpClient
 import java.lang.ref.WeakReference
 import java.util.concurrent.TimeUnit

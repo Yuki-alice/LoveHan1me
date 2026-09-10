@@ -1,6 +1,6 @@
 package lovehan1me.ui.screen.home.homepage
 
-import lovehan1me.logic.model.Announcement
+import lovehan1me.core.domain.model.Announcement
 
 /**
  * 主页 UI 事件集合，用于在主界面（Home）中处理用户交互行为，功能如函数名所写。

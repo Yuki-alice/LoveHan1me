@@ -8,7 +8,7 @@ import coil3.ImageLoader
 import coil3.request.ImageRequest
 import coil3.request.SuccessResult
 import coil3.toBitmap
-import lovehan1me.logic.dao.Han1meDatabaseContext
+import lovehan1me.data.database.dao.Han1meDatabaseContext
 
 // Android：:app 原 saveImageToGallery 的 MediaStore 逻辑照搬（context 走共享 holder）。
 // toast 移到调用方（Boolean 驱动），本函数只返回是否成功。

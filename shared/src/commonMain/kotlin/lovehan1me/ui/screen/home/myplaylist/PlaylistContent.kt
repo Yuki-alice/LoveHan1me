@@ -21,9 +21,9 @@ import androidx.compose.ui.unit.dp
 import lovehan1me.Res
 import lovehan1me.load_failed_with_reason
 import lovehan1me.empty_content
-import lovehan1me.logic.model.Playlists
-import lovehan1me.logic.state.PageLoadingState
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.model.Playlists
+import lovehan1me.core.domain.state.PageLoadingState
+import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.component.LoadMoreFooter
 import lovehan1me.ui.component.PageContent
 import lovehan1me.ui.component.content.EmptyContent

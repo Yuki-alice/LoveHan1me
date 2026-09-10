@@ -78,10 +78,10 @@ import lovehan1me.ic_info
 import lovehan1me.ic_exit_to_app
 import lovehan1me.ic_edit
 import lovehan1me.h_chan_default_avatar
-import lovehan1me.logic.model.UserAccount
-import lovehan1me.logic.model.UserAccountAction
-import lovehan1me.logic.model.UserAccountSubmittingState
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.model.UserAccount
+import lovehan1me.core.domain.model.UserAccountAction
+import lovehan1me.core.domain.model.UserAccountSubmittingState
+import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.component.PageContent
 import lovehan1me.ui.component.rememberHapticFeedback

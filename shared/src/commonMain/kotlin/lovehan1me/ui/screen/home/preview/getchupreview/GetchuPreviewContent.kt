@@ -10,7 +10,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
-import lovehan1me.logic.model.GetchuPreview
+import lovehan1me.core.domain.model.GetchuPreview
 import lovehan1me.ui.component.lazy.LazyColumn
 
 @Composable

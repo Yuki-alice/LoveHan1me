@@ -4,8 +4,8 @@ import lovehan1me.logic.ioDispatcher
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import lovehan1me.logic.NetworkRepo
-import lovehan1me.logic.model.HanimePreview
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.model.HanimePreview
+import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.core.util.TagLocalizer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow

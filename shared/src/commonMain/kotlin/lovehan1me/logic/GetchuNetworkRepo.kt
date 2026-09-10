@@ -3,8 +3,8 @@ package lovehan1me.logic
 import lovehan1me.core.util.LogUtil
 import lovehan1me.logic.NetworkRepo.handleException
 import lovehan1me.logic.NetworkRepo.throwRequestException
-import lovehan1me.logic.network.HanimeNetwork
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.data.network.HanimeNetwork
+import lovehan1me.core.domain.state.WebsiteState
 import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsBytes
 import io.ktor.client.statement.bodyAsText

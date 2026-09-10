@@ -49,7 +49,7 @@ import lovehan1me.save_image_confirm
 import lovehan1me.i_understand
 import lovehan1me.cancel
 import lovehan1me.ic_alert
-import lovehan1me.logic.model.Announcement
+import lovehan1me.core.domain.model.Announcement
 import lovehan1me.ui.component.rememberHapticFeedback
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.preview.fakeAnnouncements

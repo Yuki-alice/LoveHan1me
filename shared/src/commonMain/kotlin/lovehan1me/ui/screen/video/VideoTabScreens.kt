@@ -18,10 +18,10 @@ import lovehan1me.Res
 import lovehan1me.there_is_a_small_issue
 import lovehan1me.VIDEO_COMMENT_PREFIX
 import lovehan1me.getHanimeShareText
-import lovehan1me.logic.entity.CheckInRecordEntity
-import lovehan1me.logic.model.HanimeInfo
-import lovehan1me.logic.model.HanimeVideo
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.data.database.entity.CheckInRecordEntity
+import lovehan1me.core.domain.model.HanimeInfo
+import lovehan1me.core.domain.model.HanimeVideo
+import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.bridge.VideoPageHost
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.HanimeTheme

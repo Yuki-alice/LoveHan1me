@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.sp
 import lovehan1me.Res
 import lovehan1me.close
 import lovehan1me.ic_close
-import lovehan1me.logic.model.Announcement
+import lovehan1me.core.domain.model.Announcement
 import lovehan1me.ui.preview.fakeAnnouncements
 
 @Composable

@@ -1,6 +1,6 @@
 package lovehan1me.ui.screen
 
-import lovehan1me.logic.model.AppLanguage
+import lovehan1me.core.domain.model.AppLanguage
 
 /**
  * P6d-4F：加载等待趣味文案（原 :app res string-array loading_hints）。

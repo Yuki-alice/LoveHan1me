@@ -4,10 +4,10 @@ import lovehan1me.core.util.LogUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import lovehan1me.logic.NetworkRepo
-import lovehan1me.logic.model.MySubscriptions
-import lovehan1me.logic.model.SubscriptionItem
-import lovehan1me.logic.model.SubscriptionVideosItem
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.model.MySubscriptions
+import lovehan1me.core.domain.model.SubscriptionItem
+import lovehan1me.core.domain.model.SubscriptionVideosItem
+import lovehan1me.core.domain.state.WebsiteState
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharedFlow

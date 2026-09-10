@@ -43,7 +43,7 @@ import lovehan1me.ic_thumb_down_off_alt
 import lovehan1me.ic_thumb_down_alt
 import lovehan1me.ic_report
 import lovehan1me.ic_reply
-import lovehan1me.logic.model.VideoComments
+import lovehan1me.core.domain.model.VideoComments
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction
 import lovehan1me.core.util.DisplayTextLocalizer

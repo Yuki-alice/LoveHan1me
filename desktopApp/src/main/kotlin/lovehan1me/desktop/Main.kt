@@ -20,7 +20,7 @@ import lovehan1me.App
 import lovehan1me.desktop.runSmokeIfRequested
 import lovehan1me.ui.crash.installCrashHandler
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.logic.datastore.DataStoreManager
+import lovehan1me.data.datastore.DataStoreManager
 import lovehan1me.ui.player.DesktopWindowHolder
 import lovehan1me.core.util.LogUtil
 import kotlinx.coroutines.runBlocking
@@ -62,7 +62,7 @@ fun main() {
         SettingsRepository.install(DataStoreManager)
         LogUtil.d("Desktop", "main: DataStore+SettingsRepository ready, baseUrl=${SettingsRepository.baseUrl}")
         // M6-2：恢复未完成的下载队列（Room 里的 Downloading/Queued 任务）
-        lovehan1me.logic.platform.initializeDesktopDownloadQueue()
+        lovehan1me.core.platform.initializeDesktopDownloadQueue()
         LogUtil.d("Desktop", "main: download queue restored")
     }
     setSingletonImageLoaderFactory { context ->

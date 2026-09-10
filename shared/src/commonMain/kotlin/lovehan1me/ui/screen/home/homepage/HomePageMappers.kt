@@ -18,7 +18,7 @@ import lovehan1me.latest_av
 import lovehan1me.latest_hanime
 import lovehan1me.latest_release
 import lovehan1me.latest_upload
-import lovehan1me.logic.model.HomePage
+import lovehan1me.core.domain.model.HomePage
 import lovehan1me.mmd
 import lovehan1me.ranking_this_month
 import lovehan1me.ranking_today

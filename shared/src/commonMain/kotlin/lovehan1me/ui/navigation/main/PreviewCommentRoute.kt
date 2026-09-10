@@ -25,7 +25,7 @@ import lovehan1me.logic.SettingsRepository
 import lovehan1me.Res
 import lovehan1me.there_is_a_small_issue
 import lovehan1me.latest_hanime_comment
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.ui.screen.video.ChildCommentScreen
 import lovehan1me.ui.screen.video.CommentMessage

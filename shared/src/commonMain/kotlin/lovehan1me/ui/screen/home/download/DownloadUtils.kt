@@ -15,12 +15,12 @@ import lovehan1me.ic_download
 import lovehan1me.ic_error_outline
 import lovehan1me.ic_pause
 import lovehan1me.ic_play_arrow
-import lovehan1me.logic.entity.download.DownloadGroupEntity
-import lovehan1me.logic.entity.download.VideoWithCategories
-import lovehan1me.logic.model.DownloadHeaderNode
-import lovehan1me.logic.model.DownloadItemNode
-import lovehan1me.logic.model.DownloadedNode
-import lovehan1me.logic.state.DownloadState
+import lovehan1me.data.database.entity.download.DownloadGroupEntity
+import lovehan1me.data.database.entity.download.VideoWithCategories
+import lovehan1me.core.domain.model.DownloadHeaderNode
+import lovehan1me.core.domain.model.DownloadItemNode
+import lovehan1me.core.domain.model.DownloadedNode
+import lovehan1me.core.domain.state.DownloadState
 import org.jetbrains.compose.resources.DrawableResource
 
 /**

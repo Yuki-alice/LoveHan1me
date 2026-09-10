@@ -1,8 +1,8 @@
 package lovehan1me.ui.theme
 
 import androidx.compose.ui.graphics.Color
-import lovehan1me.logic.model.PaletteStyle
-import lovehan1me.logic.model.ThemeAccent
+import lovehan1me.core.domain.model.PaletteStyle
+import lovehan1me.core.domain.model.ThemeAccent
 
 typealias ThemeAccentColor = ThemeAccent
 typealias AppPaletteStyle = PaletteStyle

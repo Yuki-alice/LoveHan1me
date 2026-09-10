@@ -28,8 +28,8 @@ import lovehan1me.getchu_product_intro
 import lovehan1me.brand
 import lovehan1me.h_chan_load_failed
 import lovehan1me.h_chan_loading
-import lovehan1me.logic.model.GetchuPreview
-import lovehan1me.logic.model.GetchuPreviewDetail
+import lovehan1me.core.domain.model.GetchuPreview
+import lovehan1me.core.domain.model.GetchuPreviewDetail
 import lovehan1me.ui.component.CardContainerSurface
 import lovehan1me.ui.component.lazy.LazyRow
 

@@ -8,7 +8,7 @@ import okhttp3.Cookie
 value class CookieString(val cookie: String)
 
 /**
- * 主要用於 [HCookieJar][lovehan1me.logic.network.HCookieJar]，最好不要用到其他地方。
+ * 主要用於 [HCookieJar][lovehan1me.data.network.HCookieJar]，最好不要用到其他地方。
  */
 fun CookieString.toLoginCookieList(domain: String): List<Cookie> {
     val cookieList = mutableListOf<Cookie>().also {

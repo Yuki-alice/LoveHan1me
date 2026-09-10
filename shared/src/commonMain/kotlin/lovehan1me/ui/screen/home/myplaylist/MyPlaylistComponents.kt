@@ -35,7 +35,7 @@ import lovehan1me.video_count
 import lovehan1me.h_chan_load_failed
 import lovehan1me.h_chan_loading
 import lovehan1me.playlist_placeholder
-import lovehan1me.logic.model.Playlists
+import lovehan1me.core.domain.model.Playlists
 import lovehan1me.ui.component.CardContainerSurface
 import lovehan1me.ui.preview.fakePlaylists
 import lovehan1me.ui.screen.RetryableImage

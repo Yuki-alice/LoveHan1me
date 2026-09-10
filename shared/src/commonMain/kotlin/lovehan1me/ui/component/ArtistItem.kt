@@ -21,7 +21,7 @@ import lovehan1me.ui.component.rememberHapticFeedback
 import lovehan1me.Res
 import lovehan1me.h_chan_load_failed_small
 import lovehan1me.h_chan_loading_small
-import lovehan1me.logic.model.SubscriptionItem
+import lovehan1me.core.domain.model.SubscriptionItem
 import lovehan1me.ui.preview.fakeArtists
 import lovehan1me.ui.screen.RetryableImage
 

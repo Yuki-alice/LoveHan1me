@@ -7,11 +7,11 @@ import lovehan1me.Res
 import lovehan1me.cancel_thumb_down_success
 import lovehan1me.cancel_thumb_up_success
 import lovehan1me.logic.NetworkRepo
-import lovehan1me.logic.model.CommentPlace
-import lovehan1me.logic.model.ReportReason
-import lovehan1me.logic.model.VideoCommentArgs
-import lovehan1me.logic.model.VideoComments
-import lovehan1me.logic.state.WebsiteState
+import lovehan1me.core.domain.model.CommentPlace
+import lovehan1me.core.domain.model.ReportReason
+import lovehan1me.core.domain.model.VideoCommentArgs
+import lovehan1me.core.domain.model.VideoComments
+import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.report_failed
 import lovehan1me.report_success
 import lovehan1me.thumb_down_success

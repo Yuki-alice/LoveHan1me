@@ -125,7 +125,7 @@ import lovehan1me.ic_fast_forward
 import lovehan1me.ic_edit
 import lovehan1me.ic_delete
 import lovehan1me.ic_arrow_back_ios
-import lovehan1me.logic.entity.HKeyframeEntity
+import lovehan1me.data.database.entity.HKeyframeEntity
 import lovehan1me.ui.component.FilledIconButton
 import lovehan1me.ui.component.FilledTonalButton
 import lovehan1me.ui.component.FilledTonalIconButton

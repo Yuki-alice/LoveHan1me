@@ -27,7 +27,7 @@ import lovehan1me.duration
 import lovehan1me.delete
 import lovehan1me.brand
 import lovehan1me.ic_delete
-import lovehan1me.logic.entity.HanimeAdvancedSearchHistoryEntity
+import lovehan1me.data.database.entity.HanimeAdvancedSearchHistoryEntity
 
 @Composable
 fun AdvancedSearchHistoryCard(

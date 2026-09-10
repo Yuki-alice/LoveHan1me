@@ -13,8 +13,8 @@ import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import lovehan1me.logic.model.AppUpdateInfo
-import lovehan1me.logic.model.Announcement
+import lovehan1me.core.domain.model.AppUpdateInfo
+import lovehan1me.core.domain.model.Announcement
 import lovehan1me.ui.component.lazy.LazyColumn
 import lovehan1me.ui.preview.fakeAnnouncements
 import lovehan1me.ui.preview.fakeHomePage

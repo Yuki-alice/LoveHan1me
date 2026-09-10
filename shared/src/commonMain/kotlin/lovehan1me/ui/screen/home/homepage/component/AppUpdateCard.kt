@@ -34,7 +34,7 @@ import lovehan1me.force_update_notice
 import lovehan1me.ic_download
 import lovehan1me.ic_security_update
 import lovehan1me.ic_warning
-import lovehan1me.logic.model.AppUpdateInfo
+import lovehan1me.core.domain.model.AppUpdateInfo
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
