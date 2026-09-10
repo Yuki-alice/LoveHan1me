@@ -1,7 +1,7 @@
 package lovehan1me.data
 
 import lovehan1me.core.util.LogUtil
-import lovehan1me.EMPTY_STRING
+import lovehan1me.core.constant.EMPTY_STRING
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.SettingsRepository.isAlreadyLogin
 import lovehan1me.core.domain.exception.CloudflareBlockedException

@@ -64,7 +64,7 @@ import lovehan1me.login_first
 import lovehan1me.load_failed_retry
 import lovehan1me.comment_too_short
 import lovehan1me.comment_not_found
-import lovehan1me.comment
+import lovehan1me.core.domain.model.comment
 import lovehan1me.ic_reply
 import lovehan1me.core.domain.model.ReportReason
 import lovehan1me.core.domain.model.VideoComments

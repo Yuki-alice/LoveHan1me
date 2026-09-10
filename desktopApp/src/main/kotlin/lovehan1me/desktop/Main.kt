@@ -4,8 +4,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.LaunchedEffect
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import lovehan1me.ui.screen.web.CloudflareKcef
-import lovehan1me.ui.screen.web.CloudflareVerificationWindow
+import lovehan1me.app.web.CloudflareKcef
+import lovehan1me.app.web.CloudflareVerificationWindow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
@@ -16,7 +16,7 @@ import lovehan1me.feature.player.DesktopVideoPageHost
 import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.network.ktor3.KtorNetworkFetcherFactory
-import lovehan1me.App
+import lovehan1me.app.App
 import lovehan1me.desktop.runSmokeIfRequested
 import lovehan1me.app.crash.installCrashHandler
 import lovehan1me.data.SettingsRepository

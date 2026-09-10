@@ -3,12 +3,12 @@ package lovehan1me.app.navigation.main
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import lovehan1me.Res
-import lovehan1me.ui.viewmodel.sharedViewModel
+import lovehan1me.app.sharedViewModel
 import lovehan1me.copy_to_clipboard
-import lovehan1me.getHanimeSearchShareText
-import lovehan1me.getHanimeShareText
+import lovehan1me.data.getHanimeSearchShareText
+import lovehan1me.data.getHanimeShareText
 import lovehan1me.feature.home.SubscriptionScreen
-import lovehan1me.ui.viewmodel.MySubscriptionsViewModel
+import lovehan1me.feature.library.MySubscriptionsViewModel
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.launch

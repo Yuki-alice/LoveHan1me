@@ -1,7 +1,7 @@
 package lovehan1me.data
 
-import lovehan1me.HorizontalCardCountConfig
-import lovehan1me.SearchGridColumnsConfig
+import lovehan1me.ui.model.HorizontalCardCountConfig
+import lovehan1me.ui.model.SearchGridColumnsConfig
 import lovehan1me.core.domain.model.AppLanguage
 import lovehan1me.core.domain.model.AppSettings
 import lovehan1me.core.domain.model.DisplayDensity

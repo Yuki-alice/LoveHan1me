@@ -38,12 +38,12 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import lovehan1me.Res
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.confirm
 import lovehan1me.home_category_layout
 import lovehan1me.home_category_layout_dialog_summary
 import lovehan1me.ic_menu
-import lovehan1me.reset
+import lovehan1me.feature.library.reset
 import lovehan1me.ui.component.verticalScrollbar
 import lovehan1me.feature.settings.model.HomeSettingsUiState
 import kotlinx.coroutines.launch

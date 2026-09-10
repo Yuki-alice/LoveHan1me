@@ -1,6 +1,6 @@
 package lovehan1me.feature.home.dailycheckin
 
-import lovehan1me.ui.viewmodel.MonthlyStats
+import lovehan1me.feature.home.MonthlyStats
 
 /** 月度统计中打卡类型卡片最大展示数量 */
 internal const val STATS_TYPE_DISPLAY_COUNT = 6

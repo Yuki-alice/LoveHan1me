@@ -35,8 +35,8 @@ import lovehan1me.deselect_all
 import lovehan1me.delete
 import lovehan1me.confirm_delete_videos
 import lovehan1me.confirm
-import lovehan1me.close
-import lovehan1me.cancel
+import lovehan1me.data.network.close
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.ic_close
 import lovehan1me.ic_delete
 import lovehan1me.ic_move_group

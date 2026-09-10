@@ -53,7 +53,7 @@ import lovehan1me.new_anime_trailers
 import lovehan1me.latest_hanime_list_monthly
 import lovehan1me.hanime_list
 import lovehan1me.empty_content
-import lovehan1me.comment
+import lovehan1me.core.domain.model.comment
 import lovehan1me.ic_chevron_left
 import lovehan1me.ic_chevron_right
 import lovehan1me.ic_comment
@@ -70,7 +70,7 @@ import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.content.ErrorContent
 import lovehan1me.ui.component.content.LoadingContent
 import lovehan1me.ui.component.lazy.LazyColumn
-import lovehan1me.ui.screen.rememberRandomLoadingHint
+import lovehan1me.ui.component.rememberRandomLoadingHint
 import lovehan1me.ui.component.HapticButton as Button
 import lovehan1me.ui.component.HapticTextButton as TextButton
 

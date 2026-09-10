@@ -21,7 +21,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import lovehan1me.Res
-import lovehan1me.close
+import lovehan1me.data.network.close
 import lovehan1me.ic_close
 import lovehan1me.core.domain.model.Announcement
 import lovehan1me.feature.preview.fakeAnnouncements

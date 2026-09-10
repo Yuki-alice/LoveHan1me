@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import lovehan1me.feature.home.preview.getchupreview.GetchuPreviewDetailScreen
 import lovehan1me.feature.home.preview.getchupreview.GetchuPreviewScreen
 import lovehan1me.feature.home.preview.getchupreview.GetchuPreviewViewModel
-import lovehan1me.ui.viewmodel.sharedViewModel
+import lovehan1me.app.sharedViewModel
 
 // M2：自 `:app` 下沉（仅 viewModel() → sharedViewModel，签名不变）。
 

@@ -53,7 +53,7 @@ import lovehan1me.import_warning
 import lovehan1me.import_progress_format
 import lovehan1me.import_progress
 import lovehan1me.confirm_import
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.data.database.dao.Han1meDatabases
 import lovehan1me.data.network.interceptor.SpeedLimitInterceptor
 import lovehan1me.ui.component.ConfirmDialog

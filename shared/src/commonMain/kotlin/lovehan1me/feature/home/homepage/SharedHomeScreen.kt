@@ -31,8 +31,8 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import lovehan1me.HA1_GITHUB_URL
-import lovehan1me.HanimeConstants
+import lovehan1me.core.constant.HA1_GITHUB_URL
+import lovehan1me.core.constant.HanimeConstants
 import lovehan1me.Res
 import lovehan1me.checking_for_updates
 import lovehan1me.ic_menu
@@ -54,7 +54,7 @@ import lovehan1me.ui.component.isFirstPageError
 import lovehan1me.ui.component.isFirstPageLoading
 import lovehan1me.feature.home.homepage.component.AnnouncementCard
 import lovehan1me.feature.home.homepage.component.AppUpdateCard
-import lovehan1me.ui.screen.rememberRandomLoadingHint
+import lovehan1me.ui.component.rememberRandomLoadingHint
 import lovehan1me.core.util.toNetworkErrorMessageRes
 import lovehan1me.core.util.isDebugBuild
 

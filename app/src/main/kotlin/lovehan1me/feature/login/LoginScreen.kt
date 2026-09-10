@@ -35,10 +35,10 @@ import androidx.compose.ui.viewinterop.AndroidView
 import lovehan1me.Res
 import lovehan1me.try_login_here
 import lovehan1me.scan_for_cookies
-import lovehan1me.password
+import lovehan1me.feature.login.password
 import lovehan1me.login
 import lovehan1me.email
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.ic_export
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.feature.preview.ComponentPreview

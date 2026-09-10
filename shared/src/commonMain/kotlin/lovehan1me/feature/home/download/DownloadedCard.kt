@@ -46,7 +46,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import lovehan1me.LOCAL_DATE_TIME_FORMAT
+import lovehan1me.core.constant.LOCAL_DATE_TIME_FORMAT
 import lovehan1me.Res
 import lovehan1me.video_count
 import lovehan1me.local_playback

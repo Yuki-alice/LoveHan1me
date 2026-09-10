@@ -40,7 +40,7 @@ import lovehan1me.forgot_dismiss
 import lovehan1me.forgot_confirm
 import lovehan1me.checkin_report
 import lovehan1me.check_in_feature_name
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.calendar_dialog_title
 import lovehan1me.calendar_dialog_message
 import lovehan1me.calendar_dialog_confirm
@@ -58,8 +58,8 @@ import lovehan1me.feature.home.dailycheckin.addToSystemCalendar
 import lovehan1me.feature.home.dailycheckin.formatMd
 import lovehan1me.feature.home.dailycheckin.monthsBetween
 import lovehan1me.feature.home.dailycheckin.today
-import lovehan1me.ui.viewmodel.CheckInCalendarViewModel
-import lovehan1me.ui.viewmodel.sharedViewModel
+import lovehan1me.feature.home.CheckInCalendarViewModel
+import lovehan1me.app.sharedViewModel
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.datetime.LocalDate
 import lovehan1me.feature.home.dailycheckin.YearMonth

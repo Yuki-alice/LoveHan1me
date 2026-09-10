@@ -26,7 +26,7 @@ import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.ui.component.VideoCardItem
 import lovehan1me.ui.component.lazy.LazyRow
 import lovehan1me.feature.preview.fakeHomePageVideos
-import lovehan1me.ui.screen.rememberCardResponsiveWidth
+import lovehan1me.ui.component.rememberCardResponsiveWidth
 import lovehan1me.ui.theme.SpacingLarge
 import lovehan1me.ui.theme.SpacingNormal
 

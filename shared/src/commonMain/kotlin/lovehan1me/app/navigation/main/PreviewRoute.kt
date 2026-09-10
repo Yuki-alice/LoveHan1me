@@ -2,9 +2,9 @@ package lovehan1me.app.navigation.main
 
 import androidx.compose.runtime.Composable
 import lovehan1me.feature.home.PreviewScreen
-import lovehan1me.ui.viewmodel.CommentViewModel
-import lovehan1me.ui.viewmodel.PreviewViewModel
-import lovehan1me.ui.viewmodel.sharedViewModel
+import lovehan1me.feature.video.CommentViewModel
+import lovehan1me.feature.preview.PreviewViewModel
+import lovehan1me.app.sharedViewModel
 
 /**
  * M2：自 `:app` 下沉（去 `MainActivity` 依赖）。

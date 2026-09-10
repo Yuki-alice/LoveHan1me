@@ -10,7 +10,7 @@ import lovehan1me.core.platform.downloadWorkController
 import okio.buffer
 import lovehan1me.core.platform.openBackupSink
 import lovehan1me.core.platform.switchLauncherIcon
-import lovehan1me.ui.viewmodel.updateCheckInWidget
+import lovehan1me.feature.home.updateCheckInWidget
 import lovehan1me.data.network.HanimeNetwork
 import lovehan1me.data.network.HProxySelector
 import lovehan1me.data.SettingsRepository

@@ -38,7 +38,7 @@ import lovehan1me.h_chan_load_failed
 import lovehan1me.h_chan_loading
 import lovehan1me.core.domain.model.HomePage
 import lovehan1me.feature.preview.fakeBanner
-import lovehan1me.ui.screen.RetryableImage
+import lovehan1me.ui.component.RetryableImage
 
 /**
  * 显示首页 Banner 轮播图。

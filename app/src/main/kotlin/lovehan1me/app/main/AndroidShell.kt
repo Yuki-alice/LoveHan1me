@@ -27,7 +27,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.viewmodel.compose.viewModel
-import lovehan1me.App
+import lovehan1me.app.App
 import lovehan1me.HCacheManager
 import lovehan1me.Res
 import lovehan1me.confirm_switch_site
@@ -62,9 +62,9 @@ import lovehan1me.app.navigation.settings.SettingsScaffold
 import lovehan1me.feature.player.rememberAndroidVideoPageHost
 import lovehan1me.feature.account.AccountScreen
 import lovehan1me.feature.account.AvatarCropScreen
-import lovehan1me.ui.viewmodel.UserAccountViewModel
+import lovehan1me.feature.account.UserAccountViewModel
 import lovehan1me.understood
-import lovehan1me.videoUrlRegex
+import lovehan1me.site.hanime1.videoUrlRegex
 import lovehan1me.play_pause
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.launch

@@ -1,6 +1,6 @@
 package lovehan1me.feature.home.dailycheckin
 
-import lovehan1me.ui.viewmodel.MonthlyStats
+import lovehan1me.feature.home.MonthlyStats
 import kotlinx.datetime.LocalDate
 
 /**

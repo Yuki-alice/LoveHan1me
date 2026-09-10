@@ -4,7 +4,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.data.SettingsRepository
-import lovehan1me.ui.viewmodel.sharedViewModel
+import lovehan1me.app.sharedViewModel
 import lovehan1me.Res
 import lovehan1me.delete_fav
 import lovehan1me.delete_watch_later
@@ -13,9 +13,9 @@ import lovehan1me.long_press_to_cancel_fav
 import lovehan1me.long_press_to_cancel_watch_later
 import lovehan1me.watch_later
 import lovehan1me.feature.home.VideoGridScreen
-import lovehan1me.ui.viewmodel.MyListViewModel
-import lovehan1me.ui.viewmodel.mylist.FavVideoListController
-import lovehan1me.ui.viewmodel.mylist.WatchLaterListController
+import lovehan1me.feature.library.MyListViewModel
+import lovehan1me.feature.library.FavVideoListController
+import lovehan1me.feature.library.WatchLaterListController
 
 @Composable
 fun FavVideoRouteScreen(

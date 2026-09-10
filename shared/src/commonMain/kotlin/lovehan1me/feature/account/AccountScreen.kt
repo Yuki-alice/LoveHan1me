@@ -59,7 +59,7 @@ import lovehan1me.new_password
 import lovehan1me.my_account
 import lovehan1me.modify_success
 import lovehan1me.modify_failed
-import lovehan1me.logout
+import lovehan1me.data.logout
 import lovehan1me.load_failed_retry
 import lovehan1me.forgot_password
 import lovehan1me.email
@@ -87,9 +87,9 @@ import lovehan1me.ui.component.PageContent
 import lovehan1me.ui.component.rememberHapticFeedback
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.ui.component.content.ErrorContent
-import lovehan1me.ui.screen.rememberRandomLoadingHint
+import lovehan1me.ui.component.rememberRandomLoadingHint
 import lovehan1me.ui.theme.HanimeDefaults
-import lovehan1me.ui.viewmodel.UserAccountViewModel
+import lovehan1me.feature.account.UserAccountViewModel
 import lovehan1me.core.util.SonnerToast
 import lovehan1me.ui.component.HapticButton as Button
 import lovehan1me.ui.component.HapticTextButton as TextButton
@@ -189,7 +189,7 @@ fun AccountScreen(
                 onPickAvatar = { onPickAvatarImage?.invoke() },
                 onLogout = onLogout,
                 onOpenPasswordReset = {
-                    uriHandler.openUri("${lovehan1me.HANIME_BASE_URL}password/reset")
+                    uriHandler.openUri("${lovehan1me.core.constant.HANIME_BASE_URL}password/reset")
                 },
             )
         }

@@ -1,6 +1,6 @@
 package lovehan1me.data.network.interceptor
 
-import lovehan1me.DESKTOP_USER_AGENT
+import lovehan1me.core.constant.DESKTOP_USER_AGENT
 import okhttp3.Interceptor
 import okhttp3.Response
 

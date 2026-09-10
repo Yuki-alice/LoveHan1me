@@ -44,7 +44,7 @@ import lovehan1me.ach_scholar
 import lovehan1me.ach_night_owl
 import lovehan1me.ach_multi_type
 import lovehan1me.ach_morning
-import lovehan1me.ui.viewmodel.MonthlyStats
+import lovehan1me.feature.home.MonthlyStats
 import kotlinx.datetime.LocalDate
 
 /**

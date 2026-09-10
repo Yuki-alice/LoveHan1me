@@ -8,8 +8,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import lovehan1me.feature.search.AdvancedSearchSheet
 import lovehan1me.feature.search.SearchScreen
-import lovehan1me.ui.viewmodel.SearchViewModel
-import lovehan1me.ui.viewmodel.sharedViewModel
+import lovehan1me.feature.search.SearchViewModel
+import lovehan1me.app.sharedViewModel
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import kotlinx.serialization.json.Json
 

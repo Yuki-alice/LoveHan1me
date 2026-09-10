@@ -38,8 +38,8 @@ import lovehan1me.empty_content
 import lovehan1me.delete_success
 import lovehan1me.delete_failed
 import lovehan1me.delete
-import lovehan1me.close
-import lovehan1me.cancel
+import lovehan1me.data.network.close
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.ic_help
 import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.core.domain.state.PageLoadingState

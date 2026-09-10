@@ -19,7 +19,7 @@ import lovehan1me.Res
 import lovehan1me.playlist_title
 import lovehan1me.playlist_description
 import lovehan1me.confirm
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 
 @Composable
 fun PlaylistEditDialog(

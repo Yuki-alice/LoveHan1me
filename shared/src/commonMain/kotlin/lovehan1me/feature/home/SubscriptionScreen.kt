@@ -45,7 +45,7 @@ import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.feature.home.subscription.SubscriptionContent
 import lovehan1me.feature.home.subscription.SubscriptionEvent
 import lovehan1me.feature.home.subscription.SubscriptionUiState
-import lovehan1me.ui.viewmodel.MySubscriptionsViewModel
+import lovehan1me.feature.library.MySubscriptionsViewModel
 import kotlinx.coroutines.launch
 
 /**

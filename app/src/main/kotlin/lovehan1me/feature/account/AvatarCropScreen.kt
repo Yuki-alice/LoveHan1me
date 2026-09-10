@@ -37,7 +37,7 @@ import cn.mucute.compose.avatar.cropper.rememberCropState
 import lovehan1me.Res
 import lovehan1me.crop_avatar
 import lovehan1me.confirm
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

@@ -36,7 +36,7 @@ import lovehan1me.modify_success
 import lovehan1me.pause_then_long_press
 import lovehan1me.video_might_not_exist
 import lovehan1me.add_to_h_keyframe
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.confirm
 import lovehan1me.current_position_d_ms
 import lovehan1me.long_press_share_to_copy
@@ -48,7 +48,7 @@ import lovehan1me.sure
 import lovehan1me.sure_to_add_to_h_keyframe
 import lovehan1me.sure_to_unsubscribe
 import lovehan1me.unsubscribe_artist
-import lovehan1me.warning
+import lovehan1me.core.util.warning
 import lovehan1me.player_keyframe_option
 import lovehan1me.player_h_keyframe
 import lovehan1me.super_resolution_off
@@ -59,7 +59,7 @@ import lovehan1me.local_list_notice_title
 import lovehan1me.local_list_notice_message
 import lovehan1me.do_not_show_again
 import lovehan1me.continues
-import lovehan1me.getHanimeVideoLink
+import lovehan1me.data.getHanimeVideoLink
 import lovehan1me.data.DatabaseRepo
 import lovehan1me.data.database.entity.HKeyframeEntity
 import lovehan1me.data.database.entity.WatchHistoryEntity
@@ -82,9 +82,9 @@ import lovehan1me.feature.player.PlaybackQuality
 import lovehan1me.feature.player.PlayerKernel
 import lovehan1me.feature.player.createPlaybackEngine
 import lovehan1me.feature.player.isActiveNetworkMetered
-import lovehan1me.ui.viewmodel.CommentViewModel
-import lovehan1me.ui.viewmodel.VideoViewModel
-import lovehan1me.ui.viewmodel.sharedViewModel
+import lovehan1me.feature.video.CommentViewModel
+import lovehan1me.feature.video.VideoViewModel
+import lovehan1me.app.sharedViewModel
 import lovehan1me.core.util.decodeComposeAsset
 import lovehan1me.core.util.SonnerToast
 import lovehan1me.core.util.rememberCopyTextToClipboard
@@ -175,7 +175,7 @@ fun VideoRouteHostScreen(
     val untitledVideoText = stringResource(Res.string.player_untitled_video)
     val genres = remember(SettingsRepository.baseUrl) {
         decodeComposeAsset<List<SearchOption>>(
-            if (SettingsRepository.baseUrl == lovehan1me.HanimeConstants.HANIME_URL[3]) {
+            if (SettingsRepository.baseUrl == lovehan1me.core.constant.HanimeConstants.HANIME_URL[3]) {
                 "files/search_options/genre_av.json"
             } else {
                 "files/search_options/genre.json"

@@ -38,7 +38,7 @@ import lovehan1me.playlist_placeholder
 import lovehan1me.core.domain.model.Playlists
 import lovehan1me.ui.component.CardContainerSurface
 import lovehan1me.feature.preview.fakePlaylists
-import lovehan1me.ui.screen.RetryableImage
+import lovehan1me.ui.component.RetryableImage
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction
 

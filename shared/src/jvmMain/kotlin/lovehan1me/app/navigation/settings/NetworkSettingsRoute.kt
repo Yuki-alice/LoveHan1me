@@ -15,10 +15,10 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import lovehan1me.EMPTY_STRING
+import lovehan1me.core.constant.EMPTY_STRING
 import lovehan1me.data.SettingsRepository
 import lovehan1me.Res
-import lovehan1me.alternative
+import lovehan1me.data.network.alternative
 import lovehan1me.custom
 import lovehan1me.custom_mirror_site_test_failed
 import lovehan1me.custom_mirror_site_test_failed_http
@@ -33,12 +33,12 @@ import lovehan1me.doh_conflict_message
 import lovehan1me.doh_disabled_summary
 import lovehan1me.http_proxy
 import lovehan1me.invalid_ip_or_port
-import lovehan1me.loading
+import lovehan1me.desktop.loading
 import lovehan1me.node_latency_sum
 import lovehan1me.socks_proxy
 import lovehan1me.system_proxy
 import lovehan1me.unknow
-import lovehan1me.warning
+import lovehan1me.core.util.warning
 import lovehan1me.restart_or_not_working
 import lovehan1me.network_timeout_text
 import lovehan1me.mpv_socks5_warning
@@ -48,7 +48,7 @@ import lovehan1me.custom_mirror_site_warning
 import lovehan1me.custom_mirror_site_testing
 import lovehan1me.custom_mirror_site_invalid
 import lovehan1me.confirm
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.attention
 import lovehan1me.site.hanime1.Parser
 import lovehan1me.data.network.DohConfig
@@ -57,7 +57,7 @@ import lovehan1me.data.network.HProxySelector
 import lovehan1me.data.network.HanimeNetwork
 import lovehan1me.data.network.ServiceCreator
 import lovehan1me.core.domain.state.WebsiteState
-import lovehan1me.logout
+import lovehan1me.data.logout
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.feature.settings.DelayResultUi
 import lovehan1me.feature.settings.DohTestResultUi

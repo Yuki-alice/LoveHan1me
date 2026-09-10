@@ -19,8 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import lovehan1me.HorizontalCardCountConfig
-import lovehan1me.HA1_GITHUB_URL
+import lovehan1me.ui.model.HorizontalCardCountConfig
+import lovehan1me.core.constant.HA1_GITHUB_URL
 import lovehan1me.Res
 import lovehan1me.video_language
 import lovehan1me.video
@@ -146,7 +146,7 @@ import lovehan1me.ic_swipe_right
 import lovehan1me.ic_tablet
 import lovehan1me.ic_thumb_up_off_alt
 import lovehan1me.ic_video_quilty
-import lovehan1me.SearchGridColumnsConfig
+import lovehan1me.ui.model.SearchGridColumnsConfig
 import lovehan1me.ui.component.ChoiceDialog
 import lovehan1me.ui.component.SettingInfoItem
 import lovehan1me.ui.component.SettingNavigationItem

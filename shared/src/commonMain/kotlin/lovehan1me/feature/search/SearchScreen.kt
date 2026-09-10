@@ -86,7 +86,7 @@ import lovehan1me.sort_option
 import lovehan1me.search_video_hint
 import lovehan1me.search_no_results
 import lovehan1me.search_load_failed_with_reason
-import lovehan1me.reset
+import lovehan1me.feature.library.reset
 import lovehan1me.release_date
 import lovehan1me.recent_searches
 import lovehan1me.pair_widely
@@ -113,11 +113,11 @@ import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.component.VideoCardItem
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.lazy.LazyVerticalGrid
-import lovehan1me.ui.screen.rememberRandomLoadingHint
+import lovehan1me.ui.component.rememberRandomLoadingHint
 import lovehan1me.ui.theme.SpacingNormal
 import lovehan1me.ui.theme.VideoNormalCardMinWidth
 import lovehan1me.ui.theme.VideoSimplifiedCardMinWidth
-import lovehan1me.ui.viewmodel.SearchViewModel
+import lovehan1me.feature.search.SearchViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.distinctUntilChanged

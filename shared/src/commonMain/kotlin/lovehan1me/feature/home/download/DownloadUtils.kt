@@ -4,8 +4,8 @@ import androidx.compose.runtime.Composable
 import org.jetbrains.compose.resources.stringResource
 import lovehan1me.Res
 import lovehan1me.ungrouped
-import lovehan1me.paused
-import lovehan1me.loading
+import lovehan1me.feature.player.paused
+import lovehan1me.desktop.loading
 import lovehan1me.download_progress_percent
 import lovehan1me.download_failed_tap_retry
 import lovehan1me.download_complete

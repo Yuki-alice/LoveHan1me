@@ -1,6 +1,6 @@
 package lovehan1me.core.platform
 
-import lovehan1me.HanimeResolution
+import lovehan1me.site.hanime1.HanimeResolution
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.dao.Han1meDatabases
 import lovehan1me.data.datastore.DataStoreManager

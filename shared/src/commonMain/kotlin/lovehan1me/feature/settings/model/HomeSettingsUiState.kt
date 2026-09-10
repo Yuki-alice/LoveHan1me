@@ -1,7 +1,7 @@
 package lovehan1me.feature.settings.model
 
-import lovehan1me.HorizontalCardCountConfig
-import lovehan1me.SearchGridColumnsConfig
+import lovehan1me.ui.model.HorizontalCardCountConfig
+import lovehan1me.ui.model.SearchGridColumnsConfig
 import lovehan1me.feature.home.homepage.HomeCategoryPreferenceItem
 
 data class HomeSettingsUiState(

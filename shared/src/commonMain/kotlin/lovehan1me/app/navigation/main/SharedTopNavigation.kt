@@ -71,10 +71,10 @@ import lovehan1me.app.navigation.settings.VideoPlaybackSettingsRoute
 import lovehan1me.feature.home.homepage.HomePageViewModel
 import lovehan1me.core.platform.downloadWorkController
 import lovehan1me.feature.login.FormLoginScreen
-import lovehan1me.logout
+import lovehan1me.data.logout
 import lovehan1me.feature.account.AccountScreen
-import lovehan1me.ui.viewmodel.UserAccountViewModel
-import lovehan1me.ui.viewmodel.sharedViewModel
+import lovehan1me.feature.account.UserAccountViewModel
+import lovehan1me.app.sharedViewModel
 import lovehan1me.feature.settings.HomeSettingsPage
 import lovehan1me.feature.settings.OpenSourceLicensesScreen
 import lovehan1me.feature.settings.SettingsMainScreen

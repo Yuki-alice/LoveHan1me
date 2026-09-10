@@ -49,7 +49,7 @@ import lovehan1me.delete_group
 import lovehan1me.current_group_name
 import lovehan1me.create_new_group
 import lovehan1me.confirm
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.ic_delete
 import lovehan1me.ic_edit
 import lovehan1me.data.database.entity.download.DownloadGroupEntity

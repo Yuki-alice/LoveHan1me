@@ -8,11 +8,11 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.getString
-import lovehan1me.ui.viewmodel.sharedViewModel
+import lovehan1me.app.sharedViewModel
 import lovehan1me.data.SettingsRepository
 import lovehan1me.Res
 import lovehan1me.action_not_support
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.confirm
 import lovehan1me.create_group_success
 import lovehan1me.delete
@@ -37,7 +37,7 @@ import lovehan1me.data.database.entity.download.VideoWithCategories
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.feature.home.DownloadScreen
 import lovehan1me.feature.home.download.DownloadEvent
-import lovehan1me.ui.viewmodel.DownloadViewModel
+import lovehan1me.feature.library.DownloadViewModel
 import lovehan1me.core.platform.downloadWorkController
 import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.Dispatchers

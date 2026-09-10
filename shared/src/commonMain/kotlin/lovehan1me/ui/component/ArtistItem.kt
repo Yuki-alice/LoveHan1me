@@ -23,7 +23,7 @@ import lovehan1me.h_chan_load_failed_small
 import lovehan1me.h_chan_loading_small
 import lovehan1me.core.domain.model.SubscriptionItem
 import lovehan1me.feature.preview.fakeArtists
-import lovehan1me.ui.screen.RetryableImage
+import lovehan1me.ui.component.RetryableImage
 
 /**
  * 艺术家条目组件

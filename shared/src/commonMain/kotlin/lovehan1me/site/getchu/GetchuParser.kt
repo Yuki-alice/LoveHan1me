@@ -1,8 +1,8 @@
 package lovehan1me.site.getchu
 
 import lovehan1me.core.util.LogUtil
-import lovehan1me.EMPTY_STRING
-import lovehan1me.GETCHU_BASE_URL
+import lovehan1me.core.constant.EMPTY_STRING
+import lovehan1me.core.constant.GETCHU_BASE_URL
 import lovehan1me.core.domain.model.GetchuPreview
 import lovehan1me.core.domain.model.GetchuPreviewDetail
 import lovehan1me.core.domain.state.WebsiteState

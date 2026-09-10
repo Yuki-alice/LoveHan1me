@@ -19,7 +19,7 @@ import lovehan1me.core.domain.exception.LoginStateExpiredException
 import lovehan1me.core.domain.model.Announcement
 import lovehan1me.core.domain.state.PageState
 import lovehan1me.core.domain.state.WebsiteState
-import lovehan1me.ui.viewmodel.AppViewModel
+import lovehan1me.app.AppViewModel
 import lovehan1me.app.navigation.main.HanimeScreen
 import lovehan1me.app.navigation.main.HomeRoute
 import lovehan1me.app.navigation.main.TopLevelBackStack

@@ -10,7 +10,7 @@ import androidx.compose.ui.text.TextLinkStyles
 import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.withLink
-import lovehan1me.LOCAL_DATE_TIME_FORMAT
+import lovehan1me.core.constant.LOCAL_DATE_TIME_FORMAT
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.toLocalDateTime

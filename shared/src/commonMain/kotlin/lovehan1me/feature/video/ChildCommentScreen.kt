@@ -57,7 +57,7 @@ import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.content.ErrorContent
 import lovehan1me.ui.component.content.LoadingContent
 import lovehan1me.ui.component.lazy.LazyColumn
-import lovehan1me.ui.screen.rememberRandomLoadingHint
+import lovehan1me.ui.component.rememberRandomLoadingHint
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.core.util.parseTimeStrToMinutes
 import lovehan1me.core.util.safeSortedBy

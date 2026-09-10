@@ -21,7 +21,7 @@ import androidx.work.WorkManager
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import lovehan1me.DOWNLOAD_NOTIFICATION_CHANNEL
-import lovehan1me.EMPTY_STRING
+import lovehan1me.core.constant.EMPTY_STRING
 import lovehan1me.HFileManager
 import lovehan1me.HFileManager.createVideoName
 import lovehan1me.R

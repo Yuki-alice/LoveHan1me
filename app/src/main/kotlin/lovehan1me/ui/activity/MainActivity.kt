@@ -22,8 +22,8 @@ import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
-import lovehan1me.HanimeConstants.ANIME_URL
-import lovehan1me.HanimeConstants.HANIME_URL
+import lovehan1me.core.constant.HanimeConstants.ANIME_URL
+import lovehan1me.core.constant.HanimeConstants.HANIME_URL
 import lovehan1me.BuildConfig
 import lovehan1me.data.SettingsRepository
 import lovehan1me.R
@@ -31,7 +31,7 @@ import lovehan1me.Res
 import lovehan1me.auth_request
 import lovehan1me.unlock_desc
 import lovehan1me.unlock_method
-import lovehan1me.logout
+import lovehan1me.data.logout
 import lovehan1me.app.bridge.VideoPageHost
 import lovehan1me.app.navigation.main.AccountRoute
 import lovehan1me.app.navigation.main.HanimeScreen
@@ -65,7 +65,7 @@ class MainActivity : BaseActivity() {
     private var logoutDialogCloseCurrentPage by mutableStateOf<Boolean?>(null)
 
     companion object {
-        const val ACTION_TOGGLE_PLAY = "lovehan1me.ACTION_TOGGLE_PLAY"
+        const val ACTION_TOGGLE_PLAY = "lovehan1me.ui.activity.ACTION_TOGGLE_PLAY"
     }
 
     private var hasAuthenticated = false

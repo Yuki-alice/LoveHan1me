@@ -12,7 +12,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.rememberCoroutineScope
 import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import lovehan1me.ui.viewmodel.sharedViewModel
+import lovehan1me.app.sharedViewModel
 import lovehan1me.data.SettingsRepository
 import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.Res
@@ -29,14 +29,14 @@ import lovehan1me.h_keyframes_shared_by_other_detected
 import lovehan1me.h_keyframes_import_shared_hint
 import lovehan1me.h_keyframes_import_shared
 import lovehan1me.confirm
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.data.database.entity.HKeyframeEntity
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.feature.settings.HKeyframeSettingsScreen
 import lovehan1me.feature.settings.HKeyframeSettingsUiState
 import lovehan1me.feature.settings.HKeyframesScreen
 import lovehan1me.feature.settings.SharedHKeyframesScreen
-import lovehan1me.ui.viewmodel.SettingsViewModel
+import lovehan1me.feature.settings.SettingsViewModel
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.core.util.decodeFromStringByBase64
 import lovehan1me.core.util.SonnerToast

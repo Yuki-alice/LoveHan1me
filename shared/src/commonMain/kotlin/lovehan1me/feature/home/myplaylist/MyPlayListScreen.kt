@@ -42,7 +42,7 @@ import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.component.PullRefreshOverlay
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.ui.component.content.EmptyContent
-import lovehan1me.ui.viewmodel.PlaylistController
+import lovehan1me.feature.library.PlaylistController
 import lovehan1me.core.util.SonnerToast
 
 /**

@@ -1,6 +1,6 @@
 package lovehan1me.data
 
-import lovehan1me.EMPTY_STRING
+import lovehan1me.core.constant.EMPTY_STRING
 import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.core.domain.model.ListItemExport
 import lovehan1me.core.domain.model.ListsExport

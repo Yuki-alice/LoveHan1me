@@ -1,6 +1,6 @@
 package lovehan1me.data.network.service
 
-import lovehan1me.HANIME_BASE_URL
+import lovehan1me.core.constant.HANIME_BASE_URL
 import io.ktor.client.HttpClient
 import io.ktor.client.request.get
 import io.ktor.client.request.url

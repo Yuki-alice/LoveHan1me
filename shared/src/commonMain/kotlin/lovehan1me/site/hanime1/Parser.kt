@@ -1,10 +1,10 @@
 package lovehan1me.site.hanime1
 
 import lovehan1me.core.util.LogUtil
-import lovehan1me.EMPTY_STRING
-import lovehan1me.HanimeConstants.HANIME_URL
-import lovehan1me.HanimeResolution
-import lovehan1me.LOCAL_DATE_FORMAT
+import lovehan1me.core.constant.EMPTY_STRING
+import lovehan1me.core.constant.HanimeConstants.HANIME_URL
+import lovehan1me.site.hanime1.HanimeResolution
+import lovehan1me.core.constant.LOCAL_DATE_FORMAT
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.SettingsRepository.isAlreadyLogin
 import lovehan1me.core.domain.exception.LoginStateExpiredException

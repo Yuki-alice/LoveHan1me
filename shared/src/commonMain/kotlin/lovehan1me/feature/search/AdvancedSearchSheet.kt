@@ -64,18 +64,18 @@ import lovehan1me.sort_option
 import lovehan1me.search_options_tips
 import lovehan1me.search
 import lovehan1me.save
-import lovehan1me.reset
+import lovehan1me.feature.library.reset
 import lovehan1me.release_date
 import lovehan1me.pair_widely_alert
 import lovehan1me.pair_widely
 import lovehan1me.duration
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.approximate_range
 import lovehan1me.advanced_search_combination
 import lovehan1me.advanced_search
 import lovehan1me.ic_search
-import lovehan1me.SEARCH_YEAR_RANGE_END
-import lovehan1me.SEARCH_YEAR_RANGE_START
+import lovehan1me.core.constant.SEARCH_YEAR_RANGE_END
+import lovehan1me.core.constant.SEARCH_YEAR_RANGE_START
 import lovehan1me.data.DatabaseRepo
 import lovehan1me.site.hanime1.HanimeAdvancedSearchRepo
 import lovehan1me.data.database.entity.HanimeAdvancedSearchHistoryEntity
@@ -87,7 +87,7 @@ import lovehan1me.ui.component.lazy.LazyColumn
 import lovehan1me.ui.component.lazy.LazyVerticalGrid
 import lovehan1me.ui.model.AdvancedSearchDialogState
 import lovehan1me.ui.model.SearchScopeSection
-import lovehan1me.ui.viewmodel.SearchViewModel
+import lovehan1me.feature.search.SearchViewModel
 import kotlinx.coroutines.launch
 
 /**

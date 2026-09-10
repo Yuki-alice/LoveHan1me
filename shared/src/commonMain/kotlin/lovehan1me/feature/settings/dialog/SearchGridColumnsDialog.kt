@@ -19,7 +19,7 @@ import lovehan1me.search_grid_columns_current_width_hint
 import lovehan1me.search_grid_columns_current_portrait
 import lovehan1me.search_grid_columns_current_landscape
 import lovehan1me.search_grid_columns_current_bucket_hint
-import lovehan1me.SearchGridColumnsConfig
+import lovehan1me.ui.model.SearchGridColumnsConfig
 import lovehan1me.feature.settings.model.GridRangeOption
 import kotlin.math.max
 import kotlin.math.min

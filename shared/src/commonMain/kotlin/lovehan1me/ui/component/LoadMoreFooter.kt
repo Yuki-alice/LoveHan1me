@@ -19,7 +19,7 @@ import lovehan1me.Res
 import lovehan1me.load_complete
 import lovehan1me.load_complete_with_pages
 import lovehan1me.load_failed_retry
-import lovehan1me.loading
+import lovehan1me.desktop.loading
 import lovehan1me.core.domain.state.PageLoadingState
 import org.jetbrains.compose.resources.stringResource
 

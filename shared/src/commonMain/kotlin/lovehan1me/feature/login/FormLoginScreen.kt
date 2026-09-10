@@ -41,7 +41,7 @@ import lovehan1me.login_failed
 import lovehan1me.login_success
 import lovehan1me.data.NetworkRepo
 import lovehan1me.core.domain.state.WebsiteState
-import lovehan1me.password
+import lovehan1me.feature.login.password
 import lovehan1me.scan_for_cookies
 import lovehan1me.try_login_here
 import lovehan1me.core.util.SonnerToast

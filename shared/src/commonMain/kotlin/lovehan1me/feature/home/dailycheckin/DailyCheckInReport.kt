@@ -76,7 +76,7 @@ import lovehan1me.ic_calendar_view_week
 import lovehan1me.ic_calendar_month
 import lovehan1me.ic_alarm
 import lovehan1me.ui.component.appbar.HanimeScaffold
-import lovehan1me.ui.viewmodel.MonthlyStats
+import lovehan1me.feature.home.MonthlyStats
 import kotlinx.datetime.LocalDate
 
 /**

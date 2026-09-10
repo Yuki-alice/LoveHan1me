@@ -13,7 +13,7 @@ import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.ui.component.LoadMoreFooter
 import lovehan1me.ui.component.VideoCardItem
 import lovehan1me.ui.component.lazy.LazyVerticalGrid
-import lovehan1me.ui.screen.rememberVideoGridColumns
+import lovehan1me.ui.component.rememberVideoGridColumns
 import lovehan1me.ui.theme.SpacingNormal
 
 /**

@@ -39,7 +39,7 @@ import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.ui.component.isFirstPageEmpty
 import lovehan1me.ui.component.isFirstPageError
 import lovehan1me.ui.component.isFirstPageLoading
-import lovehan1me.ui.screen.rememberRandomLoadingHint
+import lovehan1me.ui.component.rememberRandomLoadingHint
 import lovehan1me.core.util.toNetworkErrorMessageRes
 import lovehan1me.ui.component.HapticTextButton as TextButton
 

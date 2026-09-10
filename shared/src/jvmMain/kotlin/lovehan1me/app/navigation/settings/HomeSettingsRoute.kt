@@ -36,9 +36,9 @@ import org.jetbrains.compose.resources.getString
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import lovehan1me.HanimeConstants
-import lovehan1me.HA1_GITHUB_FORUM_URL
-import lovehan1me.HA1_GITHUB_ISSUE_URL
+import lovehan1me.core.constant.HanimeConstants
+import lovehan1me.core.constant.HA1_GITHUB_FORUM_URL
+import lovehan1me.core.constant.HA1_GITHUB_ISSUE_URL
 import lovehan1me.data.BackupManager
 import lovehan1me.data.SettingsRepository
 import lovehan1me.core.platform.appVersionDisplay
@@ -54,13 +54,13 @@ import lovehan1me.core.platform.readBackupText
 import lovehan1me.core.platform.restartApp
 import lovehan1me.core.platform.supportsPerAppLinks
 import lovehan1me.core.platform.switchLauncherIcon
-import lovehan1me.ui.viewmodel.updateCheckInWidget
+import lovehan1me.feature.home.updateCheckInWidget
 import lovehan1me.core.platform.writeBackupText
 import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.core.platform.openPerAppLinksSettings
 import lovehan1me.core.platform.rememberBackupExportLauncher
 import lovehan1me.core.platform.rememberBackupImportLauncher
-import lovehan1me.ui.viewmodel.updateCheckInWidget
+import lovehan1me.feature.home.updateCheckInWidget
 import lovehan1me.Res
 import lovehan1me.action_app_open_by_default_settings_not_support
 import lovehan1me.backup_export_failed
@@ -94,7 +94,7 @@ import lovehan1me.hanime_app_name
 import lovehan1me.go_to_settings
 import lovehan1me.fake_app_icon
 import lovehan1me.confirm
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.backup_import_title
 import lovehan1me.backup_import_confirm_message
 import lovehan1me.attention

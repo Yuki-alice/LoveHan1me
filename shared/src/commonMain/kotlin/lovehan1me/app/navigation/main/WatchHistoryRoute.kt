@@ -2,9 +2,9 @@ package lovehan1me.app.navigation.main
 
 import androidx.compose.runtime.Composable
 import lovehan1me.feature.home.WatchHistoryTabScreen
-import lovehan1me.ui.viewmodel.sharedViewModel
+import lovehan1me.app.sharedViewModel
 import lovehan1me.feature.home.homepage.HomePageViewModel
-import lovehan1me.ui.viewmodel.OnlineWatchHistoryViewModel
+import lovehan1me.feature.library.OnlineWatchHistoryViewModel
 
 @Composable
 fun WatchHistoryRouteScreen(

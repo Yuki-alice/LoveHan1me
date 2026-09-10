@@ -7,14 +7,14 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.Res
-import lovehan1me.comment
+import lovehan1me.core.domain.model.comment
 import lovehan1me.introduction
 import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.data.SettingsRepository
 import lovehan1me.core.domain.state.VideoLoadingState
 import lovehan1me.app.bridge.VideoPageHost
-import lovehan1me.ui.viewmodel.CommentViewModel
-import lovehan1me.ui.viewmodel.VideoViewModel
+import lovehan1me.feature.video.CommentViewModel
+import lovehan1me.feature.video.VideoViewModel
 
 @Composable
 fun VideoRouteContent(

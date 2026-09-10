@@ -21,8 +21,8 @@ import androidx.compose.runtime.setValue
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import androidx.core.net.toUri
-import lovehan1me.HANIME_LOGIN_URL
-import lovehan1me.HanimeConstants.HANIME_URL
+import lovehan1me.core.constant.HANIME_LOGIN_URL
+import lovehan1me.core.constant.HanimeConstants.HANIME_URL
 import lovehan1me.data.SettingsRepository
 import lovehan1me.R
 import lovehan1me.Res
@@ -34,7 +34,7 @@ import lovehan1me.current_webview_version
 import lovehan1me.version_check_failed
 import lovehan1me.webview_version_too_low
 import lovehan1me.webview_version_unknown
-import lovehan1me.USER_AGENT
+import lovehan1me.core.constant.USER_AGENT
 import lovehan1me.data.NetworkRepo
 import lovehan1me.data.network.CloudflareVerificationCoordinator
 import lovehan1me.core.domain.state.WebsiteState
@@ -43,7 +43,7 @@ import lovehan1me.ui.activity.MainActivity
 import lovehan1me.feature.login.LoginDialog
 import lovehan1me.feature.login.LoginScreen
 import lovehan1me.feature.login.ManualInputCookiesScreen
-import lovehan1me.ui.screen.web.CloudflareScreen
+import lovehan1me.app.web.CloudflareScreen
 import lovehan1me.core.util.CookieString
 import lovehan1me.core.util.LogUtil
 import lovehan1me.core.util.SonnerToast

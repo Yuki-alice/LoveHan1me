@@ -2,8 +2,8 @@ package lovehan1me.app.navigation.settings
 
 import androidx.annotation.IntRange
 import lovehan1me.cache_usage_summary
-import lovehan1me.HanimeConstants.HANIME_HOSTNAME
-import lovehan1me.HanimeConstants.HANIME_URL
+import lovehan1me.core.constant.HanimeConstants.HANIME_HOSTNAME
+import lovehan1me.core.constant.HanimeConstants.HANIME_URL
 import lovehan1me.Res
 import lovehan1me.feature.player.PlayerDefaults
 import lovehan1me.core.util.formatBytesPerSecond

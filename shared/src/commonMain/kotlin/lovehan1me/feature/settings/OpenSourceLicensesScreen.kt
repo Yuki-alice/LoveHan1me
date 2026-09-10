@@ -76,7 +76,7 @@ import lovehan1me.no_license_items
 import lovehan1me.no_licenses_found
 import lovehan1me.search
 import lovehan1me.confirm
-import lovehan1me.clear
+import lovehan1me.data.network.clear
 import lovehan1me.ic_search_not_found
 import lovehan1me.ic_search
 import lovehan1me.ic_list_no_item

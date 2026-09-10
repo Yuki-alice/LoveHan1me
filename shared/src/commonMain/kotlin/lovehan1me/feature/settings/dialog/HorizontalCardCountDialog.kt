@@ -9,7 +9,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalWindowInfo
 import org.jetbrains.compose.resources.stringResource
-import lovehan1me.HorizontalCardCountConfig
+import lovehan1me.ui.model.HorizontalCardCountConfig
 import lovehan1me.Res
 import lovehan1me.horizontal_card_count_title
 import lovehan1me.horizontal_card_count_range_narrow

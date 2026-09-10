@@ -1,8 +1,8 @@
 package lovehan1me.core.platform
 
 import lovehan1me.core.util.LogUtil
-import lovehan1me.DESKTOP_USER_AGENT
-import lovehan1me.USER_AGENT
+import lovehan1me.core.constant.DESKTOP_USER_AGENT
+import lovehan1me.core.constant.USER_AGENT
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.dao.Han1meDatabases
 import lovehan1me.data.database.entity.download.DownloadGroupEntity

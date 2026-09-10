@@ -1,7 +1,7 @@
 package lovehan1me.data.network
 
 import lovehan1me.core.util.LogUtil
-import lovehan1me.HanimeConstants.HANIME_HOSTNAME
+import lovehan1me.core.constant.HanimeConstants.HANIME_HOSTNAME
 import lovehan1me.data.SettingsRepository
 import okhttp3.Dns
 import okhttp3.dnsoverhttps.DnsOverHttps

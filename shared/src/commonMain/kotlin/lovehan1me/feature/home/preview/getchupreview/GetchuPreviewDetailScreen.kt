@@ -25,7 +25,7 @@ import lovehan1me.ui.component.isFirstPageError
 import lovehan1me.ui.component.isFirstPageLoading
 import lovehan1me.feature.home.preview.PreviewImageViewerDialog
 import lovehan1me.feature.home.preview.PreviewImageViewerState
-import lovehan1me.ui.screen.rememberRandomLoadingHint
+import lovehan1me.ui.component.rememberRandomLoadingHint
 
 @Composable
 fun GetchuPreviewDetailScreen(

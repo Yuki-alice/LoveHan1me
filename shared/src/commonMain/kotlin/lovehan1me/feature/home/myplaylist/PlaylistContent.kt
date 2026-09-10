@@ -29,7 +29,7 @@ import lovehan1me.ui.component.PageContent
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.content.ErrorContent
 import lovehan1me.ui.component.lazy.LazyVerticalGrid
-import lovehan1me.ui.screen.getColumnCount
+import lovehan1me.ui.component.getColumnCount
 
 /**
  * 播放列表页 Content 层。纯 UI，不持有 ViewModel。

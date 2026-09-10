@@ -20,7 +20,7 @@ import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import lovehan1me.PREVIEW_COMMENT_PREFIX
+import lovehan1me.core.constant.PREVIEW_COMMENT_PREFIX
 import lovehan1me.data.SettingsRepository
 import lovehan1me.Res
 import lovehan1me.there_is_a_small_issue
@@ -31,9 +31,9 @@ import lovehan1me.feature.video.ChildCommentScreen
 import lovehan1me.feature.video.CommentMessage
 import lovehan1me.feature.video.CommentScreen
 import lovehan1me.ui.theme.HanimeDefaults
-import lovehan1me.ui.viewmodel.CommentViewModel
-import lovehan1me.ui.viewmodel.PreviewCommentPrefetcher
-import lovehan1me.ui.viewmodel.sharedViewModel
+import lovehan1me.feature.video.CommentViewModel
+import lovehan1me.feature.video.PreviewCommentPrefetcher
+import lovehan1me.app.sharedViewModel
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString

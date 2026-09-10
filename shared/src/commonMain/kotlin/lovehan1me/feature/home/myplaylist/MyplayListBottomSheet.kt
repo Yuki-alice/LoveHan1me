@@ -50,7 +50,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.confirm
 import lovehan1me.delete_failed
 import lovehan1me.delete_playlist
@@ -79,11 +79,11 @@ import lovehan1me.ui.component.VideoCardItem
 import lovehan1me.ui.component.appbar.HanimeTopAppBar
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.lazy.LazyVerticalGrid
-import lovehan1me.ui.screen.RetryableImage
+import lovehan1me.ui.component.RetryableImage
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.SpacingNormal
 import lovehan1me.ui.theme.VideoNormalCardMinWidth
-import lovehan1me.ui.viewmodel.PlaylistController
+import lovehan1me.feature.library.PlaylistController
 import lovehan1me.core.util.SonnerToast
 
 /**

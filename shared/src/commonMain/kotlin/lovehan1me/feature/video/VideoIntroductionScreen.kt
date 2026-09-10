@@ -95,7 +95,7 @@ import lovehan1me.no
 import lovehan1me.name_with_colon
 import lovehan1me.more
 import lovehan1me.load_failed_retry
-import lovehan1me.liked
+import lovehan1me.core.domain.model.liked
 import lovehan1me.jump_to_webpage
 import lovehan1me.go_to_official
 import lovehan1me.download_video_detail_below
@@ -105,7 +105,7 @@ import lovehan1me.dialog_confirm
 import lovehan1me.dialog_cancel
 import lovehan1me.confirm
 import lovehan1me.check_video_exists_in_download
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.blank_brackets
 import lovehan1me.back
 import lovehan1me.auto_create_same_name_download_group
@@ -126,7 +126,7 @@ import lovehan1me.ic_download
 import lovehan1me.ic_check_circle
 import lovehan1me.ic_book
 import lovehan1me.ic_access_time
-import lovehan1me.ResolutionLinkMap
+import lovehan1me.site.hanime1.ResolutionLinkMap
 import lovehan1me.data.database.entity.CheckInRecordEntity
 import lovehan1me.data.LocalListRepository
 import lovehan1me.core.domain.model.HanimeInfo
@@ -141,8 +141,8 @@ import lovehan1me.ui.component.content.LoadingContent
 import lovehan1me.ui.component.lazy.LazyColumn
 import lovehan1me.ui.component.lazy.LazyRow
 import lovehan1me.ui.component.lazy.LazyVerticalGrid
-import lovehan1me.ui.screen.rememberCardResponsiveWidth
-import lovehan1me.ui.screen.rememberRandomLoadingHint
+import lovehan1me.ui.component.rememberCardResponsiveWidth
+import lovehan1me.ui.component.rememberRandomLoadingHint
 import lovehan1me.ui.theme.SpacingNormal
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.VideoNormalCardMinWidth
@@ -531,7 +531,7 @@ private fun DownloadQualityDialog(
                                 selected = false,
                                 onClick = {
                                     haptic()
-                                    if (quality == lovehan1me.HanimeResolution.RES_UNKNOWN) {
+                                    if (quality == lovehan1me.site.hanime1.HanimeResolution.RES_UNKNOWN) {
                                         onOpenOfficial()
                                     } else {
                                         onSelectQuality(quality)
@@ -543,7 +543,7 @@ private fun DownloadQualityDialog(
                         horizontalArrangement = Arrangement.SpaceBetween,
                     ) {
                         Text(quality)
-                        if (quality == lovehan1me.HanimeResolution.RES_UNKNOWN) {
+                        if (quality == lovehan1me.site.hanime1.HanimeResolution.RES_UNKNOWN) {
                             Text(
                                 text = stringResource(Res.string.go_to_official),
                                 color = MaterialTheme.colorScheme.primary,

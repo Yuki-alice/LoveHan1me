@@ -6,7 +6,7 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import coil3.ImageLoader
 import coil3.compose.LocalPlatformContext
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
-import lovehan1me.DESKTOP_USER_AGENT
+import lovehan1me.core.constant.DESKTOP_USER_AGENT
 import lovehan1me.data.network.HDns
 import lovehan1me.data.network.HProxySelector
 import okhttp3.OkHttpClient

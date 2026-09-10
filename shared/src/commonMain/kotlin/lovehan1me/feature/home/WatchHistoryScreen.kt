@@ -66,7 +66,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import lovehan1me.LOCAL_DATE_TIME_FORMAT
+import lovehan1me.core.constant.LOCAL_DATE_TIME_FORMAT
 import lovehan1me.Res
 import lovehan1me.ui.component.HanimeAsyncImage
 import lovehan1me.ui.component.rememberHapticFeedback
@@ -92,7 +92,7 @@ import lovehan1me.delete_success
 import lovehan1me.delete_history
 import lovehan1me.delete_failed
 import lovehan1me.delete
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.ic_play_circle
 import lovehan1me.ic_history
 import lovehan1me.ic_delete
@@ -114,7 +114,7 @@ import lovehan1me.ui.component.content.ErrorContent
 import lovehan1me.ui.component.lazy.LazyColumn
 import lovehan1me.ui.component.lazy.LazyVerticalGrid
 import lovehan1me.feature.preview.fakeHomePageVideos
-import lovehan1me.ui.screen.rememberVideoGridColumns
+import lovehan1me.ui.component.rememberVideoGridColumns
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.SpacingNormal
 import lovehan1me.ui.theme.shapeByInteraction

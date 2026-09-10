@@ -18,7 +18,7 @@ import lovehan1me.sure_to_delete
 import lovehan1me.prepare_to_delete_s
 import lovehan1me.empty_content
 import lovehan1me.confirm
-import lovehan1me.cancel
+import lovehan1me.app.navigation.main.cancel
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import lovehan1me.core.domain.state.DownloadState
 import lovehan1me.ui.component.ConfirmDialog

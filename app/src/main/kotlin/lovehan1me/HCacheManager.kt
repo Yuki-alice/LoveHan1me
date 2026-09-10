@@ -6,7 +6,7 @@ import android.content.Context
 import lovehan1me.core.util.LogUtil
 import androidx.annotation.WorkerThread
 import lovehan1me.data.DatabaseRepo
-import lovehan1me.HanimeLink
+import lovehan1me.site.hanime1.HanimeLink
 import lovehan1me.core.domain.model.HanimeVideo
 import lovehan1me.core.util.SafFileManager
 import kotlinx.coroutines.Dispatchers

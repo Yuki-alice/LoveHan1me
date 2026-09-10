@@ -1,6 +1,6 @@
 package lovehan1me.core.domain.model
 
-import lovehan1me.ResolutionLinkMap
+import lovehan1me.site.hanime1.ResolutionLinkMap
 import lovehan1me.core.util.mapToArray
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable

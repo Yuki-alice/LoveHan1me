@@ -5,13 +5,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.Res
-import lovehan1me.ui.viewmodel.sharedViewModel
+import lovehan1me.app.sharedViewModel
 import lovehan1me.copy_to_clipboard
 import lovehan1me.data.SettingsRepository
-import lovehan1me.getHanimeShareText
+import lovehan1me.data.getHanimeShareText
 import lovehan1me.feature.home.myplaylist.PlaylistScreen
-import lovehan1me.ui.viewmodel.LocalPlayListViewModel
-import lovehan1me.ui.viewmodel.MyPlayListViewModel
+import lovehan1me.feature.library.LocalPlayListViewModel
+import lovehan1me.feature.library.MyPlayListViewModel
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.launch

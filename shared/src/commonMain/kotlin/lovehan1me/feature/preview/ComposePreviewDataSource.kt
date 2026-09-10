@@ -434,7 +434,7 @@ val fakeVideoIntroduction = HanimeVideo(
     introduction = "思春期的性学习 2。为了拓展自己的知识，女主开始在图书馆进行一些不太适合公开讨论的研究。\nhttps://hanime1.me/watch?v=101573",
     uploadTime = LocalDate(2024, 5, 10),
     views = "137.6万次",
-    videoUrls = lovehan1me.HanimeResolution().apply {
+    videoUrls = lovehan1me.site.hanime1.HanimeResolution().apply {
         parseResolution("720P", "https://example.com/video.mp4", "video/mp4")
     }.toResolutionLinkMap(),
     tags = fakeTagList2,
