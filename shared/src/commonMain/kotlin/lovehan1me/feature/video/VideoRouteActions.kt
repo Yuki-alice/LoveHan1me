@@ -17,7 +17,6 @@ import lovehan1me.core.domain.model.HanimeVideo
 import lovehan1me.core.domain.model.SearchOption
 import lovehan1me.app.navigation.main.SearchRoute
 import lovehan1me.feature.video.VideoViewModel
-import lovehan1me.feature.home.updateCheckInWidget
 import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.CoroutineScope
@@ -34,8 +33,8 @@ import org.jetbrains.compose.resources.getString
  * - `context: Context` 删除：`openArtistSearch/openTagSearch` 改经
  *   [onOpenSearchRoute] 回调（调用方入栈 `SearchRoute`；高级搜索参数直接拼
  *   `Map<String, String>`，不再经 `HAdvancedSearch` + `Serializable` 中转）；
- * - `quickCheckIn` 改共享入口（`Han1meDatabases.checkInRecord` +
- *   `updateCheckInWidget`；原 Glance `updateAll(context)`）；
+ * - `quickCheckIn` 改共享入口（`Han1meDatabases.checkInRecord` 入库）；
+ *   Glance 打卡小组件已按阶段一决策⑫全端移除，不再有 `updateAll`。
  * - 下载落盘（`HCacheManager` + `HanimeDownloadManager/Worker`，P7）改经
  *   [onEnqueueDownload] 回调，见 [EnqueueDownloadRequest]。
  */
@@ -154,7 +153,6 @@ class VideoRouteActions(
     fun quickCheckIn(record: CheckInRecordEntity) {
         scope.launch(ioDispatcher) {
             Han1meDatabases.checkInRecord.checkInDao().insert(record)
-            runCatching { updateCheckInWidget() }
             withContext(Dispatchers.Main) {
                 SonnerToast.success(getString(Res.string.checkin_success))
             }

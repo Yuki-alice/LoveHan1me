@@ -95,7 +95,6 @@ data class AppSettings(
     val paletteStyle: PaletteStyle = PaletteStyle.TonalSpot,
     val fakeLauncherIcon: String = DEFAULT_LAUNCHER_ICON,
     val allowPipMode: Boolean = true,
-    val useLockScreen: Boolean = false,
     val secureMode: Boolean = false,
     val disableComments: Boolean = false,
     val hapticFeedbackEnabled: Boolean = false,

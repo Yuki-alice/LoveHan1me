@@ -27,8 +27,6 @@ import lovehan1me.video
 import lovehan1me.version
 import lovehan1me.user_terms_summary
 import lovehan1me.user_terms
-import lovehan1me.use_lock_screen_sum
-import lovehan1me.use_lock_screen
 import lovehan1me.trigger_crash_summary
 import lovehan1me.trigger_crash
 import lovehan1me.traditional_chinese
@@ -206,7 +204,6 @@ fun HomeSettingsScreen(
     onCollapseDownloadedGroupChange: (Boolean) -> Unit,
     onSearchGridColumnsConfigChange: (SearchGridColumnsConfig) -> Unit,
     onHorizontalCardCountConfigChange: (HorizontalCardCountConfig) -> Unit,
-    onUseLockScreenChange: (Boolean) -> Unit,
     onSecureModeChange: (Boolean) -> Unit,
     onAlwaysShowUpdateCardChange: (Boolean) -> Unit,
     onDisplayDensityChange: (Int) -> Unit,
@@ -556,13 +553,6 @@ fun HomeSettingsScreen(
                 item {
                     SettingsSection(stringResource(Res.string.privacy)) {
                         SettingSwitchItem(
-                            title = stringResource(Res.string.use_lock_screen),
-                            summary = stringResource(Res.string.use_lock_screen_sum),
-                            checked = state.useLockScreen,
-                            iconRes = Res.drawable.ic_setting_applock,
-                            onCheckedChange = onUseLockScreenChange,
-                        )
-                        SettingSwitchItem(
                             title = stringResource(Res.string.secure_mode),
                             summary = stringResource(Res.string.secure_mode_summary),
                             checked = state.secureMode,
@@ -768,7 +758,6 @@ private fun previewHomeSettingsState() = HomeSettingsUiState(
     useDynamicColor = false,
     hapticFeedbackEnabled = false,
     funLoadingHints = true,
-    useLockScreen = false,
     secureMode = false,
     fakeLauncherIconName = "Han1meViewer",
     cacheSummary = "12 MB",

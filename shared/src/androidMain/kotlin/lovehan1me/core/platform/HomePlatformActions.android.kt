@@ -129,9 +129,3 @@ actual fun openPipPermissionSettings() {
     intent.flags = android.content.Intent.FLAG_ACTIVITY_NEW_TASK
     context.startActivity(intent)
 }
-
-actual fun isDeviceSecure(): Boolean {
-    val context = Han1meDatabaseContext.appContext
-    val km = context.getSystemService(android.app.KeyguardManager::class.java)
-    return km.isDeviceSecure
-}

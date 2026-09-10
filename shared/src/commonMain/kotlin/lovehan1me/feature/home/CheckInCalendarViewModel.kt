@@ -97,7 +97,6 @@ class CheckInCalendarViewModel : ViewModel() {
             )
             dao.insert(record)
             reloadDateAndStats(date)
-            updateWidget()
         }
     }
 
@@ -106,7 +105,6 @@ class CheckInCalendarViewModel : ViewModel() {
             dao.delete(record)
             val date = LocalDate.parse(record.date)
             reloadDateAndStats(date)
-            updateWidget()
             onDone()
         }
     }
@@ -130,7 +128,6 @@ class CheckInCalendarViewModel : ViewModel() {
             val records = dao.getRecordsByDate(date.toString())
             records.forEach { dao.delete(it) }
             reloadDateAndStats(date)
-            updateWidget()
         }
     }
 
@@ -181,9 +178,6 @@ class CheckInCalendarViewModel : ViewModel() {
         }
     }
 
-    private suspend fun updateWidget() {
-        runCatching { updateCheckInWidget() }
-    }
 
     companion object {
         fun computeStats(records: List<CheckInRecordEntity>): MonthlyStats {

@@ -46,7 +46,6 @@ import lovehan1me.core.platform.applyAppLanguage
 import lovehan1me.core.platform.applySecureMode
 import lovehan1me.core.platform.clearCacheDir
 import lovehan1me.core.platform.getCacheDirSize
-import lovehan1me.core.platform.isDeviceSecure
 import lovehan1me.core.platform.isPipPermissionGranted
 import lovehan1me.core.platform.openPipPermissionSettings
 import lovehan1me.core.platform.recreateActivity
@@ -54,13 +53,11 @@ import lovehan1me.core.platform.readBackupText
 import lovehan1me.core.platform.restartApp
 import lovehan1me.core.platform.supportsPerAppLinks
 import lovehan1me.core.platform.switchLauncherIcon
-import lovehan1me.feature.home.updateCheckInWidget
 import lovehan1me.core.platform.writeBackupText
 import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.core.platform.openPerAppLinksSettings
 import lovehan1me.core.platform.rememberBackupExportLauncher
 import lovehan1me.core.platform.rememberBackupImportLauncher
-import lovehan1me.feature.home.updateCheckInWidget
 import lovehan1me.Res
 import lovehan1me.action_app_open_by_default_settings_not_support
 import lovehan1me.backup_export_failed
@@ -78,7 +75,6 @@ import lovehan1me.local_data_export_success
 import lovehan1me.local_data_import_failed
 import lovehan1me.local_data_import_success
 import lovehan1me.login_first
-import lovehan1me.not_set_sys_lock
 import lovehan1me.online_data_export_failed
 import lovehan1me.online_data_export_success
 import lovehan1me.online_data_import_failed
@@ -145,7 +141,6 @@ actual fun HomeSettingsRouteScreen(
     // P6d-3-C3：回调内非 suspend，固定串在此预解析
     val loginFirstText = stringResource(Res.string.login_first)
     val requestPipText = stringResource(Res.string.request_pip_alert)
-    val notSetLockText = stringResource(Res.string.not_set_sys_lock)
     val deepLinksWarnText = stringResource(Res.string.action_app_open_by_default_settings_not_support)
     val cacheEmptyText = stringResource(Res.string.cache_empty)
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
@@ -358,7 +353,6 @@ actual fun HomeSettingsRouteScreen(
         onCheckInEnabledChange = {
             coroutineScope.launch {
                 SettingsRepository.setCheckInEnabled(it)
-                updateCheckInWidget()
             }
         },
         onDisableCommentsChange = {
@@ -375,15 +369,6 @@ actual fun HomeSettingsRouteScreen(
         },
         onHomeCategoryPreferencesChange = { order, hiddenKeys ->
             coroutineScope.launch { saveHomeCategoryPreferences(order, hiddenKeys) }
-        },
-        onUseLockScreenChange = { value ->
-            if (value) {
-                if (!isDeviceSecure()) {
-                    SonnerToast.warning(notSetLockText)
-                    return@HomeSettingsScreen
-                }
-            }
-            coroutineScope.launch { SettingsRepository.update { it.copy(useLockScreen = value) } }
         },
         onSecureModeChange = { enabled ->
             coroutineScope.launch {
@@ -660,7 +645,6 @@ private fun buildHomeSettingsUiState(
         useDynamicColor = SettingsRepository.useDynamicColor,
         hapticFeedbackEnabled = SettingsRepository.hapticFeedbackEnabled,
         funLoadingHints = SettingsRepository.funLoadingHints,
-        useLockScreen = SettingsRepository.current.useLockScreen,
         secureMode = SettingsRepository.secureMode,
         fakeLauncherIconName = currentItem.name,
         cacheSummary = cacheSummary,

@@ -35,4 +35,3 @@ actual fun openPerAppLinksSettings() {
 actual fun isPipPermissionGranted(): Boolean = true
 actual fun openPipPermissionSettings() {
 }
-actual fun isDeviceSecure(): Boolean = true

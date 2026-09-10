@@ -10,7 +10,6 @@ import lovehan1me.core.platform.downloadWorkController
 import okio.buffer
 import lovehan1me.core.platform.openBackupSink
 import lovehan1me.core.platform.switchLauncherIcon
-import lovehan1me.feature.home.updateCheckInWidget
 import lovehan1me.data.network.HanimeNetwork
 import lovehan1me.data.network.HProxySelector
 import lovehan1me.data.SettingsRepository
@@ -149,8 +148,6 @@ object BackupManager {
             downloadWorkController().updateDownloadLimit(SettingsRepository.current.downloadCountLimit)
             switchLauncherIcon(SettingsRepository.current.fakeLauncherIcon)
         }
-
-        runCatching { updateCheckInWidget() }
     }
 
     private suspend fun exportTo(outputStream: OutputStream) {
