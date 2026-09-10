@@ -4,7 +4,6 @@ import android.content.ClipData
 import android.content.Intent
 import lovehan1me.core.util.getDownloadedHanimeVideoUri
 import androidx.activity.compose.BackHandler
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -19,7 +18,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalClipboard
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -87,7 +85,6 @@ import org.jetbrains.compose.resources.stringResource
 fun MainActivityShell(
     activity: MainActivity,
     pendingNavigationRequests: Flow<Intent>,
-    showAuthGuard: Boolean,
     showSiteSwitchConfirm: Boolean,
     logoutDialogCloseCurrentPage: Boolean?,
     onSwitchSiteClick: () -> Unit,
@@ -110,7 +107,6 @@ fun MainActivityShell(
         AndroidOverlays(
             activity = activity,
             pendingNavigationRequests = pendingNavigationRequests,
-            showAuthGuard = showAuthGuard,
             showSiteSwitchConfirm = showSiteSwitchConfirm,
             logoutDialogCloseCurrentPage = logoutDialogCloseCurrentPage,
             onDismissSiteSwitch = onDismissSiteSwitch,
@@ -273,12 +269,11 @@ private fun AndroidDrawer(
     )
 }
 
-/** Android 专属覆盖层：应用锁遮罩、剪贴板链接检测、intent 导航、平台对话框。 */
+/** Android 专属覆盖层：剪贴板链接检测、intent 导航、平台对话框。 */
 @Composable
 private fun BoxScope.AndroidOverlays(
     activity: MainActivity,
     pendingNavigationRequests: Flow<Intent>,
-    showAuthGuard: Boolean,
     showSiteSwitchConfirm: Boolean,
     logoutDialogCloseCurrentPage: Boolean?,
     onDismissSiteSwitch: () -> Unit,
@@ -314,9 +309,6 @@ private fun BoxScope.AndroidOverlays(
         }
     }
 
-    if (showAuthGuard) {
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.55f)))
-    }
     SnackbarHost(
         hostState = snackbarHostState,
         modifier = Modifier

@@ -1,6 +1,7 @@
 package lovehan1me
 
 import lovehan1me.data.SettingsRepository
+import lovehan1me.data.HJson
 
 import android.content.Context
 import lovehan1me.core.util.LogUtil

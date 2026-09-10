@@ -39,6 +39,9 @@ import lovehan1me.data.NetworkRepo
 import lovehan1me.data.network.CloudflareVerificationCoordinator
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.login
+// E3 把 HanimeAccount.kt 从扁平包 lovehan1me 挪进 lovehan1me.data，
+// `login` 既是资源访问器又是「写会话的函数」，用别名区分。
+import lovehan1me.data.login as persistLogin
 import lovehan1me.ui.activity.MainActivity
 import lovehan1me.feature.login.LoginDialog
 import lovehan1me.feature.login.LoginScreen
@@ -66,7 +69,7 @@ fun LoginRouteScreen(
 
     fun finishLogin(cookies: String) {
         scope.launch {
-            login(cookies)
+            persistLogin(cookies)
             onLoginSucceeded()
         }
     }
@@ -102,7 +105,7 @@ fun LoginRouteScreen(
                                 }
                             }
                             is WebsiteState.Success -> {
-                                login(state.info)
+                                persistLogin(state.info)
                                 isLoggingIn = false
                                 showLoginDialog = false
                                 SonnerToast.success(getString(Res.string.login_success))

@@ -1,7 +1,6 @@
 package lovehan1me.ui.activity
 
 import android.annotation.SuppressLint
-import android.app.KeyguardManager
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -13,24 +12,16 @@ import android.os.Handler
 import android.os.Looper
 import lovehan1me.core.util.LogUtil
 import androidx.activity.viewModels
-import androidx.biometric.BiometricManager
-import androidx.biometric.BiometricPrompt
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.core.content.ContextCompat
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
-import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.lifecycleScope
 import lovehan1me.core.constant.HanimeConstants.ANIME_URL
 import lovehan1me.core.constant.HanimeConstants.HANIME_URL
 import lovehan1me.BuildConfig
 import lovehan1me.data.SettingsRepository
 import lovehan1me.R
-import lovehan1me.Res
-import lovehan1me.auth_request
-import lovehan1me.unlock_desc
-import lovehan1me.unlock_method
 import lovehan1me.data.logout
 import lovehan1me.app.bridge.VideoPageHost
 import lovehan1me.app.navigation.main.AccountRoute
@@ -47,7 +38,6 @@ import lovehan1me.core.util.isX86_64Device
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.getString
 
 class MainActivity : BaseActivity() {
 
@@ -55,7 +45,6 @@ class MainActivity : BaseActivity() {
 
     val mainBackStack: TopLevelBackStack<HanimeScreen>
         get() = viewModel.mainBackStack
-    private var showAuthGuard by mutableStateOf(true)
     private val pendingNavigationRequests = MutableSharedFlow<Intent>(
         replay = 1,
         extraBufferCapacity = 1,
@@ -68,7 +57,6 @@ class MainActivity : BaseActivity() {
         const val ACTION_TOGGLE_PLAY = "lovehan1me.ui.activity.ACTION_TOGGLE_PLAY"
     }
 
-    private var hasAuthenticated = false
     private val pipActionReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
             LogUtil.i("pipmode", "✅ onReceive called with action: ${intent?.action}")
@@ -86,7 +74,6 @@ class MainActivity : BaseActivity() {
             MainActivityShell(
                 activity = this@MainActivity,
                 pendingNavigationRequests = pendingNavigationRequests,
-                showAuthGuard = showAuthGuard,
                 showSiteSwitchConfirm = showSiteSwitchConfirm,
                 logoutDialogCloseCurrentPage = logoutDialogCloseCurrentPage,
                 onSwitchSiteClick = { showSiteSwitchConfirm = true },
@@ -100,9 +87,9 @@ class MainActivity : BaseActivity() {
 
     override fun beforeSuperOnCreate(savedInstanceState: Bundle?) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            installSplashScreen().apply {
-                setKeepOnScreenCondition { !hasAuthenticated }
-            }
+            // 生物识别/应用锁已全端移除（阶段一决策③）：
+            // 启动不再等待解锁，闪屏只按系统默认时序收起。
+            installSplashScreen()
         }
     }
 
@@ -110,29 +97,7 @@ class MainActivity : BaseActivity() {
         // P6d-4F：注册跨平台导航（VideoCardItem「搜索该作者」）
         registerArtistSearchNavigator { query -> mainBackStack.add(SearchRoute(query = query)) }
 
-        val useLock = SettingsRepository.current.useLockScreen
-
-        if (useLock && isDeviceSecureCompat(this)) {
-            // P6d-3-C2：authenticate 转 suspend（CMP getString），launch 包一层；
-            // prompt 晚一帧出现，回调时序不变
-            lifecycleScope.launch {
-                authenticate(
-                    this@MainActivity,
-                    onSuccess = {
-                        hasAuthenticated = true
-                        showAuthGuard = false
-                        initData()
-                    },
-                    onFailed = {
-                        finish()
-                    }
-                )
-            }
-        } else {
-            hasAuthenticated = true
-            showAuthGuard = false
-            initData()
-        }
+        initData()
         pendingNavigationRequests.tryEmit(intent)
     }
 
@@ -140,49 +105,6 @@ class MainActivity : BaseActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         pendingNavigationRequests.tryEmit(intent)
-    }
-
-    private fun isDeviceSecureCompat(context: Context): Boolean {
-        val km = context.getSystemService(KEYGUARD_SERVICE) as KeyguardManager
-        return km.isDeviceSecure
-    }
-
-    private suspend fun authenticate(
-        activity: FragmentActivity,
-        onSuccess: () -> Unit,
-        onFailed: () -> Unit
-    ) {
-        val executor = ContextCompat.getMainExecutor(activity)
-        val biometricPrompt = BiometricPrompt(
-            activity,
-            executor,
-            object : BiometricPrompt.AuthenticationCallback() {
-                override fun onAuthenticationSucceeded(result: BiometricPrompt.AuthenticationResult) {
-                    onSuccess()
-                }
-
-                override fun onAuthenticationFailed() {
-                    // 指纹被识别但不匹配（单次）
-                }
-
-                override fun onAuthenticationError(errorCode: Int, errString: CharSequence) {
-                    // 取消、锁定、连续失败后触发
-                    onFailed()
-                }
-            }
-        )
-
-        val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle(getString(Res.string.auth_request))
-            .setSubtitle(getString(Res.string.unlock_method))
-            .setDescription(getString(Res.string.unlock_desc))
-            .setAllowedAuthenticators(
-                BiometricManager.Authenticators.BIOMETRIC_WEAK or
-                        BiometricManager.Authenticators.DEVICE_CREDENTIAL
-            )
-            .build()
-
-        biometricPrompt.authenticate(promptInfo)
     }
 
     override fun onStart() {
