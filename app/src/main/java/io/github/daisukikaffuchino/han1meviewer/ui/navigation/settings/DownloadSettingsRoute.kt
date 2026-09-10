@@ -54,8 +54,7 @@ import io.github.daisukikaffuchino.han1meviewer.import_progress_format
 import io.github.daisukikaffuchino.han1meviewer.import_progress
 import io.github.daisukikaffuchino.han1meviewer.confirm_import
 import io.github.daisukikaffuchino.han1meviewer.cancel
-import io.github.daisukikaffuchino.han1meviewer.logic.dao.DownloadDatabase
-import io.github.daisukikaffuchino.han1meviewer.logic.instance
+import io.github.daisukikaffuchino.han1meviewer.logic.dao.Han1meDatabases
 import io.github.daisukikaffuchino.han1meviewer.logic.network.interceptor.SpeedLimitInterceptor
 import io.github.daisukikaffuchino.han1meviewer.ui.component.ConfirmDialog
 import io.github.daisukikaffuchino.han1meviewer.ui.component.TripleButtonDialog
@@ -80,7 +79,7 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
     var showImportConfirm by remember { mutableStateOf(false) }
     var showSpecifyPathDialog by remember { mutableStateOf(false) }
     var importProgress by remember { mutableStateOf<ImportProgress?>(null) }
-    val dao = remember { DownloadDatabase.instance.hanimeDownloadDao }
+    val dao = remember { Han1meDatabases.download.hanimeDownloadDao }
     // P6d-3-C2：builder 在 remember{} 内无法调资源，字符串在外层预解析后传入
     val unknownErrorTop = stringResource(Res.string.unknown_error)
     val noLimitTop = stringResource(Res.string.no_limit)

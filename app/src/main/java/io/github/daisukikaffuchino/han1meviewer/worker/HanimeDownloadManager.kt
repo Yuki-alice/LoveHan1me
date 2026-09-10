@@ -9,8 +9,7 @@ import androidx.work.await
 import androidx.work.workDataOf
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
 import io.github.daisukikaffuchino.han1meviewer.logic.DatabaseRepo
-import io.github.daisukikaffuchino.han1meviewer.logic.dao.DownloadDatabase
-import io.github.daisukikaffuchino.han1meviewer.logic.instance
+import io.github.daisukikaffuchino.han1meviewer.logic.dao.Han1meDatabases
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.download.HanimeDownloadEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.state.DownloadState
 import io.github.daisukikaffuchino.han1meviewer.util.runSuspendCatching
@@ -185,7 +184,7 @@ object HanimeDownloadManager {
     suspend fun init() {
         LogUtil.d(TAG, "init")
         val allDownloading =
-            DownloadDatabase.instance.hanimeDownloadDao.loadAllDownloadingHanimeOnce()
+            Han1meDatabases.download.hanimeDownloadDao.loadAllDownloadingHanimeOnce()
         allDownloading.forEach { entity ->
             val args = HanimeDownloadWorker.Args.fromEntity(entity)
             // addTask

@@ -41,10 +41,9 @@ import io.github.daisukikaffuchino.han1meviewer.widget_best_streak_format
 import io.github.daisukikaffuchino.han1meviewer.widget_feature_disabled
 import io.github.daisukikaffuchino.han1meviewer.widget_month_stats_format
 import io.github.daisukikaffuchino.han1meviewer.widget_today_label
-import io.github.daisukikaffuchino.han1meviewer.logic.dao.CheckInRecordDatabase
+import io.github.daisukikaffuchino.han1meviewer.logic.dao.Han1meDatabases
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.CheckInRecordEntity
 import io.github.daisukikaffuchino.han1meviewer.logic.entity.CheckInType
-import io.github.daisukikaffuchino.han1meviewer.logic.instance
 import io.github.daisukikaffuchino.han1meviewer.ui.activity.MainActivity
 import io.github.daisukikaffuchino.han1meviewer.ui.navigation.main.EXTRA_OPEN_DAILY_CHECK_IN
 import kotlinx.coroutines.Dispatchers
@@ -98,7 +97,7 @@ class CheckInWidgetAction : ActionCallback {
     ) {
         if (SettingsRepository.isCheckInEnabled) {
             withContext(Dispatchers.IO) {
-                val dao = CheckInRecordDatabase.instance.checkInDao()
+                val dao = Han1meDatabases.checkInRecord.checkInDao()
                 val today = LocalDate.now().toString()
                 if (dao.getCountByDate(today) < MAX_DAILY_CHECK_INS) {
                     dao.insert(
@@ -176,7 +175,7 @@ private fun CheckInWidgetContent(
 }
 
 private suspend fun loadStats(context: Context): CheckInWidgetStats = withContext(Dispatchers.IO) {
-    val dao = CheckInRecordDatabase.instance.checkInDao()
+    val dao = Han1meDatabases.checkInRecord.checkInDao()
     val month = YearMonth.now()
     val monthPrefix = month.format(MONTH_FORMATTER)
     val records = dao.getRecordsBetween(
