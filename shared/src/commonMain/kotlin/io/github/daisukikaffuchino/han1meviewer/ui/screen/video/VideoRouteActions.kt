@@ -196,6 +196,8 @@ class VideoRouteActions(
         pendingDownloadPrompt: DownloadPromptState?,
         autoCreateGroup: Boolean,
     ) {
+        // 下载确认即请求通知权限（Android 13+；拒绝不影响入队，系统侧去重）。
+        onRequestNotificationPermission()
         val redownload = pendingDownloadPrompt?.oldQuality != null
         onPendingDownloadPromptChange(null)
         scope.launch {

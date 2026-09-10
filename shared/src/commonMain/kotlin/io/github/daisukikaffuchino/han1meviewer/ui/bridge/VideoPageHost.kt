@@ -44,6 +44,9 @@ interface VideoPageHost {
     /** Host 进入/离开前台（注册广播、常亮锁、初始系统栏样式 / 反向清理）。 */
     fun onHostStarted() {}
     fun onHostStopped() {}
+
+    /** 下载前请求通知权限（Android 13+ POST_NOTIFICATIONS）；不支持平台空实现。 */
+    fun requestNotificationPermission() {}
 }
 
 /** 桌面/iOS 默认实现：全部空操作（纯逻辑由共享 Host 内部对象承担）。 */

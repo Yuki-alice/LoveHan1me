@@ -220,7 +220,7 @@ fun VideoRouteHostScreen(
             onCopyText = copyTextToClipboard,
             onOpenSearchRoute = onOpenSearchRoute,
             onRequestUnsubscribe = { pendingUnsubscribeArtist = it },
-            onRequestNotificationPermission = {},
+            onRequestNotificationPermission = { platformHost.requestNotificationPermission() },
             onRequestLocalListAction = { action ->
                 if (SettingsRepository.localListNoticeDismissed) {
                     action()

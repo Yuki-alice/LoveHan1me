@@ -20,15 +20,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.geometry.Rect as ComposeRect
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import io.github.daisukikaffuchino.han1meviewer.R
+import io.github.daisukikaffuchino.han1meviewer.Res
 import io.github.daisukikaffuchino.han1meviewer.logic.SettingsRepository
+import io.github.daisukikaffuchino.han1meviewer.reason_for_download_notification
 import io.github.daisukikaffuchino.han1meviewer.ui.activity.MainActivity
 import io.github.daisukikaffuchino.han1meviewer.ui.bridge.VideoPageHost
+import io.github.daisukikaffuchino.utils.SonnerToast
+import kotlinx.coroutines.launch
+import org.jetbrains.compose.resources.getString
 
 /**
  * M3：Android 侧 [VideoPageHost] 实现 + 组合记忆入口。
@@ -43,10 +49,17 @@ fun rememberAndroidVideoPageHost(
     pipToggleDescription: String,
 ): AndroidVideoPageHost {
     var showNotificationPermissionReason by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestPermission()
     ) { granted ->
-        if (!granted) showNotificationPermissionReason = true
+        if (!granted) {
+            showNotificationPermissionReason = true
+            // 降级提示：state 位保留（供后续 UI 使用），即时反馈走 Toast（下载本身不受阻）。
+            scope.launch {
+                SonnerToast.warning(getString(Res.string.reason_for_download_notification))
+            }
+        }
     }
     val restoreLightSystemBars = when (SettingsRepository.useDarkMode) {
         "always_on" -> false
@@ -81,6 +94,8 @@ class AndroidVideoPageHost(
     private var pipSourceRect: Rect? = null
 
     fun requestPostNotificationPermission() = onRequestNotificationPermission()
+
+    override fun requestNotificationPermission() = requestPostNotificationPermission()
 
     override fun showCommentBadge(count: Int) {
         // 纯逻辑由共享 Host 内部对象承担（经 onRegisterPageHost 注册），此处无需处理。

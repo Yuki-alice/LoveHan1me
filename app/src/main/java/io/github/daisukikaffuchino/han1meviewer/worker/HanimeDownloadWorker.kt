@@ -199,6 +199,13 @@ class HanimeDownloadWorker(
 
     private val downloadId = Random.nextInt()
 
+    /**
+     * 结果通知（成功/失败/重试/已存在）专用 id：必须与前台进度通知的 [downloadId]
+     * 区分，否则 Worker 结束时 stopForeground 连带清掉同 id 的结果通知
+     * （M8 后续通知验证：完成通知闪现即消失）。
+     */
+    private val resultNotificationId = downloadId + 1
+
     private val mainScope = CoroutineScope(Dispatchers.Main.immediate)
     private val dbScope = CoroutineScope(Dispatchers.IO)
 
@@ -620,7 +627,7 @@ class HanimeDownloadWorker(
     @SuppressLint("MissingPermission")
     private suspend fun showSuccessNotification() {
         notificationManager.notify(
-            downloadId, NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
+            resultNotificationId, NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
                 .setSmallIcon(R.drawable.ic_check_circle)
                 .setContentTitle(getString(Res.string.download_task_completed))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -633,7 +640,7 @@ class HanimeDownloadWorker(
     @SuppressLint("MissingPermission")
     private suspend fun showFileExistsFailureNotification(fileName: String) {
         notificationManager.notify(
-            downloadId, NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
+            resultNotificationId, NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
                 .setSmallIcon(R.drawable.ic_cancel_circle)
                 .setContentTitle(getString(Res.string.this_data_exists))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -645,7 +652,7 @@ class HanimeDownloadWorker(
     @SuppressLint("MissingPermission")
     private suspend fun showFailureNotification(errMsg: String? = null) {
         notificationManager.notify(
-            downloadId, NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
+            resultNotificationId, NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
                 .setSmallIcon(R.drawable.ic_cancel_circle)
                 .setContentTitle(getString(Res.string.download_task_failed))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
@@ -663,7 +670,7 @@ class HanimeDownloadWorker(
     @SuppressLint("MissingPermission")
     private suspend fun showRetryNotification(reason: String) {
         notificationManager.notify(
-            downloadId, NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
+            resultNotificationId, NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
                 .setSmallIcon(R.drawable.ic_download)
                 .setContentTitle(getString(Res.string.download_task_retrying))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
