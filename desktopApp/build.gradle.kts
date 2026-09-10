@@ -32,7 +32,15 @@ compose.desktop {
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "Han1meViewer"
-            packageVersion = "0.1.0"
+            // macOS 的 jpackage 拒绝首位为 0 的版本号（原值 "0.1.0" 报
+            // 「app-version 中的第一个数字不能为零或负数」→ createDistributable 直接失败）。
+            // 该值同时用于 dmg 文件名与 CFBundleShortVersionString，与代码版本无关。
+            packageVersion = "1.0.0"
+            // 打包产物用 jlink 裁剪运行时，只带被引用的模块。DataStore 的 protobuf
+            // 反射实现依赖 sun.misc.Unsafe，而它属于 jdk.unsupported，不显式带上就会在
+            // 启动读 DataStore 时抛 NoClassDefFoundError: sun/misc/Unsafe 并整窗崩掉。
+            // 注意：`:desktopApp:run` 跑在完整 JDK 上，看不出这个问题——只有打包产物才会暴露。
+            modules("jdk.unsupported")
         }
     }
 }
