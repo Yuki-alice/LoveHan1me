@@ -148,9 +148,9 @@ import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.VideoNormalCardMinWidth
 import lovehan1me.ui.theme.VideoSimplifiedCardMinWidth
 import lovehan1me.ui.theme.shapeByInteraction
-import lovehan1me.util.DisplayTextLocalizer
+import lovehan1me.core.util.DisplayTextLocalizer
 import lovehan1me.ui.component.rememberHapticFeedback
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone

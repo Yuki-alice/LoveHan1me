@@ -1,6 +1,6 @@
 package lovehan1me.ui.screen
 
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf

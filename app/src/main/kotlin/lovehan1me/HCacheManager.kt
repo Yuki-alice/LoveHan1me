@@ -3,12 +3,12 @@ package lovehan1me
 import lovehan1me.logic.SettingsRepository
 
 import android.content.Context
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import androidx.annotation.WorkerThread
 import lovehan1me.logic.DatabaseRepo
 import lovehan1me.HanimeLink
 import lovehan1me.logic.model.HanimeVideo
-import lovehan1me.util.SafFileManager
+import lovehan1me.core.util.SafFileManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

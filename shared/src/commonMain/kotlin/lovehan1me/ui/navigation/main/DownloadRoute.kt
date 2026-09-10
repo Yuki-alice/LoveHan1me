@@ -39,7 +39,7 @@ import lovehan1me.ui.screen.home.DownloadScreen
 import lovehan1me.ui.screen.home.download.DownloadEvent
 import lovehan1me.ui.viewmodel.DownloadViewModel
 import lovehan1me.logic.platform.downloadWorkController
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

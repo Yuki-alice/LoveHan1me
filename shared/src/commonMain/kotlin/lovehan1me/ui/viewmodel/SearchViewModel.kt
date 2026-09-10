@@ -1,6 +1,6 @@
 package lovehan1me.ui.viewmodel
 
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import lovehan1me.HanimeConstants.HANIME_URL
@@ -15,8 +15,8 @@ import lovehan1me.logic.ioDispatcher
 import lovehan1me.logic.model.HanimeInfo
 import lovehan1me.logic.model.SearchOption
 import lovehan1me.logic.state.PageLoadingState
-import lovehan1me.utils.decodeComposeAsset
-import lovehan1me.utils.unsafeLazy
+import lovehan1me.core.util.decodeComposeAsset
+import lovehan1me.core.util.unsafeLazy
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow

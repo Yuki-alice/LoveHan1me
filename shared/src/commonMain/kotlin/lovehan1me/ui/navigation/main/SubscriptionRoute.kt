@@ -9,8 +9,8 @@ import lovehan1me.getHanimeSearchShareText
 import lovehan1me.getHanimeShareText
 import lovehan1me.ui.screen.home.SubscriptionScreen
 import lovehan1me.ui.viewmodel.MySubscriptionsViewModel
-import lovehan1me.utils.rememberCopyTextToClipboard
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.rememberCopyTextToClipboard
+import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 

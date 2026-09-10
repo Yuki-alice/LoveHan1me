@@ -20,11 +20,11 @@ import lovehan1me.logic.network.CloudflareVerificationCoordinator
 import lovehan1me.logic.network.CloudflareVerifier
 import lovehan1me.logic.network.HProxySelector
 import lovehan1me.ui.crash.CrashHandler
-import lovehan1me.util.AnimeShaders
-import lovehan1me.util.AppLanguageManager
-import lovehan1me.utils.ActivityManager
-import lovehan1me.utils.LogUtil
-import lovehan1me.utils.applicationContext as globalApplicationContext
+import lovehan1me.core.util.AnimeShaders
+import lovehan1me.core.util.AppLanguageManager
+import lovehan1me.core.util.ActivityManager
+import lovehan1me.core.util.LogUtil
+import lovehan1me.core.util.applicationContext as globalApplicationContext
 import `is`.xyz.mpv.MPVLib
 import java.lang.ref.WeakReference
 import java.net.ProxySelector

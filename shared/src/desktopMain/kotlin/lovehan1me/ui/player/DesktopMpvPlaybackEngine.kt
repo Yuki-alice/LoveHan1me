@@ -1,6 +1,6 @@
 package lovehan1me.ui.player
 
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

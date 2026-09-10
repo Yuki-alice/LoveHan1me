@@ -37,9 +37,9 @@ import lovehan1me.ui.screen.settings.HKeyframeSettingsUiState
 import lovehan1me.ui.screen.settings.HKeyframesScreen
 import lovehan1me.ui.screen.settings.SharedHKeyframesScreen
 import lovehan1me.ui.viewmodel.SettingsViewModel
-import lovehan1me.utils.rememberCopyTextToClipboard
-import lovehan1me.utils.decodeFromStringByBase64
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.rememberCopyTextToClipboard
+import lovehan1me.core.util.decodeFromStringByBase64
+import lovehan1me.core.util.SonnerToast
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString

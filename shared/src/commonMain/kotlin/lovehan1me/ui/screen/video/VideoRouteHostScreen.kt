@@ -85,10 +85,10 @@ import lovehan1me.ui.player.isActiveNetworkMetered
 import lovehan1me.ui.viewmodel.CommentViewModel
 import lovehan1me.ui.viewmodel.VideoViewModel
 import lovehan1me.ui.viewmodel.sharedViewModel
-import lovehan1me.utils.decodeComposeAsset
-import lovehan1me.utils.SonnerToast
-import lovehan1me.utils.rememberCopyTextToClipboard
-import lovehan1me.utils.rememberShareText
+import lovehan1me.core.util.decodeComposeAsset
+import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.rememberCopyTextToClipboard
+import lovehan1me.core.util.rememberShareText
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import kotlin.time.Duration.Companion.milliseconds

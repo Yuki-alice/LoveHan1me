@@ -67,7 +67,7 @@ import lovehan1me.ui.component.CardContainerSurface
 import lovehan1me.ui.preview.fakeDownloadedNodes
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction
-import lovehan1me.utils.formatFileSize
+import lovehan1me.core.util.formatFileSize
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.toLocalDateTime

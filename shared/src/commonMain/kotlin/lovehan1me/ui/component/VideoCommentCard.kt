@@ -46,7 +46,7 @@ import lovehan1me.ic_reply
 import lovehan1me.logic.model.VideoComments
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction
-import lovehan1me.util.DisplayTextLocalizer
+import lovehan1me.core.util.DisplayTextLocalizer
 
 /**
  * 视频评论卡片组件。

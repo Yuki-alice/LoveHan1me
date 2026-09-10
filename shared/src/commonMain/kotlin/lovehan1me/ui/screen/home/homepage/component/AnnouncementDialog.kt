@@ -217,7 +217,7 @@ fun AnnouncementDialog(
                     val ok = saveImageToGallery(imageUrl)
                     kotlinx.coroutines.withContext(Dispatchers.Main) {
                         if (ok) {
-                            lovehan1me.utils.SonnerToast.success(
+                            lovehan1me.core.util.SonnerToast.success(
                                 getString(Res.string.saved)
                             )
                         }

@@ -1,6 +1,6 @@
 package lovehan1me.logic.model
 
-import lovehan1me.utils.LanguageHelper
+import lovehan1me.core.util.LanguageHelper
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 

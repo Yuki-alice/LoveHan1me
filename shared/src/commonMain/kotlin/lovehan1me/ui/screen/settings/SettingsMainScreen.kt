@@ -9,7 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import lovehan1me.utils.isDebugBuild
+import lovehan1me.core.util.isDebugBuild
 import lovehan1me.Res
 import lovehan1me.settings_video_playback_summary
 import lovehan1me.settings_video_playback

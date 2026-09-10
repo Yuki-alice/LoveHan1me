@@ -124,7 +124,7 @@ import lovehan1me.ui.screen.home.homepage.defaultHomeCategoryPreferenceItems
 import lovehan1me.ui.screen.home.homepage.hiddenHomeCategoryKeys
 import lovehan1me.ui.screen.home.homepage.homeCategoryOrder
 import lovehan1me.ui.screen.home.homepage.saveHomeCategoryPreferences
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext

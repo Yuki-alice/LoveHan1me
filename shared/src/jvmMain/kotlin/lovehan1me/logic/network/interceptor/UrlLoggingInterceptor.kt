@@ -1,6 +1,6 @@
 package lovehan1me.logic.network.interceptor
 
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import okhttp3.Interceptor
 import okhttp3.Response
 import java.net.URLDecoder

@@ -1,6 +1,6 @@
 package lovehan1me.ui.viewmodel
 
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import lovehan1me.EMPTY_STRING

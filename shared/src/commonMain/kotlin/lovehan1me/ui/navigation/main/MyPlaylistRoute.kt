@@ -12,8 +12,8 @@ import lovehan1me.getHanimeShareText
 import lovehan1me.ui.screen.home.myplaylist.PlaylistScreen
 import lovehan1me.ui.viewmodel.LocalPlayListViewModel
 import lovehan1me.ui.viewmodel.MyPlayListViewModel
-import lovehan1me.utils.rememberCopyTextToClipboard
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.rememberCopyTextToClipboard
+import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 

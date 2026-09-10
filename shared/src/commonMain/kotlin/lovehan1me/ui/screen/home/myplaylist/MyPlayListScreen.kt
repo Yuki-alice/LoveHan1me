@@ -43,7 +43,7 @@ import lovehan1me.ui.component.PullRefreshOverlay
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.viewmodel.PlaylistController
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.SonnerToast
 
 /**
  * 播放列表页面 Screen 层。

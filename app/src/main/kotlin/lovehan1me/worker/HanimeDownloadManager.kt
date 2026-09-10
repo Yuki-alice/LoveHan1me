@@ -1,6 +1,6 @@
 package lovehan1me.worker
 
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import androidx.lifecycle.Observer
 import androidx.work.ExistingWorkPolicy
 import androidx.work.WorkInfo
@@ -12,8 +12,8 @@ import lovehan1me.logic.DatabaseRepo
 import lovehan1me.logic.dao.Han1meDatabases
 import lovehan1me.logic.entity.download.HanimeDownloadEntity
 import lovehan1me.logic.state.DownloadState
-import lovehan1me.util.runSuspendCatching
-import lovehan1me.utils.applicationContext
+import lovehan1me.core.util.runSuspendCatching
+import lovehan1me.core.util.applicationContext
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob

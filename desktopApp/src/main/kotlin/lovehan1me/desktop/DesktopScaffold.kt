@@ -14,7 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.HanimeTheme
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.SonnerToast
 
 /**
  * P6c-D：桌面最小骨架屏（desktopApp 内，非 shared）。

@@ -1,6 +1,6 @@
 package lovehan1me.ui.player
 
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.useContents
 import kotlinx.coroutines.CoroutineScope

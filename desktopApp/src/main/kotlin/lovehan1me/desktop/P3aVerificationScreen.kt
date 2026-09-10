@@ -43,7 +43,7 @@ import lovehan1me.logic.SettingsRepository
 import lovehan1me.logic.Parser
 import lovehan1me.logic.state.WebsiteState
 import lovehan1me.logic.network.HanimeNetwork
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay

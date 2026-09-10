@@ -80,7 +80,7 @@ import lovehan1me.ui.screen.settings.OpenSourceLicensesScreen
 import lovehan1me.ui.screen.settings.SettingsMainScreen
 import lovehan1me.ui.theme.fadeScale
 import lovehan1me.ui.theme.materialSharedAxisX
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 

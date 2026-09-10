@@ -32,7 +32,7 @@ import lovehan1me.logic.SettingsRepository
 import lovehan1me.reason_for_download_notification
 import lovehan1me.ui.activity.MainActivity
 import lovehan1me.ui.bridge.VideoPageHost
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 

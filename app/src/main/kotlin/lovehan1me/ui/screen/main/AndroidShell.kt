@@ -2,7 +2,7 @@ package lovehan1me.ui.screen.main
 
 import android.content.ClipData
 import android.content.Intent
-import lovehan1me.utils.getDownloadedHanimeVideoUri
+import lovehan1me.core.util.getDownloadedHanimeVideoUri
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box

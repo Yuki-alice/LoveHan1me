@@ -44,10 +44,10 @@ import lovehan1me.ui.screen.login.LoginDialog
 import lovehan1me.ui.screen.login.LoginScreen
 import lovehan1me.ui.screen.login.ManualInputCookiesScreen
 import lovehan1me.ui.screen.web.CloudflareScreen
-import lovehan1me.util.CookieString
-import lovehan1me.utils.LogUtil
-import lovehan1me.utils.SonnerToast
-import lovehan1me.utils.toastText
+import lovehan1me.core.util.CookieString
+import lovehan1me.core.util.LogUtil
+import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.toastText
 import kotlinx.coroutines.launch
 
 @Composable

@@ -16,10 +16,10 @@ import lovehan1me.copy_to_clipboard
 import lovehan1me.crash_no_logs
 import lovehan1me.ui.crash.CrashHandler
 import lovehan1me.ui.screen.crash.CrashScreen
-import lovehan1me.utils.ActivityManager
-import lovehan1me.utils.SonnerToast
-import lovehan1me.utils.toastText
-import lovehan1me.utils.rememberCopyTextToClipboard
+import lovehan1me.core.util.ActivityManager
+import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.toastText
+import lovehan1me.core.util.rememberCopyTextToClipboard
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter

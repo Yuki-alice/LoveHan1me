@@ -45,14 +45,14 @@ import lovehan1me.ui.crash.clearCrashReport
 import lovehan1me.ui.crash.takePendingCrashReport
 import lovehan1me.ui.screen.crash.CrashScreen
 import lovehan1me.ui.navigation.main.SharedTopNavigation
-import lovehan1me.utils.rememberCopyTextToClipboard
+import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.ui.navigation.main.TopLevelBackStack
 import lovehan1me.ui.navigation.main.navigateDrawerDestination
 import lovehan1me.ui.screen.home.homepage.HomePageViewModel
 import lovehan1me.ui.screen.main.AppSourceDialog
 import lovehan1me.ui.theme.HanimeTheme
 import lovehan1me.ui.viewmodel.sharedViewModel
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.launch
 
 /**

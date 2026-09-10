@@ -1,6 +1,6 @@
 package lovehan1me.logic.network.interceptor
 
-import lovehan1me.utils.unsafeLazy
+import lovehan1me.core.util.unsafeLazy
 import okhttp3.ResponseBody
 import okio.Throttler
 import okio.buffer

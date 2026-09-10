@@ -55,8 +55,8 @@ import lovehan1me.ui.component.isFirstPageLoading
 import lovehan1me.ui.screen.home.homepage.component.AnnouncementCard
 import lovehan1me.ui.screen.home.homepage.component.AppUpdateCard
 import lovehan1me.ui.screen.rememberRandomLoadingHint
-import lovehan1me.util.toNetworkErrorMessageRes
-import lovehan1me.utils.isDebugBuild
+import lovehan1me.core.util.toNetworkErrorMessageRes
+import lovehan1me.core.util.isDebugBuild
 
 /**
  * M1/M2：三端共享的首页容器（对标 `:app` 的 `HomePageScreen`，去掉 Android 专属依赖）。

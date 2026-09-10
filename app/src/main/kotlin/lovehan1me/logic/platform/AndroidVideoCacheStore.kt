@@ -2,7 +2,7 @@ package lovehan1me.logic.platform
 
 import lovehan1me.HCacheManager
 import lovehan1me.logic.model.HanimeVideo
-import lovehan1me.utils.application
+import lovehan1me.core.util.application
 import kotlinx.coroutines.flow.Flow
 
 object AndroidVideoCacheStore : VideoCacheStore {

@@ -10,7 +10,7 @@ import lovehan1me.ui.screen.search.AdvancedSearchSheet
 import lovehan1me.ui.screen.search.SearchScreen
 import lovehan1me.ui.viewmodel.SearchViewModel
 import lovehan1me.ui.viewmodel.sharedViewModel
-import lovehan1me.utils.rememberCopyTextToClipboard
+import lovehan1me.core.util.rememberCopyTextToClipboard
 import kotlinx.serialization.json.Json
 
 @Composable

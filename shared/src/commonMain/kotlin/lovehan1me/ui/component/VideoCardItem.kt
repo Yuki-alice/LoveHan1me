@@ -61,9 +61,9 @@ import lovehan1me.ui.preview.fakeVideosItem
 import lovehan1me.ui.screen.RetryableImage
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction
-import lovehan1me.utils.rememberCopyTextToClipboard
-import lovehan1me.util.DisplayTextLocalizer
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.rememberCopyTextToClipboard
+import lovehan1me.core.util.DisplayTextLocalizer
+import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.launch
 
 /**

@@ -84,7 +84,7 @@ import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.SpacingNormal
 import lovehan1me.ui.theme.VideoNormalCardMinWidth
 import lovehan1me.ui.viewmodel.PlaylistController
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.SonnerToast
 
 /**
  * 播放列表详情底部弹窗。

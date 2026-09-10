@@ -1,6 +1,6 @@
 package lovehan1me.logic.network
 
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import lovehan1me.HanimeConstants.HANIME_HOSTNAME
 import lovehan1me.logic.SettingsRepository
 import okhttp3.Dns

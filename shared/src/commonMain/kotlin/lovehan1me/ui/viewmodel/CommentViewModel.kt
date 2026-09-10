@@ -1,6 +1,6 @@
 package lovehan1me.ui.viewmodel
 
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import androidx.lifecycle.viewModelScope
 import androidx.lifecycle.ViewModel
 import lovehan1me.Res
@@ -18,9 +18,9 @@ import lovehan1me.thumb_down_success
 import lovehan1me.thumb_up_success
 import lovehan1me.ui.screen.video.CommentSortType
 import lovehan1me.ui.viewmodel.CsrfTokenProvider.csrfToken
-import lovehan1me.utils.SonnerToast
-import lovehan1me.utils.decodeComposeAsset
-import lovehan1me.utils.unsafeLazy
+import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.decodeComposeAsset
+import lovehan1me.core.util.unsafeLazy
 import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow

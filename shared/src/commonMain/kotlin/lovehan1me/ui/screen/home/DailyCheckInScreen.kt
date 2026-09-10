@@ -46,7 +46,7 @@ import lovehan1me.calendar_dialog_message
 import lovehan1me.calendar_dialog_confirm
 import lovehan1me.ic_event_note
 import lovehan1me.no_calendar_app
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.SonnerToast
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.ui.screen.home.dailycheckin.CheckInDialog

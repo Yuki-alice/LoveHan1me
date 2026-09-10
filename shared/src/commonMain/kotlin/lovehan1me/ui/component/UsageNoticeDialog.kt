@@ -27,7 +27,7 @@ import lovehan1me.usage_notice_accept_countdown
 import lovehan1me.usage_notice_content
 import lovehan1me.usage_notice_decline
 import lovehan1me.usage_notice_title
-import lovehan1me.utils.isDebugBuild
+import lovehan1me.core.util.isDebugBuild
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Duration.Companion.milliseconds

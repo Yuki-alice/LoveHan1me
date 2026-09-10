@@ -139,7 +139,7 @@ import lovehan1me.ui.player.PlayerDefaults
 import lovehan1me.ui.player.posterBlur
 import lovehan1me.ui.component.rememberHapticFeedback
 import lovehan1me.ui.theme.HanimeDefaults
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

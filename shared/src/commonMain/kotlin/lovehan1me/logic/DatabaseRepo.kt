@@ -1,6 +1,6 @@
 package lovehan1me.logic
 
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import lovehan1me.logic.SettingsRepository
 import lovehan1me.logic.dao.Han1meDatabases
 import lovehan1me.logic.entity.HKeyframeEntity

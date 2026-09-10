@@ -1,12 +1,12 @@
 package lovehan1me.logic
 
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import lovehan1me.logic.SettingsRepository
 import lovehan1me.Res
 import lovehan1me.logic.model.Announcement
 import lovehan1me.logic.model.AppUpdateInfo
 import lovehan1me.update_announcement_title
-import lovehan1me.utils.decodeFromStringByBase64
+import lovehan1me.core.util.decodeFromStringByBase64
 import kotlinx.coroutines.withContext
 import lovehan1me.logic.platform.performUpdateJsonRequest
 import kotlinx.serialization.ExperimentalSerializationApi

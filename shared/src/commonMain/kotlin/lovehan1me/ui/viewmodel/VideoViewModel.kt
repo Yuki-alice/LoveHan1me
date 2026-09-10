@@ -1,6 +1,6 @@
 package lovehan1me.ui.viewmodel
 
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -29,7 +29,7 @@ import lovehan1me.logic.platform.videoCacheStore
 import lovehan1me.logic.state.VideoLoadingState
 import lovehan1me.logic.state.WebsiteState
 import lovehan1me.ui.viewmodel.CsrfTokenProvider.csrfToken
-import lovehan1me.util.TagLocalizer
+import lovehan1me.core.util.TagLocalizer
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow

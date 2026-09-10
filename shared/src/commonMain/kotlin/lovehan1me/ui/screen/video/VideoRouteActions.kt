@@ -19,7 +19,7 @@ import lovehan1me.ui.navigation.main.SearchRoute
 import lovehan1me.ui.viewmodel.VideoViewModel
 import lovehan1me.ui.viewmodel.updateCheckInWidget
 import lovehan1me.logic.ioDispatcher
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch

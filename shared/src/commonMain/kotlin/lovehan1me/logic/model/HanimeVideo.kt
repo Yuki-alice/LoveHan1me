@@ -1,7 +1,7 @@
 package lovehan1me.logic.model
 
 import lovehan1me.ResolutionLinkMap
-import lovehan1me.utils.mapToArray
+import lovehan1me.core.util.mapToArray
 import kotlinx.datetime.LocalDate
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.Transient

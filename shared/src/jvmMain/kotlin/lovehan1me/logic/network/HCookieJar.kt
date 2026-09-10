@@ -1,9 +1,9 @@
 package lovehan1me.logic.network
 
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.util.CookieString
-import lovehan1me.util.toLoginCookieList
+import lovehan1me.core.util.CookieString
+import lovehan1me.core.util.toLoginCookieList
 import okhttp3.Cookie
 import okhttp3.CookieJar
 import okhttp3.HttpUrl

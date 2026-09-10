@@ -5,7 +5,7 @@ import lovehan1me.logic.network.interceptor.GetchuInterceptor
 import lovehan1me.logic.network.interceptor.SpeedLimitInterceptor
 import lovehan1me.logic.network.interceptor.UrlLoggingInterceptor
 import lovehan1me.logic.network.interceptor.UserAgentInterceptor
-import lovehan1me.utils.unsafeLazy
+import lovehan1me.core.util.unsafeLazy
 import okhttp3.Cache
 import okhttp3.CookieJar
 import okhttp3.OkHttpClient

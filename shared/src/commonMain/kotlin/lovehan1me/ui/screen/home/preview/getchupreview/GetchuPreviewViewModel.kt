@@ -1,6 +1,6 @@
 package lovehan1me.ui.screen.home.preview.getchupreview
 
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import lovehan1me.logic.GetchuNetworkRepo.getGetchuPreview

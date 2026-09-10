@@ -7,9 +7,9 @@ import androidx.core.net.toUri
 import lovehan1me.USER_AGENT
 import lovehan1me.logic.SettingsRepository
 import lovehan1me.logic.network.HProxySelector
-import lovehan1me.util.AnimeShaders
-import lovehan1me.util.AnimeShaders.getCert
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.AnimeShaders
+import lovehan1me.core.util.AnimeShaders.getCert
+import lovehan1me.core.util.LogUtil
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers

@@ -58,7 +58,7 @@ import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.preview.fakeHomePageVideos
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction
-import lovehan1me.utils.formatFileSize
+import lovehan1me.core.util.formatFileSize
 
 /**
  * 下载中任务卡片。

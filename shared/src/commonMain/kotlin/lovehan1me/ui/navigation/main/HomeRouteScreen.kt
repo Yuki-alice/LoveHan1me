@@ -37,8 +37,8 @@ import lovehan1me.ui.screen.home.homepage.SharedHomeScreen
 import lovehan1me.ui.screen.home.homepage.component.AnnouncementDialog
 import lovehan1me.ui.viewmodel.CheckInCalendarViewModel
 import lovehan1me.update_link_open_failed
-import lovehan1me.utils.SonnerToast
-import lovehan1me.utils.rememberCopyTextToClipboard
+import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.rememberCopyTextToClipboard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate

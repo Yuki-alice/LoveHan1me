@@ -77,8 +77,8 @@ import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.content.ErrorContent
 import lovehan1me.ui.component.lazy.LazyColumn
 import lovehan1me.ui.theme.HanimeDefaults
-import lovehan1me.util.parseTimeStrToMinutes
-import lovehan1me.util.safeSortedBy
+import lovehan1me.core.util.parseTimeStrToMinutes
+import lovehan1me.core.util.safeSortedBy
 import lovehan1me.ui.component.rememberHapticFeedback
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow

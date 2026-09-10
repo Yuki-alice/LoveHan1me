@@ -90,7 +90,7 @@ import lovehan1me.ui.component.content.ErrorContent
 import lovehan1me.ui.screen.rememberRandomLoadingHint
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.viewmodel.UserAccountViewModel
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.SonnerToast
 import lovehan1me.ui.component.HapticButton as Button
 import lovehan1me.ui.component.HapticTextButton as TextButton
 

@@ -22,7 +22,7 @@ import lovehan1me.ui.crash.installCrashHandler
 import lovehan1me.logic.SettingsRepository
 import lovehan1me.logic.datastore.DataStoreManager
 import lovehan1me.ui.player.DesktopWindowHolder
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import kotlinx.coroutines.runBlocking
 
 /**

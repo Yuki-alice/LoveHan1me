@@ -42,7 +42,7 @@ import lovehan1me.cancel
 import lovehan1me.ic_export
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.ui.preview.ComponentPreview
-import lovehan1me.utils.VibrationUtil
+import lovehan1me.core.util.VibrationUtil
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

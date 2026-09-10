@@ -6,8 +6,8 @@ import lovehan1me.HanimeConstants.HANIME_HOSTNAME
 import lovehan1me.HanimeConstants.HANIME_URL
 import lovehan1me.Res
 import lovehan1me.ui.player.PlayerDefaults
-import lovehan1me.utils.formatBytesPerSecond
-import lovehan1me.utils.formatFileSize
+import lovehan1me.core.util.formatBytesPerSecond
+import lovehan1me.core.util.formatFileSize
 import org.jetbrains.compose.resources.getString
 
 // P6d-4：自 :app SettingsRouteUtils.kt 拆分下沉——本文件只保留平台无关函数；

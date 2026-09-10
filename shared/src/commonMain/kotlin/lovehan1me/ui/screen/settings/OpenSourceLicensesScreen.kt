@@ -85,7 +85,7 @@ import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.animatedShape
 import lovehan1me.ui.theme.fadeScale
 import lovehan1me.ui.component.rememberHapticFeedback
-import lovehan1me.utils.parseHtmlToAnnotatedString
+import lovehan1me.core.util.parseHtmlToAnnotatedString
 
 private data class DisplayLicense(
     val name: String,

@@ -8,7 +8,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.window.LocalWindow
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import org.openani.mediamp.mpv.compose.MpvMediampPlayerSurfaceProvider
 
 /**

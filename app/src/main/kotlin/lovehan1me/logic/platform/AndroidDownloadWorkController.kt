@@ -4,10 +4,10 @@ import androidx.work.WorkManager
 import lovehan1me.logic.dao.Han1meDatabases
 import lovehan1me.logic.model.HanimeVideo
 import lovehan1me.logic.entity.download.HanimeDownloadEntity
-import lovehan1me.util.SafFileManager
+import lovehan1me.core.util.SafFileManager
 import lovehan1me.worker.HanimeDownloadManager
 import lovehan1me.worker.HanimeDownloadWorker
-import lovehan1me.utils.application
+import lovehan1me.core.util.application
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
@@ -72,7 +72,7 @@ object AndroidDownloadWorkController : DownloadWorkController {
                 application, videoCode, video,
             )
         }.onFailure {
-            lovehan1me.utils.LogUtil.w("AndroidDownload", "save info.json failed: $videoCode", it)
+            lovehan1me.core.util.LogUtil.w("AndroidDownload", "save info.json failed: $videoCode", it)
         }
     }
 

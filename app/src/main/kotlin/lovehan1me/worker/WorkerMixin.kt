@@ -1,7 +1,7 @@
 package lovehan1me.worker
 
 import androidx.work.ListenableWorker
-import lovehan1me.utils.unsafeLazy
+import lovehan1me.core.util.unsafeLazy
 
 /**
  * @project Han1meViewer

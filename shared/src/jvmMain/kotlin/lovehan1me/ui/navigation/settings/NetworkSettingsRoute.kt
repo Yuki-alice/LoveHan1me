@@ -1,6 +1,6 @@
 package lovehan1me.ui.navigation.settings
 
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Text
 import lovehan1me.ui.component.HapticTextButton as TextButton
@@ -63,7 +63,7 @@ import lovehan1me.ui.screen.settings.DelayResultUi
 import lovehan1me.ui.screen.settings.DohTestResultUi
 import lovehan1me.ui.screen.settings.NetworkSettingsScreen
 import lovehan1me.ui.screen.settings.NetworkSettingsUiState
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.SonnerToast
 import okhttp3.Request
 import java.net.InetAddress
 import kotlinx.coroutines.Dispatchers

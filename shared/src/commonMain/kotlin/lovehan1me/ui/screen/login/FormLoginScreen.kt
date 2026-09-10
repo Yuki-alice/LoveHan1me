@@ -44,7 +44,7 @@ import lovehan1me.logic.state.WebsiteState
 import lovehan1me.password
 import lovehan1me.scan_for_cookies
 import lovehan1me.try_login_here
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource

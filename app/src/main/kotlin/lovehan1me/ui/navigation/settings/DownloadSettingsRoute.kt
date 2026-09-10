@@ -60,11 +60,11 @@ import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.component.TripleButtonDialog
 import lovehan1me.ui.screen.settings.DownloadSettingsScreen
 import lovehan1me.ui.screen.settings.DownloadSettingsUiState
-import lovehan1me.util.SafFileManager
-import lovehan1me.util.SafFileManager.KEY_TREE_URI
+import lovehan1me.core.util.SafFileManager
+import lovehan1me.core.util.SafFileManager.KEY_TREE_URI
 import lovehan1me.worker.HanimeDownloadManager
-import lovehan1me.utils.SonnerToast
-import lovehan1me.utils.toastText
+import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.toastText
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 

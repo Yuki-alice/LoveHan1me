@@ -15,7 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.BuildConfig
 import lovehan1me.ui.theme.HanimeTheme
 import lovehan1me.logic.SettingsRepository
-import lovehan1me.utils.SonnerToast
+import lovehan1me.core.util.SonnerToast
 
 abstract class BaseActivity : AppCompatActivity() {
 

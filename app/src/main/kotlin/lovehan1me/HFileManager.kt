@@ -1,7 +1,7 @@
 package lovehan1me
 import android.content.Context
 import android.os.Environment
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import java.io.File
 
 object HFileManager {
@@ -14,7 +14,7 @@ object HFileManager {
 
     /**
      * 获取 App 的下载主目录。
-     * 使用 [lovehan1me.util.SafFileManager] 可自定义目录
+     * 使用 [lovehan1me.core.util.SafFileManager] 可自定义目录
      */
     fun getAppDownloadFolder(context: Context): File {
         return File(context.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS), APP_NAME)

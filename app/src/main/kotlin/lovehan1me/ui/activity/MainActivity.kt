@@ -11,7 +11,7 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
-import lovehan1me.utils.LogUtil
+import lovehan1me.core.util.LogUtil
 import androidx.activity.viewModels
 import androidx.biometric.BiometricManager
 import androidx.biometric.BiometricPrompt
@@ -42,8 +42,8 @@ import lovehan1me.ui.navigation.main.registerArtistSearchNavigator
 import lovehan1me.ui.navigation.main.VideoRoute
 import lovehan1me.ui.screen.main.MainActivityShell
 import lovehan1me.ui.screen.home.homepage.HomePageViewModel
-import lovehan1me.utils.ActivityManager
-import lovehan1me.utils.isX86_64Device
+import lovehan1me.core.util.ActivityManager
+import lovehan1me.core.util.isX86_64Device
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
