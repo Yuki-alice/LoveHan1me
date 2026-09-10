@@ -1,0 +1,67 @@
+LoveHan1me Attribution Notice
+=============================
+
+LoveHan1me is distributed under the GNU General Public License, version 3.
+See LICENSE for the full license text.
+
+This project is an independent Kotlin Multiplatform implementation of a
+client for the hanime1.me website. It is NOT affiliated with, endorsed by,
+or connected to hanime1.me or any of the upstream projects listed below.
+
+All attributions required by upstream licenses are retained below.
+
+
+Upstream attribution
+--------------------
+
+### Han1meViewer  (GPLv3)
+
+Portions of the client implementation derive from the Han1meViewer project:
+
+    https://github.com/misaka10032w/Han1meViewer
+
+The Han1meViewer project is distributed under the GNU General Public License,
+version 3. This attribution and the applicable GPLv3 terms must be retained
+when that code is redistributed.
+
+### MomoQR  (GPLv3)
+
+This repository contains code derived from MomoQR by daisukiKaffuChino:
+
+    https://github.com/daisukiKaffuChino/MomoQR
+
+The MomoQR-derived code is licensed under the GNU GPLv3. This attribution and
+the applicable GPLv3 terms must be retained when that code is redistributed.
+
+### Legacy Han1meViewer by Yenaly  (Apache-2.0)
+
+Some historical portions originated from the earlier Han1meViewer project by
+Yenaly. The original declaration was:
+
+    Copyright 2021 Yenaly
+
+Those historical portions were originally released under the Apache License,
+Version 2.0. This is a legacy attribution and does not replace the GPLv3 terms
+applicable to the combined work.
+
+
+Architecture references (no source code included)
+-------------------------------------------------
+
+The module layering, Gradle convention-plugin setup, and several engineering
+practices used here were informed by studying the following project:
+
+    open-ani/animeko        https://github.com/open-ani/animeko        (AGPLv3)
+
+No source code from animeko is included in this repository. Any such reuse
+would be subject to AGPLv3 terms.
+
+
+Third-party dependencies
+------------------------
+
+All third-party dependencies retain their respective licenses. Their metadata
+is also listed in the application's Open Source Licenses page, and can be
+inspected with:
+
+    ./gradlew :app:dependencies
