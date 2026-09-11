@@ -71,6 +71,9 @@ kotlin {
             implementation(libs.datetime)
             implementation(libs.serialization.json)
 
+            // 备份导出/导入走 okio 流式读写（`openBackupSink/Source` 的签名即 okio 类型）
+            implementation(libs.okio)
+
             // 网络：Ktor 客户端（各平台引擎在对应源集声明）
             implementation(libs.ktor.client.core)
             implementation(libs.ktor.client.content.negotiation)

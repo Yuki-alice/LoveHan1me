@@ -10,6 +10,7 @@ documentFile = "1.1.0"
 kotlin = "2.4.10"
 serializationPlugin = "2.4.10"
 ksp = "2.3.2"
+okio = "3.18.1"
 # Dependencies
 coreKtx = "1.19.0"
 appcompat = "1.7.1"
@@ -66,6 +67,7 @@ mediamp = "0.3.2"
 compose-webview-multiplatform = "2.0.3"
 
 [libraries]
+okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
 # 构建期依赖（仅供 build-logic 的 convention plugin 编译时使用）
 android-gradle-plugin = { module = "com.android.tools.build:gradle", version.ref = "androidGradle" }
 kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }

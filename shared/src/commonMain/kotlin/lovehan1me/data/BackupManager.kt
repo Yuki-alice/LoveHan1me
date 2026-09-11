@@ -11,8 +11,8 @@ import okio.buffer
 import lovehan1me.core.platform.openBackupSink
 import lovehan1me.core.platform.switchLauncherIcon
 import lovehan1me.data.network.HanimeNetwork
-import lovehan1me.data.network.HProxySelector
 import lovehan1me.data.SettingsRepository
+import lovehan1me.core.platform.rebuildSystemProxy
 import lovehan1me.data.database.dao.CheckInRecordDatabase
 import lovehan1me.data.database.dao.DownloadDatabase
 import lovehan1me.data.database.dao.HistoryDatabase
@@ -26,7 +26,6 @@ import lovehan1me.data.database.entity.download.HanimeCategoryCrossRef
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
-import java.io.OutputStream
 import lovehan1me.core.platform.currentEpochMillis
 
 object BackupManager {
@@ -76,16 +75,25 @@ object BackupManager {
     }
 
     suspend fun exportTo(uri: String) {
-        openBackupSink(uri)?.buffer()?.use { sink ->
-            exportTo(sink.outputStream())
-        } ?: error("Unable to open backup file")
+        val sink = openBackupSink(uri)?.buffer() ?: error("Unable to open backup file")
+        try {
+            sink.writeUtf8(json.encodeToString(buildBackup()))
+        } finally {
+            sink.close()
+        }
     }
 
     suspend fun importFrom(uri: String) {
-        val backup = openBackupSource(uri)?.buffer()?.use { source ->
+        val source = openBackupSource(uri)?.buffer() ?: error("Unable to open backup file")
+        val backup = try {
             json.decodeFromString<BackupData>(source.readUtf8())
-        } ?: error("Unable to open backup file")
+        } finally {
+            source.close()
+        }
+        applyBackup(backup)
+    }
 
+    private suspend fun applyBackup(backup: BackupData) {
         backup.hKeyframes?.let { hKeyframes ->
             Han1meDatabases.miscellany.hKeyframeDao.apply {
                 deleteAll()
@@ -143,30 +151,25 @@ object BackupManager {
         backup.settings?.let { settings ->
             DataStoreManager.restoreBackup(settings.mapValues { (_, value) -> value.rawValue })
             applyAppLanguage(SettingsRepository.current.appLanguage)
-            HProxySelector.rebuildNetwork()
+            rebuildSystemProxy()
             HanimeNetwork.rebuildNetwork()
             downloadWorkController().updateDownloadLimit(SettingsRepository.current.downloadCountLimit)
             switchLauncherIcon(SettingsRepository.current.fakeLauncherIcon)
         }
     }
 
-    private suspend fun exportTo(outputStream: OutputStream) {
-        val backup = BackupData(
-            settings = DataStoreManager.exportBackup().mapValuesNotNull { (_, value) ->
-                value.toPreferenceValue()
-            },
-            hKeyframes = Han1meDatabases.miscellany.hKeyframeDao.getAll(),
-            checkInRecords = Han1meDatabases.checkInRecord.checkInDao().getAllRecords(),
-            watchHistories = Han1meDatabases.history.watchHistory.getAll(),
-            downloadGroups = Han1meDatabases.download.downloadGroupDao.getAllGroupsOnce(),
-            downloads = Han1meDatabases.download.hanimeDownloadDao.getAll(),
-            downloadCategories = Han1meDatabases.download.downloadCategoryDao.getAllCategoriesOnce(),
-            downloadCategoryCrossRefs = Han1meDatabases.download.downloadCategoryDao.getAllCrossRefs(),
-        )
-        outputStream.bufferedWriter().use { writer ->
-            writer.write(json.encodeToString(backup))
-        }
-    }
+    private suspend fun buildBackup(): BackupData = BackupData(
+        settings = DataStoreManager.exportBackup().mapValuesNotNull { (_, value) ->
+            value.toPreferenceValue()
+        },
+        hKeyframes = Han1meDatabases.miscellany.hKeyframeDao.getAll(),
+        checkInRecords = Han1meDatabases.checkInRecord.checkInDao().getAllRecords(),
+        watchHistories = Han1meDatabases.history.watchHistory.getAll(),
+        downloadGroups = Han1meDatabases.download.downloadGroupDao.getAllGroupsOnce(),
+        downloads = Han1meDatabases.download.hanimeDownloadDao.getAll(),
+        downloadCategories = Han1meDatabases.download.downloadCategoryDao.getAllCategoriesOnce(),
+        downloadCategoryCrossRefs = Han1meDatabases.download.downloadCategoryDao.getAllCrossRefs(),
+    )
 
     private inline fun <K, V, R : Any> Map<K, V>.mapValuesNotNull(
         transform: (Map.Entry<K, V>) -> R?
