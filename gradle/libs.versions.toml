@@ -126,6 +126,8 @@ test-junit = { group = "androidx.test.ext", name = "junit", version.ref = "testJ
 # video
 media3-exoplayer = { group = "androidx.media3", name = "media3-exoplayer", version.ref = "exoplayer" }
 media3-exoplayer-hls = { group = "androidx.media3", name = "media3-exoplayer-hls", version.ref = "exoplayer" }
+# 阶段一② Exo 超分：GlEffect/SingleFrameGlShaderProgram 在独立的 media3-effect 产物里（与 exoplayer 同版本对齐）
+media3-effect = { group = "androidx.media3", name = "media3-effect", version.ref = "exoplayer" }
 mpv-lib = { group = "com.github.abdallahmehiz", name = "mpv-android", version.ref = "mpv" }
 
 # Other

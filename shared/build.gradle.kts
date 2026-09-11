@@ -121,6 +121,8 @@ kotlin {
             // P5-1：播放器引擎归位 androidMain（坐标从 :app 照搬）
             implementation(libs.media3.exoplayer)
             implementation(libs.media3.exoplayer.hls)
+            // 阶段一②：Exo 超分走 Media3 GlEffect（effect 与 exoplayer 同版本）
+            implementation(libs.media3.effect)
             implementation(libs.mpv.lib)
             // 引擎编译必需（:app 经 bundles.android.base 间接持有，此处显式声明）：
             // core-ktx（androidx.core.net.toUri）+ coroutines-android（Dispatchers.Main）
