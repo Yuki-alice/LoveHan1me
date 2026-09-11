@@ -2,6 +2,7 @@ package lovehan1me.core.platform
 
 import lovehan1me.core.util.LogUtil
 import lovehan1me.core.constant.DESKTOP_USER_AGENT
+import lovehan1me.core.constant.EMPTY_STRING
 import lovehan1me.core.constant.USER_AGENT
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.dao.Han1meDatabases
@@ -162,8 +163,6 @@ object DesktopDownloadWorkController : DownloadWorkController {
         File(downloadDir(), videoCode).deleteRecursively()
     }
 
-    override suspend fun importDownloaded(): Boolean = false
-
     // ── 内部：执行器 ──
 
     private fun taskKey(entity: HanimeDownloadEntity) = "${entity.videoCode}|${entity.quality}"
@@ -176,6 +175,65 @@ object DesktopDownloadWorkController : DownloadWorkController {
 
     private fun sanitizeFileName(name: String) =
         name.replace(Regex("[\\\\/:*?\"<>|]"), "_").take(120).ifBlank { "video" }
+
+    /**
+     * 阶段一⑦：从下载目录导入已存在的视频。
+     *
+     * 目录结构与 [addTask] 的落盘约定一致：`<dir>/<videoCode>/<title> [<quality>].<suffix>`。
+     * 桌面端不写 info.json（Android 端靠 SAF 扫描 + info.json 还原），所以这里只能
+     * **从目录名/文件名反解** videoCode、标题与清晰度；封面等元信息缺失（走占位图）。
+     *
+     * 已在库中的（videoCode + quality）跳过，可重复调用。
+     */
+    override suspend fun importDownloaded(): Boolean = withContext(Dispatchers.IO) {
+        val root = downloadDir()
+        if (!root.isDirectory) return@withContext false
+        val db = Han1meDatabases.download
+        db.downloadGroupDao.insertDefaultGroup()
+        val dao = db.hanimeDownloadDao
+        var imported = 0
+        root.listFiles()?.filter { it.isDirectory }?.forEach { dir ->
+            val videoCode = dir.name.trim()
+            if (videoCode.isBlank()) return@forEach
+            dir.listFiles()?.filter(File::isFile)?.forEach { file ->
+                val parsed = parseDownloadedName(file.name) ?: return@forEach
+                if (dao.find(videoCode, parsed.second) != null) return@forEach
+                val size = file.length()
+                dao.insert(
+                    HanimeDownloadEntity(
+                        groupId = DownloadGroupEntity.DEFAULT_GROUP_ID,
+                        coverUrl = EMPTY_STRING,
+                        title = parsed.first,
+                        addDate = file.lastModified().takeIf { it > 0L }
+                            ?: Instant.now().toEpochMilli(),
+                        videoCode = videoCode,
+                        videoUri = file.absolutePath,
+                        coverUri = null,
+                        quality = parsed.second,
+                        videoUrl = EMPTY_STRING,
+                        length = size,
+                        downloadedLength = size,
+                        state = DownloadState.Finished,
+                    )
+                )
+                imported++
+            }
+        }
+        LogUtil.d(TAG, "importDownloaded: $imported 条")
+        imported > 0
+    }
+
+    /** `<title> [<quality>].<suffix>` → (title, quality)；格式不符返回 null。 */
+    private fun parseDownloadedName(name: String): Pair<String, String>? {
+        val dot = name.lastIndexOf('.')
+        if (dot <= 0) return null
+        val stem = name.substring(0, dot)
+        val open = stem.lastIndexOf(" [")
+        if (open <= 0 || !stem.endsWith("]")) return null
+        val quality = stem.substring(open + 2, stem.length - 1)
+        if (quality.isBlank()) return null
+        return stem.substring(0, open) to quality
+    }
 
     private fun videoFile(entity: HanimeDownloadEntity): File = File(
         File(downloadDir(), entity.videoCode),
