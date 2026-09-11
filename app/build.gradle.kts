@@ -118,7 +118,6 @@ dependencies {
     implementation(compose.components.resources)
 
     implementation(libs.aboutlibraries.core)
-    implementation(libs.androidx.biometric)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.documentfile)
     implementation(libs.datastore.preferences)

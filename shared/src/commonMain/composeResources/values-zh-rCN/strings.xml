@@ -345,12 +345,7 @@
     <string name="apply_deep_links_summary">应用后，打开相关网页后能快速跳转至本 App</string>
     <string name="apply_deep_links_tips">MIUI 隐藏了这个界面，所以你需要从这里打开然后添加链接</string>
     <string name="switch_player_kernel">切换播放器内核</string>
-    <string name="enable_google_cast">启用 Google Cast</string>
-    <string name="enable_google_cast_summary">可以让你在 Android TV 等支持的设备上进行投屏</string>
-    <string name="google_cast_unavailable_summary">此设备缺少 Google Play 服务，无法使用 Google Cast</string>
-    <string name="google_cast_warning">由于并不依赖手机持续传输画面，发送端的 Cloudflare 验证、VPN 和 Hosts 等配置对接收端完全不起作用。除非你配置了全局软路由，能让接收端设备自动走代理通道，否则不要尝试播放需要 Cloudflare 验证的视频源，投屏必然失败。</string>
     <string name="player_settings_controls">播放器控制</string>
-    <string name="player_settings_casting">投屏</string>
     <string name="settings_tip">提示：</string>
     <string name="switch_to_year">切换至年</string>
     <string name="switch_to_year_month">切换至年月</string>
@@ -750,8 +745,6 @@
     <string name="player_gesture_progress">进度</string>
     <string name="player_play_from_beginning">从头开始播放</string>
     <string name="player_untitled_video">未命名视频</string>
-    <string name="player_cast_device">Google Cast</string>
-    <string name="player_casting_to">正在投放到 %1$s</string>
     <string name="perception">感知</string>
     <string name="check_in_feature_name">冲了么</string>
     <string name="enable_check_in_feature">启用冲了么</string>

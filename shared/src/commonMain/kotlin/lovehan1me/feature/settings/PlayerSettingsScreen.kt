@@ -12,8 +12,6 @@ import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
-import lovehan1me.enable_google_cast_summary
-import lovehan1me.google_cast_unavailable_summary
 import lovehan1me.switch_player_kernel
 import lovehan1me.slide_sensitivity
 import lovehan1me.show_bottom_progress
@@ -22,13 +20,9 @@ import lovehan1me.mpv_advanced_settings
 import lovehan1me.moderate
 import lovehan1me.long_press_speed_summary
 import lovehan1me.long_press_speed_multiplier
-import lovehan1me.google_cast_warning
-import lovehan1me.enable_google_cast
 import lovehan1me.default_playback_speed
 import lovehan1me.current_slide_sensitivity
 import lovehan1me.player_settings_controls
-import lovehan1me.player_settings_casting
-import lovehan1me.ic_cast
 import lovehan1me.ic_player_setting
 import lovehan1me.ic_seek_bar
 import lovehan1me.ic_speed

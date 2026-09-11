@@ -2,7 +2,6 @@
 # Plugins
 aboutlibraries = "15.2.0"
 androidGradle = "9.2.1"
-biometric = "1.1.0"
 coilCompose = "3.4.0"
 composeAvatarCropper = "1.0.0"
 coreSplashscreen = "1.2.0"
@@ -76,7 +75,6 @@ kotlin-gradle-plugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", v
 coroutines-core = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-core", version.ref = "coroutinesAndroid" }
 # Android
 aboutlibraries-core = { module = "com.mikepenz:aboutlibraries-core", version.ref = "aboutlibraries" }
-androidx-biometric = { module = "androidx.biometric:biometric", version.ref = "biometric" }
 androidx-core-splashscreen = { module = "androidx.core:core-splashscreen", version.ref = "coreSplashscreen" }
 androidx-documentfile = { module = "androidx.documentfile:documentfile", version.ref = "documentFile" }
 androidx-navigation3-runtime = { module = "androidx.navigation3:navigation3-runtime", version.ref = "navigation3" }
