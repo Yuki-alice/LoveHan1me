@@ -33,6 +33,17 @@ This repository contains code derived from MomoQR by daisukiKaffuChino:
 The MomoQR-derived code is licensed under the GNU GPLv3. This attribution and
 the applicable GPLv3 terms must be retained when that code is redistributed.
 
+### Anime4K  (MIT)
+
+This repository bundles GLSL shader files from the Anime4K project
+(`Anime4K_*.glsl`, used for the optional video super-resolution feature):
+
+    https://github.com/bloc97/Anime4K
+
+Copyright (c) 2019-2021 bloc97. The shaders are distributed under the MIT
+License; their license headers are retained inside each file and must be
+preserved when they are redistributed.
+
 ### Legacy Han1meViewer by Yenaly  (Apache-2.0)
 
 Some historical portions originated from the earlier Han1meViewer project by

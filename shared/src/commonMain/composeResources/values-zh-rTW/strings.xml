@@ -299,13 +299,7 @@
     <string name="login_state_expired">登入狀態已失效，已自動登出，請重新登入</string>
     <string name="parse_error_msg">這個網址可能有不同的解析方式…</string>
     <string name="unknown_download_error">未知下載錯誤</string>
-    <string name="download_task_completed">下載任務已完成！</string>
-    <string name="download_completed_s">下載完成：%1$s</string>
-    <string name="this_data_exists">此檔案已存在！</string>
-    <string name="download_failed_s_exists">下載失敗：%1$s 已存在</string>
-    <string name="download_task_failed">下載任務失敗！</string>
     <string name="download_task_failed_s_reason_s">下載失敗：%1$s\n原因：%2$s</string>
-    <string name="download_task_retrying">下載暫時中斷，正在重試</string>
     <string name="download_task_retrying_s_reason_s">下載暫時中斷：%1$s\n原因：%2$s\n稍後將自動繼續。</string>
     <string name="download_failed_tap_retry">下載失敗，點擊重試</string>
     <string name="download_error_network">網路連線中斷，請檢查網路後稍候自動重試。</string>

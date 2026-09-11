@@ -307,13 +307,7 @@ Recommendations are as follows:\n
     <string name="login_state_expired">Your login session has expired. You have been logged out automatically. Please sign in again.</string>
     <string name="parse_error_msg">Maybe this URL is parsed differently…</string>
     <string name="unknown_download_error">Unknown download error</string>
-    <string name="download_task_completed">Download task completed!</string>
-    <string name="download_completed_s">Download completed: %1$s</string>
-    <string name="this_data_exists">This file already exists!</string>
-    <string name="download_failed_s_exists">Download failed: %1$s already exists</string>
-    <string name="download_task_failed">Download task failed!</string>
     <string name="download_task_failed_s_reason_s">Download task failed: %1$s\nReason: %2$s</string>
-    <string name="download_task_retrying">Download interrupted, retrying</string>
     <string name="download_task_retrying_s_reason_s">Download interrupted: %1$s\nReason: %2$s\nIt will continue automatically.</string>
     <string name="download_failed_tap_retry">Download failed, tap to retry</string>
     <string name="download_error_network">Network connection was interrupted. Check your connection and wait for automatic retry.</string>

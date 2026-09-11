@@ -20,6 +20,13 @@ dependencyResolutionManagement {
             forRepository { mavenCentral() }
             filter { includeGroup("org.openani.mediamp") }
         }
+        // 同类问题：所有 com.github.* 组都来自 JitPack，镜像（aliyun/腾讯云）代理它们时
+        // 元数据能拿到、jar 常缺 → `:app:assembleDebug` 的 transform 环节直接失败。
+        // 整组强制回 JitPack 源，保证元数据与产物出自同一仓库。
+        exclusiveContent {
+            forRepository { maven { url = uri("https://jitpack.io/") } }
+            filter { includeGroupByRegex("com\\.github\\..*") }
+        }
         // 国内镜像优先：google()/mavenCentral() 直连在国内极慢，镜像命中可大幅缩短首次构建
         maven { url = uri("https://maven.aliyun.com/repository/google") }
         maven { url = uri("https://maven.aliyun.com/repository/public") }

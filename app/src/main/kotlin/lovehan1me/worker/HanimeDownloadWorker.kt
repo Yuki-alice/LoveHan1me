@@ -27,7 +27,6 @@ import lovehan1me.HFileManager.createVideoName
 import lovehan1me.R
 import lovehan1me.Res
 import lovehan1me.download_error_cancelled
-import lovehan1me.download_completed_s
 import lovehan1me.download_error_connect
 import lovehan1me.download_error_dns
 import lovehan1me.download_error_file_info
@@ -35,14 +34,9 @@ import lovehan1me.download_error_network
 import lovehan1me.download_error_range_not_supported
 import lovehan1me.download_error_storage
 import lovehan1me.download_error_timeout
-import lovehan1me.download_failed_s_exists
-import lovehan1me.download_task_completed
-import lovehan1me.download_task_failed
 import lovehan1me.download_task_failed_s_reason_s
-import lovehan1me.download_task_retrying
 import lovehan1me.download_task_retrying_s_reason_s
 import lovehan1me.downloading_s
-import lovehan1me.this_data_exists
 import lovehan1me.unknown_download_error
 import lovehan1me.data.DatabaseRepo
 import lovehan1me.data.database.entity.download.DownloadGroupEntity

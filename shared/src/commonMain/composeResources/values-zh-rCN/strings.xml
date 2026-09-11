@@ -312,13 +312,7 @@
     <string name="login_state_expired">登录状态已失效，已自动登出，请重新登录</string>
     <string name="parse_error_msg">可能这个网址解析起来不太一样…</string>
     <string name="unknown_download_error">未知下载错误</string>
-    <string name="download_task_completed">下载任务已完成！</string>
-    <string name="download_completed_s">下载完毕：%1$s</string>
-    <string name="this_data_exists">该文件已存在！</string>
-    <string name="download_failed_s_exists">下载失败：%1$s 已存在</string>
-    <string name="download_task_failed">下载任务失败！</string>
     <string name="download_task_failed_s_reason_s">下载失败：%1$s\n原因为：%2$s</string>
-    <string name="download_task_retrying">下载暂时中断，正在重试</string>
     <string name="download_task_retrying_s_reason_s">下载暂时中断：%1$s\n原因：%2$s\n稍后会自动继续。</string>
     <string name="download_failed_tap_retry">下载失败，点按重试</string>
     <string name="download_error_network">网络连接中断，请检查网络后稍等自动重试。</string>
