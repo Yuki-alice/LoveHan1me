@@ -1,0 +1,69 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Windows runner：desktopTest 里的 skiko runtimeOnly 钉的是 windows-x64 原生库，
+  # 换 Linux runner 会因原生库不匹配导致 Skia 相关测试失败。
+  jvm-android:
+    name: Build (Android + Desktop) & desktopTest
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Install Android platform 36
+        shell: bash
+        run: |
+          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
+            "platforms;android-36" "build-tools;36.0.0" >/dev/null || true
+          sdkmanager --list_installed 2>/dev/null | head -20 || true
+
+      - name: Compile Android + Desktop
+        run: ./gradlew :shared:compileAndroidMain :shared:compileKotlinDesktop :app:compileDebugKotlin :desktopApp:compileKotlin --console=plain
+
+      - name: Assemble debug APK
+        run: ./gradlew :app:assembleDebug --console=plain
+
+      - name: desktopTest
+        run: ./gradlew :shared:desktopTest --console=plain
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-test-reports
+          path: shared/build/test-results/desktopTest/
+          if-no-files-found: ignore
+
+  # macOS runner：Kotlin/Native 编译 iOS 目标——这是 Windows 上无法验证的部分，
+  # iosMain 的所有代码（备份 I/O / CF WebView / 裁剪 Skia 管线）由此自动把关。
+  ios-compile:
+    name: Compile iOS (Kotlin/Native)
+    runs-on: macos-14
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Compile iOS (device + simulator)
+        run: ./gradlew :shared:compileKotlinIosArm64 :shared:compileKotlinIosSimulatorArm64 --console=plain
