@@ -11,6 +11,15 @@ pluginManagement {
 dependencyResolutionManagement {
     repositoriesMode.set(RepositoriesMode.FAIL_ON_PROJECT_REPOS)
     repositories {
+        // 阶段一②：mediamp 的平台运行时库（mediamp-mpv-runtime-{windows,linux,macos}-*）
+        // 在阿里云镜像**长期 404**，而 Gradle 的仓库亲和性会让"从 aliyun 拿到元数据"的
+        // 模块只去 aliyun 找 jar（不会回落到后面的源）→ :desktopApp:run 直接失败。
+        // 整组 mediamp 强制走 Maven Central 官方源，绕开镜像缺口。
+        // （其余依赖仍优先走国内镜像，见下方顺序。）
+        exclusiveContent {
+            forRepository { mavenCentral() }
+            filter { includeGroup("org.openani.mediamp") }
+        }
         // 国内镜像优先：google()/mavenCentral() 直连在国内极慢，镜像命中可大幅缩短首次构建
         maven { url = uri("https://maven.aliyun.com/repository/google") }
         maven { url = uri("https://maven.aliyun.com/repository/public") }
