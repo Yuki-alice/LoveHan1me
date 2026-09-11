@@ -81,8 +81,6 @@ kotlin {
 
             // HTML 解析：ksoup（Fleeksoft 坐标，jsoup 兼容 API，P4 起使用）
             implementation(libs.ksoup)
-            // M5-5：CF 验证多端 WebView（iOS=WKWebView，desktop=KCEF）
-            implementation(libs.compose.webview.multiplatform)
 
             // P6b：Toast（sonner 0.4.0 本身是 CMP 库）
             implementation(libs.sonner)

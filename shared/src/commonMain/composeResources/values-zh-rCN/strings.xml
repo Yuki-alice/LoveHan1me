@@ -854,8 +854,9 @@
     <string name="next_year">下一年</string>
     <string name="previous_month">上个月</string>
     <string name="next_month">下个月</string>
-    <string name="cf_kcef_preparing">正在准备验证组件……首次使用需下载约 200MB 的 Chromium 运行时，请耐心等待，或改用下方手动方式完成验证。</string>
-    <string name="cf_kcef_failed_title">自动验证组件不可用</string>
+    <string name="cf_cdp_locating">正在查找本机已装的 Chrome / Edge 浏览器进行自动验证，无需下载任何组件……</string>
+    <string name="cf_cdp_waiting">无头浏览器已启动，正在等待验证通过（最长 2 分钟）……</string>
+    <string name="cf_cdp_failed_title">自动验证不可用</string>
     <string name="cf_manual_open_browser">用系统浏览器打开验证页</string>
     <string name="cf_manual_cookie_hint">通过验证后，在浏览器开发者工具中复制以 cf_clearance 开头的 Cookie，粘贴到下方。</string>
     <string name="cf_manual_submit">提交并继续</string>

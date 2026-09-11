@@ -872,8 +872,9 @@ Recommendations are as follows:\n
     <string name="previous_month">Previous month</string>
     <string name="next_month">Next month</string>
     <string name="checkin_count_format">x%1$d</string>
-    <string name="cf_kcef_preparing">Preparing the verification component... The first run downloads roughly 200 MB of the Chromium runtime. Please wait, or complete the verification manually.</string>
-    <string name="cf_kcef_failed_title">Automatic verification is unavailable</string>
+    <string name="cf_cdp_locating">Looking for an installed Chrome / Edge browser for automatic verification (no downloads needed)…</string>
+    <string name="cf_cdp_waiting">Headless browser launched, waiting for the check to pass (up to 2 minutes)…</string>
+    <string name="cf_cdp_failed_title">Automatic verification is unavailable</string>
     <string name="cf_manual_open_browser">Open the verification page in your browser</string>
     <string name="cf_manual_cookie_hint">After passing the check, copy the cookie starting with cf_clearance from your browser developer tools and paste it below.</string>
     <string name="cf_manual_submit">Submit and continue</string>

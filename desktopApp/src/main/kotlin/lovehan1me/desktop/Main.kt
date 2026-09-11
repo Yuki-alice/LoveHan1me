@@ -1,8 +1,6 @@
 package lovehan1me.desktop
 
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.LaunchedEffect
-import lovehan1me.app.web.CloudflareKcef
 import lovehan1me.app.web.CloudflareVerificationWindow
 import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
@@ -81,12 +79,9 @@ fun main() {
             // M5-2：注入桌面窗口宿主，播放器全屏走 AWT setFullScreenWindow
             platformScreens = PlatformScreens(
                 videoPageHost = remember { DesktopVideoPageHost() },
-                // M5-5 / 阶段一⑩：CF 验证独立弹窗（KCEF/Chromium）。
-                // 首次使用会下载 CEF 运行时；失败/超时由窗口内提供手动兜底。
+                // M5-5 / 阶段一⑩：CF 验证独立弹窗（CDP 无头浏览器自动收割，
+                // 本机无浏览器/失败/超时由窗口内转手动兜底；KCEF 已删除）。
                 cloudflare = { route ->
-                    LaunchedEffect(Unit) {
-                        CloudflareKcef.ensureInit()
-                    }
                     CloudflareVerificationWindow(
                         url = route.url,
                         host = route.host,

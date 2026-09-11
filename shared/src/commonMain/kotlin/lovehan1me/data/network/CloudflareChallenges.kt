@@ -8,7 +8,7 @@ import kotlinx.coroutines.flow.asSharedFlow
  * CF 人机验证挑战请求（跨平台触发总线）。
  *
  * 背景：此前只有 Android 经 OkHttp 拦截器→`CloudflareVerifier`→Activity 跳转
- * 打开验证页；桌面（KCEF 弹窗）/iOS（WKWebView 直嵌）的槽位实现虽已就绪
+ * 打开验证页；桌面（CDP 无头浏览器弹窗）/iOS（WKWebView 直嵌）的槽位实现虽已就绪
  * （M5-5），但没有任何调用方把 `CloudflareRoute` 压栈，验证 UI 实际不可达——
  * 桌面/iOS 在 CF 挑战下登录与浏览直接去世（仅一个 toast）。
  *

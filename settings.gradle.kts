@@ -48,9 +48,6 @@ dependencyResolutionManagement {
         google()
         mavenCentral()
         maven { url = uri("https://jitpack.io/") }
-        // M5-5：KCEF/JCEF 的 JOGL（gluegen-rt/jogl-all）只发布在 JogAmp 官方仓库。
-        // 必须置于最后：该站国内基本不可达，前置会让依赖解析长时间挂起。
-        maven { url = uri("https://jogamp.org/deployment/maven/") }
     }
 }
 rootProject.name = "LoveHan1me"
