@@ -582,7 +582,7 @@ fun VideoRouteHostScreen(
         playbackSpeed = playbackState.engine.playbackSpeed,
         onPlaybackSpeedSelected = playbackController::setPlaybackSpeed,
         superResolutionLabel = stringResource(Res.string.player_anime4k_label),
-        superResolutionOptions = if (kernel == PlayerKernel.MpvPlayer) {
+        superResolutionOptions = if (playbackEngine.supportsSuperResolution()) {
             listOf(
                 stringResource(Res.string.super_resolution_off),
                 stringResource(Res.string.super_resolution_performance),

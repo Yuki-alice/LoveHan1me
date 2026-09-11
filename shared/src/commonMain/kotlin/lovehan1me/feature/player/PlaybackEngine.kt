@@ -80,4 +80,13 @@ interface PlaybackEngine {
      * 其余默认空实现（调用方无需类型判断）。
      */
     fun setSuperResolution(index: Int) {}
+
+    /**
+     * 阶段一②：本引擎是否支持视频超分。
+     *
+     * **不要用「内核名字 == MpvPlayer」来判断**：桌面端引擎恒为 mpv，
+     * 但用户设置里的 `switchPlayerKernel` 可能是 ExoPlayer（Android 默认值），
+     * 按名字判断会让桌面端永远看不到超分入口。
+     */
+    fun supportsSuperResolution(): Boolean = false
 }

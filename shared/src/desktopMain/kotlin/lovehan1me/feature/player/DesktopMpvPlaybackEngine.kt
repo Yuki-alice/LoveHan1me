@@ -1,5 +1,7 @@
 package lovehan1me.feature.player
 
+import lovehan1me.core.util.MpvShaders
+import lovehan1me.core.util.materializeMpvShaders
 import lovehan1me.core.util.LogUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -14,6 +16,7 @@ import org.openani.mediamp.MediaStatus
 import org.openani.mediamp.features.AudioLevelController
 import org.openani.mediamp.features.PlaybackSpeed
 import org.openani.mediamp.mpv.MpvMediampPlayer
+import org.openani.mediamp.mpv.MPVHandle
 import org.openani.mediamp.mpv.MpvMediampPlayerFactory
 import org.openani.mediamp.source.UriMediaData
 
@@ -47,6 +50,9 @@ class DesktopMpvPlaybackEngine : PlaybackEngine {
     override val state: StateFlow<PlaybackEngineState> = _state.asStateFlow()
 
     private var released = false
+
+    /** mpv 缩放相关属性的原始值（首次切档时记录，OFF 时还原）。 */
+    private var originalScaling: Map<String, String>? = null
 
     init {
         val player = mediampPlayer
@@ -150,6 +156,70 @@ class DesktopMpvPlaybackEngine : PlaybackEngine {
         }
     }
 
+    // 阶段一②：视频超分（Anime4K）。mpv 通过 `change-list glsl-shaders` 挂 shader。
+    //
+    // 与 animeko 的差异（它的两个短板）：
+    // 1. shader 失败/不支持时**自动降级**而不是抛异常——animeko 会抛
+    //    VideoFrameProcessingException，本项目则 QUALITY → PERFORMANCE → OFF；
+    // 2. 切档前先记住原始缩放属性，OFF 时精确还原，而不是写死默认值。
+    override fun setSuperResolution(index: Int) {
+        if (released) return
+        mainScope.launch {
+            val ok = runCatching { applySuperResolution(index) }.getOrDefault(false)
+            if (ok || index == MpvShaders.OFF) return@launch
+
+            val fallback = if (index == MpvShaders.QUALITY) MpvShaders.PERFORMANCE else MpvShaders.OFF
+            LogUtil.w(TAG, "超分档位 $index 不可用，自动降级到 $fallback")
+            val okFallback = runCatching { applySuperResolution(fallback) }.getOrDefault(false)
+            if (!okFallback && fallback != MpvShaders.OFF) {
+                LogUtil.w(TAG, "降级档位仍然不可用，关闭超分")
+                runCatching { applySuperResolution(MpvShaders.OFF) }
+            }
+        }
+    }
+
+    override fun supportsSuperResolution(): Boolean = true
+
+    /** @return 是否成功应用。shader 落盘失败或 mpv 命令失败都返回 false。 */
+    private suspend fun applySuperResolution(level: Int): Boolean {
+        val paths = materializeMpvShaders(level) ?: return false
+        val handle = mpvHandle() ?: return false
+        if (!handle.command("change-list", "glsl-shaders", "set", paths)) return false
+        applyScalingOptions(handle, level)
+        return true
+    }
+
+    private fun applyScalingOptions(handle: MPVHandle, level: Int) {
+        // 首次调用时记下原始值，之后 OFF 才能精确还原
+        if (originalScaling == null) {
+            originalScaling = SCALING_KEYS.associateWith { handle.getPropertyString(it).orEmpty() }
+        }
+        if (level == MpvShaders.OFF) {
+            originalScaling?.forEach { (key, value) -> handle.setPropertyString(key, value) }
+        } else {
+            SCALING_KEYS.forEach { key ->
+                val value = if (key == "sigmoid-upscaling") "yes" else "ewa_lanczossharp"
+                handle.setPropertyString(key, value)
+            }
+        }
+    }
+
+    /**
+     * mediamp 把 mpv 句柄的 getter 标成 internal，JVM 名字被 mangled 成
+     * `getHandle$mediamp_mpv`——Kotlin 源码里既不能直呼其名、也没法用反引号
+     * 转义（`$` 不允许出现在标识符里），所以走反射。
+     *
+     * 反射失败（比如 mediamp 升级后改名）只会返回 null，随后由
+     * [setSuperResolution] 的降级链把超分关掉，不会崩。
+     */
+    private fun mpvHandle(): MPVHandle? = runCatching {
+        val method = mediampPlayer.javaClass.getMethod(MPV_HANDLE_GETTER)
+        @Suppress("UNCHECKED_CAST")
+        method.invoke(mediampPlayer) as? MPVHandle
+    }.onFailure {
+        LogUtil.w(TAG, "无法获取 mpv 句柄：${it.message}")
+    }.getOrNull()
+
     // 桌面渲染由 PlatformVideoSurface 的 Skia 面直接持有 mediampPlayer，
     // 不走 surface 回调（P5-2a Q1 裁定：no-op 是正确设计）。
     override fun attachSurface(surface: VideoSurface) {}
@@ -170,5 +240,11 @@ class DesktopMpvPlaybackEngine : PlaybackEngine {
 
         /** 传给 MpvMediampPlayerFactory 的中性 token（桌面端无 Context 概念）。 */
         private const val ENGINE_TOKEN = "LoveHan1meDesktop"
+
+        /** 随超分一起调整的 mpv 缩放属性（animeko 同款组合）。 */
+        private val SCALING_KEYS = arrayOf("scale", "cscale", "dscale", "sigmoid-upscaling")
+
+        /** mediamp 里 mpv 句柄 getter 的 JVM 名字（internal 成员被 mangled）。 */
+        private const val MPV_HANDLE_GETTER = "getHandle\$mediamp_mpv"
     }
 }

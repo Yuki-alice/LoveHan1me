@@ -65,9 +65,6 @@ class HanimeApplication : Application(), Application.ActivityLifecycleCallbacks 
         MPVLib.create(applicationContext)
         MPVLib.init()
 
-        if (AnimeShaders.copyShaderAssets(applicationContext) <= 0) {
-            LogUtil.w(TAG, "Shader 复制失败")
-        }
         if (AnimeShaders.copyCertAssets(applicationContext) <= 0) {
             LogUtil.w(TAG, "cert 复制失败")
         }

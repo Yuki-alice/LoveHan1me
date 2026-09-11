@@ -7,9 +7,9 @@ import androidx.core.net.toUri
 import lovehan1me.core.constant.USER_AGENT
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.HProxySelector
-import lovehan1me.core.util.AnimeShaders
 import lovehan1me.core.util.AnimeShaders.getCert
 import lovehan1me.core.util.LogUtil
+import lovehan1me.core.util.materializeMpvShaders
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -190,9 +190,16 @@ class MpvPlaybackEngine(
         applySurfaceSize()
     }
 
+    override fun supportsSuperResolution(): Boolean = true
+
     override fun setSuperResolution(index: Int) {
-        val shader = AnimeShaders.getShader(context, index)
-        MPVLib.command(arrayOf("change-list", "glsl-shaders", "set", shader))
+        // 阶段一②：shader 统一走 composeResources/files（三端一份），落盘在 IO 线程。
+        // 原 `AnimeShaders.getShader` 在目录缺失时会抛 IllegalStateException，
+        // 这里改成失败即放弃挂 shader（与桌面端的降级策略一致）。
+        scope.launch(Dispatchers.IO) {
+            val paths = materializeMpvShaders(index) ?: return@launch
+            MPVLib.command(arrayOf("change-list", "glsl-shaders", "set", paths))
+        }
     }
 
     override fun release() {

@@ -5,72 +5,13 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.IOException
 
+/**
+ * mpv 的 CA 证书（`cacert.pem`）落盘。
+ *
+ * 阶段一②后 Anime4K shader 已迁到 `commonMain/composeResources/files/shaders/`
+ * 三端共用（见 [lovehan1me.core.util.MpvShaders]），本对象只管证书。
+ */
 object AnimeShaders {
-    const val SHADERS_DIRECTORY = "shaders"
-
-    val mpvSuperResolutionArray = arrayOf(
-        "Anime4K_Clamp_Highlights.glsl",
-        "Anime4K_Restore_CNN_VL.glsl",
-        "Anime4K_Upscale_CNN_x2_VL.glsl",
-        "Anime4K_AutoDownscalePre_x2.glsl",
-        "Anime4K_AutoDownscalePre_x4.glsl",
-        "Anime4K_Upscale_CNN_x2_M.glsl",
-    )
-
-    val mpvSuperResolutionLiteArray = arrayOf(
-        "Anime4K_Clamp_Highlights.glsl",
-        "Anime4K_Restore_CNN_M.glsl",
-        "Anime4K_Restore_CNN_S.glsl",
-        "Anime4K_Upscale_CNN_x2_M.glsl",
-        "Anime4K_AutoDownscalePre_x2.glsl",
-        "Anime4K_AutoDownscalePre_x4.glsl",
-        "Anime4K_Upscale_CNN_x2_S.glsl",
-    )
-
-    fun copyShaderAssets(context: Context): Int {
-        return try {
-            val targetDir = File(context.filesDir, SHADERS_DIRECTORY)
-            if (!targetDir.exists()) {
-                targetDir.mkdirs()
-            }
-
-            val assetManager = context.assets
-            val assetFiles = assetManager.list(SHADERS_DIRECTORY) ?: return 0
-
-            var copiedCount = 0
-            for (filename in assetFiles) {
-                val targetFile = File(targetDir, filename)
-                assetManager.open("$SHADERS_DIRECTORY/$filename").use { inputStream ->
-                    FileOutputStream(targetFile).use { outputStream ->
-                        inputStream.copyTo(outputStream)
-                        copiedCount++
-                    }
-                }
-            }
-            copiedCount
-        } catch (e: IOException) {
-            e.printStackTrace()
-            -1
-        }
-    }
-
-    fun getShader(context: Context, type: Int): String {
-        val shadersDir = File(context.filesDir, SHADERS_DIRECTORY)
-        if (!shadersDir.exists()) {
-            throw IllegalStateException("Shader folder not found: $shadersDir")
-        }
-
-        val shaderFiles = when (type) {
-            0 -> emptyArray()
-            1 -> mpvSuperResolutionLiteArray
-            2 -> mpvSuperResolutionArray
-            else -> throw IllegalArgumentException("Unknown shader type: $type")
-        }
-
-        return shaderFiles.joinToString(separator = ":") { shaderFile ->
-            File(shadersDir, shaderFile).absolutePath
-        }
-    }
 
     fun copyCertAssets(context: Context): Int {
         return try {
