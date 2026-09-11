@@ -22,14 +22,13 @@ import androidx.lifecycle.repeatOnLifecycle
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import lovehan1me.data.SettingsRepository
-import lovehan1me.ui.adaptive.WindowWidthSizeClass
-import lovehan1me.ui.adaptive.rememberContentWidthSizeClass
+import lovehan1me.ui.adaptive.WindowWidthBreakpoints
+import lovehan1me.ui.adaptive.rememberContentWidthDp
 import lovehan1me.Res
 import lovehan1me.add_failed
 import lovehan1me.add_success
 import lovehan1me.copy_to_clipboard
 import lovehan1me.fail_to_get_video_link
-import lovehan1me.large_screen_tablet_mode_hint
 import lovehan1me.local_favorite_cancelled
 import lovehan1me.modify_failed
 import lovehan1me.modify_success
@@ -140,12 +139,14 @@ fun VideoRouteHostScreen(
     val playbackController = remember(playbackEngine) { ComposePlaybackController(playbackEngine) }
     val playbackState by playbackController.state.collectAsStateWithLifecycle()
     val appSettings by SettingsRepository.settings.collectAsStateWithLifecycle()
-    // 大屏判定：改用统一断点 + **内容区可用宽度**。
-    // 演进链：原 LocalConfiguration.smallestScreenWidthDp（Android 设备物理属性，桌面无此语义）
-    // → 窗口 dp 宽 → 内容区宽。常驻抽屉会占掉约 360dp，用整窗宽会在 1000dp 窗口
-    // （内容区仅约 640dp）误判为大屏。
-    val isLargeScreenDevice =
-        rememberContentWidthSizeClass() >= WindowWidthSizeClass.Medium
+    // 单栏 / 双栏判定：**只由内容区可用宽度决定**（P0 起）。
+    // 演进链：`tabletMode && isLandscapeOrientation()`（用户开关 + 物理方向双重门控）
+    // → 内容区宽 ≥ 840dp。
+    //   - 删开关：自适应不该被用户开关门控（开关只保留「布局风格」语义，见
+    //     videoLandscapeLayoutStyle）。
+    //   - 删方向：iOS 侧 `isLandscapeOrientation()` 恒为 false，等于 iPad 永远拿不到
+    //     双栏；而「横屏手机」的宽度本就会超过 840dp，宽度已经隐含了方向语义。
+    val isDualPane = rememberContentWidthDp() >= WindowWidthBreakpoints.ExpandedDp
     val hostUiState by viewModel.videoHostUiStateFlow.collectAsStateWithLifecycle()
     val videoState by viewModel.hanimeVideoStateFlow.collectAsStateWithLifecycle()
     val video = viewModel.hanimeVideoFlow.collectAsStateWithLifecycle().value
@@ -153,19 +154,6 @@ fun VideoRouteHostScreen(
 
     LaunchedEffect(playbackController) {
         playbackController.setPlaybackSpeed(SettingsRepository.playerSpeed)
-    }
-    LaunchedEffect(isLargeScreenDevice) {
-        val currentSettings = SettingsRepository.current
-        if (
-            isLargeScreenDevice &&
-            !currentSettings.tabletMode &&
-            !currentSettings.largeScreenTabletModeHintShown
-        ) {
-            SettingsRepository.update {
-                it.copy(largeScreenTabletModeHintShown = true)
-            }
-            SonnerToast.info(getString(Res.string.large_screen_tablet_mode_hint))
-        }
     }
     val stringLongPressShare = stringResource(Res.string.long_press_share_to_copy)
     val pipPlayPauseText = stringResource(Res.string.play_pause)
@@ -303,12 +291,12 @@ fun VideoRouteHostScreen(
     }
 
     BindOrientationAutoFullscreen(
-        enabled = !appSettings.tabletMode,
+        enabled = !isDualPane,
         onLandscape = { enterFullscreen(forceLandscape = true) },
         onPortrait = { exitFullscreen() },
     )
 
-    DisposableEffect(lifecycleOwner, playbackController, route.videoCode, appSettings.tabletMode) {
+    DisposableEffect(lifecycleOwner, playbackController, route.videoCode, isDualPane) {
         val lifecycleObserver = LifecycleEventObserver { _, event ->
             when (event) {
                 Lifecycle.Event.ON_PAUSE -> {
@@ -511,7 +499,7 @@ fun VideoRouteHostScreen(
 
     val resolvedPlayerHeightDp = when {
         hostUiState.isInPipMode -> null
-        appSettings.tabletMode -> if (isSideRelatedCollapsed) 500.dp else 400.dp
+        isDualPane -> if (isSideRelatedCollapsed) 500.dp else 400.dp
         else -> 250.dp
     }
 
@@ -522,7 +510,7 @@ fun VideoRouteHostScreen(
     }
 
     VideoShellContent(
-        isTabletMode = appSettings.tabletMode,
+        isDualPane = isDualPane,
         isInPipMode = hostUiState.isInPipMode,
         isFullscreen = isFullscreen,
         playerHeightDp = resolvedPlayerHeightDp,
@@ -723,7 +711,7 @@ fun VideoRouteHostScreen(
             )
         },
         classicTabletLayout = if (
-            appSettings.tabletMode &&
+            isDualPane &&
             appSettings.videoLandscapeLayoutStyle == VideoLandscapeLayoutStyle.Classic
         ) {
             ClassicTabletLayoutConfig(

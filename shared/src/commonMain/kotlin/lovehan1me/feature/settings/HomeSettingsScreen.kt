@@ -31,8 +31,6 @@ import lovehan1me.trigger_crash_summary
 import lovehan1me.trigger_crash
 import lovehan1me.traditional_chinese
 import lovehan1me.temporarily_unavailable
-import lovehan1me.tablet_mode_summary
-import lovehan1me.tablet_mode
 import lovehan1me.submit_bug_summary
 import lovehan1me.submit_bug
 import lovehan1me.simulated_update_data
@@ -141,7 +139,6 @@ import lovehan1me.ic_simp_to_trad
 import lovehan1me.ic_skip
 import lovehan1me.ic_sort
 import lovehan1me.ic_swipe_right
-import lovehan1me.ic_tablet
 import lovehan1me.ic_thumb_up_off_alt
 import lovehan1me.ic_video_quilty
 import lovehan1me.ui.model.SearchGridColumnsConfig
@@ -197,7 +194,6 @@ fun HomeSettingsScreen(
     onSearchArtistIgnoreVideoTypeChange: (Boolean) -> Unit,
     onDisableMobileDataWarningChange: (Boolean) -> Unit,
     onDisablePredictiveBackChange: (Boolean) -> Unit,
-    onTabletModeChange: (Boolean) -> Unit,
     onVideoLandscapeLayoutStyleChange: (String) -> Unit,
     onCheckInEnabledChange: (Boolean) -> Unit,
     onDisableCommentsChange: (Boolean) -> Unit,
@@ -232,11 +228,11 @@ fun HomeSettingsScreen(
     var showHomeCategoryDialog by rememberSaveable { mutableStateOf(false) }
     var showUsageTerms by rememberSaveable { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
-    // 网格列数 / 横向卡片数量已改为按宽度自适应（不再被「平板模式」门控），因此宽屏
-    // 也应暴露这两个设置——此前仅当「平板模式」开启才可见，属于自适应被开关门控时代的
-    // 遗留。窄屏仍维持原样，避免给手机用户多加条目。
+    // 网格列数 / 横向卡片数量已改为按宽度自适应（「平板模式」开关已随 P0 删除），
+    // 因此宽屏也应暴露这两个设置——此前仅当「平板模式」开启才可见，属于自适应被开关
+    // 门控时代的遗留。窄屏仍维持原样，避免给手机用户多加条目。
     val showDensitySettings =
-        state.tabletMode || rememberContentWidthSizeClass() >= WindowWidthSizeClass.Expanded
+        rememberContentWidthSizeClass() >= WindowWidthSizeClass.Expanded
 
     ChoiceDialog(
         visible = activeDialog == HomeSettingsChoiceDialog.VideoLanguage,
@@ -500,19 +496,13 @@ fun HomeSettingsScreen(
                             onCheckedChange = onDisablePredictiveBackChange,
                             enabled = false,
                         )
-                        SettingSwitchItem(
-                            title = stringResource(Res.string.tablet_mode),
-                            summary = stringResource(Res.string.tablet_mode_summary),
-                            checked = state.tabletMode,
-                            iconRes = Res.drawable.ic_tablet,
-                            onCheckedChange = onTabletModeChange,
+                        // P0：「平板模式」开关已删除。它的两个语义分别归位——
+                        // 「要不要双栏」由可用内容宽度决定（恒开，不再是开关）；
+                        // 「双栏长什么样」保留为下面的布局风格选择（恒显，不再被开关门控）。
+                        VideoLandscapeLayoutStylePicker(
+                            selectedValue = state.videoLandscapeLayoutStyle,
+                            onSelect = onVideoLandscapeLayoutStyleChange,
                         )
-                        SettingsAnimatedVisibility(visible = state.tabletMode) {
-                            VideoLandscapeLayoutStylePicker(
-                                selectedValue = state.videoLandscapeLayoutStyle,
-                                onSelect = onVideoLandscapeLayoutStyleChange,
-                            )
-                        }
                         SettingSwitchItem(
                             title = stringResource(Res.string.enable_check_in_feature),
                             summary = stringResource(Res.string.enable_check_in_feature_summary),
@@ -751,7 +741,6 @@ private fun previewHomeSettingsState() = HomeSettingsUiState(
     searchArtistIgnoreVideoType = false,
     disableMobileDataWarning = false,
     disablePredictiveBack = false,
-    tabletMode = false,
     videoLandscapeLayoutStyle = "classic",
     disableComments = false,
     collapseDownloadedGroup = false,

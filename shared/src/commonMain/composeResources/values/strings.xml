@@ -6,6 +6,15 @@
     <string name="latest_upload">Latest Upload</string>
     <string name="they_watched">What They're Watching</string>
     <string name="search">Search</string>
+    <string name="discover">Discover</string>
+    <string name="my_content">My Content</string>
+    <string name="login_or_register">Log In / Sign Up</string>
+    <string name="login_sync_hint">Log in to sync favorites and watch history</string>
+    <string name="check_in_streak">%1$d-day streak</string>
+    <string name="check_in_today_count">%1$d check-in(s) today</string>
+    <string name="check_in_action">Check in</string>
+    <string name="check_in_done">Checked in</string>
+    <string name="check_in_never">Not checked in yet</string>
     <string name="advanced_search">Advanced Search</string>
     <string name="back">Back</string>
     <string name="type">Type</string>
@@ -96,9 +105,6 @@
     <string name="add_to_playlist">Add to Playlist</string>
     <string name="no_custom_playlist_hint">No custom playlists yet. Create one from Playlists in the navigation drawer.</string>
     <string name="player_settings">Player Settings</string>
-    <string name="tablet_mode">Tablet Mode</string>
-    <string name="tablet_mode_summary">Enable tablet layout for the video page, providing a larger viewing area</string>
-    <string name="large_screen_tablet_mode_hint">For a better large-screen experience, enable Tablet mode in Settings - Interface and interaction.</string>
     <string name="video_landscape_layout_style">Landscape video page layout</string>
     <string name="video_landscape_layout_style_summary">Choose how the player, tabs, and related videos are arranged in landscape</string>
     <string name="layout_style_classic">Classic</string>

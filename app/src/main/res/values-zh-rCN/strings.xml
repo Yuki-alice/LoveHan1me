@@ -95,9 +95,6 @@
     <string name="add_to_playlist">加入清单</string>
     <string name="no_custom_playlist_hint">尚未创建自定义清单。你可以前往侧边栏的“播放清单”添加自定义清单。</string>
     <string name="player_settings">播放器设置</string>
-    <string name="tablet_mode">平板模式</string>
-    <string name="tablet_mode_summary">开启后影片页面将以平板布局显示，提供更大观看区域</string>
-    <string name="large_screen_tablet_mode_hint">大屏设备前往 设置 - 界面交互 开启「平板模式」体验更佳哦~</string>
     <string name="video_landscape_layout_style">播放页横屏布局样式</string>
     <string name="video_landscape_layout_style_summary">选择横屏播放页中播放器、标签页与推荐内容的排列方式</string>
     <string name="layout_style_classic">经典</string>

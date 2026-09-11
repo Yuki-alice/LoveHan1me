@@ -1,6 +1,5 @@
 package lovehan1me.app.navigation.main
 
-import androidx.compose.material3.DrawerState
 import androidx.compose.runtime.Composable
 import lovehan1me.app.bridge.NoopVideoPageHost
 import lovehan1me.app.bridge.VideoPageHost
@@ -70,22 +69,4 @@ data class PlatformScreens(
      * 桌面传 `DesktopVideoPageHost`（AWT 全屏），iOS 暂用 Noop。
      */
     val videoPageHost: VideoPageHost = NoopVideoPageHost,
-)
-
-/**
- * 抽屉的注入上下文。
- *
- * 共享 [SharedMainDrawer] 目前是最小版（目的地列表 + 登录入口），而 Android 版
- * 还含头像、用户名、当前站点、切换站点、打卡入口、平板常驻抽屉与安全区 padding。
- * 收敛期间由 `:app` 通过本宿主注入完整抽屉，共享层不持有这些 Android 语义。
- */
-data class DrawerHost(
-    val backStack: TopLevelBackStack<HanimeScreen>,
-    val homeViewModel: HomePageViewModel,
-    val isLoggedIn: Boolean,
-    val drawerState: DrawerState,
-    /** 返回 true 表示已处理（调用方负责关闭抽屉）。 */
-    val onDrawerItemSelected: (MainDrawerDestination) -> Boolean,
-    val onOpenAccount: () -> Unit,
-    val onRequireLogin: () -> Unit,
 )

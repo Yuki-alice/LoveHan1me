@@ -34,12 +34,14 @@ import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDe
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import lovehan1me.Res
 import lovehan1me.h_keyframes_import_shared
 import lovehan1me.ic_add
 import lovehan1me.ic_search
+import lovehan1me.login_first
 import lovehan1me.search
 import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.component.rememberHapticFeedback
@@ -176,6 +178,40 @@ fun SharedTopNavigation(
                 },
                 onNavigateToVideo = onNavigateToVideo,
                 onExit = {},
+            )
+        }
+        // 一级目的地「发现」：内容就是原来的搜索界面（SearchRouteScreen + SearchScreen），
+        // 只是语义从「一个输入框」升格为「一个探索空间」（历史 / 热门 / 高级筛选都在这栏）。
+        //
+        // ⚠️ 必须显式注册 `DiscoverTab`：P1 收敛一级目的地时只加了这个键，没加 entry，
+        //    而 P2 的底栏/Rail 让它第一次变得可点 —— 不补的话点「发现」是空白、甚至
+        //    因 `NavDisplay` 找不到 key 而抛异常。
+        //
+        // `onBack` 接成「回首页」：tab 模式下没有可返回的上层节点，而搜索页顶栏那个
+        // 返回箭头必须接一个真实动作，否则就是死按钮。
+        // TODO(P4)：按设计稿 §1.6 把该箭头在 tab 模式下改成「取消」/ 直接隐藏。
+        entry<DiscoverTab> {
+            SearchRouteScreen(
+                route = SearchRoute(),
+                onBack = { backStack.addTopLevel(MainTab.Home.route) },
+                onNavigateToVideo = onNavigateToVideo,
+            )
+        }
+        // 一级目的地「我的」：签到首卡 + 登录账户卡 + 6 个 L2 内容入口。
+        // 登录拦截在这里就地处理（「我的」本身不要求登录，只有「订阅」这类
+        // 无本地降级的入口需要）：提示 + 跳登录页。
+        entry<MineTab> {
+            MineRouteScreen(
+                homeViewModel = homeViewModel,
+                onOpenSettings = { backStack.add(HomeSettingsRoute) },
+                onOpenAccount = { backStack.add(AccountRoute) },
+                onOpenLogin = { backStack.add(LoginRoute) },
+                onLockedSection = {
+                    scope.launch { SonnerToast.warning(getString(Res.string.login_first)) }
+                    backStack.add(LoginRoute)
+                },
+                onOpenCheckIn = { backStack.add(DailyCheckInRoute) },
+                onNavigateToSection = { section -> backStack.add(section.route) },
             )
         }
         entry<WatchHistoryRoute> {

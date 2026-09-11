@@ -90,7 +90,6 @@ object SettingsRepository : SettingsStore {
     val searchArtistIgnoreVideoType get() = current.searchArtistIgnoreVideoType
     val disableMobileDataWarning get() = current.disableMobileDataWarning
     val disablePredictiveBack get() = current.disablePredictiveBack
-    val tabletMode get() = current.tabletMode
     val videoLandscapeLayoutStyle get() = current.videoLandscapeLayoutStyle
     val hapticFeedbackEnabled get() = current.hapticFeedbackEnabled
     val funLoadingHints get() = current.funLoadingHints

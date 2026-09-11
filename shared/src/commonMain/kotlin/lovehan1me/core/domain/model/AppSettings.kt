@@ -99,8 +99,6 @@ data class AppSettings(
     val disableComments: Boolean = false,
     val hapticFeedbackEnabled: Boolean = false,
     val disablePredictiveBack: Boolean = false,
-    val tabletMode: Boolean = false,
-    val largeScreenTabletModeHintShown: Boolean = false,
     val videoLandscapeLayoutStyle: VideoLandscapeLayoutStyle = VideoLandscapeLayoutStyle.Classic,
     val usageNoticeAccepted: Boolean = false,
     val usageSourceVerified: Boolean = false,

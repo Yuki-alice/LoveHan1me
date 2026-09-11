@@ -338,9 +338,6 @@ fun HomeSettingsRouteScreen(
         onDisablePredictiveBackChange = {
             coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(disablePredictiveBack = it) } }
         },
-        onTabletModeChange = {
-            coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(tabletMode = it) } }
-        },
         onVideoLandscapeLayoutStyleChange = { value ->
             coroutineScope.launch {
                 SettingsRepository.setVideoLandscapeLayoutStyle(
@@ -636,7 +633,6 @@ private fun buildHomeSettingsUiState(
         searchArtistIgnoreVideoType = SettingsRepository.searchArtistIgnoreVideoType,
         disableMobileDataWarning = SettingsRepository.disableMobileDataWarning,
         disablePredictiveBack = SettingsRepository.disablePredictiveBack,
-        tabletMode = SettingsRepository.tabletMode,
         videoLandscapeLayoutStyle = SettingsRepository.videoLandscapeLayoutStyle.value,
         disableComments = SettingsRepository.current.disableComments,
         collapseDownloadedGroup = SettingsRepository.collapseDownloadedGroup,

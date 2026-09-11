@@ -43,9 +43,7 @@ import lovehan1me.ui.activity.MainActivity
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.app.navigation.main.AvatarCropRoute
 import lovehan1me.app.navigation.main.CloudflareRoute
-import lovehan1me.app.navigation.main.DrawerHost
 import lovehan1me.app.navigation.main.LoginRoute
-import lovehan1me.app.navigation.main.MainDrawerDestination
 import lovehan1me.app.navigation.main.ManualCookiesRoute
 import lovehan1me.app.navigation.main.PlatformScreens
 import lovehan1me.app.navigation.main.CloudflareRouteScreen
@@ -76,6 +74,10 @@ import org.jetbrains.compose.resources.stringResource
  * 2. 导航装配（35 路由）→ 已由 `SharedTopNavigation` 承担，路由表与之一致；
  * 3. Android 专属覆盖层（应用锁遮罩 / 剪贴板检测 / intent 导航 / 站点切换与登出对话框）。
  *
+ * P2：抽屉（`MainDrawerContent` / `DrawerHost` / `drawerContent` 槽位）已整体退役，
+ * 导航形态改由共享 [lovehan1me.app.navigation.main.MainScaffold] 提供（Compact 贴底
+ * NavigationBar / Medium+ WideNavigationRail）。登出仍在账号页；切换站点仍在设置。
+ *
  * 这里只保留第 3 件，并通过 [PlatformScreens] 把 6 个依赖 Android 硬能力的页面
  * （WebView 登录、CF 验证、头像 picker + cropper、SAF 下载设置、WorkManager 下载）
  * 注入共享导航，从而在功能零损失的前提下消除导航双轨。
@@ -93,16 +95,9 @@ fun MainActivityShell(
     onConfirmLogout: () -> Unit,
 ) {
     Box(modifier = Modifier.fillMaxSize()) {
-        App(
-            platformScreens = platformScreens(activity),
-            drawerContent = { host ->
-                AndroidDrawer(
-                    host = host,
-                    onSwitchSiteClick = onSwitchSiteClick,
-                    onLogoutClick = { activity.showLogoutConfirmDialog() },
-                )
-            },
-        )
+        // P2：抽屉退役后 App() 不再收 drawerContent 槽位 —— 导航外壳改为
+        // Compact 贴底 NavigationBar / Medium+ WideNavigationRail（见 MainScaffold）。
+        App(platformScreens = platformScreens(activity))
         AndroidOverlays(
             activity = activity,
             pendingNavigationRequests = pendingNavigationRequests,
@@ -207,64 +202,6 @@ private fun platformScreens(activity: MainActivity): PlatformScreens = PlatformS
     },
 )
 
-/**
- * Android 完整抽屉的**内容**（头像 / 用户名 / 当前站点 / 切换站点 / 打卡入口）。
- *
- * 共享 `SharedMainDrawer` 是最小版，此处复用下沉到 commonMain 的
- * [MainDrawerContent]，保证切换后抽屉功能不降级。
- *
- * **契约（重要）**：本函数只提供内容，**不要自建 sheet 外壳**。
- * `App()` 会按窗口宽度分档统一包 `PermanentDrawerSheet` / `ModalDrawerSheet`——
- * 自建会出现「sheet 套 sheet」的双层背景。
- * 顺带收益：平板横屏的常驻抽屉（`PermanentDrawerSheet`）现在由共享层提供，
- * 不再降级为普通抽屉（原已知差异已消除）。
- */
-@Composable
-private fun AndroidDrawer(
-    host: DrawerHost,
-    onSwitchSiteClick: () -> Unit,
-    onLogoutClick: () -> Unit,
-) {
-    val scope = rememberCoroutineScope()
-    val homeState by host.homeViewModel.homePageFlow.collectAsStateWithLifecycle()
-    val checkInEnabled by SettingsRepository.checkInEnabledFlow.collectAsStateWithLifecycle()
-    val headerAvatarUrl = if (host.isLoggedIn) {
-        (homeState as? PageState.Success)?.info?.page?.avatarUrl
-    } else {
-        null
-    }
-    val headerUsername = if (host.isLoggedIn) {
-        (homeState as? PageState.Success)?.info?.page?.username
-    } else {
-        null
-    }
-    val headerIsLoading = host.isLoggedIn && homeState is PageState.Loading
-
-    BackHandler(enabled = host.drawerState.isOpen) {
-        scope.launch { host.drawerState.close() }
-    }
-    MainDrawerContent(
-        selectedDestination = MainDrawerDestination.fromRoute(host.backStack.topLevelKey),
-        avatarUrl = headerAvatarUrl,
-        username = headerUsername,
-        isLoggedIn = host.isLoggedIn,
-        isLoading = headerIsLoading,
-        currentSite = SettingsRepository.baseUrl,
-        checkInEnabled = checkInEnabled,
-        onAvatarClick = {
-            if (host.isLoggedIn) host.onOpenAccount() else host.onRequireLogin()
-        },
-        onAvatarLongClick = onLogoutClick,
-        onSwitchSiteClick = onSwitchSiteClick,
-        onDrawerItemSelected = { destination ->
-            val handled = host.onDrawerItemSelected(destination)
-            if (handled) scope.launch { host.drawerState.close() }
-            handled
-        },
-    )
-}
-
-/** Android 专属覆盖层：剪贴板链接检测、intent 导航、平台对话框。 */
 @Composable
 private fun BoxScope.AndroidOverlays(
     activity: MainActivity,

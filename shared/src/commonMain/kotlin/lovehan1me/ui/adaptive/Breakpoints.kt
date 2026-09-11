@@ -17,8 +17,13 @@ import androidx.compose.ui.unit.dp
  * `WindowSize.kt`。
  */
 
-/** 宽度分档。对齐 Material 3 的 compact/medium/expanded，另加桌面用的 [Large]。 */
-enum class WindowWidthSizeClass { Compact, Medium, Expanded, Large }
+/**
+ * 宽度分档。对齐 Material 3（2026 版 5 档）：compact / medium / expanded / large / extra-large。
+ *
+ * 注：M3 已把这一概念由「window size class」更名为 **breakpoint**，6 档制里还含
+ * `extra-large` 之上的内容去重档；本项目用不到，故停在 [ExtraLarge]。
+ */
+enum class WindowWidthSizeClass { Compact, Medium, Expanded, Large, ExtraLarge }
 
 /**
  * 断点常量：每个值是该档的**下界**（整型 dp）。
@@ -38,10 +43,19 @@ object WindowWidthBreakpoints {
     /** large 下界 —— 亦即 expanded 的上界。平板横屏 / 桌面窗口。 */
     const val Large = 1200
 
+    /**
+     * extra-large 下界 —— 亦即 large 的上界。
+     *
+     * 1600dp 起视为「大桌面」：Rail 可展开到 220dp 而内容区仍有 1380dp 以上，
+     * 首页分类矩阵因此能吃到 5 列一档。
+     */
+    const val ExtraLarge = 1600
+
     val NarrowDp = Narrow.dp
     val MediumDp = Medium.dp
     val ExpandedDp = Expanded.dp
     val LargeDp = Large.dp
+    val ExtraLargeDp = ExtraLarge.dp
 }
 
 /** 按宽度（dp）分档。 */
@@ -49,7 +63,8 @@ fun windowWidthSizeClassOf(width: Dp): WindowWidthSizeClass = when {
     width.value < WindowWidthBreakpoints.Medium -> WindowWidthSizeClass.Compact
     width.value < WindowWidthBreakpoints.Expanded -> WindowWidthSizeClass.Medium
     width.value < WindowWidthBreakpoints.Large -> WindowWidthSizeClass.Expanded
-    else -> WindowWidthSizeClass.Large
+    width.value < WindowWidthBreakpoints.ExtraLarge -> WindowWidthSizeClass.Large
+    else -> WindowWidthSizeClass.ExtraLarge
 }
 
 /**

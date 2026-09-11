@@ -40,7 +40,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
-import lovehan1me.core.platform.isLandscapeOrientation
 import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -63,7 +62,8 @@ data class ClassicTabletLayoutConfig(
 
 @Composable
 fun VideoShellContent(
-    isTabletMode: Boolean,
+    /** 双栏（内容 + 侧栏）是否启用。P0 起由调用方按**内容区可用宽度 ≥ 840dp** 计算。 */
+    isDualPane: Boolean,
     isInPipMode: Boolean,
     isFullscreen: Boolean,
     playerHeightDp: Dp?,
@@ -123,9 +123,10 @@ fun VideoShellContent(
     classicTabletLayout: ClassicTabletLayoutConfig?,
     modifier: Modifier = Modifier,
 ) {
-    // M3：原 LocalConfiguration.orientation（Android-only）；改共享 isLandscapeOrientation expect。
-    val isTabletLandscape = isTabletMode && isLandscapeOrientation()
-    val showSideRelated = isTabletLandscape && !isInPipMode && !isFullscreen
+    // P0：不再要求「横屏」。原 `isTabletMode && isLandscapeOrientation()` 有两个问题：
+    //   1) iOS 侧 `isLandscapeOrientation()` 恒为 false → iPad 永远拿不到双栏；
+    //   2) 双栏与否本应由宽度决定（横屏手机的宽度天然超过阈值，方向语义已被宽度蕴含）。
+    val showSideRelated = isDualPane && !isInPipMode && !isFullscreen
     val showClassicSideRelated = showSideRelated && classicTabletLayout != null
     var isSideRelatedCollapsed by rememberSaveable { mutableStateOf(false) }
 
