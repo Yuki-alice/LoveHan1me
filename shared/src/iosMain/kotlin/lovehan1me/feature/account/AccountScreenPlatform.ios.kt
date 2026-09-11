@@ -1,5 +1,7 @@
 package lovehan1me.feature.account
 
-// iOS 不产生裁剪结果（onPickAvatarImage 为 null），此路径不可达。
-// 若未来接 iOS 文件选择，改用 NSData 读文件。
-internal actual fun readFileBytes(path: String): ByteArray? = null
+import lovehan1me.core.platform.readBytesAtPath
+
+// 阶段一⑧：iOS 裁剪管线（Skia 解码/裁剪/落盘）已就绪，读产物走 NSData。
+// 图片*选择器*（ photograph 库 / UIDocumentPicker）仍待接入——接入后此链路即可用。
+internal actual fun readFileBytes(path: String): ByteArray? = readBytesAtPath(path)
