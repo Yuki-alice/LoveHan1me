@@ -63,6 +63,9 @@ class IosAVPlaybackEngine : PlaybackEngine {
     private var released = false
 
     init {
+        // 阶段一⑨：向画中画 holder 注册当前 AVPlayer（每条视频一个引擎实例，
+        // release 时解绑；PiP 用独立 AVPlayerLayer，不碰渲染面的 layer）。
+        IosPipPlayerHolder.attach(avPlayer)
         scope.launch {
             while (isActive) {
                 publishState()
@@ -129,6 +132,7 @@ class IosAVPlaybackEngine : PlaybackEngine {
     override fun release() {
         if (released) return
         released = true
+        IosPipPlayerHolder.detach(avPlayer)
         avPlayer.pause()
         avPlayer.replaceCurrentItemWithPlayerItem(null)
         scope.cancel()

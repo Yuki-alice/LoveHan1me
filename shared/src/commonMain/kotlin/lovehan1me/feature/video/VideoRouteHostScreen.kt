@@ -70,6 +70,7 @@ import lovehan1me.core.domain.model.VideoLandscapeLayoutStyle
 import lovehan1me.core.domain.state.VideoLoadingState
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.app.bridge.NoopVideoPageHost
+import lovehan1me.app.bridge.PipModeReporter
 import lovehan1me.app.bridge.VideoPageHost
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.app.navigation.main.SearchRoute
@@ -286,7 +287,12 @@ fun VideoRouteHostScreen(
     DisposableEffect(platformHost, playbackController, pageHost) {
         platformHost.onHostStarted()
         onRegisterPageHost?.invoke(pageHost)
+        // 阶段一⑨：iOS 无 Activity，PiP 状态经 PipModeReporter 直连共享 pageHost
+        //（Android 走 MainActivity 广播，不受影响；桌面/旧实现直接不是 Reporter）。
+        val pipReporter = platformHost as? PipModeReporter
+        pipReporter?.pipModeListener = pageHost::onPipModeChanged
         onDispose {
+            pipReporter?.pipModeListener = null
             onRegisterPageHost?.invoke(null)
             platformHost.onHostStopped()
             playbackController.release()

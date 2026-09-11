@@ -12,6 +12,7 @@ import lovehan1me.data.SettingsRepository
 import lovehan1me.data.datastore.DataStoreManager
 import lovehan1me.app.navigation.main.PlatformScreens
 import lovehan1me.app.web.CloudflareVerificationWebView
+import lovehan1me.feature.player.IosVideoPageHost
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.compose.resources.stringResource
 import platform.UIKit.UIViewController
@@ -40,6 +41,8 @@ fun MainViewController(): UIViewController {
         App(
             // M5-5：CF 人机验证走系统 WebKit（WKWebView 直嵌），替代占位页
             platformScreens = PlatformScreens(
+                // 阶段一⑨：iOS 画中画宿主（退后台自动进 PiP；桌面明确不做，见注释）
+                videoPageHost = IosVideoPageHost,
                 cloudflare = { route ->
                     Column(modifier = Modifier.fillMaxSize()) {
                         Text(
