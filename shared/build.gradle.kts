@@ -168,6 +168,14 @@ kotlin {
                 implementation(kotlin("test"))
             }
         }
+
+        // 阶段一⑧：桌面端（JVM）单测——裁剪几何换算 / 文件名反解等纯逻辑，
+        // Windows 上即可运行（iOS 测试要模拟器，Android 测试要设备）。
+        val desktopTest by getting {
+            dependencies {
+                implementation(kotlin("test"))
+            }
+        }
     }
 }
 

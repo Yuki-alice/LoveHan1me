@@ -3,6 +3,7 @@ package lovehan1me.core.platform
 import lovehan1me.core.util.LogUtil
 import lovehan1me.core.constant.DESKTOP_USER_AGENT
 import lovehan1me.core.constant.EMPTY_STRING
+import lovehan1me.core.util.DownloadedVideoName
 import lovehan1me.core.constant.USER_AGENT
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.dao.Han1meDatabases
@@ -196,7 +197,7 @@ object DesktopDownloadWorkController : DownloadWorkController {
             val videoCode = dir.name.trim()
             if (videoCode.isBlank()) return@forEach
             dir.listFiles()?.filter(File::isFile)?.forEach { file ->
-                val parsed = parseDownloadedName(file.name) ?: return@forEach
+                val parsed = DownloadedVideoName.parse(file.name) ?: return@forEach
                 if (dao.find(videoCode, parsed.second) != null) return@forEach
                 val size = file.length()
                 dao.insert(
@@ -221,18 +222,6 @@ object DesktopDownloadWorkController : DownloadWorkController {
         }
         LogUtil.d(TAG, "importDownloaded: $imported 条")
         imported > 0
-    }
-
-    /** `<title> [<quality>].<suffix>` → (title, quality)；格式不符返回 null。 */
-    private fun parseDownloadedName(name: String): Pair<String, String>? {
-        val dot = name.lastIndexOf('.')
-        if (dot <= 0) return null
-        val stem = name.substring(0, dot)
-        val open = stem.lastIndexOf(" [")
-        if (open <= 0 || !stem.endsWith("]")) return null
-        val quality = stem.substring(open + 2, stem.length - 1)
-        if (quality.isBlank()) return null
-        return stem.substring(0, open) to quality
     }
 
     private fun videoFile(entity: HanimeDownloadEntity): File = File(

@@ -28,6 +28,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.graphicsLayer
@@ -47,8 +48,6 @@ import lovehan1me.core.util.LogUtil
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import org.jetbrains.compose.resources.stringResource
 import kotlin.math.max
-import kotlin.math.min
-import kotlin.math.roundToInt
 
 private const val TAG = "AvatarCrop"
 private const val MAX_ZOOM = 5f
@@ -177,6 +176,7 @@ private fun CropCanvas(
     Box(
         modifier = modifier
             .onSizeChanged { onViewportChanged(max(it.width, it.height).toFloat()) }
+            .clipToBounds()
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .pointerInput(bitmap) {
                 detectTransformGestures { _, pan, zoom, _ ->
@@ -188,7 +188,7 @@ private fun CropCanvas(
         Image(
             bitmap = bitmap,
             contentDescription = null,
-            contentScale = ContentScale.Fit,
+            contentScale = ContentScale.Crop,
             modifier = Modifier
                 .fillMaxSize()
                 .graphicsLayer {
@@ -215,41 +215,25 @@ private class CropTransform {
 
     fun applyGesture(zoom: Float, pan: Offset, bitmap: ImageBitmap) {
         scale = (scale * zoom).coerceIn(1f, MAX_ZOOM)
-        if (viewport <= 0f) return
-        val fit = viewport / max(bitmap.width, bitmap.height).toFloat()
-        val maxX = max(0f, (bitmap.width * fit * scale - viewport) / 2f)
-        val maxY = max(0f, (bitmap.height * fit * scale - viewport) / 2f)
-        offset = Offset(
-            (offset.x + pan.x).coerceIn(-maxX, maxX),
-            (offset.y + pan.y).coerceIn(-maxY, maxY),
+        val (dx, dy) = AvatarCropMath.clampOffset(
+            bitmap.width, bitmap.height, viewport, scale, offset.x + pan.x, offset.y + pan.y,
         )
+        offset = Offset(dx, dy)
     }
 }
 
-/**
- * 当前手势对应的**源图坐标**裁剪矩形（正方形）。
- *
- * 视口为 V，图片居中适配后再按 [CropTransform.scale] 放大、按 offset 平移：
- * 总倍率 `total = fit * scale`，视口在源图上覆盖 `V / total` 像素，
- * 左上角由图片左上角在视口中的位置反推。
- */
 private fun computeCropRect(
     bitmap: ImageBitmap,
     viewport: Float,
     transform: CropTransform,
 ): AvatarCropRect {
-    val srcW = bitmap.width
-    val srcH = bitmap.height
-    val size = min(srcW, srcH)
-    if (viewport <= 0f) {
-        // 还没量到视口：退化为整图中心的最大正方形
-        return AvatarCropRect((srcW - size) / 2, (srcH - size) / 2, size)
-    }
-    val total = (viewport / max(srcW, srcH).toFloat()) * transform.scale
-    val side = (viewport / total).roundToInt().coerceIn(1, size)
-    val imgLeft = (viewport - srcW * total) / 2f + transform.offset.x
-    val imgTop = (viewport - srcH * total) / 2f + transform.offset.y
-    val x = (-imgLeft / total).roundToInt().coerceIn(0, max(0, srcW - side))
-    val y = (-imgTop / total).roundToInt().coerceIn(0, max(0, srcH - side))
-    return AvatarCropRect(x, y, side)
+    val r = AvatarCropMath.cropRect(
+        srcW = bitmap.width,
+        srcH = bitmap.height,
+        viewport = viewport,
+        scale = transform.scale,
+        offsetX = transform.offset.x,
+        offsetY = transform.offset.y,
+    )
+    return AvatarCropRect(r.x, r.y, r.size)
 }
