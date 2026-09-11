@@ -27,6 +27,18 @@ dependencyResolutionManagement {
             forRepository { maven { url = uri("https://jitpack.io/") } }
             filter { includeGroupByRegex("com\\.github\\..*") }
         }
+        // 同类问题（③）：coil3 的 KMP 产物在阿里云镜像下"元数据拿得到、klib 取不到"。
+        // 阿里云先命中 coil3 的 .module → 亲和性把它钉死在 aliyun → 请求
+        // coil-network-{core,ktor3}-iosArm64Main-3.6.1.klib 时 404
+        // （仓库里只有全小写的 coil-network-*-iosarm64-3.6.1.klib）。
+        //
+        // ⚠️ 该坑只在 **iOS 目标**暴露，而 iOS 只能由 macOS 宿主构建 ——
+        //    Windows 侧加了阿里云镜像后，桌面/Android 全绿，唯独 iOS 编译从未跑过，
+        //    所以一路没被发现。把 coil3 整组钉回 Maven Central，保证元数据与产物同源。
+        exclusiveContent {
+            forRepository { mavenCentral() }
+            filter { includeGroup("io.coil-kt.coil3") }
+        }
         // 国内镜像优先：google()/mavenCentral() 直连在国内极慢，镜像命中可大幅缩短首次构建
         maven { url = uri("https://maven.aliyun.com/repository/google") }
         maven { url = uri("https://maven.aliyun.com/repository/public") }

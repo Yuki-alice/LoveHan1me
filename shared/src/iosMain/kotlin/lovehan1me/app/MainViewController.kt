@@ -15,6 +15,7 @@ import lovehan1me.app.web.CloudflareVerificationWebView
 import kotlinx.coroutines.runBlocking
 import org.jetbrains.compose.resources.stringResource
 import platform.UIKit.UIViewController
+import lovehan1me.Res
 import lovehan1me.complete_cloudflare_verification_with_warning
 
 /**

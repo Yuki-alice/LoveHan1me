@@ -3,6 +3,7 @@ package lovehan1me.core.platform
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asSkiaBitmap
 import androidx.compose.ui.graphics.toComposeImageBitmap
+import kotlin.time.Clock
 import kotlinx.cinterop.ExperimentalForeignApi
 import kotlinx.cinterop.allocArrayOf
 import kotlinx.cinterop.addressOf
@@ -17,6 +18,7 @@ import org.jetbrains.skia.Image
 import platform.Foundation.NSData
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSUserDomainMask
 import platform.Foundation.create
 import platform.Foundation.dataWithContentsOfFile
@@ -27,8 +29,10 @@ import platform.posix.memcpy
  * 阶段一⑧：iOS 头像裁剪的像素活 —— **纯 Kotlin（Skia）+ 既有 Foundation 模式**，
  * 不引入新的 UIKit cinterop（图片*选择器*仍需后续接入，见下）。
  *
- * API 签名已对同版本 skiko（0.150.1）javap 核对：
- * `Bitmap.extractSubset` / `Image.makeFromBitmap` / `Image.encodeToData` / `Data.getBytes`。
+ * ⚠️ skiko 的 **JVM 侧（skiko-awt）与 iOS 侧 API 并不完全一致**，别拿 awt 的 javap
+ * 结果当准：`Data.getBytes()` 在 JVM 有无参重载，iOS 侧只有 `getBytes(offset, length)`。
+ * 首次跑 macOS 宿主的 `:shared:compileKotlinIosArm64` 才暴露（Windows 构建不了 iOS，
+ * 桌面/Android 全绿也掩盖不了这里）。
  *
  * 与桌面实现的差异：
  * - 不做 maxPx 降采样（skia 缩放需走 Canvas，留待真机验证后再加）
@@ -98,11 +102,14 @@ actual suspend fun cropAndSaveAvatar(
             "extractSubset failed: rect=($x,$y,$size) src=${full.width}x${full.height}"
         }
 
+        // encodeToData 返回可空；且 iOS 侧 skiko 的 Data.getBytes 没有无参重载，
+        // 必须显式给 (offset, length) —— 与 JVM 侧 skiko-awt 的签名不同。
         val data = Image.makeFromBitmap(subset).encodeToData(EncodedImageFormat.PNG)
+            ?: return@withContext null
         val dir = documentsAvatarDir()
         ensureDir(dir)
-        val out = "$dir/avatar_${kotlinx.datetime.Clock.System.now().toEpochMilliseconds()}.png"
-        if (!writeBytesAtPath(out, data.getBytes())) return@withContext null
+        val out = "$dir/avatar_${Clock.System.now().toEpochMilliseconds()}.png"
+        if (!writeBytesAtPath(out, data.getBytes(0, data.size))) return@withContext null
         out
     }.onFailure {
         lovehan1me.core.util.LogUtil.w("AvatarCropIos", "裁剪失败", it)
