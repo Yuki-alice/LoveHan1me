@@ -73,6 +73,7 @@ import lovehan1me.core.platform.downloadWorkController
 import lovehan1me.feature.login.FormLoginScreen
 import lovehan1me.data.logout
 import lovehan1me.feature.account.AccountScreen
+import lovehan1me.feature.account.AvatarCropScreen
 import lovehan1me.feature.account.UserAccountViewModel
 import lovehan1me.app.sharedViewModel
 import lovehan1me.feature.settings.HomeSettingsPage
@@ -303,10 +304,15 @@ fun SharedTopNavigation(
                     onBack()
                 }
             } else {
-                NavPlaceholder(
-                    title = "AvatarCrop",
-                    hint = "头像裁剪暂仅 Android：${route.sourceUri}",
+                // 阶段一⑧：没有平台注入时用共享的纯 Compose 裁剪页，
+                // 桌面/iOS 因此不再是占位页（Android 仍走 mucute 注入）。
+                AvatarCropScreen(
+                    sourceUri = route.sourceUri,
                     onBack = onBack,
+                    onConfirm = { croppedPath ->
+                        pendingAvatarCropResult = croppedPath
+                        onBack()
+                    },
                 )
             }
         }

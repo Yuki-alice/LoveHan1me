@@ -59,7 +59,6 @@ import lovehan1me.app.navigation.settings.SettingsDestinationSpec
 import lovehan1me.app.navigation.settings.SettingsScaffold
 import lovehan1me.feature.player.rememberAndroidVideoPageHost
 import lovehan1me.feature.account.AccountScreen
-import lovehan1me.feature.account.AvatarCropScreen
 import lovehan1me.feature.account.UserAccountViewModel
 import lovehan1me.understood
 import lovehan1me.site.hanime1.videoUrlRegex
@@ -194,13 +193,9 @@ private fun platformScreens(activity: MainActivity): PlatformScreens = PlatformS
             onBack = onBack,
         )
     },
-    avatarCrop = { sourceUri, onConfirm ->
-        AvatarCropScreen(
-            sourceUri = sourceUri,
-            onBack = onBack,
-            onConfirm = { file -> onConfirm(file.absolutePath) },
-        )
-    },
+    // 阶段一⑧：不再注入 mucute 裁剪页（已删），统一用共享的纯 Compose 裁剪页
+    // （解码/落盘由 core/platform/AvatarImageIo 的 androidMain 实现完成）
+    avatarCrop = null,
     downloadSettings = {
         SettingsScaffold(
             backStack = backStack,
