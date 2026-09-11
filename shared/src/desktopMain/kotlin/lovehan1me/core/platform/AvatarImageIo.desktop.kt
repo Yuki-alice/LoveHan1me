@@ -17,10 +17,20 @@ import kotlin.math.max
  *   这里改用 `BufferedImage` + `Graphics2D` 高质量插值。
  * - 裁剪落盘：按矩形 `getSubimage` → 缩放到 outputPx → 写 PNG 到缓存目录。
  */
+/** 把 source 解析成本地文件；支持绝对路径与 `file:/...` / `file:///...` URI。 */
+private fun resolveSource(source: String): File? {
+    val path = when {
+        source.startsWith("file://") -> runCatching { java.net.URI(source).path }.getOrNull() ?: return null
+        source.startsWith("file:") -> source.removePrefix("file:")
+        else -> source
+    }
+    val f = File(path)
+    return if (f.exists()) f else null
+}
+
 actual suspend fun decodeAvatarSource(source: String, maxPx: Int): ImageBitmap? =
     runCatching {
-        val file = source.removePrefix("file://").let { File(it) }
-        if (!file.exists()) return null
+        val file = resolveSource(source) ?: return null
         val raw = ImageIO.read(file) ?: return null
         val scale = (maxPx.toFloat() / max(raw.width, raw.height)).coerceAtMost(1f)
         val scaled = if (scale < 1f) {
@@ -50,8 +60,7 @@ actual suspend fun cropAndSaveAvatar(
     rect: AvatarCropRect,
     outputPx: Int,
 ): String? = runCatching {
-    val file = source.removePrefix("file://").let { File(it) }
-    if (!file.exists()) return null
+    val file = resolveSource(source) ?: return null
     val raw = ImageIO.read(file) ?: return null
 
     // 裁剪矩形必须落在图像内（共享层已夹取，这里再兜一次）
