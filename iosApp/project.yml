@@ -18,6 +18,10 @@ settings:
     SWIFT_VERSION: "5.10"
     IPHONEOS_DEPLOYMENT_TARGET: "15.0"
     TARGETED_DEVICE_FAMILY: "1,2"
+    # Kotlin/Native 只编了 iosArm64/iosSimulatorArm64（无 x86_64 模拟器 slice），
+    # 不锁的话 xcodebuild 默认双架构，Gradle 任务会报
+    # "Unknown iOS simulator arch: 'x86_64'"
+    ARCHS: arm64
 targets:
   iosApp:
     type: application
@@ -61,12 +65,34 @@ targets:
 # 必须显式声明 scheme：不声明则 xcodegen 不产出 .xcscheme，
 # 命令行 xcodebuild 会报「Supported platforms for the buildables in the
 # current scheme is empty」，任何 -destination 都匹配不上。
+  iosAppUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: iosAppUITests
+    dependencies:
+      - target: iosApp
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: me.lovehan1me.iosUITests
+        # 不显式给 PRODUCT_NAME 的话产物名是空的（-Runner.app / .xctest），
+        # xcodegen 顶层 settings 也不会透传到这个 target，以下都得手写：
+        PRODUCT_NAME: iosAppUITests
+        SDKROOT: iphoneos
+        IPHONEOS_DEPLOYMENT_TARGET: "15.0"
+        SWIFT_VERSION: "5.10"
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: YES
+        TEST_TARGET_NAME: iosApp
 schemes:
   iosApp:
     build:
       targets:
         iosApp: all
+        iosAppUITests: [test]
     run:
       config: Debug
     test:
       config: Debug
+      targets:
+        - iosAppUITests

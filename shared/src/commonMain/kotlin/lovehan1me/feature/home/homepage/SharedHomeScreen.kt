@@ -45,6 +45,7 @@ import lovehan1me.core.domain.model.AppUpdateInfo
 import lovehan1me.core.domain.state.PageState
 import lovehan1me.core.domain.state.dataOrNull
 import lovehan1me.simulated_update_description
+import lovehan1me.open_menu
 import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.component.PageContent
 import lovehan1me.ui.component.PullRefreshOverlay
@@ -212,7 +213,8 @@ fun SharedHomeScreen(
                     IconButton(onClick = onOpenDrawer) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_menu),
-                            contentDescription = null,
+                            // 无障碍标签（此前为 null，屏幕阅读器与 XCUITest 都找不到该按钮）
+                            contentDescription = stringResource(Res.string.open_menu),
                         )
                     }
                 }
