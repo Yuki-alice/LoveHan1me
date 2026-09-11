@@ -26,6 +26,15 @@ targets:
       - path: iosApp
     info:
       path: iosApp/Info.plist
+      # ⚠️ 必须在这里声明全部自定义键：xcodegen generate 会**整文件重写** Info.plist，
+      #    只写 path 不写 properties 会把已提交的键全部清掉
+      #    （实测丢过 UIBackgroundModes / UIFileSharingEnabled，导致画中画与文件访问失效）。
+      properties:
+        CADisableMinimumFrameDurationOnPhone: true
+        UIFileSharingEnabled: true
+        LSSupportsOpeningDocumentsInPlace: true
+        UIBackgroundModes:
+          - audio
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: me.lovehan1me.ios
@@ -48,3 +57,16 @@ targets:
           cd "$SRCROOT/.."
           ./gradlew :shared:embedAndSignAppleFrameworkForXcode
         basedOnDependencyAnalysis: false
+
+# 必须显式声明 scheme：不声明则 xcodegen 不产出 .xcscheme，
+# 命令行 xcodebuild 会报「Supported platforms for the buildables in the
+# current scheme is empty」，任何 -destination 都匹配不上。
+schemes:
+  iosApp:
+    build:
+      targets:
+        iosApp: all
+    run:
+      config: Debug
+    test:
+      config: Debug
