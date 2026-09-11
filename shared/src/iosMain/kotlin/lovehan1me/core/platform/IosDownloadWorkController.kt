@@ -1,6 +1,8 @@
 package lovehan1me.core.platform
 
 import lovehan1me.core.util.LogUtil
+import lovehan1me.core.util.DownloadedVideoName
+import lovehan1me.core.constant.EMPTY_STRING
 import lovehan1me.core.constant.USER_AGENT
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.dao.Han1meDatabases
@@ -40,6 +42,11 @@ import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
+import platform.Foundation.NSFileModificationDate
+import platform.Foundation.NSFileSize
+import platform.Foundation.NSNumber
+import platform.Foundation.NSDate
+import platform.Foundation.timeIntervalSince1970
 import platform.Foundation.NSSearchPathForDirectoriesInDomains
 import platform.Foundation.NSUserDomainMask
 import platform.posix.SEEK_SET
@@ -195,7 +202,114 @@ object IosDownloadWorkController : DownloadWorkController {
         deletePath(videoFolderPath(videoCode))
     }
 
-    override suspend fun importDownloaded(): Boolean = false
+    override suspend fun importDownloaded(): Boolean = withContext(Dispatchers.Default) {
+        // 阶段一⑦：与桌面同构的自家目录扫描（Documents/Han1meViewer/downloads）。
+        // 沙盒固定根，无需选目录器；命名解析复用共享 DownloadedVideoName。
+        val fm = NSFileManager.defaultManager
+        val root = downloadDir()
+        val top = fm.contentsOfDirectoryAtPath(root, null)?.filterIsInstance<String>()
+            ?: return@withContext false
+        val db = Han1meDatabases.download
+        db.downloadGroupDao.insertDefaultGroup()
+        val dao = db.hanimeDownloadDao
+        var imported = 0
+        top.forEach { child ->
+            val sub = "$root/$child"
+            // 非目录（散文件）在 contentsOfDirectoryAtPath 返回 null → 跳过
+            val files = fm.contentsOfDirectoryAtPath(sub, null)?.filterIsInstance<String>()
+                ?: return@forEach
+            val videoCode = child.trim()
+            if (videoCode.isBlank()) return@forEach
+            files.forEach { name ->
+                // suffix 由 videoUri 反解（"local://code" 无点 → 恒 mp4），
+                // 非 mp4 会解析到不存在的路径，故只收 mp4。
+                if (!name.endsWith(".mp4", ignoreCase = true)) return@forEach
+                val parsed = DownloadedVideoName.parse(name) ?: return@forEach
+                if (dao.find(videoCode, parsed.second) != null) return@forEach
+                val full = "$sub/$name"
+                val size = fileSizeOf(full)
+                dao.insert(
+                    HanimeDownloadEntity(
+                        groupId = DownloadGroupEntity.DEFAULT_GROUP_ID,
+                        coverUrl = EMPTY_STRING,
+                        title = parsed.first,
+                        addDate = fileModifiedAt(full),
+                        videoCode = videoCode,
+                        videoUri = "local://$videoCode",
+                        coverUri = null,
+                        quality = parsed.second,
+                        videoUrl = EMPTY_STRING,
+                        length = size,
+                        downloadedLength = size,
+                        state = DownloadState.Finished,
+                    )
+                )
+                imported++
+            }
+        }
+        LogUtil.d(TAG, "importDownloaded: $imported 条")
+        imported > 0
+    }
+
+    override fun supportsExternalImport(): Boolean = true
+
+    /**
+     * 阶段一⑦：导入经 DocumentPicker 选中的单个外部文件。
+     *
+     * @param tempPath 选择器拷贝到临时目录的路径（文件名即原文件名，见
+     * copyPickedToTemp）。mp4 之外拒绝（suffix 反解约束，见 importDownloaded）。
+     * 文件按自家落盘约定搬进下载树后再走同一套扫描入库：
+     * - 已是 `title [quality].mp4` 形式：保留名，目录挂靠 `imported-<title>`；
+     * - 否则：重命名为 `<stem> [imported].mp4`，目录 `imported-<stem>`。
+     */
+    override suspend fun importExternalFile(tempPath: String): Boolean =
+        withContext(Dispatchers.Default) {
+            val fm = NSFileManager.defaultManager
+            val origName = tempPath.substringAfterLast('/')
+            if (!origName.endsWith(".mp4", ignoreCase = true)) {
+                LogUtil.w(TAG, "importExternalFile: only mp4 supported: $origName")
+                fm.removeItemAtPath(tempPath, null)
+                return@withContext false
+            }
+            val parsed = DownloadedVideoName.parse(origName)
+            val dirName: String
+            val fileName: String
+            if (parsed != null) {
+                dirName = "imported-${sanitizeFileName(parsed.first)}"
+                fileName = origName
+            } else {
+                val safe = sanitizeFileName(origName.substringBeforeLast('.'))
+                dirName = "imported-$safe"
+                fileName = "$safe [imported].mp4"
+            }
+            val quality = DownloadedVideoName.parse(fileName)?.second ?: return@withContext false
+            val dao = Han1meDatabases.download.hanimeDownloadDao
+            if (dao.find(dirName, quality) != null) {
+                fm.removeItemAtPath(tempPath, null)
+                return@withContext true
+            }
+            val destDir = "${downloadDir()}/$dirName"
+            ensureDir(destDir)
+            val dest = "$destDir/$fileName"
+            fm.removeItemAtPath(dest, null)
+            if (!fm.moveItemAtPath(tempPath, dest, null)) {
+                LogUtil.e(TAG, "importExternalFile: move failed: $tempPath")
+                return@withContext false
+            }
+            importDownloaded()
+        }
+
+    private fun fileSizeOf(path: String): Long {
+        val attrs = NSFileManager.defaultManager.attributesOfItemAtPath(path, null)
+        return (attrs?.get(NSFileSize) as? NSNumber)?.longLongValue() ?: 0L
+    }
+
+    private fun fileModifiedAt(path: String): Long {
+        val attrs = NSFileManager.defaultManager.attributesOfItemAtPath(path, null)
+        val date = attrs?.get(NSFileModificationDate) as? NSDate
+        return date?.timeIntervalSince1970?.times(1000)?.toLong()
+            ?: Clock.System.now().toEpochMilliseconds()
+    }
 
     // ── 内部：执行器 ──
 

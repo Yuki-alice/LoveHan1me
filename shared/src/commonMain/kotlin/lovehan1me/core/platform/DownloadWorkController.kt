@@ -44,6 +44,24 @@ interface DownloadWorkController {
         redownload: Boolean = false,
     ) {}
 
-    /** M6：从下载目录导入已有视频（Android=SAF 扫描；桌面/iOS 返回 false） */
+    /** M6：从下载目录导入已有视频（Android=SAF 扫描；桌面/iOS=自家目录扫描） */
     suspend fun importDownloaded(): Boolean = false
+
+    /**
+     * 阶段一⑦：是否支持从系统文件选择器导入外部视频（当前仅 iOS）。
+     *
+     * iOS 沙盒外文件无稳定访问权，导入 = 经 DocumentPicker 拷贝进自家下载目录
+     * 再走与 [importDownloaded] 同一套入库扫描；Android（SAF 常驻权限）/
+     * 桌面（文件系统直读）不需要这条路。
+     */
+    fun supportsExternalImport(): Boolean = false
+
+    /**
+     * 阶段一⑦：导入单个外部文件。
+     *
+     * @param tempPath 选择器落到应用可读位置的临时路径（iOS 由
+     * `rememberBackupImportLauncher` 回传，文件名即原文件名）。
+     * @return true=已入库（调用方刷新列表），false=失败或非受支持格式。
+     */
+    suspend fun importExternalFile(tempPath: String): Boolean = false
 }

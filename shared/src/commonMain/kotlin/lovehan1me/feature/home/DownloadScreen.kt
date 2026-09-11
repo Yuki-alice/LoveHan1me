@@ -55,7 +55,9 @@ import lovehan1me.cancel
 import lovehan1me.ic_add
 import lovehan1me.ic_close
 import lovehan1me.ic_download
+import lovehan1me.ic_file_path
 import lovehan1me.ic_format_list_bulleted
+import lovehan1me.import_external_file
 import lovehan1me.ic_menu
 import lovehan1me.ic_pause
 import lovehan1me.ic_play_arrow
@@ -105,6 +107,8 @@ fun DownloadScreen(
     onBack: () -> Unit,
     onLoadDownloaded: () -> Unit,
     onEvent: (DownloadEvent) -> Unit,
+    /** 阶段一⑦：是否展示“从文件导入”入口（仅 supportsExternalImport 平台） */
+    showImportExternalFile: Boolean = false,
 ) {
     val downloadingItems by downloadingFlow.collectAsStateWithLifecycle(initialValue = emptyList())
     val downloadedItems by downloadedFlow.collectAsStateWithLifecycle()
@@ -237,6 +241,8 @@ fun DownloadScreen(
                 onToggleMultiSelect = { handleEvent(DownloadEvent.OnToggleMultiSelect) },
                 onCreateGroup = { handleEvent(DownloadEvent.OnCreateGroupDialogChange(true)) },
                 onImportDownloaded = { handleEvent(DownloadEvent.OnImportDownloaded) },
+                showImportExternalFile = showImportExternalFile,
+                onImportExternalFile = { handleEvent(DownloadEvent.OnImportExternalFile) },
             )
         },
     ) { paddingValues ->
@@ -330,6 +336,8 @@ private fun DownloadFabMenu(
     onToggleMultiSelect: () -> Unit,
     onCreateGroup: () -> Unit,
     onImportDownloaded: () -> Unit,
+    showImportExternalFile: Boolean,
+    onImportExternalFile: () -> Unit,
 ) {
     var expanded by rememberSaveable { mutableStateOf(false) }
     val hapticFeedback = rememberHapticFeedback()
@@ -449,6 +457,23 @@ private fun DownloadFabMenu(
                         expanded = false
                     },
                 )
+                // 阶段一⑦：从系统文件选择器导入单个外部视频（仅 iOS 可见）
+                if (showImportExternalFile) {
+                    FloatingActionButtonMenuItem(
+                        text = { Text(stringResource(Res.string.import_external_file)) },
+                        icon = {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_file_path),
+                                contentDescription = null,
+                            )
+                        },
+                        onClick = {
+                            hapticFeedback()
+                            onImportExternalFile()
+                            expanded = false
+                        },
+                    )
+                }
             }
         }
 

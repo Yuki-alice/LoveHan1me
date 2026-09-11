@@ -8,13 +8,11 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import lovehan1me.ui.component.HapticTextButton as TextButton
 import androidx.compose.runtime.Composable
@@ -34,7 +32,6 @@ import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.getString
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.core.constant.HanimeConstants
 import lovehan1me.core.constant.HA1_GITHUB_FORUM_URL
@@ -55,6 +52,7 @@ import lovehan1me.core.platform.supportsPerAppLinks
 import lovehan1me.core.platform.switchLauncherIcon
 import lovehan1me.core.platform.writeBackupText
 import lovehan1me.core.platform.currentEpochMillis
+import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.core.platform.openPerAppLinksSettings
 import lovehan1me.core.platform.rememberBackupExportLauncher
 import lovehan1me.core.platform.rememberBackupImportLauncher
@@ -127,14 +125,14 @@ import kotlinx.coroutines.withContext
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-actual fun HomeSettingsRouteScreen(
+fun HomeSettingsRouteScreen(
     page: HomeSettingsPage,
-    onNavigateToHKeyframes: () -> Unit,
-    onNavigateToSharedHKeyframes: () -> Unit,
-    onNavigateToOpenSourceLicenses: () -> Unit,
+    onNavigateToHKeyframes: () -> Unit = {},
+    onNavigateToSharedHKeyframes: () -> Unit = {},
+    onNavigateToOpenSourceLicenses: () -> Unit = {},
     // P6d-4E：下载设置页依赖 :app 的 SAF（SafFileManager/WorkManager），由 Android 壳注入；
     // 桌面/iOS 下载目录能力随 P7 提供，默认空占位
-    downloadSettingsContent: @Composable () -> Unit,
+    downloadSettingsContent: @Composable () -> Unit = {},
 ) {
     val uriHandler = LocalUriHandler.current
     val coroutineScope = rememberCoroutineScope()
@@ -154,7 +152,7 @@ actual fun HomeSettingsRouteScreen(
 
     val exportLauncher = rememberBackupExportLauncher { uri ->
         uri ?: return@rememberBackupExportLauncher
-        coroutineScope.launch(Dispatchers.IO) {
+        coroutineScope.launch(ioDispatcher) {
             runCatching { BackupManager.exportTo(uri) }
                 .onSuccess { SonnerToast.success(getString(Res.string.backup_export_success)) }
                 .onFailure { SonnerToast.error(getString(Res.string.backup_export_failed)) }
@@ -163,7 +161,7 @@ actual fun HomeSettingsRouteScreen(
     val importLauncher = rememberBackupImportLauncher { pendingImportUri = it }
     val localListsExportLauncher = rememberBackupExportLauncher { uri ->
         uri ?: return@rememberBackupExportLauncher
-        coroutineScope.launch(Dispatchers.IO) {
+        coroutineScope.launch(ioDispatcher) {
             runCatching {
                 val jsonText = LocalListRepository.exportLocalListsJson()
                 check(writeBackupText(uri, jsonText)) { "Unable to open output file" }
@@ -176,7 +174,7 @@ actual fun HomeSettingsRouteScreen(
     }
     val localListsImportLauncher = rememberBackupImportLauncher { uri ->
         uri ?: return@rememberBackupImportLauncher
-        coroutineScope.launch(Dispatchers.IO) {
+        coroutineScope.launch(ioDispatcher) {
             runCatching {
                 val jsonText = readBackupText(uri) ?: error("Unable to open input file")
                 LocalListRepository.importLocalListsJson(jsonText, merge = true)
@@ -189,7 +187,7 @@ actual fun HomeSettingsRouteScreen(
     }
     val onlineListsExportLauncher = rememberBackupExportLauncher { uri ->
         uri ?: return@rememberBackupExportLauncher
-        coroutineScope.launch(Dispatchers.IO) {
+        coroutineScope.launch(ioDispatcher) {
             runCatching {
                 val jsonText = OnlineListsBackup.exportOnlineListsJson()
                 check(writeBackupText(uri, jsonText)) { "Unable to open output file" }
@@ -206,7 +204,7 @@ actual fun HomeSettingsRouteScreen(
             return@rememberBackupImportLauncher
         }
         val uri = it ?: return@rememberBackupImportLauncher
-        coroutineScope.launch(Dispatchers.IO) {
+        coroutineScope.launch(ioDispatcher) {
             runCatching {
                 val jsonText = readBackupText(uri) ?: error("Unable to open input file")
                 OnlineListsBackup.importOnlineListsJson(jsonText)
@@ -250,7 +248,7 @@ actual fun HomeSettingsRouteScreen(
     var cacheSummary by remember { mutableStateOf("") }
 
     LaunchedEffect(cacheKey) {
-        cacheSummary = withContext(Dispatchers.IO) {
+        cacheSummary = withContext(ioDispatcher) {
             generateClearCacheSummary(getCacheDirSize()).toString()
         }
     }
@@ -463,7 +461,7 @@ actual fun HomeSettingsRouteScreen(
         onConfirm = {
             val uri = pendingImportUri ?: return@ConfirmDialog
             pendingImportUri = null
-            coroutineScope.launch(Dispatchers.IO) {
+            coroutineScope.launch(ioDispatcher) {
                 runCatching { BackupManager.importFrom(uri) }
                     .onSuccess {
                         withContext(Dispatchers.Main) {
@@ -489,7 +487,7 @@ actual fun HomeSettingsRouteScreen(
         dismissText = stringResource(Res.string.cancel),
         onConfirm = {
             showClearCacheConfirm = false
-            coroutineScope.launch(Dispatchers.IO) {
+            coroutineScope.launch(ioDispatcher) {
                 val success = clearCacheDir()
                 cacheKey++
                 if (success) SonnerToast.success(getString(Res.string.clear_success)) else SonnerToast.error(getString(Res.string.clear_failed))
@@ -550,22 +548,21 @@ actual fun HomeSettingsRouteScreen(
         onDismiss = { showRestartConfirmDialog = false },
     )
 
+    // 阶段一④：伪装图标选择器原用 androidx.compose.ui.window.Dialog（JVM 专属，
+    // commonMain 不可用），改 Material3 AlertDialog 承载——iOS 复用同一套。
     if (showLauncherPicker) {
-        Dialog(
+        AlertDialog(
             onDismissRequest = { showLauncherPicker = false },
-        ) {
-            Surface(
-                shape = RoundedCornerShape(28.dp),
-                color = MaterialTheme.colorScheme.surfaceContainerHigh,
-            ) {
+            title = {
+                Text(
+                    stringResource(Res.string.fake_app_icon),
+                    style = MaterialTheme.typography.titleLarge,
+                )
+            },
+            text = {
                 Column(
-                    modifier = Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                 ) {
-                    Text(
-                        stringResource(Res.string.fake_app_icon),
-                        style = MaterialTheme.typography.titleLarge,
-                    )
                     launcherItems.forEach { item ->
                         TextButton(
                             onClick = {
@@ -594,8 +591,9 @@ actual fun HomeSettingsRouteScreen(
                         }
                     }
                 }
-            }
-        }
+            },
+            confirmButton = {},
+        )
     }
 }
 

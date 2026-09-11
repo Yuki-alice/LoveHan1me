@@ -46,6 +46,9 @@ sealed interface DownloadEvent {
     /** 导入已下载视频 */
     data object OnImportDownloaded : DownloadEvent
 
+    /** 阶段一⑦：从系统文件选择器导入单个外部视频（仅 supportsExternalImport 平台） */
+    data object OnImportExternalFile : DownloadEvent
+
     /** 打开已下载视频详情 */
     data class OnOpenDownloadedVideo(val video: VideoWithCategories) : DownloadEvent
 

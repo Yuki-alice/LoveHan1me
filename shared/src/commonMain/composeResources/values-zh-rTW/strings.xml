@@ -430,6 +430,7 @@
     <string name="original_comic">原作漫畫</string>
     <string name="fault_prompt">發生錯誤，請聯絡開發者！</string>
     <string name="read_download_dir_title">讀取下載目錄</string>
+    <string name="import_external_file">從檔案匯入</string>
     <string name="read_download_dir_message">讀取目前下載目錄中已下載的檔案，用於恢復之前下載的檔案至列表中。\n每個影片單元檔案結構應為：\n[影片代碼]/xxx.mp4、xxx.png、info.json</string>
     <string name="read_success">讀取成功</string>
     <string name="select_custom_directory">請先選擇一個自訂目錄</string>

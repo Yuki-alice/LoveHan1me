@@ -220,11 +220,14 @@ fun SharedTopNavigation(
                 navScope.injected()
             } else {
                 // M6：默认走共享下载页（Room KMP 三端同库，浏览/分组/删除全可用）；
-                // 外部播放/SAF 导入为 Android 专属回调（null），引擎发起随 P7 各端补齐
+                // 外部播放仍为 Android 专属回调（null）。
+                // 阶段一⑦：自家目录导入扫描桌面/iOS 均已实现（importDownloaded），
+                // 传非空即启用确认框；:app 侧 AndroidShell 同理自理。
                 DownloadRouteScreen(
                     onBack = onBack,
                     onNavigateToVideo = { code -> backStack.add(VideoRoute(code)) },
                     onNavigateToLocalVideo = { code, uri -> backStack.add(VideoRoute(code, uri)) },
+                    onImportDownloaded = {},
                 )
             }
         }

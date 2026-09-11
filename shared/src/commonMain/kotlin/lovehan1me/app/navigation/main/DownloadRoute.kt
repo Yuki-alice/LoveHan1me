@@ -12,6 +12,7 @@ import lovehan1me.app.sharedViewModel
 import lovehan1me.data.SettingsRepository
 import lovehan1me.Res
 import lovehan1me.action_not_support
+import lovehan1me.backup_import_failed
 import lovehan1me.cancel
 import lovehan1me.confirm
 import lovehan1me.create_group_success
@@ -39,6 +40,8 @@ import lovehan1me.feature.home.DownloadScreen
 import lovehan1me.feature.home.download.DownloadEvent
 import lovehan1me.feature.library.DownloadViewModel
 import lovehan1me.core.platform.downloadWorkController
+import lovehan1me.core.platform.ioDispatcher
+import lovehan1me.core.platform.rememberBackupImportLauncher
 import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -61,6 +64,30 @@ fun DownloadRouteScreen(
     var showDeleteVideoConfirm by remember { mutableStateOf<VideoWithCategories?>(null) }
     var showImportDownloadedConfirm by remember { mutableStateOf(false) }
     var isImportingDownloaded by remember { mutableStateOf(false) }
+    var isImportingExternalFile by remember { mutableStateOf(false) }
+
+    // 阶段一⑦：外部文件导入 picker（三端 launcher 复用；仅 supportsExternalImport
+    // 平台收到非空回调——iOS 回传临时路径，Android/desktop 因入口隐藏调不到）。
+    val externalImportLauncher = rememberBackupImportLauncher { picked ->
+        if (picked == null || isImportingExternalFile) return@rememberBackupImportLauncher
+        isImportingExternalFile = true
+        scope.launch(ioDispatcher) {
+            val ok = runCatching { downloadWorkController().importExternalFile(picked) }
+                .getOrDefault(false)
+            withContext(Dispatchers.Main) {
+                isImportingExternalFile = false
+                if (ok) {
+                    viewModel.loadAllDownloadedHanime(
+                        sortedBy = HanimeDownloadEntity.SortedBy.ID,
+                        ascending = false,
+                    )
+                    SonnerToast.success(getString(Res.string.read_success))
+                } else {
+                    SonnerToast.error(getString(Res.string.backup_import_failed))
+                }
+            }
+        }
+    }
 
     val handleEvent: (DownloadEvent) -> Unit = { event ->
         when (event) {
@@ -81,6 +108,14 @@ fun DownloadRouteScreen(
                     showImportDownloadedConfirm = true
                 } else {
                     scope.launch { SonnerToast.warning(getString(Res.string.select_custom_directory)) }
+                }
+            }
+
+            is DownloadEvent.OnImportExternalFile -> {
+                if (downloadWorkController().supportsExternalImport() && !isImportingExternalFile) {
+                    externalImportLauncher()
+                } else {
+                    scope.launch { SonnerToast.warning(getString(Res.string.action_not_support)) }
                 }
             }
 
@@ -158,6 +193,7 @@ fun DownloadRouteScreen(
             )
         },
         onEvent = handleEvent,
+        showImportExternalFile = downloadWorkController().supportsExternalImport(),
     )
 
     ConfirmDialog(

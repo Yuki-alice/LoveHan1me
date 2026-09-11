@@ -1,9 +1,10 @@
 package lovehan1me.core.util
 
 /**
- * 阶段一⑦：桌面端已下载视频的文件名反解。
+ * 阶段一⑦：已下载视频的文件名反解（三端共用）。
  *
- * 落盘约定（`DesktopDownloadWorkController.videoFile`）：
+ * 落盘约定（桌面 `DesktopDownloadWorkController.videoFile` /
+ * iOS `IosDownloadWorkController.videoFilePath` 同构）：
  * `<sanitize(title)> [<quality>].<suffix>`
  */
 internal object DownloadedVideoName {
