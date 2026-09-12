@@ -90,7 +90,11 @@ private fun SettingRow(
     applyContainerPadding: Boolean = true,
     trailingContent: @Composable (() -> Unit)? = null,
 ) {
-    val contentAlpha = if (enabled) 1f else 0.38f
+    // 审计 P2：原先写死 0.38f。数值本身就是 M3 规格（禁用态内容 = onSurface 38%），
+    // 提成 HanimeDefaults.Alpha.disabled 是为了说明「这是规格值，不是随便调的」。
+    // 另：已核对过这里**没有**透明度二次叠加 —— 图标/标题/摘要各只应用一次 38%，
+    // 右侧 Switch 的禁用外观由 M3 组件自己处理（thumb 38% / track 12%），属正常规格差异。
+    val contentAlpha = if (enabled) 1f else HanimeDefaults.Alpha.disabled
     val rowModifier = if (applyContainerPadding) {
         Modifier
             .fillMaxWidth()

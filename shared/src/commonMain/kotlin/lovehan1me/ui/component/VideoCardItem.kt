@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.animation.animateContentSize
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -156,7 +155,7 @@ fun VideoCardItem(
                                 .padding(top = 6.dp, end = 6.dp)
                                 .background(
                                     color = Color.Black.copy(alpha = 0.65f),
-                                    shape = RoundedCornerShape(4.dp)
+                                    shape = MaterialTheme.shapes.extraSmall
                                 )
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {
@@ -230,7 +229,7 @@ fun VideoCardItem(
                                 modifier = Modifier
                                     .background(
                                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.85f),
-                                        shape = RoundedCornerShape(20.dp)
+                                        shape = MaterialTheme.shapes.largeIncreased
                                     )
                                     .padding(horizontal = 12.dp, vertical = 6.dp)
                             ) {

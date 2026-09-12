@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
+import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.Res
 import lovehan1me.swipe_more
 import lovehan1me.subscribed_artists_count
@@ -59,7 +60,7 @@ import lovehan1me.feature.preview.fakeArtists
 import lovehan1me.feature.preview.fakeVideos
 import lovehan1me.ui.component.rememberVideoGridColumns
 import lovehan1me.ui.theme.ArtistIconSize
-import lovehan1me.ui.theme.SpacingNormal
+import lovehan1me.ui.theme.contentFade
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
@@ -88,7 +89,7 @@ fun SubscriptionContent(
     val artistColumns = columnsForMinItemWidth(
         availableWidth = contentWidthDp,
         minItemWidth = ArtistIconSize,
-        spacing = SpacingNormal,
+        spacing = HanimeDefaults.Spacing.medium,
         minColumns = 3,
     )
     var currentPage by remember { mutableIntStateOf(1) }
@@ -117,17 +118,17 @@ fun SubscriptionContent(
             state = gridState,
             columns = GridCells.Fixed(videoColumns),
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(vertical = SpacingNormal),
-            horizontalArrangement = Arrangement.spacedBy(SpacingNormal),
-            verticalArrangement = Arrangement.spacedBy(SpacingNormal)
+            contentPadding = PaddingValues(vertical = HanimeDefaults.Spacing.medium),
+            horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium)
         ) {
             item(span = { GridItemSpan(videoColumns) }) {
+                // transitionSpec 的 lambda 不是 @Composable 上下文，spec 要在外面取。
+                val contentTransition = contentFade()
                 AnimatedContent(
                     targetState = uiState.artists,
                     label = "artist-animation",
-                    transitionSpec = {
-                        fadeIn(tween(300)) togetherWith fadeOut(tween(200))
-                    }
+                    transitionSpec = { contentTransition }
                 ) { artists ->
                     ArtistListSection(
                         artists = artists,
@@ -234,7 +235,7 @@ private fun ArtistListSection(
         }
         Box(modifier = Modifier.fillMaxWidth()) {
             Row(
-                horizontalArrangement = Arrangement.spacedBy(SpacingNormal),
+                horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
                 modifier = Modifier
                     .fillMaxWidth()
                     .horizontalScroll(scrollState)
@@ -243,7 +244,7 @@ private fun ArtistListSection(
                 repeat(artistColumnCount) { columnIndex ->
                     Column(
                         modifier = Modifier.width(ArtistIconSize),
-                        verticalArrangement = Arrangement.spacedBy(SpacingNormal)
+                        verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium)
                     ) {
                         repeat(artistRows) { rowIndex ->
                             val itemIndex = columnIndex * artistRows + rowIndex

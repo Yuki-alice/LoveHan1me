@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import lovehan1me.ui.component.HapticButton as Button
 import androidx.compose.material3.ElevatedCard
@@ -51,7 +50,7 @@ fun PreviewInfoCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        shape = RoundedCornerShape(28.dp),
+        shape = MaterialTheme.shapes.extraLarge,
     ) {
         Column {
             Box(
@@ -151,7 +150,7 @@ fun PreviewInfoCard(
                         ) { index, url ->
                             ElevatedCard(
                                 onClick = { onOpenImage(index, previewInfo.relatedPicsUrl) },
-                                shape = RoundedCornerShape(16.dp)
+                                shape = MaterialTheme.shapes.large
                             ) {
                                 HanimeAsyncImage(
                                     model = url,

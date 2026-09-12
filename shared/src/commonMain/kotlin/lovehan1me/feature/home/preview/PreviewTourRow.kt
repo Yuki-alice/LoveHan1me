@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedCard
 import androidx.compose.runtime.Composable
@@ -66,7 +65,7 @@ fun PreviewTourRow(
                         centerPreviewTourItem(listState, index)
                     }
                 },
-                shape = RoundedCornerShape(18.dp),
+                shape = MaterialTheme.shapes.largeIncreased,
             ) {
                 Box {
                     HanimeAsyncImage(

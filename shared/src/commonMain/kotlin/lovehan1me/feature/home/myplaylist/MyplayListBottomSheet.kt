@@ -81,8 +81,7 @@ import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.lazy.LazyVerticalGrid
 import lovehan1me.ui.component.RetryableImage
 import lovehan1me.ui.theme.HanimeDefaults
-import lovehan1me.ui.theme.SpacingNormal
-import lovehan1me.ui.theme.VideoNormalCardMinWidth
+import lovehan1me.ui.adaptive.PageMetrics
 import lovehan1me.feature.library.PlaylistController
 import lovehan1me.core.util.SonnerToast
 
@@ -333,14 +332,16 @@ private fun PlaylistSheetContent(
         Spacer(Modifier.height(8.dp))
 
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val columns = maxOf(2, (maxWidth / VideoNormalCardMinWidth).toInt())
+            // 弹窗宽度 ≠ 窗口内容宽度，用容器实宽分档
+            val cardMinWidth = PageMetrics.videoCardMinWidthFor(maxWidth, simplified = false)
+            val columns = maxOf(2, (maxWidth / cardMinWidth).toInt())
 
             LazyVerticalGrid(
                 state = gridState,
-                columns = GridCells.Adaptive(minSize = VideoNormalCardMinWidth),
-                contentPadding = PaddingValues(SpacingNormal),
-                horizontalArrangement = Arrangement.spacedBy(SpacingNormal),
-                verticalArrangement = Arrangement.spacedBy(SpacingNormal)
+                columns = GridCells.Adaptive(minSize = cardMinWidth),
+                contentPadding = PaddingValues(HanimeDefaults.Spacing.medium),
+                horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
+                verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium)
             ) {
                 itemsIndexed(playlist) { index, item ->
                     VideoCardItem(

@@ -9,12 +9,12 @@ import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.ui.component.LoadMoreFooter
 import lovehan1me.ui.component.VideoCardItem
 import lovehan1me.ui.component.lazy.LazyVerticalGrid
 import lovehan1me.ui.component.rememberVideoGridColumns
-import lovehan1me.ui.theme.SpacingNormal
 
 /**
  * 视频网格 Content 层。纯 UI，不持有 ViewModel。
@@ -40,9 +40,9 @@ fun VideoGridContent(
         columns = GridCells.Fixed(videoColumns),
         state = gridState,
         modifier = modifier.fillMaxSize(),
-        contentPadding = PaddingValues(vertical = SpacingNormal),
-        horizontalArrangement = Arrangement.spacedBy(SpacingNormal),
-        verticalArrangement = Arrangement.spacedBy(SpacingNormal)
+        contentPadding = PaddingValues(vertical = HanimeDefaults.Spacing.medium),
+        horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
+        verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium)
     ) {
         items(uiState.items, key = { it.videoCode }) { item ->
             VideoCardItem(

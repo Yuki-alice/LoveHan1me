@@ -15,7 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
@@ -179,7 +179,7 @@ private fun GridConfigInputRow(option: GridRangeOption, isDecimal: Boolean) {
                     modifier = Modifier
                         .width(4.dp)
                         .height(36.dp)
-                        .clip(RoundedCornerShape(topEnd = 4.dp, bottomEnd = 4.dp))
+                        .clip(MaterialTheme.shapes.extraSmall.copy(topStart = CornerSize(0.dp), bottomStart = CornerSize(0.dp)))
                         .background(if (option.isHighlighted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant)
                 )
 
@@ -198,7 +198,7 @@ private fun GridConfigInputRow(option: GridRangeOption, isDecimal: Boolean) {
                                 Surface(
                                     color = MaterialTheme.colorScheme.primaryContainer,
                                     contentColor = MaterialTheme.colorScheme.onPrimaryContainer,
-                                    shape = RoundedCornerShape(4.dp),
+                                    shape = MaterialTheme.shapes.extraSmall,
                                 ) {
                                     Text(
                                         text = text,

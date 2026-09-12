@@ -5,8 +5,10 @@ import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Shapes
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -17,6 +19,29 @@ import androidx.compose.ui.graphics.Outline
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.unit.dp
+
+/**
+ * 形状阶梯 —— 显式声明（审计 P1 收敛后，全项目圆角唯一入口）。
+ *
+ * 数值与 M3 1.5.0-alpha25 的 `Shapes()` 默认值一一对应（4/8/12/16/20/28/32/48），
+ * 视觉零变化；显式写出的目的是给未来调整一个唯一落点，并让"项目用哪套圆角"在代码里可读。
+ *
+ * 散装 `RoundedCornerShape(n)` 的收敛映射（±2dp 的就近归档已记录在审计报告 §三 P1）：
+ * 2/4 → extraSmall，6/8 → small，10/12 → medium，14/16 → large，
+ * 18/20 → largeIncreased，28 → extraLarge，32/36 → extraLargeIncreased。
+ * 胶囊（50/100/999/percent=50）不在此处 —— 走 [HanimeDefaults.Corners.pill]。
+ */
+val AppShapes: Shapes = Shapes(
+    extraSmall = RoundedCornerShape(4.dp),
+    small = RoundedCornerShape(8.dp),
+    medium = RoundedCornerShape(12.dp),
+    large = RoundedCornerShape(16.dp),
+    largeIncreased = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(28.dp),
+    extraLargeIncreased = RoundedCornerShape(32.dp),
+    extraExtraLarge = RoundedCornerShape(48.dp),
+)
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable

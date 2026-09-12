@@ -34,7 +34,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
@@ -578,7 +577,7 @@ fun VideoPlayerUi(
                     Box(
                         modifier = Modifier
                             .matchParentSize()
-                            .clip(RoundedCornerShape(20.dp))
+                            .clip(MaterialTheme.shapes.largeIncreased)
                     ) {
 
                         Box(
@@ -598,7 +597,7 @@ fun VideoPlayerUi(
                                 .border(
                                     1.dp,
                                     Color.White.copy(alpha = 0.06f),
-                                    RoundedCornerShape(20.dp)
+                                    MaterialTheme.shapes.largeIncreased
                                 )
                         )
                     }
@@ -722,7 +721,7 @@ fun VideoPlayerUi(
             exit = fadeOut(),
         ) {
             Surface(
-                shape = RoundedCornerShape(12.dp),
+                shape = MaterialTheme.shapes.medium,
                 color = Color.Black.copy(alpha = 0.46f),
             ) {
                 Icon(
@@ -838,7 +837,7 @@ fun VideoPlayerUi(
                 Box(
                     modifier = Modifier
                         .matchParentSize()
-                        .clip(RoundedCornerShape(18.dp))
+                        .clip(MaterialTheme.shapes.largeIncreased)
                 ) {
 
                     Box(
@@ -856,7 +855,7 @@ fun VideoPlayerUi(
                             .border(
                                 1.dp,
                                 Color.White.copy(alpha = 0.06f),
-                                RoundedCornerShape(18.dp)
+                                MaterialTheme.shapes.largeIncreased
                             )
                     )
                 }
@@ -971,7 +970,7 @@ fun VideoPlayerUi(
         ) {
             ElevatedButton(
                 onClick = onResumeClick,
-                shape = RoundedCornerShape(50),
+                shape = HanimeDefaults.Corners.pill,
             ) {
                 Text(stringResource(Res.string.player_play_from_beginning))
             }
@@ -988,7 +987,7 @@ fun VideoPlayerUi(
                     containerColor = HanimeDefaults.Colors.pageSurface,
                     contentColor = MaterialTheme.colorScheme.onSurface,
                 ),
-                shape = RoundedCornerShape(28.dp),
+                shape = MaterialTheme.shapes.extraLarge,
             ) {
                 Column(
                     modifier = Modifier.padding(20.dp),
@@ -1029,7 +1028,7 @@ fun VideoPlayerUi(
                     containerColor = HanimeDefaults.Colors.pageSurface,
                     contentColor = MaterialTheme.colorScheme.onSurface
                 ),
-                shape = RoundedCornerShape(28.dp)
+                shape = MaterialTheme.shapes.extraLarge
             ) {
 
                 Column(
@@ -1075,7 +1074,7 @@ fun VideoPlayerUi(
             exit = fadeOut(),
         ) {
             Surface(
-                shape = RoundedCornerShape(16.dp),
+                shape = MaterialTheme.shapes.large,
                 color = MaterialTheme.colorScheme.surface.copy(alpha = 0.18f)
             ) {
                 Text(
@@ -1189,7 +1188,7 @@ private fun PlayerMenuChip(
     onClick: () -> Unit,
     onLongClick: (() -> Unit)? = null,
 ) {
-    val shape = RoundedCornerShape(10.dp)
+    val shape = MaterialTheme.shapes.medium
     Box(
         modifier = Modifier
             .clip(shape)
@@ -1525,7 +1524,7 @@ fun PlayerSlider(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(3.dp)
-                        .clip(RoundedCornerShape(100))
+                        .clip(HanimeDefaults.Corners.pill)
                         .background(
                             Color.White.copy(alpha = 0.14f)
                         )
@@ -1538,7 +1537,7 @@ fun PlayerSlider(
                     modifier = Modifier
                         .fillMaxWidth(buffered.coerceIn(0f, 1f))
                         .height(3.dp)
-                        .clip(RoundedCornerShape(100))
+                        .clip(HanimeDefaults.Corners.pill)
                         .background(
                             Color.White.copy(alpha = 0.32f)
                         )
@@ -1551,7 +1550,7 @@ fun PlayerSlider(
                     modifier = Modifier
                         .fillMaxWidth(value.coerceIn(0f, 1f))
                         .height(3.dp)
-                        .clip(RoundedCornerShape(100))
+                        .clip(HanimeDefaults.Corners.pill)
                         .background(
                             Brush.horizontalGradient(
                                 colors = listOf(
@@ -1612,7 +1611,7 @@ private fun GestureIndicatorOverlay(
                         width = 170.dp,
                         height = 190.dp
                     )
-                    .clip(RoundedCornerShape(36.dp))
+                    .clip(MaterialTheme.shapes.extraLargeIncreased)
             ) {
 
                 /**
@@ -1652,7 +1651,7 @@ private fun GestureIndicatorOverlay(
                         .border(
                             1.dp,
                             Color.White.copy(alpha = 0.12f),
-                            RoundedCornerShape(36.dp)
+                            MaterialTheme.shapes.extraLargeIncreased
                         )
                 )
 
@@ -1700,7 +1699,7 @@ private fun GestureIndicatorOverlay(
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(8.dp)
-                            .clip(RoundedCornerShape(100)),
+                            .clip(HanimeDefaults.Corners.pill),
                         trackColor = Color.White.copy(alpha = 0.12f),
                     )
 

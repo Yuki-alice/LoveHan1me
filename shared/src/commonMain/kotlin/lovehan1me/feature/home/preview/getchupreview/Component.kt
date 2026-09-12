@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -54,7 +53,7 @@ internal fun GetchuPreviewItemCard(
                 contentDescription = item.title,
                 modifier = Modifier
                     .size(width = 108.dp, height = 148.dp)
-                    .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp)),
+                    .clip(MaterialTheme.shapes.large),
                 contentScale = ContentScale.Crop,
                 placeholder = painterResource(Res.drawable.h_chan_loading),
                 error = painterResource(Res.drawable.h_chan_load_failed)

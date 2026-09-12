@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
@@ -120,7 +119,7 @@ fun DownloadingItemCard(
                     modifier = Modifier
                         .width(136.dp)
                         .aspectRatio(16f / 9f)
-                        .clip(RoundedCornerShape(12.dp)),
+                        .clip(MaterialTheme.shapes.medium),
                     contentScale = ContentScale.Crop,
                 )
 
@@ -152,7 +151,7 @@ fun DownloadingItemCard(
                             modifier = Modifier
                                 .background(
                                     MaterialTheme.colorScheme.secondaryContainer,
-                                    RoundedCornerShape(6.dp)
+                                    MaterialTheme.shapes.small
                                 )
                                 .padding(horizontal = 6.dp, vertical = 2.dp)
                         ) {

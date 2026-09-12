@@ -29,7 +29,7 @@ import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -116,7 +116,6 @@ import lovehan1me.ui.component.lazy.LazyVerticalGrid
 import lovehan1me.feature.preview.fakeHomePageVideos
 import lovehan1me.ui.component.rememberVideoGridColumns
 import lovehan1me.ui.theme.HanimeDefaults
-import lovehan1me.ui.theme.SpacingNormal
 import lovehan1me.ui.theme.shapeByInteraction
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharedFlow
@@ -532,13 +531,13 @@ private fun OnlineWatchHistoryGrid(
             state = gridState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(
-                start = SpacingNormal,
+                start = HanimeDefaults.Spacing.medium,
                 top = 64.dp,
-                end = SpacingNormal,
-                bottom = SpacingNormal,
+                end = HanimeDefaults.Spacing.medium,
+                bottom = HanimeDefaults.Spacing.medium,
             ),
-            horizontalArrangement = Arrangement.spacedBy(SpacingNormal),
-            verticalArrangement = Arrangement.spacedBy(SpacingNormal),
+            horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
             enableItemAnimation = false,
         ) {
             item(
@@ -660,7 +659,7 @@ private fun WatchHistoryCard(
                 modifier = Modifier
                     .width(120.dp)
                     .height(68.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(MaterialTheme.shapes.small)
             ) {
                 HanimeAsyncImage(
                     model = history.coverUrl,
@@ -672,7 +671,7 @@ private fun WatchHistoryCard(
                     Surface(
                         color = Color.Black.copy(alpha = 0.65f),
                         contentColor = Color.White,
-                        shape = RoundedCornerShape(topEnd = 4.dp),
+                        shape = MaterialTheme.shapes.extraSmall.copy(topStart = CornerSize(0.dp), bottomEnd = CornerSize(0.dp), bottomStart = CornerSize(0.dp)),
                         modifier = Modifier.align(Alignment.BottomStart)
                     ) {
                         Text(

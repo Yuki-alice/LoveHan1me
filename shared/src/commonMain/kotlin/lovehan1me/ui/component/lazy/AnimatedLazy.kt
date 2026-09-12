@@ -1,7 +1,8 @@
 package lovehan1me.ui.component.lazy
 
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
@@ -359,6 +360,7 @@ private fun LazyGridItemScope.AnimatedGridItem(
     }
 }
 
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 private fun AnimatedLazyItemContainer(
     enableItemAnimation: Boolean,
@@ -382,12 +384,14 @@ private fun AnimatedLazyItemContainer(
     }
     val animatedAlpha by animateFloatAsState(
         targetValue = if (visible) 1f else 0f,
-        animationSpec = tween(durationMillis = 100),
+        // 审计 P1：列表项入场不再写死 tween(100/180)，改走 motionScheme ——
+        // 透明度是 effects 属性、缩放是 spatial 属性，档位取 fast（入场是高频动作，别拖）。
+        animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
         label = "lazy-item-alpha",
     )
     val animatedScale by animateFloatAsState(
         targetValue = if (visible) 1f else 0.985f,
-        animationSpec = tween(durationMillis = 180),
+        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
         label = "lazy-item-scale",
     )
     Box(

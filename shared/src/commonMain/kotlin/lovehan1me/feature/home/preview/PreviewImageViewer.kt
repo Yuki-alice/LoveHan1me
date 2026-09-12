@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import lovehan1me.ui.component.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -48,6 +47,7 @@ import lovehan1me.ui.component.rememberHanimeImageLoader
 import lovehan1me.Res
 import lovehan1me.back
 import lovehan1me.ic_arrow_back
+import lovehan1me.ui.theme.HanimeDefaults
 
 /**
  * 预览图片查看器弹窗。支持翻页浏览、双击/双指缩放。
@@ -167,7 +167,7 @@ fun PreviewImageViewerDialog(
                             .padding(bottom = 24.dp)
                             .background(
                                 MaterialTheme.colorScheme.surface.copy(alpha = 0.72f),
-                                RoundedCornerShape(999.dp)
+                                HanimeDefaults.Corners.pill
                             )
                             .padding(horizontal = 14.dp, vertical = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,

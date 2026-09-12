@@ -36,7 +36,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.toggleable
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.AlertDialog
 import lovehan1me.ui.component.HapticButton as Button
@@ -143,10 +143,9 @@ import lovehan1me.ui.component.lazy.LazyRow
 import lovehan1me.ui.component.lazy.LazyVerticalGrid
 import lovehan1me.ui.component.rememberCardResponsiveWidth
 import lovehan1me.ui.component.rememberRandomLoadingHint
-import lovehan1me.ui.theme.SpacingNormal
 import lovehan1me.ui.theme.HanimeDefaults
-import lovehan1me.ui.theme.VideoNormalCardMinWidth
-import lovehan1me.ui.theme.VideoSimplifiedCardMinWidth
+import lovehan1me.ui.adaptive.PageMetrics
+import lovehan1me.ui.adaptive.rememberVideoCardMinWidth
 import lovehan1me.ui.theme.shapeByInteraction
 import lovehan1me.core.util.DisplayTextLocalizer
 import lovehan1me.ui.component.rememberHapticFeedback
@@ -381,12 +380,13 @@ private fun VideoIntroductionContent(
     BoxWithConstraints(modifier = Modifier.fillMaxSize()) {
         val relatedItems = video.relatedHanimes
         val relatedIsNormal = relatedItems.firstOrNull()?.itemType == HanimeInfo.NORMAL
+        // 容器内已有实宽，直接用局部宽度分档（比全局内容宽度更准）
         val relatedMinCardWidth =
-            if (relatedIsNormal) VideoNormalCardMinWidth else VideoSimplifiedCardMinWidth
+            PageMetrics.videoCardMinWidthFor(maxWidth, simplified = !relatedIsNormal)
         val relatedAvailableWidth = (maxWidth - 12.dp).coerceAtLeast(0.dp)
         val relatedColumns = maxOf(
             2,
-            ((relatedAvailableWidth + SpacingNormal) / (relatedMinCardWidth + SpacingNormal)).toInt(),
+            ((relatedAvailableWidth + HanimeDefaults.Spacing.medium) / (relatedMinCardWidth + HanimeDefaults.Spacing.medium)).toInt(),
         )
         val relatedRows = remember(relatedItems, relatedColumns) {
             relatedItems.chunked(relatedColumns)
@@ -490,7 +490,7 @@ private fun VideoIntroductionContent(
                 ) { _, row ->
                     Row(
                         modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(SpacingNormal),
+                        horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
                     ) {
                         row.forEach { item ->
                             RelatedVideoCard(
@@ -840,7 +840,7 @@ private fun PlaylistBottomSheet(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(androidx.compose.foundation.shape.RoundedCornerShape(12.dp))
+                            .clip(MaterialTheme.shapes.medium)
                             .background(
                                 if (item.isPlaying) {
                                     MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.65f)
@@ -866,7 +866,7 @@ private fun PlaylistBottomSheet(
                             modifier = Modifier
                                 .width(100.dp)
                                 .height(66.dp)
-                                .clip(androidx.compose.foundation.shape.RoundedCornerShape(10.dp)),
+                                .clip(MaterialTheme.shapes.medium),
                             contentScale = ContentScale.Crop,
                         )
                         Column(modifier = Modifier.weight(1f)) {
@@ -1162,13 +1162,13 @@ private fun VideoRatingButtons(
     Row(
         modifier = Modifier
             .height(32.dp)
-            .clip(RoundedCornerShape(16.dp)),
+            .clip(MaterialTheme.shapes.large),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Row(
             modifier = Modifier
                 .height(32.dp)
-                .clip(RoundedCornerShape(topStart = 16.dp, bottomStart = 16.dp))
+                .clip(MaterialTheme.shapes.large.copy(topEnd = CornerSize(0.dp), bottomEnd = CornerSize(0.dp)))
                 .background(likeContainerColor)
                 .combinedClickable(
                     onClick = {
@@ -1205,7 +1205,7 @@ private fun VideoRatingButtons(
         Box(
             modifier = Modifier
                 .size(width = 34.dp, height = 32.dp)
-                .clip(RoundedCornerShape(topEnd = 16.dp, bottomEnd = 16.dp))
+                .clip(MaterialTheme.shapes.large.copy(topStart = CornerSize(0.dp), bottomStart = CornerSize(0.dp)))
                 .background(dislikeContainerColor)
                 .combinedClickable(
                     onClick = {
@@ -1317,7 +1317,7 @@ private fun VideoActionButton(
     Column(
         modifier = Modifier
             .widthIn(min = 76.dp)
-            .clip(androidx.compose.foundation.shape.RoundedCornerShape(14.dp))
+            .clip(MaterialTheme.shapes.large)
             .combinedClickable(
                 onClick = {
                     haptic()
@@ -1426,12 +1426,12 @@ internal fun RelatedVideosSection(
     modifier: Modifier = Modifier,
 ) {
     val isNormal = videos.firstOrNull()?.itemType == HanimeInfo.NORMAL
-    val minCardWidth = if (isNormal) VideoNormalCardMinWidth else VideoSimplifiedCardMinWidth
+    val minCardWidth = rememberVideoCardMinWidth(simplified = !isNormal)
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = minCardWidth),
         modifier = modifier,
-        horizontalArrangement = Arrangement.spacedBy(SpacingNormal),
-        verticalArrangement = Arrangement.spacedBy(SpacingNormal),
+        horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
+        verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
         enableItemAnimation = false,
     ) {
         item(

@@ -1,7 +1,7 @@
 package lovehan1me.feature.home.myplaylist
 
 import androidx.compose.animation.AnimatedContent
-import androidx.compose.animation.core.tween
+import lovehan1me.ui.theme.contentFade
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
@@ -64,12 +64,12 @@ fun PlaylistContent(
         }
     }
 
+    // transitionSpec 的 lambda 不是 @Composable 上下文，spec 要在外面取。
+    val contentTransition = contentFade()
     AnimatedContent(
         targetState = rawState,
         label = "playlist-content-animation",
-        transitionSpec = {
-            fadeIn(tween(300)) togetherWith fadeOut(tween(200))
-        }
+        transitionSpec = { contentTransition }
     ) { state ->
         PageContent(
             isLoading = state is WebsiteState.Loading,

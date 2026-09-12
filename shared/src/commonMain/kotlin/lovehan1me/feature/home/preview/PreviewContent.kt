@@ -1,10 +1,11 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
+
 package lovehan1me.feature.home.preview
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateContentSize
-import androidx.compose.animation.core.FastOutLinearInEasing
-import androidx.compose.animation.core.LinearOutSlowInEasing
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.FiniteAnimationSpec
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -84,6 +85,19 @@ fun PreviewContent(
     modifier: Modifier = Modifier,
 ) {
     val loadingHint = rememberRandomLoadingHint()
+    // P6 动效统一：位移走 spatial 档、淡入淡出走 effects 档，取代原先手调的
+    // 320/260/220/170/420/190 与 delayMillis。
+    // ⚠️ transitionSpec 的 lambda **不是** @Composable 上下文，而 motionScheme 是
+    // @Composable —— 四个 spec 必须在外面先取好，且要显式类型参数：
+    // slide 动画的是 Int 偏移，fade 动画的是 Float 透明度，两者不通用。
+    val titleEnterSlideSpec = MaterialTheme.motionScheme.defaultSpatialSpec<IntOffset>()
+    val titleEnterFadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    val titleExitSlideSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
+    val titleExitFadeSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
+    val headerEnterSlideSpec = MaterialTheme.motionScheme.slowSpatialSpec<IntOffset>()
+    val headerEnterFadeSpec = MaterialTheme.motionScheme.defaultEffectsSpec<Float>()
+    val headerExitSlideSpec = MaterialTheme.motionScheme.fastSpatialSpec<IntOffset>()
+    val headerExitFadeSpec = MaterialTheme.motionScheme.fastEffectsSpec<Float>()
     HanimePageSurface(modifier = modifier) {
         Column(modifier = Modifier.fillMaxSize()) {
             HanimeTopAppBar(
@@ -93,20 +107,16 @@ fun PreviewContent(
                         transitionSpec = {
                             val forward = uiState.monthAnimationDirection >= 0
                             (slideInVertically(
-                                animationSpec = tween(320, easing = LinearOutSlowInEasing),
+                                animationSpec = titleEnterSlideSpec,
                                 initialOffsetY = { height -> if (forward) height / 2 else -height / 2 }
                             ) + fadeIn(
-                                animationSpec = tween(
-                                    260,
-                                    delayMillis = 40,
-                                    easing = LinearOutSlowInEasing
-                                )
+                                animationSpec = titleEnterFadeSpec
                             )) togetherWith
                                     (slideOutVertically(
-                                        animationSpec = tween(220, easing = FastOutLinearInEasing),
+                                        animationSpec = titleExitSlideSpec,
                                         targetOffsetY = { height -> if (forward) -height / 2 else height / 2 }
                                     ) + fadeOut(
-                                        animationSpec = tween(170, easing = FastOutLinearInEasing)
+                                        animationSpec = titleExitFadeSpec
                                     ))
                         },
                         label = "preview_month_title",
@@ -171,23 +181,16 @@ fun PreviewContent(
                         transitionSpec = {
                             val forward = uiState.monthAnimationDirection >= 0
                             (slideInHorizontally(
-                                animationSpec = tween(420, easing = LinearOutSlowInEasing),
+                                animationSpec = headerEnterSlideSpec,
                                 initialOffsetX = { width -> if (forward) width else -width }
                             ) + fadeIn(
-                                animationSpec = tween(
-                                    320,
-                                    delayMillis = 70,
-                                    easing = LinearOutSlowInEasing
-                                )
+                                animationSpec = headerEnterFadeSpec
                             )) togetherWith
                                     (slideOutHorizontally(
-                                        animationSpec = tween(260, easing = FastOutLinearInEasing),
+                                        animationSpec = headerExitSlideSpec,
                                         targetOffsetX = { width -> if (forward) -width else width }
                                     ) + fadeOut(
-                                        animationSpec = tween(
-                                            190,
-                                            easing = FastOutLinearInEasing
-                                        )
+                                        animationSpec = headerExitFadeSpec
                                     ))
                         },
                         label = "preview_month_header",

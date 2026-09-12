@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import lovehan1me.ui.component.FilledIconButton
@@ -180,7 +179,7 @@ fun AdvancedSearchSheet(
                 .fillMaxWidth()
                 .weight(1f, fill = false)
                 .padding(horizontal = 8.dp, vertical = 8.dp),
-            shape = RoundedCornerShape(28.dp),
+            shape = MaterialTheme.shapes.extraLarge,
         ) {
             LazyColumn(
                 modifier = Modifier

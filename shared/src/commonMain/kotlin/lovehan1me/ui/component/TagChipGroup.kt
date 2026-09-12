@@ -2,11 +2,11 @@ package lovehan1me.ui.component
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.animateIntAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.ChipColors
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -35,6 +35,7 @@ import lovehan1me.ui.component.HapticTextButton as TextButton
  *
  * 支持流式排列、点击回调，以及可选的“超过两行折叠/展开”模式。
  */
+@OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun TagChipGroup(
     tags: List<String>,
@@ -53,14 +54,16 @@ fun TagChipGroup(
         collapsible,
         collapsedMaxLines
     ) { mutableIntStateOf(0) }
+    // 审计 P1：箭头旋转与折叠高度都是 spatial 属性，改走 motionScheme（原 tween(240) 是裸值）。
+    // 展开/折叠是用户主动触发的低频动作，取 default 档而非 fast。
     val arrowRotation by animateFloatAsState(
         targetValue = if (expanded) 180f else 0f,
-        animationSpec = tween(durationMillis = 240),
+        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
         label = "tag-arrow-rotation",
     )
     val animatedChipContentHeight by animateIntAsState(
         targetValue = chipContentHeightTarget,
-        animationSpec = tween(durationMillis = 240),
+        animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
         label = "tag-content-height",
     )
 

@@ -1,5 +1,6 @@
 package lovehan1me.ui.component
 
+import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.core.util.LogUtil
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,8 +26,6 @@ import lovehan1me.Res
 import lovehan1me.loading
 import lovehan1me.ui.adaptive.columnsForMinItemWidth
 import lovehan1me.ui.adaptive.rememberContentWidthDp
-import lovehan1me.ui.theme.SpacingLarge
-import lovehan1me.ui.theme.SpacingNormal
 
 @Composable
 fun RetryableImage(
@@ -72,8 +71,8 @@ fun getColumnCount(itemWidth: Int): Int =
 
 @Composable
 fun rememberCardResponsiveWidth(
-    horizontalPadding: Dp = SpacingLarge,
-    itemSpacing: Dp = SpacingNormal
+    horizontalPadding: Dp = HanimeDefaults.Spacing.extraLarge,
+    itemSpacing: Dp = HanimeDefaults.Spacing.medium
 ): Pair<Dp, Float> {
     // 内容区可用宽度（常驻抽屉 / 侧栏占宽已扣除），而非整窗宽度。
     val currentWidthDp = rememberContentWidthDp()

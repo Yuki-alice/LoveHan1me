@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import lovehan1me.ui.component.HapticButton as Button
 import androidx.compose.material3.Card
@@ -109,7 +108,7 @@ fun CheckInDialog(
             modifier = Modifier
                 .fillMaxWidth(0.92f),
             //.fillMaxSize(0.85f),
-            shape = RoundedCornerShape(20.dp)
+            shape = MaterialTheme.shapes.largeIncreased
         ) {
             Column(
                 modifier = Modifier
@@ -300,7 +299,7 @@ fun ExistingRecordItem(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
         ),
@@ -314,7 +313,7 @@ fun ExistingRecordItem(
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Surface(
-                        shape = RoundedCornerShape(6.dp),
+                        shape = MaterialTheme.shapes.small,
                         color = MaterialTheme.colorScheme.primaryContainer,
                         modifier = Modifier.size(24.dp)
                     ) {
@@ -329,7 +328,7 @@ fun ExistingRecordItem(
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     Surface(
-                        shape = RoundedCornerShape(4.dp),
+                        shape = MaterialTheme.shapes.extraSmall,
                         color = MaterialTheme.colorScheme.secondaryContainer
                     ) {
                         Text(
@@ -342,7 +341,7 @@ fun ExistingRecordItem(
                     if (record.time.isNotBlank()) {
                         Spacer(modifier = Modifier.width(6.dp))
                         Surface(
-                            shape = RoundedCornerShape(4.dp),
+                            shape = MaterialTheme.shapes.extraSmall,
                             color = MaterialTheme.colorScheme.tertiaryContainer
                         ) {
                             Text(
@@ -370,7 +369,7 @@ fun ExistingRecordItem(
             if (record.feeling.isNotBlank()) {
                 Spacer(modifier = Modifier.height(6.dp))
                 Surface(
-                    shape = RoundedCornerShape(8.dp),
+                    shape = MaterialTheme.shapes.small,
                     color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.4f),
                     modifier = Modifier.fillMaxWidth()
                 ) {

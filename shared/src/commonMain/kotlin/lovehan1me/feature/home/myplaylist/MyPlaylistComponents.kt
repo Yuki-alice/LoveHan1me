@@ -14,7 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -109,7 +109,7 @@ fun PlaylistItem(
                         .align(Alignment.BottomEnd)
                         .background(
                             MaterialTheme.colorScheme.scrim.copy(alpha = 0.5f),
-                            shape = RoundedCornerShape(topStart = 8.dp)
+                            shape = MaterialTheme.shapes.small.copy(topEnd = CornerSize(0.dp), bottomEnd = CornerSize(0.dp), bottomStart = CornerSize(0.dp))
                         )
                         .padding(horizontal = 8.dp, vertical = 4.dp),
                 ) {

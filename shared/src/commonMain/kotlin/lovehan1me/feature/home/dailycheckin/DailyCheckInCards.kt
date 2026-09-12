@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CornerSize
 import lovehan1me.ui.component.HapticButton as Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -48,6 +48,7 @@ import lovehan1me.ic_calendar_view_week
 import lovehan1me.ic_calendar_month
 import lovehan1me.ic_alarm
 import kotlinx.datetime.LocalDate
+import lovehan1me.ui.theme.HanimeDefaults
 
 /**
  * 今日打卡卡片。
@@ -136,18 +137,16 @@ fun TodayCheckInCard(
                 Row(
                     modifier = Modifier
                         .height(40.dp)
-                        .clip(RoundedCornerShape(50)),
+                        .clip(HanimeDefaults.Corners.pill),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
 
                     Button(
                         onClick = onCheckIn,
                         enabled = !isMaxed,
-                        shape = RoundedCornerShape(
-                            topStart = 50.dp,
-                            bottomStart = 50.dp,
-                            topEnd = 4.dp,
-                            bottomEnd = 4.dp
+                        shape = MaterialTheme.shapes.extraSmall.copy(
+                            topStart = CornerSize(percent = 50),
+                            bottomStart = CornerSize(percent = 50)
                         ),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.primary,
@@ -187,11 +186,9 @@ fun TodayCheckInCard(
                             modifier = Modifier
                                 .size(40.dp),
                             shapes = IconButtonDefaults.shapes(
-                                shape = RoundedCornerShape(
-                                    topStart = 4.dp,
-                                    bottomStart = 4.dp,
-                                    topEnd = 50.dp,
-                                    bottomEnd = 50.dp
+                                shape = MaterialTheme.shapes.extraSmall.copy(
+                                    topEnd = CornerSize(percent = 50),
+                                    bottomEnd = CornerSize(percent = 50)
                                 ),
                             ),
                             colors = IconButtonDefaults.filledTonalIconButtonColors(

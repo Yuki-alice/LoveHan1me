@@ -25,7 +25,6 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
@@ -79,6 +78,7 @@ import androidx.compose.ui.unit.constrainHeight
 import androidx.compose.ui.unit.constrainWidth
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.Res
 import lovehan1me.type
 import lovehan1me.tag
@@ -114,9 +114,7 @@ import lovehan1me.ui.component.VideoCardItem
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.lazy.LazyVerticalGrid
 import lovehan1me.ui.component.rememberRandomLoadingHint
-import lovehan1me.ui.theme.SpacingNormal
-import lovehan1me.ui.theme.VideoNormalCardMinWidth
-import lovehan1me.ui.theme.VideoSimplifiedCardMinWidth
+import lovehan1me.ui.adaptive.rememberVideoCardMinWidth
 import lovehan1me.feature.search.SearchViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.delay
@@ -472,7 +470,7 @@ fun SearchAppBar(
     Surface(
         color =
             MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(32.dp),
+        shape = MaterialTheme.shapes.extraLargeIncreased,
         shadowElevation = 4.dp,
         modifier = modifier
             .fillMaxWidth()
@@ -481,7 +479,7 @@ fun SearchAppBar(
     ) {
         Surface(
             color = MaterialTheme.colorScheme.surfaceContainerHighest,
-            shape = RoundedCornerShape(28.dp),
+            shape = MaterialTheme.shapes.extraLarge,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(4.dp)
@@ -640,8 +638,8 @@ fun SearchResultsGrid(
     }
     LaunchedEffect(state) { if (state !is PageLoadingState.Loading) isLoadingMore = false }
     Box(modifier = modifier.fillMaxSize()) {
-        val normalCardWidth = VideoNormalCardMinWidth
-        val simplifiedCardWidth = VideoSimplifiedCardMinWidth
+        val normalCardWidth = rememberVideoCardMinWidth(simplified = false)
+        val simplifiedCardWidth = rememberVideoCardMinWidth(simplified = true)
         val useNormalGrid = videos.firstOrNull()?.itemType == NORMAL
         // 列数一律交给 GridCells.Adaptive 按**可用宽度**自适应（它本身即响应式，
         // 且同时适配 normal / simplified 两类卡片的最小宽度）。
@@ -656,9 +654,9 @@ fun SearchResultsGrid(
             columns = columns,
             state = gridState,
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(SpacingNormal),
-            horizontalArrangement = Arrangement.spacedBy(SpacingNormal),
-            verticalArrangement = Arrangement.spacedBy(SpacingNormal)
+            contentPadding = PaddingValues(HanimeDefaults.Spacing.medium),
+            horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
+            verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium)
         ) {
             items(videos, key = { it.videoCode }) {
                 VideoCardItem(

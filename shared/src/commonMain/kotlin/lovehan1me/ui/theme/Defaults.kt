@@ -2,6 +2,7 @@ package lovehan1me.ui.theme
 
 import androidx.compose.animation.core.FiniteAnimationSpec
 import androidx.compose.foundation.shape.CornerBasedShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
@@ -12,14 +13,27 @@ import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 object HanimeDefaults {
+    /**
+     * 间距阶梯 —— **全项目唯一真源**（M3 8dp 基准：4 / 8 / 12 / 16 / 24 / 32）。
+     *
+     * 此前存在第二套同名常量（`Dimens.kt` 的顶层 `SpacingNormal` / `SpacingLarge` …），
+     * 且 `SpacingMedium` 在两处分别是 8 与 16 —— 这类冲突不报错，只会让「改一处全局
+     * 生效」静默失效。现已收敛到此处，替换时值一一对应、**视觉零变化**。
+     *
+     * 大间距（24 / 32）此前缺失，宽屏留白只能写裸值，一并补齐。
+     */
     object Spacing {
         val extraSmall = 2.dp
         val small = 4.dp
         val medium = 8.dp
         val large = 12.dp
         val extraLarge = 16.dp
-        val itemHorizontal = 24.dp
-        val itemVertical = 16.dp
+        /** 24dp：分区之间的大留白。 */
+        val extraExtraLarge = 24.dp
+        /** 32dp：页面级大留白（宽屏分组间距）。 */
+        val huge = 32.dp
+        val itemHorizontal = extraExtraLarge
+        val itemVertical = extraLarge
         val contentHorizontal = extraLarge
         val contentVertical = medium
     }
@@ -41,6 +55,31 @@ object HanimeDefaults {
 
         val large: CornerBasedShape
             @Composable get() = MaterialTheme.shapes.largeIncreased
+
+        /**
+         * 胶囊/圆形 —— 走 percent=50 而非写死大数值（999dp/100 等）。
+         * M3 `Shapes` 没有暴露 full 档，在 token 层补齐。
+         *
+         * ⚠️ 这里必须是**具体的 shape 构造**，不能写成 `HanimeDefaults.Corners.pill`
+         * 之类的 token 名 —— 那是自引用，会无限递归。
+         */
+        val pill: CornerBasedShape
+            get() = RoundedCornerShape(percent = 50)
+    }
+
+    /**
+     * 语义性透明度。
+     *
+     * **只收「有 M3 规格依据」的语义值**，不收装饰性叠加（封面遮罩、渐变、scrim 之类）——
+     * 后者的数值是构图的一部分（比如"遮罩要压到刚好能看清白字"），提成 token 反而会诱导
+     * 别人去改一个本该按画面调的值。
+     *
+     * 已知现状：全项目 `alpha = 0.xx` 的硬编码有 20+ 种取值、30 个文件，绝大多数属于上述
+     * 装饰性值，暂无收敛计划（审计 P2 备注）。
+     */
+    object Alpha {
+        /** 禁用态内容（M3 规格：onSurface 38%）。 */
+        const val disabled = 0.38f
     }
 
     object Colors {

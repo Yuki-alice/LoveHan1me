@@ -19,7 +19,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import lovehan1me.ui.component.rememberHapticFeedback
@@ -248,7 +247,7 @@ fun DownloadedVideoCard(
                         modifier = Modifier
                             .width(136.dp)
                             .fillMaxHeight()
-                            .clip(RoundedCornerShape(12.dp)),
+                            .clip(MaterialTheme.shapes.medium),
                         contentScale = ContentScale.Crop,
                     )
                     if (isMultiSelect) {
@@ -256,7 +255,7 @@ fun DownloadedVideoCard(
                             modifier = Modifier
                                 .align(Alignment.TopStart)
                                 .padding(4.dp),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = MaterialTheme.shapes.small,
                             color = if (isSelected)
                                 MaterialTheme.colorScheme.primary.copy(alpha = 0.9f)
                             else

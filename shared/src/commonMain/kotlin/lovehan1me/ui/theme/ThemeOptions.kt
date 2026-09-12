@@ -7,12 +7,22 @@ import lovehan1me.core.domain.model.ThemeAccent
 typealias ThemeAccentColor = ThemeAccent
 typealias AppPaletteStyle = PaletteStyle
 
+/**
+ * 强调色的**可见名称**。
+ *
+ * 审计 P2：原先只有 "Momoi / Midori / Yuzu / Arisu" 四个人名 —— 彩蛋很可爱，
+ * 但用户在设置里看到 "Yuzu" 根本不知道那是黄色。现在把颜色词前置、彩蛋放括号里保留：
+ * 扫一眼就知道这是什么色，认得梗的人还能会心一笑。
+ *
+ * 保持英文不本地化：与其配套的调色板样式名（Tonal Spot / Vibrant / Rainbow…）
+ * 本来就是英文，混排反而更乱；真要本地化应连同它们一起做。
+ */
 val ThemeAccentColor.label: String
     get() = when (this) {
-        ThemeAccentColor.Pink -> "Momoi"
-        ThemeAccentColor.Green -> "Midori"
-        ThemeAccentColor.Yellow -> "Yuzu"
-        ThemeAccentColor.Blue -> "Arisu"
+        ThemeAccentColor.Pink -> "Pink (Momoi)"
+        ThemeAccentColor.Green -> "Green (Midori)"
+        ThemeAccentColor.Yellow -> "Yellow (Yuzu)"
+        ThemeAccentColor.Blue -> "Blue (Arisu)"
     }
 
 val ThemeAccentColor.colors: List<Color>

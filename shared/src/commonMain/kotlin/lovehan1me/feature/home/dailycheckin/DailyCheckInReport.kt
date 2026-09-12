@@ -18,7 +18,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Card
 import lovehan1me.ui.component.FilledIconButton
@@ -365,7 +364,7 @@ fun YearContributionView(
                             modifier = Modifier
                                 .size(cellSize)
                                 .padding(cellPadding)
-                                .clip(RoundedCornerShape(2.dp))
+                                .clip(MaterialTheme.shapes.extraSmall)
                                 .background(
                                     if (count > 0) contributionColors[level]
                                     else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
@@ -374,7 +373,7 @@ fun YearContributionView(
                                     if (isToday) Modifier.border(
                                         1.5.dp,
                                         MaterialTheme.colorScheme.primary,
-                                        RoundedCornerShape(2.dp)
+                                        MaterialTheme.shapes.extraSmall
                                     ) else Modifier
                                 )
                         )
@@ -500,13 +499,13 @@ fun MonthContributionView(
                     modifier = Modifier
                         .size(44.dp)
                         .padding(3.dp)
-                        .clip(RoundedCornerShape(8.dp))
+                        .clip(MaterialTheme.shapes.small)
                         .background(cellBg)
                         .then(
                             if (isToday) Modifier.border(
                                 2.dp,
                                 MaterialTheme.colorScheme.primary,
-                                RoundedCornerShape(8.dp)
+                                MaterialTheme.shapes.small
                             ) else Modifier
                         ),
                     contentAlignment = Alignment.Center
@@ -557,7 +556,7 @@ fun ContributionLegend() {
                 modifier = Modifier
                     .size(14.dp)
                     .padding(1.dp)
-                    .clip(RoundedCornerShape(2.dp))
+                    .clip(MaterialTheme.shapes.extraSmall)
                     .background(
                         if (color == Color.Transparent)
                             MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)

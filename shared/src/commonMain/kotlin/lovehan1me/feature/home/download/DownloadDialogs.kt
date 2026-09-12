@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.BasicAlertDialog
@@ -67,7 +66,7 @@ private fun DownloadDialogSurface(
     content: @Composable ColumnScope.() -> Unit,
 ) {
     BasicAlertDialog(onDismissRequest = onDismiss) {
-        ElevatedCard(shape = RoundedCornerShape(28.dp)) {
+        ElevatedCard(shape = MaterialTheme.shapes.extraLarge) {
             Column(
                 modifier = Modifier.padding(20.dp),
                 verticalArrangement = verticalArrangement,
@@ -303,7 +302,7 @@ fun MoveGroupDialog(
                         modifier = Modifier
                             .weight(1f, fill = false)
                             .heightIn(max = 240.dp)
-                            .clip(RoundedCornerShape(12.dp))
+                            .clip(MaterialTheme.shapes.medium)
                             .verticalScrollbar(
                                 state = scrollState,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),

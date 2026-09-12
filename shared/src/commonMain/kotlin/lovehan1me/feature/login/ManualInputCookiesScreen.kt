@@ -11,9 +11,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import lovehan1me.ui.component.HapticButton as Button
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -121,7 +121,7 @@ private fun CookieGuideDialog(onDismiss: () -> Unit) {
                     contentDescription = stringResource(Res.string.cookies_import_desc),
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(8.dp)),
+                        .clip(MaterialTheme.shapes.small),
                     contentScale = ContentScale.FillWidth,
                 )
             }

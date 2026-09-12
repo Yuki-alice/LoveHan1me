@@ -23,6 +23,9 @@ fun Modifier.verticalScrollbar(
     width: Dp = 4.dp,
     color: Color = Color.Unspecified,
     fadeDelayMillis: Long = 1500,
+    // 审计 P1 说明：这条 tween 是**有意保留**的，不走 motionScheme。
+    // 它不是状态转场，而是「静止 N 毫秒后自动隐去」的提示性淡化 ——
+    // 用弹簧档位会让它收得忽快忽慢，反而像抖动；固定时长的线性淡化才是对的。
     fadeOutDurationMillis: Int = 500
 ): Modifier = composed {
     val resolvedColor = if (color == Color.Unspecified)

@@ -10,7 +10,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CornerSize
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -51,6 +51,7 @@ import lovehan1me.ui.component.FilledIconButton
 import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.lazy.LazyColumn
+import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.feature.preview.fakeDownloadedGroups
 import lovehan1me.feature.preview.fakeDownloadedNodes
 
@@ -263,7 +264,7 @@ private fun BatchActionBar(
             .fillMaxWidth()
             .padding(horizontal = 4.dp)
             .navigationBarsPadding(),
-        shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
+        shape = MaterialTheme.shapes.large.copy(bottomEnd = CornerSize(0.dp), bottomStart = CornerSize(0.dp)),
         shadowElevation = 8.dp,
         color = MaterialTheme.colorScheme.surfaceContainerHigh,
     ) {
@@ -324,7 +325,7 @@ private fun BatchActionBar(
                         tint = if (hasSelection) {
                             MaterialTheme.colorScheme.primary
                         } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = HanimeDefaults.Alpha.disabled)
                         }
                     )
                 }
@@ -339,7 +340,7 @@ private fun BatchActionBar(
                         tint = if (hasSelection) {
                             MaterialTheme.colorScheme.onPrimary
                         } else {
-                            MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+                            MaterialTheme.colorScheme.onSurface.copy(alpha = HanimeDefaults.Alpha.disabled)
                         }
                     )
                 }
