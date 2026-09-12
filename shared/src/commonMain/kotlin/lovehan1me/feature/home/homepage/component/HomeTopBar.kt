@@ -121,7 +121,8 @@ private fun NewAnimeListPill(onClick: () -> Unit) {
         modifier = Modifier
             .height(PillHeight)
             .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.secondaryContainer)
+            // tertiary 锚点：新番入口是点缀动作，與搜索框（中性容器）拉开层级。
+            .background(MaterialTheme.colorScheme.tertiaryContainer)
             .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = HanimeDefaults.Spacing.large),
         verticalAlignment = Alignment.CenterVertically,
@@ -131,12 +132,12 @@ private fun NewAnimeListPill(onClick: () -> Unit) {
             painter = painterResource(Res.drawable.ic_calendar_month),
             contentDescription = null,
             modifier = Modifier.size(18.dp),
-            tint = MaterialTheme.colorScheme.onSecondaryContainer,
+            tint = MaterialTheme.colorScheme.onTertiaryContainer,
         )
         Text(
             text = stringResource(Res.string.new_anime_list),
             style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onSecondaryContainer,
+            color = MaterialTheme.colorScheme.onTertiaryContainer,
             maxLines = 1,
         )
     }

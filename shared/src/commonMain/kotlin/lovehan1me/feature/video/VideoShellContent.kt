@@ -345,7 +345,7 @@ fun VideoShellContent(
                     modifier = Modifier
                         .width(sideWidth)
                         .fillMaxHeight()
-                        .background(MaterialTheme.colorScheme.background)
+                        .background(HanimeDefaults.Colors.pageSurface)
                 ) {
                     RelatedCollapseIndicator(
                         collapsed = isSideRelatedCollapsed,
@@ -382,7 +382,7 @@ fun VideoShellContent(
                     .consumeWindowInsets(
                         WindowInsets.safeDrawing.only(WindowInsetsSides.Start)
                     )
-                    .background(MaterialTheme.colorScheme.background)
+                    .background(HanimeDefaults.Colors.pageSurface)
                     .width(rememberRelatedPaneWidth()),
             ) {
                 tabsContent()
@@ -406,7 +406,7 @@ private fun RelatedCollapseIndicator(
                 haptic()
                 onClick()
             }
-            .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.55f)),
+            .background(MaterialTheme.colorScheme.surfaceContainerLow),
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {

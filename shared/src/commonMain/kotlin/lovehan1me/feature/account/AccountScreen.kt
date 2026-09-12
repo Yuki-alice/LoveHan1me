@@ -255,7 +255,7 @@ private fun AccountContent(
                         modifier = Modifier
                             .size(108.dp)
                             .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.surfaceVariant)
+                            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
                             .border(2.dp, MaterialTheme.colorScheme.primaryContainer, CircleShape),
                         contentScale = ContentScale.Crop,
                         placeholder = defaultPlaceholder,

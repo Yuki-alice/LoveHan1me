@@ -94,11 +94,19 @@ object HanimeDefaults {
     }
 
     object Colors {
+        /**
+         * 页面底色 —— 唯一值（`surface`）。M3 里 `background` 已是它的废弃别名，
+         * 此前另有 9 处直写 `background`，现统一收敛到此 token。
+         */
         val pageSurface: Color
-            @Composable get() = MaterialTheme.colorScheme.surfaceContainer
+            @Composable get() = MaterialTheme.colorScheme.surface
 
+        /**
+         * 卡片填充 —— `surfaceContainerHigh`。原先的 `surfaceBright` 在浅色下与页底
+         * 同色（对比度 1.000），卡片靠描边撑存在感；High 档浅/深分离度 1.165/1.234。
+         */
         val card: Color
-            @Composable get() = MaterialTheme.colorScheme.surfaceBright
+            @Composable get() = MaterialTheme.colorScheme.surfaceContainerHigh
 
         val homeVideoCard: Color
             @Composable get() = MaterialTheme.colorScheme.surfaceContainerLow

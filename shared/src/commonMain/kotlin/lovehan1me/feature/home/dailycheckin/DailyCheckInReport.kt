@@ -24,6 +24,7 @@ import lovehan1me.ui.component.FilledIconButton
 import androidx.compose.material3.Icon
 import lovehan1me.ui.component.IconButton
 import androidx.compose.material3.MaterialTheme
+import lovehan1me.ui.theme.HanimeDefaults
 import androidx.compose.material3.Text
 import lovehan1me.ui.component.HapticTextButton as TextButton
 import androidx.compose.runtime.Composable
@@ -367,7 +368,7 @@ fun YearContributionView(
                                 .clip(MaterialTheme.shapes.extraSmall)
                                 .background(
                                     if (count > 0) contributionColors[level]
-                                    else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                                    else MaterialTheme.colorScheme.surfaceContainerLow
                                 )
                                 .then(
                                     if (isToday) Modifier.border(
@@ -493,7 +494,7 @@ fun MonthContributionView(
                 val level = getContributionLevel(count)
                 val isToday = date == today
                 val cellBg = if (count > 0) contributionColors[level]
-                else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                else MaterialTheme.colorScheme.surfaceContainerLow
 
                 Box(
                     modifier = Modifier
@@ -559,7 +560,7 @@ fun ContributionLegend() {
                     .clip(MaterialTheme.shapes.extraSmall)
                     .background(
                         if (color == Color.Transparent)
-                            MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
+                            MaterialTheme.colorScheme.surfaceContainerLow
                         else color
                     )
             )

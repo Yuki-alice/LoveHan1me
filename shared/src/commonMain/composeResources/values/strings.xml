@@ -744,6 +744,12 @@ Recommendations are as follows:\n
     <string name="dark_mode_picker_summary">Choose how the app follows light and dark appearance</string>
     <string name="palette_style">Palette style</string>
     <string name="palette_style_summary">Choose how Material colors are generated from the accent color</string>
+    <string name="theme_board">Theme</string>
+    <string name="theme_board_summary">Pick a named color scheme, exactly as previewed</string>
+    <string name="theme_audit">Color audit</string>
+    <string name="theme_audit_summary">Roles, hierarchy ladder and contrast spot-checks for the live theme</string>
+    <string name="amoled_mode">Pure black mode</string>
+    <string name="amoled_mode_summary">True black surfaces in dark mode, saves power on OLED screens</string>
     <string name="contrast_level">Dynamic contrast</string>
     <string name="contrast_level_summary">Adjust the contrast of colors generated from the accent color</string>
     <string name="contrast_level_standard">Standard</string>

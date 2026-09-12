@@ -37,6 +37,8 @@ fun main() {
     if (runSmokeIfRequested()) return
     // M7-2：CF cookie 落盘冒烟（HAN1ME_SMOKE=cookie-write / cookie-read，跑完即退）
     if (runCookieSmokeIfRequested()) return
+    // 主题预生成（HAN1ME_GEN_BOARDS=1，跑完即退，输出进 shared/.../ui/theme/）
+    if (runGenBoardsIfRequested()) return
     application {
     System.getenv("HAN1ME_P3A_PROXY")?.takeIf { it.isNotBlank() }?.let { hp ->
         val idx = hp.lastIndexOf(':')

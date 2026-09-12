@@ -107,9 +107,7 @@ import lovehan1me.data.OnlineListsBackup
 import lovehan1me.core.domain.model.AppLanguage
 import lovehan1me.core.domain.model.DisplayDensity
 import lovehan1me.core.domain.model.NavBarStyle
-import lovehan1me.core.domain.model.PaletteStyle
 import lovehan1me.core.domain.model.ContrastLevel
-import lovehan1me.core.domain.model.ThemeAccent
 import lovehan1me.core.domain.model.ThemeMode
 import lovehan1me.core.domain.model.VideoLandscapeLayoutStyle
 import lovehan1me.ui.component.ConfirmDialog
@@ -133,6 +131,7 @@ fun HomeSettingsRouteScreen(
     onNavigateToHKeyframes: () -> Unit = {},
     onNavigateToSharedHKeyframes: () -> Unit = {},
     onNavigateToOpenSourceLicenses: () -> Unit = {},
+    onOpenThemeAudit: () -> Unit = {},
     // P6d-4E：下载设置页依赖 :app 的 SAF（SafFileManager/WorkManager），由 Android 壳注入；
     // 桌面/iOS 下载目录能力随 P7 提供，默认空占位
     downloadSettingsContent: @Composable () -> Unit = {},
@@ -303,20 +302,17 @@ fun HomeSettingsRouteScreen(
                     coroutineScope.launch { SettingsRepository.setThemeMode(ThemeMode.fromValue(value)) }
                 }
             },
-            useDynamicColorChange = { enabled ->
-                coroutineScope.launch { SettingsRepository.setDynamicColor(enabled) }
+            themeIdChange = { id ->
+                coroutineScope.launch { SettingsRepository.setThemeId(id) }
+            },
+            amoledChange = { enabled ->
+                coroutineScope.launch { SettingsRepository.setAmoled(enabled) }
             },
             hapticFeedbackChange = { enabled ->
                 coroutineScope.launch { SettingsRepository.setHapticFeedback(enabled) }
             },
             funLoadingHintsChange = { enabled ->
                 coroutineScope.launch { SettingsRepository.update { it.copy(funLoadingHints = enabled) } }
-            },
-            themeAccentColorChange = { id ->
-                coroutineScope.launch { SettingsRepository.setThemeAccent(ThemeAccent.fromId(id)) }
-            },
-            appPaletteStyleChange = { id ->
-                coroutineScope.launch { SettingsRepository.setPaletteStyle(PaletteStyle.fromId(id)) }
             },
             contrastLevelChange = { value ->
                 coroutineScope.launch { SettingsRepository.setContrastLevel(ContrastLevel.fromValue(value)) }
@@ -460,6 +456,7 @@ fun HomeSettingsRouteScreen(
         },
         networkSettingsContent = { NetworkSettingsRouteScreen(embedded = true) },
         downloadSettingsContent = downloadSettingsContent,
+        onOpenThemeAudit = onOpenThemeAudit,
     )
 
     ConfirmDialog(
@@ -652,16 +649,14 @@ private fun buildHomeSettingsUiState(
         navBarStyle = SettingsRepository.navBarStyle.value,
         disableComments = SettingsRepository.current.disableComments,
         collapseDownloadedGroup = SettingsRepository.collapseDownloadedGroup,
-        useDynamicColor = SettingsRepository.useDynamicColor,
+        themeId = SettingsRepository.current.themeId,
+        amoled = SettingsRepository.current.amoled,
         hapticFeedbackEnabled = SettingsRepository.hapticFeedbackEnabled,
         funLoadingHints = SettingsRepository.funLoadingHints,
         secureMode = SettingsRepository.secureMode,
         fakeLauncherIconName = currentItem.name,
         cacheSummary = cacheSummary,
         versionSummary = versionSummary,
-        dynamicColorEnabled = supportsPerAppLinks(),
-        themeAccentColorId = SettingsRepository.current.themeAccent.id,
-        appPaletteStyleId = SettingsRepository.current.paletteStyle.id,
         contrastLevel = SettingsRepository.current.contrastLevel.value,
         searchGridColumnsSummary = listOf(
             searchGridColumnsConfig.compactColumns,

@@ -21,16 +21,16 @@ data class HomeSettingsUiState(
     val navBarStyle: String,
     val disableComments: Boolean,
     val collapseDownloadedGroup: Boolean,
-    val useDynamicColor: Boolean,
+    /** 命名主题槽位 id（见 ThemeBoard：sakura/take/sou/yuzu/midnight/nord/mono/system）。 */
+    val themeId: String,
+    /** AMOLED 纯黑（深色正交叠加）。 */
+    val amoled: Boolean,
     val hapticFeedbackEnabled: Boolean,
     val funLoadingHints: Boolean,
     val secureMode: Boolean,
     val fakeLauncherIconName: String,
     val cacheSummary: String,
     val versionSummary: String,
-    val dynamicColorEnabled: Boolean,
-    val themeAccentColorId: Int,
-    val appPaletteStyleId: Int,
     /** 只存值（standard/medium/high），标签在 UI 层用 stringResource 算。 */
     val contrastLevel: String,
     val searchGridColumnsSummary: String,

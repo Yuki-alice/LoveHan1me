@@ -6,11 +6,9 @@ import lovehan1me.core.domain.model.AppLanguage
 import lovehan1me.core.domain.model.AppSettings
 import lovehan1me.core.domain.model.DisplayDensity
 import lovehan1me.core.domain.model.NavBarStyle
-import lovehan1me.core.domain.model.PaletteStyle
 import lovehan1me.core.domain.model.ContrastLevel
 import lovehan1me.core.domain.model.PlayerKernel
 import lovehan1me.core.domain.model.SettingsStore
-import lovehan1me.core.domain.model.ThemeAccent
 import lovehan1me.core.domain.model.ThemeMode
 import lovehan1me.core.domain.model.VideoLandscapeLayoutStyle
 import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
@@ -87,7 +85,6 @@ object SettingsRepository : SettingsStore {
     val isUsePrivateStorage get() = current.usePrivateStorage
     val safDownloadPath get() = current.safDownloadPath
     val useDarkMode get() = current.themeMode.value
-    val useDynamicColor get() = current.useDynamicColor
     val allowResumePlayback get() = current.allowResumePlayback
     val searchArtistIgnoreVideoType get() = current.searchArtistIgnoreVideoType
     val disableMobileDataWarning get() = current.disableMobileDataWarning
@@ -122,9 +119,8 @@ object SettingsRepository : SettingsStore {
     suspend fun setUsageSourcePending(value: Boolean) = update { it.copy(usageSourcePending = value) }
     suspend fun setLanguage(value: AppLanguage) = update { it.copy(appLanguage = value) }
     suspend fun setThemeMode(value: ThemeMode) = update { it.copy(themeMode = value) }
-    suspend fun setDynamicColor(value: Boolean) = update { it.copy(useDynamicColor = value) }
-    suspend fun setThemeAccent(value: ThemeAccent) = update { it.copy(themeAccent = value) }
-    suspend fun setPaletteStyle(value: PaletteStyle) = update { it.copy(paletteStyle = value) }
+    suspend fun setThemeId(value: String) = update { it.copy(themeId = value) }
+    suspend fun setAmoled(value: Boolean) = update { it.copy(amoled = value) }
     suspend fun setContrastLevel(value: ContrastLevel) = update { it.copy(contrastLevel = value) }
     suspend fun setLauncherIcon(value: String) = update { it.copy(fakeLauncherIcon = value) }
     suspend fun setHapticFeedback(value: Boolean) = update { it.copy(hapticFeedbackEnabled = value) }

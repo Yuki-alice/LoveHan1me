@@ -272,7 +272,7 @@ private fun ArtistListSection(
                             Brush.horizontalGradient(
                                 colors = listOf(
                                     Color.Transparent,
-                                    MaterialTheme.colorScheme.background,
+                                    HanimeDefaults.Colors.pageSurface,
                                 )
                             )
                         )

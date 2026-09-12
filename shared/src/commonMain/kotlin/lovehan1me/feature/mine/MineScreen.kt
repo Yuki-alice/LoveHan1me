@@ -204,14 +204,15 @@ private fun CheckInCard(
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.secondaryContainer),
+                    // tertiary 锚点：签到是点缀动作，用第三强调色与主按钮拉开（M3E 三色拉开）。
+                    .background(MaterialTheme.colorScheme.tertiaryContainer),
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
                     painter = painterResource(Res.drawable.ic_calendar_month),
                     contentDescription = null,
                     modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
                 )
             }
             Column(

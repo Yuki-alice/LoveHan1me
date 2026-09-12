@@ -54,10 +54,22 @@ class DesktopMpvPlaybackEngine : PlaybackEngine {
     /** mpv 缩放相关属性的原始值（首次切档时记录，OFF 时还原）。 */
     private var originalScaling: Map<String, String>? = null
 
+    /**
+     * 给渲染面用的挂起获取：返回预热好的 player。
+     *
+     * 注意调用方必须在 composition 之外调用（LaunchedEffect），不能在组合/布局
+     * 阶段直接读 [mediampPlayer]——mpv 原生初始化几百毫秒，会把跳转过渡卡死。
+     */
+    suspend fun awaitPlayer(): MpvMediampPlayer = mediampPlayer
+
     init {
-        val player = mediampPlayer
-        scope.launch {
-            combine(
+        // 预热放进 EDT 异步队列：构造（含 remember）与首帧合成立即返回，
+        // 详情页先画出来（简介缓存/骨架），播放器面就绪后挂载。
+        // 之前这里同步 touch lazy，点卡片后转场直接冻住等 mpv_create。
+        mainScope.launch {
+            val player = mediampPlayer
+            scope.launch {
+                combine(
                 player.state,
                 player.currentPositionMillis,
                 player.mediaProperties,
@@ -92,6 +104,7 @@ class DesktopMpvPlaybackEngine : PlaybackEngine {
                     },
                 )
             }.collect { _state.value = it }
+            }
         }
     }
 

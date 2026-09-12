@@ -17,6 +17,7 @@ import lovehan1me.settings_interface_interaction
 import lovehan1me.settings_network_download
 import lovehan1me.settings_video_playback
 import lovehan1me.shared_h_keyframe_manage
+import lovehan1me.theme_audit
 import lovehan1me.app.navigation.main.HanimeScreen
 import kotlinx.serialization.Serializable
 import org.jetbrains.compose.resources.StringResource
@@ -69,6 +70,9 @@ object SharedHKeyframesRoute : HanimeScreen
 @Serializable
 object HKeyframeSettingsRoute : HanimeScreen
 
+@Serializable
+object ThemeAuditRoute : HanimeScreen
+
 enum class SettingsDestinationSpec(
     val titleRes: StringResource,
     val showToolbar: Boolean = true,
@@ -120,6 +124,9 @@ enum class SettingsDestinationSpec(
     ),
     HKeyframeSettings(
         titleRes = Res.string.h_keyframe_settings,
+    ),
+    ThemeAudit(
+        titleRes = Res.string.theme_audit,
     );
 
     val route: HanimeScreen
@@ -140,5 +147,6 @@ enum class SettingsDestinationSpec(
             HKeyframes -> HKeyframesRoute
             SharedHKeyframes -> SharedHKeyframesRoute
             HKeyframeSettings -> HKeyframeSettingsRoute
+            ThemeAudit -> ThemeAuditRoute
         }
 }

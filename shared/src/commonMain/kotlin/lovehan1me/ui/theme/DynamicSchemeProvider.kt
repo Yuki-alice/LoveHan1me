@@ -6,10 +6,11 @@ import androidx.compose.ui.graphics.Color
 import lovehan1me.core.domain.model.PaletteStyle
 
 /**
- * P6d-1-C：主题平台胶水（m3color 无 KMP 坐标，只能 androidMain）。
+ * P6d-1-C：主题平台胶水（m3color 无 KMP 坐标，只能 JVM 源集）。
  *
- * - androidMain：m3color 原逻辑（Hct + 8 Scheme 分发 + ColorScheme 映射，含逐色块动画）。
- * - desktopMain / iosMain：动态取色返回 null，调用方回退固定浅/深色板（P7 可选增强）。
+ * - androidMain：m3color 原逻辑（Hct + 8 Scheme 分发 + ColorScheme 映射，含逐色块动画），
+ *   仅"跟随系统"槽需要它；
+ * - desktopMain / iosMain：返回 null，调用方一律查预生成表（P2 起运行时无现场色算）。
  */
 @Composable
 internal expect fun provideDynamicColorScheme(

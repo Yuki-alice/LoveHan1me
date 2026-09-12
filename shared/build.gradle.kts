@@ -143,6 +143,10 @@ kotlin {
                 implementation(libs.mediamp.mpv.desktop)
                 // M3：mpv 原生库运行时（按平台解包；mediamp-mpv-runtime 聚合全平台）
                 runtimeOnly(libs.mediamp.mpv.runtime)
+                // 主题重做 P2：m3color 提为 api——桌面的预生成工具（desktopApp 的
+                // GenThemeBoards，走 HAN1ME_GEN_BOARDS=1 触发）直接用它跑色算；
+                // 运行时只有 Android 跟随系统槽还需要它。
+                api(libs.kyant.m3color)
             }
         }
 

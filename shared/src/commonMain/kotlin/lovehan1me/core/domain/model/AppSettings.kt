@@ -32,14 +32,6 @@ enum class ThemeMode(val value: String) {
     }
 }
 
-enum class ThemeAccent(val id: Int) {
-    Pink(0), Green(1), Yellow(2), Blue(3);
-
-    companion object {
-        fun fromId(id: Int): ThemeAccent = entries.firstOrNull { it.id == id } ?: Pink
-    }
-}
-
 enum class PaletteStyle(val id: Int) {
     TonalSpot(1), Neutral(2), Vibrant(3), Expressive(4), Rainbow(5), FruitSalad(6),
     Fidelity(7), Content(8);
@@ -124,9 +116,13 @@ enum class ContrastLevel(val value: String, val spec: Double) {
 data class AppSettings(
     val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     val themeMode: ThemeMode = ThemeMode.Light,
-    val useDynamicColor: Boolean = false,
-    val themeAccent: ThemeAccent = ThemeAccent.Pink,
-    val paletteStyle: PaletteStyle = PaletteStyle.TonalSpot,
+    /**
+     * 命名主题槽位 id（见 `ThemeBoard`：sakura/take/sou/yuzu/midnight/nord/mono/system）。
+     * 旧的 `useDynamicColor/themeAccent/paletteStyle` 三件套已删除，无用户、无迁移。
+     */
+    val themeId: String = "sakura",
+    /** AMOLED 纯黑：与深浅正交的独立开关，只在深色下叠加（Mihon 模式）。 */
+    val amoled: Boolean = false,
     /**
      * 动态对比度（审计 P2 接通）。
      *

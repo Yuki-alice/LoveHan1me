@@ -12,12 +12,10 @@ import lovehan1me.core.domain.model.AppLanguage
 import lovehan1me.core.domain.model.AppSettings
 import lovehan1me.core.domain.model.DisplayDensity
 import lovehan1me.core.domain.model.NavBarStyle
-import lovehan1me.core.domain.model.PaletteStyle
 import lovehan1me.core.domain.model.ContrastLevel
 import lovehan1me.core.domain.model.PlayerKernel
 import lovehan1me.core.domain.model.ProxyType
 import lovehan1me.core.domain.model.SettingsStore
-import lovehan1me.core.domain.model.ThemeAccent
 import lovehan1me.core.domain.model.ThemeMode
 import lovehan1me.core.domain.model.VideoLandscapeLayoutStyle
 import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
@@ -111,9 +109,8 @@ object DataStoreManager : SettingsStore {
     private fun Preferences.toAppSettings(): AppSettings = AppSettings(
         appLanguage = AppLanguage.fromPreference(string("app_language", defaults.appLanguage.preferenceValue)),
         themeMode = ThemeMode.fromValue(string("use_dark_mode", defaults.themeMode.value)),
-        useDynamicColor = bool("use_dynamic_color", defaults.useDynamicColor),
-        themeAccent = ThemeAccent.fromId(int("theme_accent_color", defaults.themeAccent.id)),
-        paletteStyle = PaletteStyle.fromId(int("app_palette_style", defaults.paletteStyle.id)),
+        themeId = string("app_theme_id", defaults.themeId),
+        amoled = bool("amoled_black", defaults.amoled),
         contrastLevel = ContrastLevel.fromValue(string("app_contrast_level", defaults.contrastLevel.value)),
         fakeLauncherIcon = string("pref_fake_launcher_icon", defaults.fakeLauncherIcon),
         allowPipMode = bool("allow_pip_mode", defaults.allowPipMode),
@@ -178,7 +175,7 @@ object DataStoreManager : SettingsStore {
     }
 
     private fun AppSettings.toMap(): Map<String, Any> = buildMap {
-        put("app_language", appLanguage.preferenceValue); put("use_dark_mode", themeMode.value); put("use_dynamic_color", useDynamicColor); put("theme_accent_color", themeAccent.id); put("app_palette_style", paletteStyle.id); put("app_contrast_level", contrastLevel.value)
+        put("app_language", appLanguage.preferenceValue); put("use_dark_mode", themeMode.value); put("app_theme_id", themeId); put("amoled_black", amoled); put("app_contrast_level", contrastLevel.value)
         put("pref_fake_launcher_icon", fakeLauncherIcon); put("allow_pip_mode", allowPipMode); put("secure_mode", secureMode); put("disable_comments", disableComments); put("haptic_feedback_enabled", hapticFeedbackEnabled); put("disable_predictive_back", disablePredictiveBack); put("video_landscape_layout_style", videoLandscapeLayoutStyle.value); put("nav_bar_style", navBarStyle.value)
         put("usage_notice_accepted_v2", usageNoticeAccepted); put("usage_source_verified", usageSourceVerified); put("usage_source_pending", usageSourcePending); put("already_login", isAlreadyLogin); put("local_list_notice_dismissed", localListNoticeDismissed); put("saved_user_id", savedUserId); put("cookie", loginCookie); put("cf_cookie", cloudFlareCookie); put("cf_cookie_host", cloudFlareCookieHost)
         put("domain_name", domainName); put("selectedBaseUrl", selectedBaseUrl); put("use_custom_mirror_site", useCustomMirrorSite); put("custom_mirror_site", customMirrorSite); put("append_custom_mirror_path", appendCustomMirrorPath); put("use_built_in_hosts", useBuiltInHosts); put("custom_hosts_data", customHostsData); put("use_doh", useDoH); put("doh_preset", dohPreset); put("doh_custom_url", dohCustomUrl); put("doh_bootstrap_ips", dohBootstrapIps); put("doh_timeout_seconds", dohTimeoutSeconds); put("proxy_type", proxyType.id); put("proxy_ip", proxyIp); put("proxy_port", proxyPort)

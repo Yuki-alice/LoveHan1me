@@ -25,8 +25,10 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.WideNavigationRail
+import androidx.compose.material3.WideNavigationRailDefaults
 import androidx.compose.material3.WideNavigationRailItem
 import androidx.compose.material3.WideNavigationRailValue
 import androidx.compose.material3.rememberWideNavigationRailState
@@ -52,6 +54,7 @@ import lovehan1me.app.navigation.settings.DownloadSettingsRoute
 import lovehan1me.app.navigation.settings.HKeyframeSettingsRoute
 import lovehan1me.app.navigation.settings.HKeyframesRoute
 import lovehan1me.app.navigation.settings.HomeSettingsRoute
+import lovehan1me.app.navigation.settings.ThemeAuditRoute
 import lovehan1me.app.navigation.settings.InterfaceInteractionSettingsRoute
 import lovehan1me.app.navigation.settings.MpvPlayerSettingsRoute
 import lovehan1me.app.navigation.settings.NetworkDownloadSettingsRoute
@@ -79,8 +82,11 @@ import org.jetbrains.compose.resources.stringResource
  * | 窗口宽度 | chrome | 形态 |
  * |---|---|---|
  * | Compact（< 600dp） | [NavigationBar] | 贴底 3 项；设置走「我的」顶栏齿轮 |
- * | Medium（600–1199dp） | [WideNavigationRail] **折叠** | 80dp 图标栏；底部一项「设置」 |
- * | Large+（≥ 1200dp） | [WideNavigationRail] **展开** | 220dp 图标 + 文字；底部一项「设置」 |
+ * | Medium–Large（600–1599dp） | [WideNavigationRail] **折叠** | 80dp 图标栏；底部一项「设置」 |
+ * | ExtraLarge（≥ 1600dp） | [WideNavigationRail] **展开** | 220dp 图标 + 文字；底部一项「设置」 |
+ *
+ * 展开阈值刻意放到 ExtraLarge（1600dp）：1200–1599dp 的常见笔电窗口用折叠 Rail
+ * 即可，展开 Rail 在此区间会吃掉过多内容宽、中间留白也大。1600dp+ 才有余量展开。
  *
  * 三个关键设计点：
  *
@@ -127,19 +133,28 @@ fun MainScaffold(
     }
 
     if (rememberWindowWidthSizeClass() >= WindowWidthSizeClass.Medium) {
-        Row(modifier = Modifier.fillMaxSize()) {
+        // M3E 内容 sheet：窗底走 surfaceContainerLow，Rail 透明坐底，
+        // 内容区是 surface 圆角（topStart 28dp）大卡片 —— 分界靠"底色差 + 圆角"，
+        // 不再靠一条细分隔线（细线在同系底色下约等于没有）。
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.surfaceContainerLow),
+        ) {
             MainNavigationRail(
                 selectedTab = selectedTab,
                 onSelectTab = onSelectTab,
                 onOpenSettings = onOpenSettings,
-                expanded = rememberWindowWidthSizeClass() >= WindowWidthSizeClass.Large,
+                expanded = rememberWindowWidthSizeClass() >= WindowWidthSizeClass.ExtraLarge,
             )
             // 权重 Box 负责把「剩余宽度」交给内容；ProvideContentWidth 内部的
             // BoxWithConstraints 才能测到已扣掉 Rail 的真实内容宽。
             Box(
                 modifier = Modifier
                     .weight(1f)
-                    .fillMaxHeight(),
+                    .fillMaxHeight()
+                    .clip(RoundedCornerShape(topStart = 28.dp))
+                    .background(MaterialTheme.colorScheme.surface),
             ) {
                 page()
             }
@@ -303,7 +318,7 @@ private fun MainNavigationBar(
 /**
  * Medium+：可折叠侧栏。
  *
- * 折 / 展由宽度档驱动（Medium 折叠、Large 起展开），用 [LaunchedEffect] 把宽度档同步
+ * 折 / 展由宽度档驱动（Medium–Large 折叠、ExtraLarge 起展开），用 [LaunchedEffect] 把宽度档同步
  * 到 rail 自带状态上 —— 用 `snapTo` 而非 `expand()/collapse()`：后者是带方向的动画，
  * 拖拽窗口跨越断点时方向会来回打架，直接吸附到目标态更稳。
  *
@@ -323,7 +338,11 @@ private fun MainNavigationRail(
     LaunchedEffect(target) { state.snapTo(target) }
     val railExpanded = state.currentValue == WideNavigationRailValue.Expanded
 
-    WideNavigationRail(state = state) {
+    WideNavigationRail(
+        state = state,
+        // 坐底透明：窗底 surfaceContainerLow 直接透过来，与内容 sheet 的 surface 拉开。
+        colors = WideNavigationRailDefaults.colors(containerColor = Color.Transparent),
+    ) {
         // ⚠️ `WideNavigationRail` 的 content 槽**不是** `ColumnScope`（实测
         // `Modifier.weight` 报 Unresolved reference），所以「弹性占位 + 底部锚定」
         // 不能直接用 weight。改为在内容里自建一个撑满高度的 Column，用
@@ -395,6 +414,7 @@ private fun HanimeScreen.hidesNavigationChrome(): Boolean = when (this) {
     HKeyframesRoute,
     SharedHKeyframesRoute,
     HKeyframeSettingsRoute,
+    ThemeAuditRoute,
     -> true
 
     else -> false

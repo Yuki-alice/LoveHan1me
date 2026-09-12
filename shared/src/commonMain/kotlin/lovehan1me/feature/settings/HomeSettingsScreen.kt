@@ -23,6 +23,11 @@ import androidx.compose.ui.unit.dp
 import lovehan1me.ui.model.HorizontalCardCountConfig
 import lovehan1me.core.constant.HA1_GITHUB_URL
 import lovehan1me.Res
+import lovehan1me.amoled_mode
+import lovehan1me.amoled_mode_summary
+import lovehan1me.ic_dark_mode
+import lovehan1me.theme_board
+import lovehan1me.theme_board_summary
 import lovehan1me.video_language
 import lovehan1me.contrast_level
 import lovehan1me.contrast_level_summary
@@ -39,6 +44,8 @@ import lovehan1me.user_terms_summary
 import lovehan1me.user_terms
 import lovehan1me.trigger_crash_summary
 import lovehan1me.trigger_crash
+import lovehan1me.theme_audit_summary
+import lovehan1me.theme_audit
 import lovehan1me.traditional_chinese
 import lovehan1me.temporarily_unavailable
 import lovehan1me.submit_bug_summary
@@ -213,6 +220,7 @@ fun HomeSettingsScreen(
     hKeyframeSettingsContent: @Composable () -> Unit,
     networkSettingsContent: @Composable () -> Unit,
     downloadSettingsContent: @Composable () -> Unit,
+    onOpenThemeAudit: () -> Unit = {},
 ) {
     var activeDialog by rememberSaveable { mutableStateOf<HomeSettingsChoiceDialog?>(null) }
     var showSearchGridColumnsDialog by rememberSaveable { mutableStateOf(false) }
@@ -370,7 +378,11 @@ fun HomeSettingsScreen(
 
             HomeSettingsPage.DataPrivacy -> dataPrivacySection(state, actions, isLoggedIn)
 
-            HomeSettingsPage.DeveloperOptions -> developerOptionsSection(state, actions, openChoice = { activeDialog = it })
+            HomeSettingsPage.DeveloperOptions -> developerOptionsSection(
+                state, actions,
+                openChoice = { activeDialog = it },
+                onOpenThemeAudit = onOpenThemeAudit,
+            )
 
             HomeSettingsPage.About -> aboutSection(state, actions, uriHandler = uriHandler, openUsageTerms = { showUsageTerms = true })
         }
@@ -413,16 +425,14 @@ private fun previewHomeSettingsState() = HomeSettingsUiState(
     navBarStyle = "standard",
     disableComments = false,
     collapseDownloadedGroup = false,
-    useDynamicColor = false,
+    themeId = "sakura",
+    amoled = false,
     hapticFeedbackEnabled = false,
     funLoadingHints = true,
     secureMode = false,
     fakeLauncherIconName = "Han1meViewer",
     cacheSummary = "12 MB",
     versionSummary = "v26.1.0",
-    dynamicColorEnabled = true,
-    themeAccentColorId = 0,
-    appPaletteStyleId = 1,
     contrastLevel = "standard",
     searchGridColumnsSummary = "2 / 3 / 4 / 5",
     searchGridColumnsConfig = SearchGridColumnsConfig(),
@@ -551,23 +561,13 @@ private fun AnimatedLazyListScope.appearanceSection(
     openChoice: (HomeSettingsChoiceDialog) -> Unit,
 ) {
     item {
-        SettingsSection(stringResource(Res.string.accent_color)) {
-            SettingSwitchItem(
-                title = stringResource(Res.string.dynamic_color_title),
-                summary = stringResource(Res.string.dynamic_color_summary),
-                checked = state.useDynamicColor,
-                enabled = state.dynamicColorEnabled,
-                iconRes = Res.drawable.ic_palette,
-                onCheckedChange = actions.useDynamicColorChange,
+        SettingsSection(stringResource(Res.string.theme_board)) {
+            ThemeBoardPicker(
+                selectedId = state.themeId,
+                darkMode = state.darkMode,
+                contrastLevel = state.contrastLevel,
+                onSelect = actions.themeIdChange,
             )
-            SettingsAnimatedVisibility(
-                visible = !state.useDynamicColor || !state.dynamicColorEnabled,
-            ) {
-                ThemeAccentColorPicker(
-                    selectedId = state.themeAccentColorId,
-                    onSelect = actions.themeAccentColorChange,
-                )
-            }
         }
     }
     item {
@@ -576,12 +576,12 @@ private fun AnimatedLazyListScope.appearanceSection(
                 selectedValue = state.darkMode,
                 onSelect = actions.darkModeChange,
             )
-            AppPalettePicker(
-                selectedId = state.appPaletteStyleId,
-                accentColorId = state.themeAccentColorId,
-                dynamicColor = state.useDynamicColor,
-                darkMode = state.darkMode,
-                onSelect = actions.appPaletteStyleChange,
+            SettingSwitchItem(
+                title = stringResource(Res.string.amoled_mode),
+                summary = stringResource(Res.string.amoled_mode_summary),
+                checked = state.amoled,
+                iconRes = Res.drawable.ic_dark_mode,
+                onCheckedChange = actions.amoledChange,
             )
             // 审计 P2：动态对比度（默认档 = 原写死的 0.0，老用户视觉不变）
             SettingNavigationItem(
@@ -828,6 +828,7 @@ private fun AnimatedLazyListScope.developerOptionsSection(
     state: HomeSettingsUiState,
     actions: HomeSettingsActions,
     openChoice: (HomeSettingsChoiceDialog) -> Unit,
+    onOpenThemeAudit: () -> Unit,
 ) {
     item {
         SettingsSection(stringResource(Res.string.developer_options)) {
@@ -850,6 +851,12 @@ private fun AnimatedLazyListScope.developerOptionsSection(
                 summary = stringResource(Res.string.trigger_crash_summary),
                 iconRes = Res.drawable.ic_bug_report,
                 onClick = actions.triggerCrash,
+            )
+            SettingNavigationItem(
+                title = stringResource(Res.string.theme_audit),
+                summary = stringResource(Res.string.theme_audit_summary),
+                iconRes = Res.drawable.ic_palette,
+                onClick = onOpenThemeAudit,
             )
         }
     }

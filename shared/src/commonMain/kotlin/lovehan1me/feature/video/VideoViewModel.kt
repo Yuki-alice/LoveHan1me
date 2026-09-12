@@ -315,6 +315,11 @@ class VideoViewModel(
                 if (emitState is VideoLoadingState.Success) {
                     _hanimeVideoFlow.update { emitState.info }
                     csrfToken = emitState.info.csrfToken
+                    // 成功即记内存简介缓存：下次点进来先秒画旧简介再刷新。
+                    // 本地播放（-1/带 localUri）不记——videoCode "-1" 会串台。
+                    if (localUri == null && videoCode != "-1") {
+                        setVideoIntroCachedData(videoCode, emitState.info)
+                    }
                 }
             }
         }

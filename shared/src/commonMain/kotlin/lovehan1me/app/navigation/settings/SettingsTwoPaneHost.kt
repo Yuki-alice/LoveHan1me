@@ -16,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItem
 import androidx.compose.material3.NavigationDrawerItemDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -84,9 +85,18 @@ fun SettingsHomeHost(
     onNavigateToHKeyframes: () -> Unit,
     onNavigateToSharedHKeyframes: () -> Unit,
     onNavigateToOpenSourceLicenses: () -> Unit,
+    onOpenThemeAudit: () -> Unit = {},
     downloadSettingsContent: @Composable () -> Unit = {},
 ) {
-    val useTwoPane = rememberContentWidthDp() >= TwoPaneMinContentWidth
+    val contentWidth = rememberContentWidthDp()
+    val useTwoPane = contentWidth >= TwoPaneMinContentWidth
+    // 超宽屏右栏放宽到正文档（720dp），避免 640dp 在 1600dp+ 窗口下显得像小纸条；
+    // 1200–1599dp 仍用表单档（640dp）保信息密度。
+    val rightMaxWidth = if (contentWidth >= 1400.dp) {
+        HanimeDefaults.Widths.readingMax
+    } else {
+        HanimeDefaults.Widths.formMax
+    }
 
     if (!useTwoPane) {
         SettingsScaffold(
@@ -121,6 +131,8 @@ fun SettingsHomeHost(
                 selected = selected,
                 onSelect = { selected = it },
             )
+            // 左栏（surfaceContainerLow）与右栏（pageSurface）底色同系，分隔线明确分界。
+            VerticalDivider(color = MaterialTheme.colorScheme.outlineVariant)
             // 右栏自己按表单档限宽并居中（外壳已放权）
             Box(
                 modifier = Modifier
@@ -128,12 +140,13 @@ fun SettingsHomeHost(
                     .fillMaxHeight(),
                 contentAlignment = Alignment.TopCenter,
             ) {
-                Box(modifier = Modifier.widthIn(max = HanimeDefaults.Widths.formMax)) {
+                Box(modifier = Modifier.widthIn(max = rightMaxWidth)) {
                     HomeSettingsRouteScreen(
                         page = selected.page,
                         onNavigateToHKeyframes = onNavigateToHKeyframes,
                         onNavigateToSharedHKeyframes = onNavigateToSharedHKeyframes,
                         onNavigateToOpenSourceLicenses = onNavigateToOpenSourceLicenses,
+                        onOpenThemeAudit = onOpenThemeAudit,
                         downloadSettingsContent = downloadSettingsContent,
                     )
                 }

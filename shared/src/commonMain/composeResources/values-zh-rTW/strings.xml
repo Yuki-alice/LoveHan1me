@@ -715,6 +715,12 @@
     <string name="dark_mode_picker_summary">選擇應用程式如何跟隨淺色與深色外觀</string>
     <string name="palette_style">調色盤樣式</string>
     <string name="palette_style_summary">選擇 Material 顏色如何根據強調色產生</string>
+    <string name="theme_board">主題</string>
+    <string name="theme_board_summary">選擇一套命名配色，所見即所得</string>
+    <string name="theme_audit">配色體檢</string>
+    <string name="theme_audit_summary">目前主題的角色色卡、層級階梯與對比度抽查</string>
+    <string name="amoled_mode">純黑模式</string>
+    <string name="amoled_mode_summary">深色下使用純黑表面，OLED 螢幕更省電</string>
     <string name="contrast_level">動態對比度</string>
     <string name="contrast_level_summary">調整由強調色產生的顏色的對比度</string>
     <string name="contrast_level_standard">標準</string>

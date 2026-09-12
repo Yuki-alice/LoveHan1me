@@ -728,6 +728,12 @@
     <string name="dark_mode_picker_summary">选择应用如何跟随浅色与深色外观</string>
     <string name="palette_style">调色板样式</string>
     <string name="palette_style_summary">选择 Material 颜色如何根据强调色生成</string>
+    <string name="theme_board">主题</string>
+    <string name="theme_board_summary">选择一套命名配色，所见即所得</string>
+    <string name="theme_audit">配色体检</string>
+    <string name="theme_audit_summary">当前主题的角色色卡、层级阶梯与对比度抽查</string>
+    <string name="amoled_mode">纯黑模式</string>
+    <string name="amoled_mode_summary">深色下使用纯黑表面，OLED 屏幕更省电</string>
     <string name="contrast_level">动态对比度</string>
     <string name="contrast_level_summary">调整由强调色生成的颜色的对比度</string>
     <string name="contrast_level_standard">标准</string>

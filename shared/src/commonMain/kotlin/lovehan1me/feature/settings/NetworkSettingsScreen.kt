@@ -459,6 +459,8 @@ private fun DelayTestDialog(
                             Text(item.ip)
                             Text(
                                 text = if (item.delay >= 0) "${item.delay} ms" else stringResource(Res.string.network_timeout_text),
+                                // 延迟三档是数据语义色（快/中/慢，图表色性质），刻意不跟主题：
+                                // 跟主题走（primary/tertiary/error）会丢掉"绿=快"的直觉。
                                 color = when (item.delay) {
                                     in 0 until 100 -> Color(0xFF4CAF50)
                                     in 100..500 -> Color(0xFFFFC107)
@@ -510,6 +512,7 @@ private fun DohTestDialog(
                                         stringResource(Res.string.network_timeout_text)
                                     }
                                 },
+                                // 同上：数据语义色，保持与上处一致。
                                 color = when (item.delay) {
                                     in 0 until 100 -> Color(0xFF4CAF50)
                                     in 100..500 -> Color(0xFFFFC107)

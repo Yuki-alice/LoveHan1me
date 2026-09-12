@@ -78,7 +78,7 @@ fun TodayCheckInCard(
             containerColor = if (count > 0)
                 MaterialTheme.colorScheme.primaryContainer
             else
-                MaterialTheme.colorScheme.surfaceVariant
+                MaterialTheme.colorScheme.surfaceContainerHighest
         )
     ) {
         Box(

@@ -6,10 +6,14 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -44,6 +48,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.Res
 import lovehan1me.appearance_and_figure
+import lovehan1me.brand
 import lovehan1me.characteristics
 import lovehan1me.duration
 import lovehan1me.relationship
@@ -125,9 +130,13 @@ fun AdvancedSearchSheet(
     val typeLabel = stringResource(Res.string.type)
     val sortLabel = stringResource(Res.string.sort_option)
     val tagLabel = stringResource(Res.string.tag)
+    val brandLabel = stringResource(Res.string.brand)
     val releaseDateLabel = stringResource(Res.string.release_date)
     val durationLabel = stringResource(Res.string.duration)
     val tagScopes = remember(viewModel.tags) { buildTagScopeSections(viewModel.tags) }
+    val brandScope = remember(viewModel.brands) {
+        listOf(lovehan1me.ui.model.SearchScopeSection(Res.string.brand, viewModel.brands))
+    }
 
     fun updateSelection(block: () -> Unit) {
         block()
@@ -155,6 +164,15 @@ fun AdvancedSearchSheet(
     }
     val tagTitle = remember(selectionVersion, tagLabel) {
         if (selectedTagCount > 0) "$tagLabel ($selectedTagCount)" else tagLabel
+    }
+    // 品牌筛选：此前有数据管线（brandMap/brands.json/保存与历史恢复）但无新建入口，
+    // 芯片只能显示/清除历史带回的 brand。本次补上与 tag 同形的单域多选。
+    val selectedBrandKeys = remember(selectionVersion) { viewModel.brandMap.flatten() }
+    val selectedBrandOptions = remember(selectionVersion, viewModel.brands) {
+        viewModel.brands.filter { it.searchKey in selectedBrandKeys }.toSet()
+    }
+    val brandTitle = remember(selectionVersion, brandLabel) {
+        if (selectedBrandKeys.isNotEmpty()) "$brandLabel (${selectedBrandKeys.size})" else brandLabel
     }
     val releaseDateTitle = remember(selectionVersion, releaseDateLabel) {
         viewModel.getSearchDate()?.let { "$releaseDateLabel: $it" } ?: releaseDateLabel
@@ -257,6 +275,22 @@ fun AdvancedSearchSheet(
                                 onReset = { viewModel.tagMap.clear() },
                             )
                         },
+                        brandTitle = brandTitle,
+                        brandChecked = viewModel.brandMap.isNotEmpty(),
+                        onClearBrand = { updateSelection { viewModel.brandMap.clear() } },
+                        onOpenBrand = {
+                            dialogState = AdvancedSearchDialogState.MultiChoice(
+                                key = "brand",
+                                titleRes = Res.string.brand,
+                                scopes = brandScope,
+                                selected = selectedBrandOptions,
+                                broad = false,
+                                onSave = { selected, _ ->
+                                    viewModel.brandMap = mutableMapOf(0 to selected)
+                                },
+                                onReset = { viewModel.brandMap.clear() },
+                            )
+                        },
                         releaseDateTitle = releaseDateTitle,
                         releaseDateChecked =
                             viewModel.year != null || viewModel.month != null || viewModel.approxTime != null,
@@ -328,6 +362,219 @@ fun AdvancedSearchSheet(
                 }
             }
         }
+    }
+}
+
+/**
+ * 宽屏常驻筛选栏（内容宽 ≥ 900dp）：与 [AdvancedSearchSheet] 同一套筛选能力，
+ * 不经底栏弹窗，直接嵌在发现页左侧（对齐 hanime1.me/search 的常驻筛选区）。
+ *
+ * 自带 dialogState：各芯片点开的单选/多选/日期弹窗挂在这里，与底栏弹窗互不干扰。
+ * 点搜索按钮即 triggerNewSearch（经 refreshTriggerFlow 驱动结果网格刷新）+ 写高级搜索历史。
+ */
+@Composable
+fun AdvancedSearchSidePanel(
+    viewModel: SearchViewModel,
+    modifier: Modifier = Modifier,
+) {
+    var dialogState by remember { mutableStateOf<AdvancedSearchDialogState?>(null) }
+    var selectionVersion by remember { mutableIntStateOf(0) }
+    val typeLabel = stringResource(Res.string.type)
+    val sortLabel = stringResource(Res.string.sort_option)
+    val tagLabel = stringResource(Res.string.tag)
+    val brandLabel = stringResource(Res.string.brand)
+    val releaseDateLabel = stringResource(Res.string.release_date)
+    val durationLabel = stringResource(Res.string.duration)
+    val tagScopes = remember(viewModel.tags) { buildTagScopeSections(viewModel.tags) }
+    val brandScope = remember(viewModel.brands) {
+        listOf(SearchScopeSection(Res.string.brand, viewModel.brands))
+    }
+
+    fun updateSelection(block: () -> Unit) {
+        block()
+        selectionVersion++
+    }
+
+    fun selectedOptionValue(options: List<SearchOption>, searchKey: String?): String? {
+        return options.firstOrNull { it.searchKey == searchKey }?.value
+    }
+
+    val genreTitle = remember(selectionVersion, typeLabel) {
+        selectedOptionValue(viewModel.genres, viewModel.genre)?.let { "$typeLabel: $it" }
+            ?: typeLabel
+    }
+    val sortTitle = remember(selectionVersion, sortLabel) {
+        selectedOptionValue(viewModel.sortOptions, viewModel.sort)?.let { "$sortLabel: $it" }
+            ?: sortLabel
+    }
+    val selectedTagKeys = remember(selectionVersion) { viewModel.tagMap.flatten() }
+    val selectedTagCount = remember(selectionVersion) { selectedTagKeys.size }
+    val selectedTagOptions = remember(selectionVersion, tagScopes) {
+        tagScopes.flatMap { it.options }
+            .filter { it.searchKey in selectedTagKeys }
+            .toSet()
+    }
+    val tagTitle = remember(selectionVersion, tagLabel) {
+        if (selectedTagCount > 0) "$tagLabel ($selectedTagCount)" else tagLabel
+    }
+    val selectedBrandKeys = remember(selectionVersion) { viewModel.brandMap.flatten() }
+    val selectedBrandOptions = remember(selectionVersion, viewModel.brands) {
+        viewModel.brands.filter { it.searchKey in selectedBrandKeys }.toSet()
+    }
+    val brandTitle = remember(selectionVersion, brandLabel) {
+        if (selectedBrandKeys.isNotEmpty()) "$brandLabel (${selectedBrandKeys.size})" else brandLabel
+    }
+    val releaseDateTitle = remember(selectionVersion, releaseDateLabel) {
+        viewModel.getSearchDate()?.let { "$releaseDateLabel: $it" } ?: releaseDateLabel
+    }
+    val durationTitle = remember(selectionVersion, durationLabel) {
+        selectedOptionValue(viewModel.durations, viewModel.duration)?.let { "$durationLabel: $it" }
+            ?: durationLabel
+    }
+
+    AdvancedSearchDialogHost(
+        dialogState = dialogState,
+        onDismiss = { dialogState = null },
+        updateSelection = ::updateSelection,
+    )
+
+    Column(
+        modifier = modifier
+            .fillMaxHeight()
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp, vertical = 12.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp),
+    ) {
+        Text(
+            text = stringResource(Res.string.advanced_search),
+            style = MaterialTheme.typography.titleMedium,
+        )
+        AdvancedSearchFiltersSection(
+            genreTitle = genreTitle,
+            genreChecked = viewModel.genre != null,
+            onClearGenre = { updateSelection { viewModel.genre = null } },
+            onOpenGenre = {
+                dialogState = AdvancedSearchDialogState.SingleChoice(
+                    key = "genre",
+                    titleRes = Res.string.type,
+                    options = viewModel.genres,
+                    selectedIndex = viewModel.genres.indexOfFirst { it.searchKey == viewModel.genre },
+                    onSelect = { option -> viewModel.genre = option.searchKey },
+                    onReset = { viewModel.genre = null },
+                )
+            },
+            sortTitle = sortTitle,
+            sortChecked = viewModel.sort != null,
+            onClearSort = { updateSelection { viewModel.sort = null } },
+            onOpenSort = {
+                dialogState = AdvancedSearchDialogState.SingleChoice(
+                    key = "sort",
+                    titleRes = Res.string.sort_option,
+                    options = viewModel.sortOptions,
+                    selectedIndex = viewModel.sortOptions.indexOfFirst { it.searchKey == viewModel.sort },
+                    onSelect = { option -> viewModel.sort = option.searchKey },
+                    onReset = { viewModel.sort = null },
+                )
+            },
+            tagTitle = tagTitle,
+            tagChecked = viewModel.tagMap.isNotEmpty(),
+            onClearTag = { updateSelection { viewModel.tagMap.clear() } },
+            onOpenTag = {
+                dialogState = AdvancedSearchDialogState.MultiChoice(
+                    key = "tag",
+                    titleRes = Res.string.tag,
+                    scopes = tagScopes,
+                    selected = selectedTagOptions,
+                    broad = viewModel.broad,
+                    onSave = { selected, broad ->
+                        viewModel.broad = broad
+                        viewModel.tagMap =
+                            groupSelectedTagOptions(selected, viewModel.tags)
+                    },
+                    onReset = { viewModel.tagMap.clear() },
+                )
+            },
+            brandTitle = brandTitle,
+            brandChecked = viewModel.brandMap.isNotEmpty(),
+            onClearBrand = { updateSelection { viewModel.brandMap.clear() } },
+            onOpenBrand = {
+                dialogState = AdvancedSearchDialogState.MultiChoice(
+                    key = "brand",
+                    titleRes = Res.string.brand,
+                    scopes = brandScope,
+                    selected = selectedBrandOptions,
+                    broad = false,
+                    onSave = { selected, _ ->
+                        viewModel.brandMap = mutableMapOf(0 to selected)
+                    },
+                    onReset = { viewModel.brandMap.clear() },
+                )
+            },
+            releaseDateTitle = releaseDateTitle,
+            releaseDateChecked =
+                viewModel.year != null || viewModel.month != null || viewModel.approxTime != null,
+            onClearReleaseDate = {
+                updateSelection {
+                    viewModel.year = null
+                    viewModel.month = null
+                    viewModel.approxTime = null
+                }
+            },
+            onOpenReleaseDate = {
+                dialogState = AdvancedSearchDialogState.ReleaseDate(
+                    key = "date",
+                    options = viewModel.timeList,
+                    initialApproximate = viewModel.approxTime,
+                    initialYear = viewModel.year,
+                    initialMonth = viewModel.month,
+                    onSaveApproximate = { searchKey ->
+                        viewModel.approxTime = searchKey
+                        viewModel.year = null
+                        viewModel.month = null
+                    },
+                    onSaveSpecific = { year, month ->
+                        viewModel.year = year
+                        viewModel.month = month
+                        viewModel.approxTime = null
+                    },
+                    onReset = {
+                        viewModel.year = null
+                        viewModel.month = null
+                        viewModel.approxTime = null
+                    },
+                )
+            },
+            durationTitle = durationTitle,
+            durationChecked = viewModel.duration != null,
+            onClearDuration = { updateSelection { viewModel.duration = null } },
+            onOpenDuration = {
+                dialogState = AdvancedSearchDialogState.SingleChoice(
+                    key = "duration",
+                    titleRes = Res.string.duration,
+                    options = viewModel.durations,
+                    selectedIndex = viewModel.durations.indexOfFirst { it.searchKey == viewModel.duration },
+                    onSelect = { option -> viewModel.duration = option.searchKey },
+                    onReset = { viewModel.duration = null },
+                )
+            },
+        )
+        AdvancedSearchActionSection(
+            onSearch = {
+                viewModel.triggerNewSearch()
+                viewModel.insertAdvancedSearchHistory(
+                    viewModel.query,
+                    viewModel.genre,
+                    viewModel.sort,
+                    viewModel.broad,
+                    viewModel.getSearchDate(),
+                    viewModel.duration,
+                    viewModel.tagMap.flatten().map { SearchOption(searchKey = it) }
+                        .toSet(),
+                    viewModel.brandMap.flatten().map { SearchOption(searchKey = it) }
+                        .toSet(),
+                )
+            },
+        )
     }
 }
 
@@ -687,6 +934,10 @@ private fun AdvancedSearchFiltersSection(
     tagChecked: Boolean,
     onClearTag: () -> Unit,
     onOpenTag: () -> Unit,
+    brandTitle: String,
+    brandChecked: Boolean,
+    onClearBrand: () -> Unit,
+    onOpenBrand: () -> Unit,
     releaseDateTitle: String,
     releaseDateChecked: Boolean,
     onClearReleaseDate: () -> Unit,
@@ -722,6 +973,13 @@ private fun AdvancedSearchFiltersSection(
             modifier = Modifier.weight(1f),
             onLongClick = onClearTag,
             onClick = onOpenTag,
+        )
+        AdvancedSearchChip(
+            title = brandTitle,
+            checked = brandChecked,
+            modifier = Modifier.weight(1f),
+            onLongClick = onClearBrand,
+            onClick = onOpenBrand,
         )
         AdvancedSearchChip(
             title = releaseDateTitle,

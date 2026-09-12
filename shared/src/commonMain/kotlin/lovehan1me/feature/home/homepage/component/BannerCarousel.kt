@@ -31,7 +31,6 @@ import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import lovehan1me.core.platform.isLandscapeOrientation
 import lovehan1me.Res
 import lovehan1me.h_chan_load_failed
 import lovehan1me.h_chan_loading
@@ -55,13 +54,12 @@ fun BannerCarousel(
     if (banners.isEmpty()) return
 
     val pagerState = rememberPagerState(pageCount = { banners.size.coerceAtLeast(1) })
-    val isLandscape = isLandscapeOrientation()
 
     Column(modifier = modifier) {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            val aspectRatio = if (isLandscape) 21f / 9f else 16f / 9f
-            val naturalHeight = maxWidth / aspectRatio
-            val bannerHeight = if (isLandscape) minOf(naturalHeight, 240.dp) else naturalHeight
+            // 宽度驱动：16:9 基准、封顶 320.dp。此前按朝向切 21:9 再封顶 240.dp，
+            // 宽屏下被压成 5:1 全景条、人脸全裁掉；窄高窗口也不该因"横屏"切比例。
+            val bannerHeight = minOf(maxWidth * 9f / 16f, 320.dp)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()

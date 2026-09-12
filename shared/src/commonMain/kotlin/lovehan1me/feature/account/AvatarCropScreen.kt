@@ -15,6 +15,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import lovehan1me.ui.theme.HanimeDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -95,7 +96,7 @@ fun AvatarCropScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(MaterialTheme.colorScheme.background),
+                .background(HanimeDefaults.Colors.pageSurface),
         ) {
             Box(
                 modifier = Modifier
@@ -177,7 +178,7 @@ private fun CropCanvas(
         modifier = modifier
             .onSizeChanged { onViewportChanged(max(it.width, it.height).toFloat()) }
             .clipToBounds()
-            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .background(MaterialTheme.colorScheme.surfaceContainerHighest)
             .pointerInput(bitmap) {
                 detectTransformGestures { _, pan, zoom, _ ->
                     transform.applyGesture(zoom, pan, bitmap)

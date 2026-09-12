@@ -139,6 +139,18 @@ fun SearchScreen(
     onOpenVideo: (String) -> Unit,
     onOpenAdvancedSearch: () -> Unit,
     initialQuery: String? = null,
+    /**
+     * tab 模式（发现页）隐藏返回箭头；子页/首页压栈进入时保留。见 SearchRouteScreen。
+     */
+    showBack: Boolean = true,
+    /**
+     * 发现页空参进入自动 page=1 空搜（浏览全部），对齐 hanime1.me/search。
+     */
+    autoBrowse: Boolean = false,
+    /**
+     * 宽屏常驻筛选栏时隐藏顶栏漏斗按钮（筛选直接在左栏改，不必再开弹窗）。
+     */
+    showFilterButton: Boolean = true,
 ) {
     val searchState by viewModel.searchStateFlow.collectAsStateWithLifecycle()
     val searchResults by viewModel.searchFlow.collectAsStateWithLifecycle()
@@ -246,6 +258,16 @@ fun SearchScreen(
             doSearch()
         }
     }
+    // 发现页空参进入：无 query、无高级筛选时也自动 page=1 空搜（浏览全部 + 分页），
+    // 空搜参数全 null 时服务端即返回全量列表。只触发一次（hasSearched 守卫）。
+    LaunchedEffect(autoBrowse) {
+        if (autoBrowse && !hasSearched && initialQuery.isNullOrBlank() && !hasAdvancedFilters()) {
+            hasSearched = true
+            focusMgr.clearFocus()
+            kb?.hide()
+            doSearch()
+        }
+    }
     // refreshTriggerFlow
     LaunchedEffect(Unit) {
         viewModel.refreshTriggerFlow.collect {
@@ -275,9 +297,10 @@ fun SearchScreen(
         }
     }
 
-    LaunchedEffect(initialQuery, hasSearchResults, isRefreshing) {
+    LaunchedEffect(initialQuery, hasSearchResults, isRefreshing, autoBrowse) {
         if (!isRefreshing && initialQuery.isNullOrBlank() && !hasAdvancedFilters() && !hasSearchResults) {
-            focusReq.requestFocus()
+            // 发现页自动浏览模式不抢焦点：用户进来是看列表，不是立刻打字。
+            if (!autoBrowse) focusReq.requestFocus()
         } else {
             focusMgr.clearFocus()
             kb?.hide()
@@ -341,7 +364,7 @@ fun SearchScreen(
 
     Column(modifier = Modifier
         .fillMaxSize()
-        .background(MaterialTheme.colorScheme.background)
+        .background(HanimeDefaults.Colors.pageSurface)
     ) {
         SearchAppBar(searchQuery, { searchQuery = it }, onSearch = {
             val q = searchQuery.trim()
@@ -356,7 +379,7 @@ fun SearchScreen(
                 }
                 doSearch(resetScroll = true)
             }
-        }, ::handleBack, onOpenAdvancedSearch, { isSearchFocused = it }, focusReq)
+        }, ::handleBack, onOpenAdvancedSearch, { isSearchFocused = it }, focusReq, showBack, showFilterButton)
 
         if (filter.isNotEmpty()) {
             CollapsibleSearchCriteria(
@@ -464,6 +487,8 @@ fun SearchAppBar(
     onOpenAdvancedSearch: () -> Unit,
     onFocusChanged: (Boolean) -> Unit,
     focusRequester: FocusRequester,
+    showBack: Boolean = true,
+    showFilterButton: Boolean = true,
     modifier: Modifier = Modifier
 ) {
     val kb = LocalSoftwareKeyboardController.current
@@ -490,12 +515,15 @@ fun SearchAppBar(
                     .fillMaxWidth()
                     .padding(horizontal = 4.dp, vertical = 4.dp)
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        painterResource(Res.drawable.ic_arrow_back),
-                        contentDescription = stringResource(Res.string.back),
-                        tint = MaterialTheme.colorScheme.onSurface
-                    )
+                // tab 模式（发现页）无上层可退，隐藏返回箭头（返回键会误删顶层 tab）。
+                if (showBack) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            painterResource(Res.drawable.ic_arrow_back),
+                            contentDescription = stringResource(Res.string.back),
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
                 }
                 Box(
                     modifier = Modifier
@@ -543,11 +571,14 @@ fun SearchAppBar(
                         )
                     }
                 }
-                FilledIconButton(onClick = onOpenAdvancedSearch) {
-                    Icon(
-                        painterResource(Res.drawable.ic_filter_list),
-                        contentDescription = stringResource(Res.string.advanced_search)
-                    )
+                // 宽屏常驻筛选栏时此按钮隐藏，筛选走左栏。
+                if (showFilterButton) {
+                    FilledIconButton(onClick = onOpenAdvancedSearch) {
+                        Icon(
+                            painterResource(Res.drawable.ic_filter_list),
+                            contentDescription = stringResource(Res.string.advanced_search)
+                        )
+                    }
                 }
             }
         }
@@ -572,7 +603,7 @@ fun SearchHistoryList(
         Column(
             modifier = modifier
                 .background(
-                    MaterialTheme.colorScheme.background
+                    HanimeDefaults.Colors.pageSurface
                 )
         ) {
             histories.forEach { h ->
@@ -877,7 +908,7 @@ private fun ActiveSearchCriteria(
             onClick = onClearAll,
             label = { Text(stringResource(Res.string.reset)) },
             colors = AssistChipDefaults.assistChipColors(
-                containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
             ),
         )
     }

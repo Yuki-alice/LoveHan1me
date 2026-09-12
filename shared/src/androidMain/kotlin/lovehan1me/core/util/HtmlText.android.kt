@@ -33,6 +33,7 @@ actual fun parseHtmlToAnnotatedString(html: String): AnnotatedString {
         }
         spanned.getSpans<android.text.style.URLSpan>().forEach { span ->
             val start = spanned.getSpanStart(span); val end = spanned.getSpanEnd(span)
+            // 链接蓝刻意硬编码：本函数非 @Composable 读不到主题；蓝色链接是跨平台通用约定。
             addStyle(SpanStyle(color = androidx.compose.ui.graphics.Color(0xFF1A73E8), textDecoration = TextDecoration.Underline), start, end)
             addLink(LinkAnnotation.Url(span.url), start, end)
         }

@@ -25,6 +25,7 @@ import lovehan1me.ui.component.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import lovehan1me.ui.theme.HanimeDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import lovehan1me.ui.component.HapticTextButton as TextButton
@@ -222,7 +223,7 @@ private fun GridConfigInputRow(option: GridRangeOption, isDecimal: Boolean) {
                         onClick = { convertAndStep(false) },
                         modifier = Modifier.size(32.dp),
                         colors = IconButtonDefaults.filledIconButtonColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                            containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     ) {

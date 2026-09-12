@@ -3,7 +3,6 @@
 package lovehan1me.feature.settings
 
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,7 +21,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -53,10 +51,10 @@ import androidx.compose.ui.unit.dp
 import lovehan1me.Res
 import lovehan1me.video_landscape_layout_style_summary
 import lovehan1me.video_landscape_layout_style
-import lovehan1me.preset_color_scheme_summary
-import lovehan1me.preset_color_scheme
-import lovehan1me.palette_style_summary
-import lovehan1me.palette_style
+import lovehan1me.theme_board
+import lovehan1me.theme_board_summary
+import lovehan1me.amoled_mode
+import lovehan1me.amoled_mode_summary
 import lovehan1me.layout_style_dual_pane
 import lovehan1me.layout_style_classic
 import lovehan1me.follow_system
@@ -70,32 +68,52 @@ import lovehan1me.ic_dark_mode
 import lovehan1me.bg_settings_pad_new
 import lovehan1me.bg_settings_pad_classic
 import lovehan1me.ui.component.immediateClickable
-import lovehan1me.ui.theme.AppPaletteStyle
 import lovehan1me.ui.theme.HanimeDefaults
-import lovehan1me.ui.theme.ThemeAccentColor
-import lovehan1me.ui.theme.colors
-import lovehan1me.ui.theme.label
+import lovehan1me.ui.theme.ThemeBoard
 import lovehan1me.ui.theme.animatedShape
-import lovehan1me.ui.theme.expressiveColorScheme
-import lovehan1me.ui.theme.rememberSystemAccentColorOrNull
+import lovehan1me.ui.theme.boardColorScheme
 
 @Composable
-fun ThemeAccentColorPicker(
-    selectedId: Int,
-    onSelect: (Int) -> Unit,
+fun ThemeBoardPicker(
+    selectedId: String,
+    darkMode: String,
+    contrastLevel: String,
+    onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    val options = remember { ThemeAccentColor.entries.toList() }
+    val options = remember { ThemeBoard.entries.toList() }
+    val isDark = when (darkMode) {
+        "always_off" -> false
+        "always_on" -> true
+        else -> isSystemInDarkTheme()
+    }
+    val contrastSpec = remember(contrastLevel) {
+        lovehan1me.core.domain.model.ContrastLevel.fromValue(contrastLevel).spec
+    }
     PickerContainer(
-        title = stringResource(Res.string.preset_color_scheme),
-        description = stringResource(Res.string.preset_color_scheme_summary),
+        title = stringResource(Res.string.theme_board),
+        description = stringResource(Res.string.theme_board_summary),
         modifier = modifier,
     ) {
-        items(items = options, key = { it.id }) { option ->
-            AccentColorItem(
-                option = option,
-                selected = selectedId == option.id,
-                onClick = { onSelect(option.id) },
+        items(items = options, key = { it.id }) { board ->
+            // 所见即所得：每张卡用自己槽位的落地色板渲染（与 HanimeTheme 同一入口）。
+            val scheme = boardColorScheme(
+                board = board,
+                isDark = isDark,
+                contrastLevel = contrastSpec,
+            )
+            BoardPreviewItem(
+                board = board,
+                colors = listOf(
+                    scheme.primary,
+                    scheme.secondary,
+                    scheme.tertiary,
+                    scheme.surfaceContainerHighest,
+                    scheme.surfaceContainer,
+                    scheme.primaryContainer,
+                ),
+                selected = selectedId == board.id,
+                onClick = { onSelect(board.id) },
             )
         }
     }
@@ -177,54 +195,6 @@ fun DarkModePicker(
 }
 
 @Composable
-fun AppPalettePicker(
-    selectedId: Int,
-    accentColorId: Int,
-    dynamicColor: Boolean,
-    darkMode: String,
-    onSelect: (Int) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val options = remember { AppPaletteStyle.entries.toList() }
-    val isDark = when (darkMode) {
-        "always_off" -> false
-        "always_on" -> true
-        else -> isSystemInDarkTheme()
-    }
-    val accentColor = ThemeAccentColor.fromId(accentColorId)
-    // P6d-4：原 android.R.color.system_accent1_500 直取改为既有 expect（androidMain 实现逐字节等价，
-    // SDK_INT>=S 判断已内聚）；桌/iOS 返回 null 回退主题首色，与原 Android <S 行为一致
-    val keyColor = (if (dynamicColor) rememberSystemAccentColorOrNull() else null)
-        ?: accentColor.colors.first()
-    PickerContainer(
-        title = stringResource(Res.string.palette_style),
-        description = stringResource(Res.string.palette_style_summary),
-        modifier = modifier,
-    ) {
-        items(items = options, key = { it.id }) { style ->
-            val previewScheme = expressiveColorScheme(
-                keyColor = keyColor,
-                isDark = isDark,
-                style = style,
-            )
-            PaletteStyleItem(
-                style = style,
-                colors = listOf(
-                    previewScheme.primary,
-                    previewScheme.secondary,
-                    previewScheme.tertiary,
-                    previewScheme.tertiaryContainer,
-                    previewScheme.secondaryContainer,
-                    previewScheme.primaryContainer,
-                ),
-                selected = selectedId == style.id,
-                onClick = { onSelect(style.id) },
-            )
-        }
-    }
-}
-
-@Composable
 private fun PickerContainer(
     title: String,
     description: String,
@@ -265,48 +235,6 @@ private fun PickerContainer(
                 content = content,
             )
         }
-    }
-}
-
-@Composable
-private fun AccentColorItem(
-    option: ThemeAccentColor,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    val borderWidth by animateDpAsState(
-        targetValue = if (selected) 3.dp else (-1).dp,
-        animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
-        label = "accent-color-border",
-    )
-    PickerOption(onClick = onClick) {
-        Box(
-            modifier = Modifier
-                .size(90.dp)
-                .clip(MaterialTheme.shapes.large)
-                .background(MaterialTheme.colorScheme.surfaceContainer)
-                .border(
-                    width = borderWidth,
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = MaterialTheme.shapes.large,
-                ),
-        ) {
-            Canvas(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .size(58.dp)
-                    .clip(CircleShape),
-            ) {
-                drawArc(option.colors[1], 180f, 180f, true)
-                drawArc(option.colors[2], 0f, 90f, true)
-                drawArc(option.colors[3], 90f, 90f, true)
-            }
-        }
-        Text(
-            text = option.label,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-        )
     }
 }
 
@@ -393,8 +321,8 @@ private fun DarkModeItem(
 }
 
 @Composable
-private fun PaletteStyleItem(
-    style: AppPaletteStyle,
+private fun BoardPreviewItem(
+    board: ThemeBoard,
     colors: List<Color>,
     selected: Boolean,
     onClick: () -> Unit,
@@ -402,7 +330,7 @@ private fun PaletteStyleItem(
     val borderWidth by animateDpAsState(
         targetValue = if (selected) 3.dp else (-1).dp,
         animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
-        label = "palette-style-border",
+        label = "theme-board-border",
     )
     PickerOption(onClick = onClick) {
         Column(
@@ -426,9 +354,16 @@ private fun PaletteStyleItem(
             }
         }
         Text(
-            text = style.label,
+            text = board.title,
             style = MaterialTheme.typography.bodyMedium,
             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = board.subtitle,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
         )

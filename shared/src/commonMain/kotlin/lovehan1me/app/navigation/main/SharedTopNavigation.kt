@@ -70,6 +70,7 @@ import lovehan1me.app.navigation.settings.SettingsHomeHost
 import lovehan1me.app.navigation.settings.SettingsScaffold
 import lovehan1me.app.navigation.settings.SharedHKeyframesRoute
 import lovehan1me.app.navigation.settings.SharedHKeyframesRouteScreen
+import lovehan1me.app.navigation.settings.ThemeAuditRoute
 import lovehan1me.app.navigation.settings.VideoPlaybackSettingsRoute
 import lovehan1me.feature.home.homepage.HomePageViewModel
 import lovehan1me.core.platform.downloadWorkController
@@ -81,6 +82,7 @@ import lovehan1me.feature.account.UserAccountViewModel
 import lovehan1me.app.sharedViewModel
 import lovehan1me.feature.settings.HomeSettingsPage
 import lovehan1me.feature.settings.OpenSourceLicensesScreen
+import lovehan1me.feature.settings.ThemeAuditScreen
 import lovehan1me.ui.theme.fadeScale
 import lovehan1me.ui.theme.sharedAxisX
 import lovehan1me.core.util.SonnerToast
@@ -110,7 +112,9 @@ fun SharedTopNavigation(
     platformScreens: PlatformScreens = PlatformScreens(),
 ) {
     val onBack: () -> Unit = { backStack.removeLast() }
-    val onNavigateToVideo: (String) -> Unit = { code -> backStack.add(VideoRoute(code)) }
+    // 同一视频连续点两次不重复压栈（launchSingleTop 只挡连续相同 key，不影响选集链）。
+    val onNavigateToVideo: (String) -> Unit =
+        { code -> backStack.add(VideoRoute(code), launchSingleTop = true) }
     val scope = rememberCoroutineScope()
 
     // M4：注入实现使用的共享上下文
@@ -179,21 +183,16 @@ fun SharedTopNavigation(
                 onExit = {},
             )
         }
-        // 一级目的地「发现」：内容就是原来的搜索界面（SearchRouteScreen + SearchScreen），
-        // 只是语义从「一个输入框」升格为「一个探索空间」（历史 / 热门 / 高级筛选都在这栏）。
-        //
-        // ⚠️ 必须显式注册 `DiscoverTab`：P1 收敛一级目的地时只加了这个键，没加 entry，
-        //    而 P2 的底栏/Rail 让它第一次变得可点 —— 不补的话点「发现」是空白、甚至
-        //    因 `NavDisplay` 找不到 key 而抛异常。
-        //
-        // `onBack` 接成「回首页」：tab 模式下没有可返回的上层节点，而搜索页顶栏那个
-        // 返回箭头必须接一个真实动作，否则就是死按钮。
-        // TODO(P4)：按设计稿 §1.6 把该箭头在 tab 模式下改成「取消」/ 直接隐藏。
+        // 一级目的地「发现」：内容是搜索 + 浏览态（历史 / 筛选 / 全量浏览）。
+        // 空参进入自动 page=1 空搜（浏览全部，对齐 hanime1.me/search）；tab 模式
+        // 无上层可退，隐藏顶栏返回箭头（此前 TODO(P4) 的临时「回首页」已删除）。
         entry<DiscoverTab> {
             SearchRouteScreen(
                 route = SearchRoute(),
                 onBack = { backStack.addTopLevel(MainTab.Home.route) },
                 onNavigateToVideo = onNavigateToVideo,
+                showBack = false,
+                autoBrowse = true,
             )
         }
         // 一级目的地「我的」：签到首卡 + 登录账户卡 + 6 个 L2 内容入口。
@@ -207,7 +206,7 @@ fun SharedTopNavigation(
                 onOpenLogin = { backStack.add(LoginRoute) },
                 onLockedSection = {
                     scope.launch { SonnerToast.warning(getString(Res.string.login_first)) }
-                    backStack.add(LoginRoute)
+                    backStack.add(LoginRoute, launchSingleTop = true)
                 },
                 onOpenCheckIn = { backStack.add(DailyCheckInRoute) },
                 onNavigateToSection = { section -> backStack.add(section.route) },
@@ -290,7 +289,9 @@ fun SharedTopNavigation(
                         scope.launch {
                             logout()
                             homeViewModel.getHomePage()
-                            backStack.popTo(HomeRoute)
+                            // 用切 tab 而非 popTo：popTo(HomeRoute) 会把 Mine/Discover
+                            // 整个顶层栈删掉；切 tab 切到首页且各栈保留。
+                            backStack.addTopLevel(HomeRoute)
                         }
                     },
                 )
@@ -371,6 +372,7 @@ fun SharedTopNavigation(
                 onNavigateToHKeyframes = { backStack.add(HKeyframesRoute) },
                 onNavigateToSharedHKeyframes = { backStack.add(SharedHKeyframesRoute) },
                 onNavigateToOpenSourceLicenses = { backStack.add(OpenSourceLicensesRoute) },
+                onOpenThemeAudit = { backStack.add(ThemeAuditRoute) },
             )
         }
         entry<VideoPlaybackSettingsRoute>(metadata = pageTransition()) {
@@ -443,8 +445,18 @@ fun SharedTopNavigation(
             ) {
                 HomeSettingsRouteScreen(
                     page = HomeSettingsPage.DeveloperOptions,
+                    onOpenThemeAudit = { backStack.add(ThemeAuditRoute) },
                     downloadSettingsContent = {},
                 )
+            }
+        }
+        entry<ThemeAuditRoute>(metadata = pageTransition()) {
+            SettingsScaffold(
+                backStack = backStack,
+                destination = SettingsDestinationSpec.ThemeAudit,
+                fallbackDestination = DeveloperOptionsSettingsRoute,
+            ) {
+                ThemeAuditScreen()
             }
         }
         entry<AboutSettingsRoute>(metadata = pageTransition()) {
@@ -542,11 +554,14 @@ fun SharedTopNavigation(
                 destination = SettingsDestinationSpec.HKeyframes,
                 fallbackDestination = VideoPlaybackSettingsRoute,
                 floatingActionButton = {
+                    // tertiary 锚点：FAB 用第三强调容器（M3 codelab 同款），与主按钮拉开。
                     FloatingActionButton(
                         onClick = {
                             haptic()
                             showImportDialog = true
                         },
+                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
                     ) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_add),
@@ -614,7 +629,8 @@ fun SharedTopNavigation(
             GetchuPreviewDetailRouteScreen(
                 route = route,
                 onBack = onBack,
-                onNavigateToDetail = { id -> backStack.add(GetchuPreviewDetailRoute(id)) },
+                // 同 id 重复点不无限压栈。
+                onNavigateToDetail = { id -> backStack.add(GetchuPreviewDetailRoute(id), launchSingleTop = true) },
                 onNavigateToVideoUrl = { url -> backStack.add(VideoRoute("-1", url)) },
             )
         }
@@ -630,7 +646,9 @@ fun SharedTopNavigation(
                 // M5-2：注入平台窗口宿主（此前漏传，PiP/全屏/亮度/常亮全部静默失效）
                 platformHost = platformScreens.videoPageHost,
                 onBack = onBack,
-                onNavigateHome = { backStack.popTo(HomeRoute) },
+                // 主页按钮切 tab 回首页：popTo 会删掉 Mine/Discover 顶层栈，
+                // 在「我的→收藏→视频」里按主页键会把「我的」栈灭掉，故用切 tab。
+                onNavigateHome = { backStack.addTopLevel(HomeRoute) },
                 onNavigateToVideo = onNavigateToVideo,
                 onOpenSearchRoute = { searchRoute -> backStack.add(searchRoute) },
                 onEnqueueDownload = { request ->

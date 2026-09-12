@@ -23,11 +23,12 @@ class HomeSettingsActions(
     /** 默认画质。 */
     val videoQualityChange: (String) -> Unit,
     val darkModeChange: (String) -> Unit,
-    val useDynamicColorChange: (Boolean) -> Unit,
+    /** 命名主题槽位切换（themeId）。 */
+    val themeIdChange: (String) -> Unit,
+    /** AMOLED 纯黑开关。 */
+    val amoledChange: (Boolean) -> Unit,
     val hapticFeedbackChange: (Boolean) -> Unit,
     val funLoadingHintsChange: (Boolean) -> Unit,
-    val themeAccentColorChange: (Int) -> Unit,
-    val appPaletteStyleChange: (Int) -> Unit,
     /** 动态对比度档位（standard / medium / high）。 */
     val contrastLevelChange: (String) -> Unit,
     val allowPipModeChange: (Boolean) -> Unit,

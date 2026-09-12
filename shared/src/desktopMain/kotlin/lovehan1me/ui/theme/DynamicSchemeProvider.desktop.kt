@@ -5,7 +5,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import lovehan1me.core.domain.model.PaletteStyle
 
-// P6d-1 占位：桌面不做动态取色，返回 null 调用方回退固定色板（P7 可选增强）。
+// P2：桌面运行时不再现场算色（一律查预生成表），回到打桩。
+// m3color 只剩 desktopApp 的预生成工具（GenThemeBoards）经 api 直连使用。
 @Composable
 internal actual fun provideDynamicColorScheme(
     keyColorArgb: Int,
