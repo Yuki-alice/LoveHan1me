@@ -19,7 +19,7 @@ import java.io.File
 private const val SMOKE_HOST = "smoke-cf.example.com"
 private const val SMOKE_VALUE = "cf_clearance=smoke-token-12345; cf_chl_1=abc"
 private val backupFile =
-    File(File(System.getProperty("user.home"), "Han1meViewer"), ".smoke_cf_backup")
+    File(File(System.getProperty("user.home"), "LoveHan1me"), ".smoke_cf_backup")
 
 private fun initStore() {
     DataStoreManager.initialize()

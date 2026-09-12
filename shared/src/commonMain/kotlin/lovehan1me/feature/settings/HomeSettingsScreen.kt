@@ -22,6 +22,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import lovehan1me.ui.model.HorizontalCardCountConfig
 import lovehan1me.core.constant.HA1_GITHUB_URL
+import lovehan1me.core.constant.UPSTREAM_GITHUB_URL
 import lovehan1me.Res
 import lovehan1me.amoled_mode
 import lovehan1me.amoled_mode_summary
@@ -56,7 +57,6 @@ import lovehan1me.show_played_indicator_summary
 import lovehan1me.show_played_indicator
 import lovehan1me.settings_layout_content
 import lovehan1me.settings_data
-import lovehan1me.select_fake_icon
 import lovehan1me.secure_mode_summary
 import lovehan1me.secure_mode
 import lovehan1me.search_grid_columns_title
@@ -92,7 +92,6 @@ import lovehan1me.fun_loading_hints
 import lovehan1me.forum_summary
 import lovehan1me.forum
 import lovehan1me.follow_system
-import lovehan1me.fake_app_icon
 import lovehan1me.enable_check_in_feature_summary
 import lovehan1me.enable_check_in_feature
 import lovehan1me.dynamic_color_title
@@ -106,6 +105,7 @@ import lovehan1me.disable_comments_title
 import lovehan1me.disable_comments_sum
 import lovehan1me.developer_options
 import lovehan1me.developer
+import lovehan1me.upstream_project
 import lovehan1me.default_video_quilty
 import lovehan1me.collapse_downloaded_groups_summary
 import lovehan1me.collapse_downloaded_groups
@@ -430,7 +430,6 @@ private fun previewHomeSettingsState() = HomeSettingsUiState(
     hapticFeedbackEnabled = false,
     funLoadingHints = true,
     secureMode = false,
-    fakeLauncherIconName = "Han1meViewer",
     cacheSummary = "12 MB",
     versionSummary = "v26.1.0",
     contrastLevel = "standard",
@@ -740,13 +739,6 @@ private fun AnimatedLazyListScope.dataPrivacySection(
                 iconRes = Res.drawable.ic_admin_panel_settings,
                 onCheckedChange = actions.secureModeChange,
             )
-            SettingNavigationItem(
-                title = stringResource(Res.string.fake_app_icon),
-                summary = stringResource(Res.string.select_fake_icon),
-                valueText = state.fakeLauncherIconName,
-                iconRes = Res.drawable.ic_mask,
-                onClick = actions.openFakeLauncherIcon,
-            )
             SettingSwitchItem(
                 title = stringResource(Res.string.disable_comments_title),
                 summary = stringResource(Res.string.disable_comments_sum),
@@ -883,9 +875,16 @@ private fun AnimatedLazyListScope.aboutSection(
             )
             SettingNavigationItem(
                 title = stringResource(Res.string.developer),
-                summary = "@daisukiKaffuChino",
+                summary = "@Yuki-alice",
                 iconRes = Res.drawable.ic_person,
-                onClick = { uriHandler.openUri("https://github.com/daisukiKaffuChino") },
+                onClick = { uriHandler.openUri("https://github.com/Yuki-alice") },
+            )
+            // M1：原作者条目从「开发者」移到致谢区（GPLv3 诚实归属，见 NOTICE）
+            SettingNavigationItem(
+                title = stringResource(Res.string.upstream_project),
+                summary = "daisukiKaffuChino/Han1meViewer",
+                iconRes = Res.drawable.ic_ext_link,
+                onClick = { uriHandler.openUri(UPSTREAM_GITHUB_URL) },
             )
             SettingNavigationItem(
                 title = stringResource(Res.string.user_terms),
@@ -899,7 +898,7 @@ private fun AnimatedLazyListScope.aboutSection(
         SettingsSection("GitHub") {
             SettingNavigationItem(
                 title = stringResource(Res.string.project_repository),
-                summary = "daisukiKaffuChino/Han1meViewer",
+                summary = "Yuki-alice/LoveHan1me",
                 iconRes = Res.drawable.ic_ext_link,
                 onClick = { uriHandler.openUri(HA1_GITHUB_URL) },
             )

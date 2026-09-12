@@ -42,7 +42,7 @@ import java.util.concurrent.ConcurrentHashMap
  *   RandomAccessFile + seek 行为），每秒把 `downloadedLength` 写回 DB；
  * - UA 与播放层一致（站点直链有防盗链，Referer 取当前站点）；
  * - 落盘目录：`SettingsRepository.safDownloadPath`（桌面复用该设置语义=下载目录），
- *   未配置时默认 `~/Han1meViewer/downloads`；结构 `<dir>/<videoCode>/<title> [<quality>].<suffix>`
+ *   未配置时默认 `~/LoveHan1me/downloads`；结构 `<dir>/<videoCode>/<title> [<quality>].<suffix>`
  *   与 Android 的 getDownloadVideoFolder 对齐，删除逻辑直接删目录。
  */
 object DesktopDownloadWorkController : DownloadWorkController {
@@ -171,7 +171,7 @@ object DesktopDownloadWorkController : DownloadWorkController {
     private fun downloadDir(): File {
         val configured = SettingsRepository.current.safDownloadPath
         return File(configured?.takeIf { it.isNotBlank() } ?: System.getProperty("user.home"))
-            .let { if (it.name == "downloads") it else File(it, "Han1meViewer/downloads") }
+            .let { if (it.name == "downloads") it else File(it, "LoveHan1me/downloads") }
     }
 
     private fun sanitizeFileName(name: String) =

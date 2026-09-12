@@ -112,7 +112,7 @@ class IosDownloadSmokeTest {
         val documents = NSSearchPathForDirectoriesInDomains(
             NSDocumentDirectory, NSUserDomainMask, true,
         ).first() as String
-        val expectedFile = "$documents/Han1meViewer/downloads/$code/$title [$quality].mp4"
+        val expectedFile = "$documents/LoveHan1me/downloads/$code/$title [$quality].mp4"
         assertTrue(
             NSFileManager.defaultManager.fileExistsAtPath(expectedFile),
             "落盘文件不存在：$expectedFile",

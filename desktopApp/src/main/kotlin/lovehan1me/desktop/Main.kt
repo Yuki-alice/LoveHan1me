@@ -71,7 +71,7 @@ fun main() {
     LogUtil.d("Desktop", "main: Coil singleton ImageLoader(ktor3) registered")
     Window(
         onCloseRequest = ::exitApplication,
-        title = "Han1meViewer",
+        title = "LoveHan1me",
         state = rememberWindowState(size = DpSize(480.dp, 800.dp)),
     ) {
         // M3：注入 AWT 窗口，供 Skia 渲染面定位 SkiaLayer（LocalWindow 垫片）。

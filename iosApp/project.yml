@@ -42,7 +42,7 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: me.lovehan1me.ios
-        PRODUCT_NAME: Han1meViewer
+        PRODUCT_NAME: LoveHan1me
         # Kotlin/Native 共享框架的输出目录（Gradle 按 sdk 与架构落盘）
         FRAMEWORK_SEARCH_PATHS:
           - "$(inherited)"

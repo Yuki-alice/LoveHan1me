@@ -36,7 +36,7 @@ fun getHanimeSearchLink(artist: String) = HANIME_BASE_URL + "search?query=" + ar
 fun getHanimeShareText(title: String, videoCode: String): String = buildString {
     appendLine(title)
     appendLine(getHanimeVideoLink(videoCode))
-    append("- From Han1meViewer -")
+    append("- From LoveHan1me -")
 }
 /**
  * 獲取 Hanime 影片分享文本
@@ -44,7 +44,7 @@ fun getHanimeShareText(title: String, videoCode: String): String = buildString {
 fun getHanimeSearchShareText(artist: String): String = buildString {
     appendLine(artist)
     appendLine(getHanimeSearchLink(artist))
-    append("- From Han1meViewer -")
+    append("- From LoveHan1me -")
 }
 
 /**

@@ -28,7 +28,6 @@ data class HomeSettingsUiState(
     val hapticFeedbackEnabled: Boolean,
     val funLoadingHints: Boolean,
     val secureMode: Boolean,
-    val fakeLauncherIconName: String,
     val cacheSummary: String,
     val versionSummary: String,
     /** 只存值（standard/medium/high），标签在 UI 层用 stringResource 算。 */

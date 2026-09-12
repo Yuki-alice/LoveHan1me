@@ -10,9 +10,6 @@ actual suspend fun clearCacheDir(): Boolean = false
 actual fun applyAppLanguage(language: AppLanguage) {
 }
 
-actual fun switchLauncherIcon(alias: String) {
-}
-
 actual fun appVersionDisplay(): String = "1.0"
 
 actual fun supportsPerAppLinks(): Boolean = false

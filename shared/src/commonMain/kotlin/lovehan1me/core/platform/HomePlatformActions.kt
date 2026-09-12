@@ -4,7 +4,7 @@ import lovehan1me.core.domain.model.AppLanguage
 
 /**
  * P6d-4：HomeSettingsRoute 的平台面收敛（原散落于 LocalContext.cacheDir /
- * AppCompatDelegate / HanimeApplication.switchLauncher / BuildConfig）。
+ * AppCompatDelegate / BuildConfig）。
  */
 /** 缓存目录递归字节数（原 utils.folderSize：目录递归 listFiles 求和），无目录返回 0 */
 expect suspend fun getCacheDirSize(): Long
@@ -14,9 +14,6 @@ expect suspend fun clearCacheDir(): Boolean
 
 /** 切换应用语言（原 AppLanguageManager.setAppLanguage：Android 走 AppCompatDelegate） */
 expect fun applyAppLanguage(language: AppLanguage)
-
-/** 切换桌面启动器图标 alias（原 HanimeApplication.switchLauncher）；桌面/iOS 无此概念，no-op */
-expect fun switchLauncherIcon(alias: String)
 
 /** 版本展示串 "name(code)"（原 BuildConfig.VERSION_NAME(VERSION_CODE)） */
 expect fun appVersionDisplay(): String

@@ -2,9 +2,7 @@ package lovehan1me
 
 import android.app.Activity
 import android.app.Application
-import android.content.ComponentName
 import android.content.Context
-import android.content.pm.PackageManager
 import android.os.Bundle
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
@@ -68,8 +66,6 @@ class HanimeApplication : Application(), Application.ActivityLifecycleCallbacks 
         if (AnimeShaders.copyCertAssets(applicationContext) <= 0) {
             LogUtil.w(TAG, "cert 复制失败")
         }
-        val selected = SettingsRepository.fakeLauncherIcon
-        switchLauncher(selected)
     }
 
     /**
@@ -83,29 +79,6 @@ class HanimeApplication : Application(), Application.ActivityLifecycleCallbacks 
             NotificationManagerCompat.IMPORTANCE_LOW
         ).setName("Hanime Download").build()
         nm.createNotificationChannel(hanimeDownloadChannel)
-    }
-    fun switchLauncher(alias: String) {
-        val pm = packageManager
-
-        val allAliases = listOf(
-            "lovehan1me.LauncherAliasDefault",
-            "lovehan1me.LauncherFakeCalc",
-            "lovehan1me.LauncherFakeCornhub",
-            "lovehan1me.LauncherFakeXxt"
-        )
-
-        allAliases.forEach { a ->
-            val state = if (a == alias)
-                PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-            else
-                PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-
-            pm.setComponentEnabledSetting(
-                ComponentName(this, a),
-                state,
-                PackageManager.DONT_KILL_APP
-            )
-        }
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit

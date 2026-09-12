@@ -9,10 +9,9 @@ import lovehan1me.core.platform.openBackupSource
 import lovehan1me.core.platform.downloadWorkController
 import okio.buffer
 import lovehan1me.core.platform.openBackupSink
-import lovehan1me.core.platform.switchLauncherIcon
+import lovehan1me.core.platform.rebuildSystemProxy
 import lovehan1me.data.network.HanimeNetwork
 import lovehan1me.data.SettingsRepository
-import lovehan1me.core.platform.rebuildSystemProxy
 import lovehan1me.data.database.dao.CheckInRecordDatabase
 import lovehan1me.data.database.dao.DownloadDatabase
 import lovehan1me.data.database.dao.HistoryDatabase
@@ -154,7 +153,6 @@ object BackupManager {
             rebuildSystemProxy()
             HanimeNetwork.rebuildNetwork()
             downloadWorkController().updateDownloadLimit(SettingsRepository.current.downloadCountLimit)
-            switchLauncherIcon(SettingsRepository.current.fakeLauncherIcon)
         }
     }
 

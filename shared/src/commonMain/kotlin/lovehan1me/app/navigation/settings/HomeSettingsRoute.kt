@@ -28,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.compose.resources.getString
 import androidx.compose.ui.unit.dp
@@ -49,7 +48,6 @@ import lovehan1me.core.platform.recreateActivity
 import lovehan1me.core.platform.readBackupText
 import lovehan1me.core.platform.restartApp
 import lovehan1me.core.platform.supportsPerAppLinks
-import lovehan1me.core.platform.switchLauncherIcon
 import lovehan1me.core.platform.writeBackupText
 import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.core.platform.ioDispatcher
@@ -66,7 +64,6 @@ import lovehan1me.cache_empty
 import lovehan1me.clear_failed
 import lovehan1me.clear_success
 import lovehan1me.current_version
-import lovehan1me.fake_icon_hint
 import lovehan1me.follow_system
 import lovehan1me.local_data_export_failed
 import lovehan1me.local_data_export_success
@@ -84,9 +81,7 @@ import lovehan1me.sure_to_clear_cache
 import lovehan1me.traditional_chinese
 import lovehan1me.sure_to_clear
 import lovehan1me.restart_needed
-import lovehan1me.hanime_app_name
 import lovehan1me.go_to_settings
-import lovehan1me.fake_app_icon
 import lovehan1me.confirm
 import lovehan1me.cancel
 import lovehan1me.backup_import_title
@@ -95,13 +90,6 @@ import lovehan1me.attention
 import lovehan1me.apply_deep_links_tips
 import lovehan1me.apply_deep_links_summary
 import lovehan1me.apply_deep_links
-import lovehan1me.app_name_fake_xxt
-import lovehan1me.app_name_fake_cornhub
-import lovehan1me.app_name_fake_calc
-import lovehan1me.ic_launcher_xxt
-import lovehan1me.ic_launcher_new
-import lovehan1me.ic_launcher_cornhub
-import lovehan1me.ic_launcher_calc
 import lovehan1me.data.LocalListRepository
 import lovehan1me.data.OnlineListsBackup
 import lovehan1me.core.domain.model.AppLanguage
@@ -148,7 +136,6 @@ fun HomeSettingsRouteScreen(
     var cacheKey by remember { mutableIntStateOf(0) }
     var showClearCacheConfirm by remember { mutableStateOf(false) }
     var showRestartConfirmDialog by remember { mutableStateOf(false) }
-    var showLauncherPicker by remember { mutableStateOf(false) }
     var showApplyDeepLinksDialog by remember { mutableStateOf(false) }
     var pendingImportUri by remember { mutableStateOf<String?>(null) }
 
@@ -217,36 +204,6 @@ fun HomeSettingsRouteScreen(
             }
         }
     }
-    val hanimeAppName = stringResource(Res.string.hanime_app_name)
-    val fakeNameCalc = stringResource(Res.string.app_name_fake_calc)
-    val fakeNameCornhub = stringResource(Res.string.app_name_fake_cornhub)
-    val fakeNameXXT = stringResource(Res.string.app_name_fake_xxt)
-
-    val launcherItems = remember {
-        listOf(
-            LauncherItem(
-                name = hanimeAppName,
-                iconRes = Res.drawable.ic_launcher_new,
-                alias = "lovehan1me.LauncherAliasDefault",
-            ),
-            LauncherItem(
-                name = fakeNameCalc,
-                iconRes = Res.drawable.ic_launcher_calc,
-                alias = "lovehan1me.LauncherFakeCalc",
-            ),
-            LauncherItem(
-                name = fakeNameCornhub,
-                iconRes = Res.drawable.ic_launcher_cornhub,
-                alias = "lovehan1me.LauncherFakeCornhub",
-            ),
-            LauncherItem(
-                name = fakeNameXXT,
-                iconRes = Res.drawable.ic_launcher_xxt,
-                alias = "lovehan1me.LauncherFakeXxt",
-            ),
-        )
-    }
-
     var cacheSummary by remember { mutableStateOf("") }
 
     LaunchedEffect(cacheKey) {
@@ -263,7 +220,7 @@ fun HomeSettingsRouteScreen(
         appVersionDisplay()
     )
     val uiState = remember(
-        settings, cacheSummary, launcherItems,
+        settings, cacheSummary,
         traditionalChineseLabel, simplifiedChineseLabel, followSystemLabel, versionSummaryTop,
     ) {
         buildHomeSettingsUiState(
@@ -272,7 +229,6 @@ fun HomeSettingsRouteScreen(
                 "zhs" to simplifiedChineseLabel,
             ),
             followSystemLabel = followSystemLabel,
-            launcherItems = launcherItems,
             cacheSummary = cacheSummary,
             versionSummary = versionSummaryTop,
         )
@@ -406,7 +362,6 @@ fun HomeSettingsRouteScreen(
                     showApplyDeepLinksDialog = true
                 }
             },
-            openFakeLauncherIcon = { showLauncherPicker = true },
             openOpenSourceLicense = onNavigateToOpenSourceLicenses,
             clearCache = {
                 coroutineScope.launch {
@@ -415,14 +370,14 @@ fun HomeSettingsRouteScreen(
                 }
             },
             exportBackup = {
-                exportLauncher("Han1meViewer-backup-${currentEpochMillis()}.json")
+                exportLauncher("LoveHan1me-backup-${currentEpochMillis()}.json")
             },
             importBackup = {
                 importLauncher()
             },
             exportLocalLists = {
                 localListsExportLauncher(
-                    "Han1meViewer-local-lists-${currentEpochMillis()}.json"
+                    "LoveHan1me-local-lists-${currentEpochMillis()}.json"
                 )
             },
             importLocalLists = {
@@ -433,7 +388,7 @@ fun HomeSettingsRouteScreen(
                     SonnerToast.warning(loginFirstText)
                 } else {
                     onlineListsExportLauncher(
-                        "Han1meViewer-online-lists-${currentEpochMillis()}.json"
+                        "LoveHan1me-online-lists-${currentEpochMillis()}.json"
                     )
                 }
             },
@@ -555,70 +510,15 @@ fun HomeSettingsRouteScreen(
         onDismiss = { showRestartConfirmDialog = false },
     )
 
-    // 阶段一④：伪装图标选择器原用 androidx.compose.ui.window.Dialog（JVM 专属，
-    // commonMain 不可用），改 Material3 AlertDialog 承载——iOS 复用同一套。
-    if (showLauncherPicker) {
-        AlertDialog(
-            onDismissRequest = { showLauncherPicker = false },
-            title = {
-                Text(
-                    stringResource(Res.string.fake_app_icon),
-                    style = MaterialTheme.typography.titleLarge,
-                )
-            },
-            text = {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    launcherItems.forEach { item ->
-                        TextButton(
-                            onClick = {
-                                coroutineScope.launch {
-                                    SettingsRepository.setLauncherIcon(item.alias)
-                                    switchLauncherIcon(item.alias)
-                                    SonnerToast.info(getString(Res.string.fake_icon_hint))
-                                    showLauncherPicker = false
-                                }
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                        ) {
-                            Row(
-                                modifier = Modifier.fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                            ) {
-                                Icon(
-                                    painter = painterResource(item.iconRes),
-                                    contentDescription = null,
-                                    tint = Color.Unspecified,
-                                    modifier = Modifier.size(30.dp),
-                                )
-                                Text(item.name)
-                            }
-                        }
-                    }
-                }
-            },
-            confirmButton = {},
-        )
-    }
+    // M1：伪装图标功能整体删除（决策 #4），选择器与 4×activity-alias 一并退役。
 }
-
-private data class LauncherItem(
-    val name: String,
-    val iconRes: DrawableResource,
-    val alias: String,
-)
 
 private fun buildHomeSettingsUiState(
     videoLanguageLabels: Map<String, String>,
     followSystemLabel: String,
-    launcherItems: List<LauncherItem>,
     cacheSummary: String,
     versionSummary: String,
 ): HomeSettingsUiState {
-    val currentAlias = SettingsRepository.fakeLauncherIcon
-    val currentItem = launcherItems.find { it.alias == currentAlias } ?: launcherItems.first()
     val videoLanguageLabel = videoLanguageLabels[SettingsRepository.videoLanguage]
         ?: SettingsRepository.videoLanguage
     val appLanguage = SettingsRepository.current.appLanguage
@@ -654,7 +554,6 @@ private fun buildHomeSettingsUiState(
         hapticFeedbackEnabled = SettingsRepository.hapticFeedbackEnabled,
         funLoadingHints = SettingsRepository.funLoadingHints,
         secureMode = SettingsRepository.secureMode,
-        fakeLauncherIconName = currentItem.name,
         cacheSummary = cacheSummary,
         versionSummary = versionSummary,
         contrastLevel = SettingsRepository.current.contrastLevel.value,

@@ -11,7 +11,7 @@ import kotlin.concurrent.Volatile
  * - [enabled] 默认 true，由 :app 在启动时按 BuildConfig.DEBUG 覆盖。
  */
 object LogUtil {
-    const val DEFAULT_TAG = "Han1meViewer"
+    const val DEFAULT_TAG = "LoveHan1me"
 
     // 与 android.util.Log 的优先级常量保持一致，便于 androidMain 直接透传
     private const val VERBOSE = 2

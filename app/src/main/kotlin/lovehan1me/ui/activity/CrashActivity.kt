@@ -72,7 +72,7 @@ private fun buildCrashReport(
         .atZone(ZoneId.systemDefault())
         .format(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
 
-    appendLine("App: Han1meViewer ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
+    appendLine("App: LoveHan1me ${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})")
     appendLine("Package: $packageName")
     appendLine("Device: ${Build.MANUFACTURER} ${Build.MODEL}")
     appendLine("Android: ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})")

@@ -31,7 +31,7 @@ compose.desktop {
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
-            packageName = "Han1meViewer"
+            packageName = "LoveHan1me"
             // macOS 的 jpackage 拒绝首位为 0 的版本号（原值 "0.1.0" 报
             // 「app-version 中的第一个数字不能为零或负数」→ createDistributable 直接失败）。
             // 该值同时用于 dmg 文件名与 CFBundleShortVersionString，与代码版本无关。

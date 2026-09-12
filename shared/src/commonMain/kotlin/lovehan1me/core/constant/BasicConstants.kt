@@ -29,7 +29,8 @@ const val SEARCH_YEAR_RANGE_START = 1990
 
 val SEARCH_YEAR_RANGE_END: Int get() = Instant.fromEpochMilliseconds(lovehan1me.core.platform.currentEpochMillis()).toLocalDateTime(TimeZone.currentSystemDefault()).year
 
-const val HA1_GITHUB_URL = "https://github.com/daisukiKaffuChino/Han1meViewer"
+// M1：更新通道指向本项目自己的仓库（决策 #6）
+const val HA1_GITHUB_URL = "https://github.com/Yuki-alice/LoveHan1me"
 
 // M2：评论类型前缀（自 `:app` Constants.kt 下沉，Preview 评论预取用；包名不变调用点零改动）
 const val PREVIEW_COMMENT_PREFIX = "preview"
@@ -39,3 +40,9 @@ const val VIDEO_COMMENT_PREFIX = "video"
 const val HA1_GITHUB_ISSUE_URL = "$HA1_GITHUB_URL/issues"
 
 const val HA1_GITHUB_FORUM_URL = "$HA1_GITHUB_URL/discussions"
+
+/**
+ * M1：上游项目地址（GPLv3 诚实归属，完整声明见 NOTICE）。
+ * 仅供「关于页 → 上游项目」致谢条目展示；**不作为更新通道**。
+ */
+const val UPSTREAM_GITHUB_URL = "https://github.com/daisukiKaffuChino/Han1meViewer"

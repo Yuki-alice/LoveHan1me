@@ -176,7 +176,7 @@ fun App(
             },
         )
         if (showSourceWarning) {
-            val expectedRepository = "https://github.com/daisukiKaffuChino/Han1meViewer"
+            val expectedRepository = "https://github.com/Yuki-alice/LoveHan1me"
             val linkValid = sourceLink.trim().equals(expectedRepository, ignoreCase = true)
             AlertDialog(
                 onDismissRequest = {},

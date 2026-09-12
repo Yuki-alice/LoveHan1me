@@ -131,7 +131,6 @@ data class AppSettings(
      * 视觉零变化，只有主动去设置里调才会变。
      */
     val contrastLevel: ContrastLevel = ContrastLevel.Standard,
-    val fakeLauncherIcon: String = DEFAULT_LAUNCHER_ICON,
     val allowPipMode: Boolean = true,
     val secureMode: Boolean = false,
     val disableComments: Boolean = false,
@@ -211,9 +210,4 @@ data class AppSettings(
     val hiddenHomeCategoryKeys: Set<String> = emptySet(),
     val alwaysShowUpdateCard: Boolean = false,
     val displayDensity: DisplayDensity = DisplayDensity.Default,
-) {
-    companion object {
-        const val DEFAULT_LAUNCHER_ICON =
-            "lovehan1me.LauncherAliasDefault"
-    }
-}
+)

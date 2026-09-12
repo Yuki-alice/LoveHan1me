@@ -6,7 +6,7 @@ import kotlinx.datetime.format.char
 
 // EMPTY_STRING 与 LOCAL_DATE_FORMAT 已下沉 shared commonMain（BasicConstants.kt）
 
-const val APP_NAME = "Han1meViewer"
+const val APP_NAME = "LoveHan1me"
 
 // 标准时间格式
 

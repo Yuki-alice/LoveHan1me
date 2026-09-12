@@ -12,7 +12,7 @@ import java.net.URI
 
 /**
  * 受 [EhViewer_CN_SXJ 中 EhProxySelector](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/blob/BiLi_PC_Gamer/app/src/main/java/com/hippo/ehviewer/EhProxySelector.java)
- * 的启发，Han1meViewer 也将使用 [HProxySelector] 来实现代理功能。
+ * 的启发，本项目的 [HProxySelector] 也采用同样的思路实现代理功能。
  *
  * @project Han1meViewer
  * @author Yenaly Liew

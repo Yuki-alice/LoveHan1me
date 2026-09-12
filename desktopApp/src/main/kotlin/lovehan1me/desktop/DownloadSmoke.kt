@@ -171,7 +171,7 @@ private fun runSmoke(): Boolean {
     val t1 = pollState(T1_CODE, 60_000) { s, e ->
         s == DownloadState.Finished && e.downloadedLength > 0
     }
-    val t1File = File(File(File(System.getProperty("user.home"), "Han1meViewer"), "downloads"), "$T1_CODE")
+    val t1File = File(File(File(System.getProperty("user.home"), "LoveHan1me"), "downloads"), "$T1_CODE")
         .walkTopDown().filter { it.isFile }.firstOrNull()
     results += if (t1 != null && t1File != null && t1File.length() == t1.downloadedLength) {
         "T1 快速完成  PASS（${t1.downloadedLength} bytes，文件=$t1File.name）"
@@ -198,7 +198,7 @@ private fun runSmoke(): Boolean {
     val t2 = pollState(T2_CODE, 90_000) { s, e ->
         s == DownloadState.Finished && e.downloadedLength == e.length && e.length == FULL_SIZE
     }
-    val t2File = File(File(File(System.getProperty("user.home"), "Han1meViewer"), "downloads"), "$T2_CODE")
+    val t2File = File(File(File(System.getProperty("user.home"), "LoveHan1me"), "downloads"), "$T2_CODE")
         .walkTopDown().filter { it.isFile }.firstOrNull()
         results += if (t2 != null && t2File != null && t2File.length() == FULL_SIZE) {
         "T2 断点续传  PASS（从 HALF 续传至完整 " + FULL_SIZE + " bytes，文件字节数一致）"

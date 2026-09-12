@@ -49,7 +49,8 @@
 
         </provider>
 
-        <!-- MainActivity 本体：无 launcher 配置 -->
+        <!-- MainActivity 本体：M1 起直接承载 launcher 入口
+             （原 4×activity-alias 随「伪装图标」功能一并删除，见决策 #4） -->
         <activity
             android:name=".ui.activity.MainActivity"
             android:configChanges="orientation|smallestScreenSize|screenLayout|screenSize|keyboardHidden"
@@ -57,6 +58,11 @@
             android:launchMode="singleTask"
             android:supportsPictureInPicture="true"
             android:theme="@style/Theme.Hanime">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
             <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
 
@@ -88,58 +94,5 @@
             android:launchMode="singleTask"
             android:theme="@style/Theme.Hanime" />
 
-        <!-- 默认启动器别名 -->
-        <activity-alias
-            android:name=".LauncherAliasDefault"
-            android:enabled="true"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_new"
-            android:label="@string/hanime_app_name"
-            android:targetActivity=".ui.activity.MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-
-        <!-- 伪装1 -->
-        <activity-alias
-            android:name=".LauncherFakeCalc"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_calc"
-            android:label="@string/app_name_fake_calc"
-            android:targetActivity=".ui.activity.MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-        <!-- 伪装2 -->
-        <activity-alias
-            android:name=".LauncherFakeCornhub"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_cornhub"
-            android:label="@string/app_name_fake_cornhub"
-            android:targetActivity=".ui.activity.MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
-        <!-- 伪装3 -->
-        <activity-alias
-            android:name=".LauncherFakeXxt"
-            android:enabled="false"
-            android:exported="true"
-            android:icon="@mipmap/ic_launcher_xxt"
-            android:label="@string/app_name_fake_xxt"
-            android:targetActivity=".ui.activity.MainActivity">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity-alias>
     </application>
 </manifest>

@@ -1,7 +1,5 @@
 package lovehan1me.core.platform
 
-import android.content.ComponentName
-import android.content.pm.PackageManager
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.core.os.LocaleListCompat
 import lovehan1me.data.database.dao.Han1meDatabaseContext
@@ -25,28 +23,6 @@ actual fun applyAppLanguage(language: AppLanguage) {
     val locales = language.code?.let(LocaleListCompat::forLanguageTags)
         ?: LocaleListCompat.getEmptyLocaleList()
     AppCompatDelegate.setApplicationLocales(locales)
-}
-
-actual fun switchLauncherIcon(alias: String) {
-    val context = Han1meDatabaseContext.appContext
-    val pm = context.packageManager
-    val allAliases = listOf(
-        "lovehan1me.LauncherAliasDefault",
-        "lovehan1me.LauncherFakeCalc",
-        "lovehan1me.LauncherFakeCornhub",
-        "lovehan1me.LauncherFakeXxt"
-    )
-    allAliases.forEach { a ->
-        val state = if (a == alias)
-            PackageManager.COMPONENT_ENABLED_STATE_ENABLED
-        else
-            PackageManager.COMPONENT_ENABLED_STATE_DISABLED
-        pm.setComponentEnabledSetting(
-            ComponentName(context.packageName, a),
-            state,
-            PackageManager.DONT_KILL_APP
-        )
-    }
 }
 
 actual fun appVersionDisplay(): String {

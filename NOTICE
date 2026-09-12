@@ -16,13 +16,24 @@ Upstream attribution
 
 ### Han1meViewer  (GPLv3)
 
-Portions of the client implementation derive from the Han1meViewer project:
+Portions of the client implementation derive from the Han1meViewer project.
+The app code base this repository was refactored from identified itself with
+the following upstream repository:
+
+    https://github.com/daisukiKaffuChino/Han1meViewer
+
+An earlier/related location of the same project is:
 
     https://github.com/misaka10032w/Han1meViewer
 
 The Han1meViewer project is distributed under the GNU General Public License,
 version 3. This attribution and the applicable GPLv3 terms must be retained
 when that code is redistributed.
+
+Note: LoveHan1me has **replaced** Han1meViewer as this application's identity
+(display name, package id, update channel and about page). The upstream links
+above are retained purely as license attribution and are **not** this
+application's update channel or support channel.
 
 ### MomoQR  (GPLv3)
 

@@ -104,7 +104,7 @@ kotlin {
 androidComponents {
     onVariants { variant ->
         variant.outputs.forEach { output ->
-            val apkName = "Han1meViewer-v${output.versionName.get()}.apk"
+            val apkName = "LoveHan1me-v${output.versionName.get()}.apk"
             (output as VariantOutputImpl).outputFileName = apkName
         }
     }

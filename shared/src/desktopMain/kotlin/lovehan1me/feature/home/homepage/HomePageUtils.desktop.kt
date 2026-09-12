@@ -8,14 +8,14 @@ import java.io.ByteArrayInputStream
 import java.io.File
 import javax.imageio.ImageIO
 
-// 桌面：~/.han1meviewer/pictures/ 写 JPEG（与 datastore 同根目录，便于用户查找）。
+// 桌面：~/.lovehan1me/pictures/ 写 JPEG（与 datastore 同根目录，便于用户查找）。
 actual suspend fun saveImageToGallery(imageUrl: String): Boolean {
     return try {
         val client = HttpClient(OkHttp)
         val bytes = client.get(imageUrl).bodyAsBytes()
         client.close()
         val image = ByteArrayInputStream(bytes).use { ImageIO.read(it) } ?: return false
-        val dir = File(File(System.getProperty("user.home"), ".han1meviewer"), "pictures")
+        val dir = File(File(System.getProperty("user.home"), ".lovehan1me"), "pictures")
         if (!dir.exists()) dir.mkdirs()
         ImageIO.write(image, "JPEG", File(dir, "IMG_${System.currentTimeMillis()}.jpg"))
         true

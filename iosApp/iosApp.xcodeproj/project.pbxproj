@@ -279,7 +279,7 @@
 				);
 				OTHER_LDFLAGS = "$(inherited) -framework ComposeApp";
 				PRODUCT_BUNDLE_IDENTIFIER = me.lovehan1me.ios;
-				PRODUCT_NAME = Han1meViewer;
+				PRODUCT_NAME = LoveHan1me;
 			};
 			name = Debug;
 		};
@@ -297,7 +297,7 @@
 				);
 				OTHER_LDFLAGS = "$(inherited) -framework ComposeApp";
 				PRODUCT_BUNDLE_IDENTIFIER = me.lovehan1me.ios;
-				PRODUCT_NAME = Han1meViewer;
+				PRODUCT_NAME = LoveHan1me;
 			};
 			name = Release;
 		};

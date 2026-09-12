@@ -132,7 +132,7 @@ fun AppUpdateCard(
 private fun previewUpdateInfo(forceUpdate: Boolean) = AppUpdateInfo(
     versionName = "26.1.0",
     versionCode = 260720,
-    downloadUrl = "https://github.com/daisukiKaffuChino/Han1meViewer/releases/latest",
+    downloadUrl = "https://github.com/Yuki-alice/LoveHan1me/releases/latest",
     updateDescription = "Includes stability improvements and interface refinements.",
     forceUpdate = forceUpdate,
 )

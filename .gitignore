@@ -18,6 +18,11 @@ out/
 .workbuddy/
 *.local
 
+# DSH 本地 skill 根（.dsh/skills 下是指向本机 ~/.workbuddy/skills 的 junction，
+# 绝对路径机器相关，绝不能进仓库）
+.dsh/
+.agents/
+
 # Reference projects (external repos for study, 214M)
 reference/
 

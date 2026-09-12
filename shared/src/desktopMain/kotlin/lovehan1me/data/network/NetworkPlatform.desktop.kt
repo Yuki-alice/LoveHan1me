@@ -9,7 +9,7 @@ import java.io.File
  * （`Main.kt` 的 `platformScreens.cloudflare` 槽位）。
  */
 actual fun httpCacheDirectory(): File {
-    val dir = File(System.getProperty("user.home"), ".han1meviewer/http_cache")
+    val dir = File(System.getProperty("user.home"), ".lovehan1me/http_cache")
     if (!dir.exists()) dir.mkdirs()
     return dir
 }

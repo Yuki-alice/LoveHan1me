@@ -52,7 +52,6 @@ object SettingsRepository : SettingsStore {
     val videoQuality get() = current.videoQuality
     val showPlayedIndicator get() = current.showPlayedIndicator
     val isCheckInEnabled get() = current.checkInEnabled
-    val fakeLauncherIcon get() = current.fakeLauncherIcon
     val baseUrl: String get() {
         if (current.useCustomMirrorSite && current.customMirrorSite.isNotBlank()) {
             val value = if (current.appendCustomMirrorPath) current.customMirrorSite else rootUrl(current.customMirrorSite)
@@ -122,7 +121,6 @@ object SettingsRepository : SettingsStore {
     suspend fun setThemeId(value: String) = update { it.copy(themeId = value) }
     suspend fun setAmoled(value: Boolean) = update { it.copy(amoled = value) }
     suspend fun setContrastLevel(value: ContrastLevel) = update { it.copy(contrastLevel = value) }
-    suspend fun setLauncherIcon(value: String) = update { it.copy(fakeLauncherIcon = value) }
     suspend fun setHapticFeedback(value: Boolean) = update { it.copy(hapticFeedbackEnabled = value) }
     suspend fun setCheckInEnabled(value: Boolean) = update { it.copy(checkInEnabled = value) }
     suspend fun setUsePrivateStorage(value: Boolean) = update { it.copy(usePrivateStorage = value) }

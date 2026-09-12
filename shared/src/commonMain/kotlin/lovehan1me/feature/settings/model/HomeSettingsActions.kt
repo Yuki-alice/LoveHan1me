@@ -51,7 +51,6 @@ class HomeSettingsActions(
     val homeCategoryPreferencesChange: (List<String>, Set<String>) -> Unit,
     val openAppLanguageSettings: (String) -> Unit,
     val openApplyDeepLinks: () -> Unit,
-    val openFakeLauncherIcon: () -> Unit,
     val openOpenSourceLicense: () -> Unit,
     val clearCache: () -> Unit,
     val exportBackup: () -> Unit,

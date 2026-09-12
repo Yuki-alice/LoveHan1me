@@ -41,7 +41,7 @@ fun DesktopScaffold() {
                 style = MaterialTheme.typography.headlineMedium,
             )
             Text(
-                text = "Han1meViewer 0.1.0 (KMP shared commonMain theme/component/toast)",
+                text = "LoveHan1me 0.1.0 (KMP shared commonMain theme/component/toast)",
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.padding(top = 8.dp),
             )

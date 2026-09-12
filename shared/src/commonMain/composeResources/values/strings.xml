@@ -432,12 +432,6 @@ Recommendations are as follows:\n
     <string name="approximate_range">Approximate time</string>
     <string name="specific_y_m">Specific Y &amp; M</string>
     <string name="ext_player">External player</string>
-    <string name="app_name_fake_calc">Calculator</string>
-    <string name="app_name_fake_xxt">StudyEasy</string>
-    <string name="app_name_fake_cornhub">Cornhub</string>
-    <string name="fake_app_icon">Fake Icon</string>
-    <string name="select_fake_icon">Select the fake icon</string>
-    <string name="fake_icon_hint">Settings applied successfully. The app may close, and the app icon might take a while to update. During this time, you may see a \"Not installed\" prompt.</string>
     <string name="current_node_latency">Current CDN node latency</string>
     <string name="unknow">Unknown</string>
     <string name="view_node_latency">View node latency</string>
@@ -473,7 +467,7 @@ Recommendations are as follows:\n
     <string name="pref_export_downloads_title">Export Download Items</string>
     <string name="pref_export_downloads_summary">Export all download items from private download directory to custom directory</string>
     <string name="save_failed_title">Save Failed</string>
-    <string name="save_failed_message">The video info file failed to save because the custom download path could not be accessed, or for another reason.\nAutomatically switched to the app private path.\nIf you reinstalled the app, try cleaning the Download/Han1meViewer directory and switch download location in settings. Otherwise, continue using the private directory and move files out before uninstalling or clearing data.</string>
+    <string name="save_failed_message">The video info file failed to save because the custom download path could not be accessed, or for another reason.\nAutomatically switched to the app private path.\nIf you reinstalled the app, try cleaning the Download/LoveHan1me directory and switch download location in settings. Otherwise, continue using the private directory and move files out before uninstalling or clearing data.</string>
     <string name="whats_wrong_with_him">What's his problem?</string>
     <string name="submit">Submit</string>
     <string name="report_reason_hint">Please select a reporting reason first.</string>
@@ -667,7 +661,7 @@ Recommendations are as follows:\n
     <string name="debug">Debug</string>
     <string name="traditional_chinese">Traditional Chinese</string>
     <string name="simplified_chinese">Simplified Chinese</string>
-    <string name="hanime_app_name">Han1meViewer</string>
+    <string name="hanime_app_name">LoveHan1me</string>
     <string name="animation_2_5d">2.5D</string>
     <string name="mmd">MMD</string>
     <string name="anime_4k">Anime\n4k</string>
@@ -724,14 +718,14 @@ Recommendations are as follows:\n
     <string name="display_density">Display density</string>
     <string name="trigger_crash">Trigger crash</string>
     <string name="trigger_crash_summary">Immediately throw an uncaught exception to test crash handling</string>
-    <string name="crash_page_title">Han1meViewer crashed</string>
+    <string name="crash_page_title">LoveHan1me crashed</string>
     <string name="crash_unexpected_title">Something went wrong</string>
-    <string name="crash_unexpected_message">Han1meViewer encountered an unhandled error. You can copy the diagnostic log before restarting.</string>
+    <string name="crash_unexpected_message">LoveHan1me encountered an unhandled error. You can copy the diagnostic log before restarting.</string>
     <string name="crash_actions">Actions</string>
     <string name="crash_copy_log">Copy crash log</string>
     <string name="crash_copy_log_summary">Copy device and exception details to the clipboard</string>
     <string name="crash_restart_app">Restart app</string>
-    <string name="crash_restart_app_summary">Close the failed process and reopen Han1meViewer</string>
+    <string name="crash_restart_app_summary">Close the failed process and reopen LoveHan1me</string>
     <string name="crash_exit_app">Exit app</string>
     <string name="crash_exit_app_summary">Close the crash report without restarting</string>
     <string name="crash_log_title">Crash log</string>
@@ -759,6 +753,7 @@ Recommendations are as follows:\n
     <string name="information">Information</string>
     <string name="version">Version</string>
     <string name="developer">Developer</string>
+    <string name="upstream_project">Upstream project</string>
     <string name="user_terms">User Terms</string>
     <string name="user_terms_summary">View the usage notice accepted on first launch</string>
     <string name="project_repository">Project Repository</string>

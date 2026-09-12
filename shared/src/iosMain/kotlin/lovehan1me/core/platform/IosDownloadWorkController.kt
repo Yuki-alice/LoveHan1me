@@ -71,7 +71,7 @@ import kotlin.time.Clock
  * - 并发容器/线程：ConcurrentHashMap → Mutex 守卫的 MutableMap，
  *   Dispatchers.IO → Dispatchers.Default（Native 无 IO 调度器）。
  *
- * 落盘目录：`Documents/Han1meViewer/downloads/<videoCode>/<title> [<quality>].<suffix>`
+ * 落盘目录：`Documents/LoveHan1me/downloads/<videoCode>/<title> [<quality>].<suffix>`
  * （与桌面 `<dir>/<videoCode>/…` 同构；根固定 Documents 以便文件 App 导出，
  * 不跟随 safDownloadPath——iOS 无 SAF 且跨端备份可能带入 Android 路径）。
  */
@@ -203,7 +203,7 @@ object IosDownloadWorkController : DownloadWorkController {
     }
 
     override suspend fun importDownloaded(): Boolean = withContext(Dispatchers.Default) {
-        // 阶段一⑦：与桌面同构的自家目录扫描（Documents/Han1meViewer/downloads）。
+        // 阶段一⑦：与桌面同构的自家目录扫描（Documents/LoveHan1me/downloads）。
         // 沙盒固定根，无需选目录器；命名解析复用共享 DownloadedVideoName。
         val fm = NSFileManager.defaultManager
         val root = downloadDir()
@@ -322,7 +322,7 @@ object IosDownloadWorkController : DownloadWorkController {
             true,
         ).first() as String)
 
-    private fun downloadDir(): String = "${documentsDir()}/Han1meViewer/downloads"
+    private fun downloadDir(): String = "${documentsDir()}/LoveHan1me/downloads"
 
     private fun videoFolderPath(videoCode: String) = "${downloadDir()}/$videoCode"
 

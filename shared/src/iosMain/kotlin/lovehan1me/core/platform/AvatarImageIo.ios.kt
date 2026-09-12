@@ -46,7 +46,7 @@ private fun documentsAvatarDir(): String {
         NSUserDomainMask,
         true,
     ).first() as String
-    return "$documents/Han1meViewer/avatar"
+    return "$documents/LoveHan1me/avatar"
 }
 
 @OptIn(ExperimentalForeignApi::class)
