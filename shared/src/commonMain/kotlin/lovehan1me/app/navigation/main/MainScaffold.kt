@@ -116,10 +116,6 @@ fun MainScaffold(
             SharedTopNavigation(
                 backStack = backStack,
                 homeViewModel = homeViewModel,
-                // P2 起首页顶栏由「搜索胶囊 + 新番列表 + 头像」三件套承载（P4 落地），
-                // 不再需要汉堡；这两个参数届时随首页顶栏一起删除。
-                showHomeNavigationIcon = false,
-                onOpenDrawer = {},
                 platformScreens = platformScreens,
             )
         }

@@ -65,8 +65,6 @@ fun SharedHomeScreen(
     viewModel: HomePageViewModel,
     onEvent: (HomeUiEvent) -> Unit,
     modifier: Modifier = Modifier,
-    showNavigationIcon: Boolean = false,
-    onOpenDrawer: () -> Unit = {},
 ) {
     val pageState by viewModel.homePageFlow.collectAsStateWithLifecycle()
     val updateState by viewModel.appUpdateState.collectAsStateWithLifecycle()
@@ -199,8 +197,8 @@ fun SharedHomeScreen(
             }
         }
         // P4：顶栏换成「搜索框 · 新番列表 · 账号头像」三件套。
-        // 抽屉已随 P2 退役，[showNavigationIcon] / [onOpenDrawer] 仅在 :app 的旧壳里还传值，
-        // 这里不再渲染汉堡按钮（功能入口已在底栏 / Rail 上）。
+        // 抽屉已随 P2 退役，顶栏不再有汉堡按钮（功能入口已在底栏 / Rail 上）；
+        // 遗留的 showNavigationIcon / onOpenDrawer 死参数已一并删除。
         HomeTopBar(
             onSearchClick = { onEvent(HomeUiEvent.OpenSearchPage()) },
             onNewAnimeListClick = { onEvent(HomeUiEvent.NavigateToPreview) },

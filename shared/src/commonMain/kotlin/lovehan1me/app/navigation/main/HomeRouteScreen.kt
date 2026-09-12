@@ -57,7 +57,6 @@ import kotlin.time.Clock
  */
 @Composable
 fun SharedHomeRouteScreen(
-    onOpenDrawer: () -> Unit,
     onNavigateToPreview: () -> Unit,
     onNavigateToMine: () -> Unit,
     onNavigateToSearch: (String?) -> Unit,
@@ -67,7 +66,6 @@ fun SharedHomeRouteScreen(
     // M2：调用方（App）可提升 VM，以便登录成功后刷新首页；默认与独立调用一致
     //（同 owner 下 sharedViewModel 同 key 命中同一实例）。
     viewModel: HomePageViewModel = sharedViewModel(::HomePageViewModel),
-    showNavigationIcon: Boolean = false,
 ) {
     // 裸 viewModel() 在桌面/iOS 必崩（默认 SavedStateViewModelFactory(nonAndroid)
     // 调 Factory.create(String, CreationExtras) 抛 UnsupportedOperationException，
@@ -93,11 +91,8 @@ fun SharedHomeRouteScreen(
     ) {
         SharedHomeScreen(
             viewModel = viewModel,
-            showNavigationIcon = showNavigationIcon,
-            onOpenDrawer = onOpenDrawer,
             onEvent = { event ->
                 when (event) {
-                    is HomeUiEvent.OpenDrawer -> onOpenDrawer()
                     is HomeUiEvent.NavigateToPreview -> onNavigateToPreview()
                     is HomeUiEvent.OpenMine -> onNavigateToMine()
                     is HomeUiEvent.OpenSearchPage -> onNavigateToSearch(event.query)

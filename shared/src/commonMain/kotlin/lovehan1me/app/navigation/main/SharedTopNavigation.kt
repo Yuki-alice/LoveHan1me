@@ -107,8 +107,6 @@ import kotlinx.serialization.json.Json
 fun SharedTopNavigation(
     backStack: TopLevelBackStack<HanimeScreen>,
     homeViewModel: HomePageViewModel,
-    showHomeNavigationIcon: Boolean,
-    onOpenDrawer: () -> Unit,
     platformScreens: PlatformScreens = PlatformScreens(),
 ) {
     val onBack: () -> Unit = { backStack.removeLast() }
@@ -169,8 +167,6 @@ fun SharedTopNavigation(
         entry<HomeRoute> {
                 SharedHomeRouteScreen(
                     viewModel = homeViewModel,
-                    showNavigationIcon = showHomeNavigationIcon,
-                    onOpenDrawer = onOpenDrawer,
                     onNavigateToPreview = { backStack.add(PreviewRoute) },
                 onNavigateToMine = { backStack.navigateMainTab(MainTab.Mine) },
                 onNavigateToSearch = { query -> backStack.add(SearchRoute(query = query)) },
