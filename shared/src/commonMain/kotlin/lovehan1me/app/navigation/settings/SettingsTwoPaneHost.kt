@@ -113,7 +113,7 @@ fun SettingsHomeHost(
         backStack = backStack,
         destination = selected.spec,
         fallbackDestination = MainTab.Fallback.route,
-        // 关键：外壳不再限宽 —— 否则 840dp 会把左栏 280dp 一起吃掉，右栏只剩 560dp。
+        // 关键：外壳不再限宽 —— 否则表单行宽会把左栏 280dp 一起吃掉，右栏被挤窄。
         contentMaxWidth = Dp.Unspecified,
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
@@ -121,14 +121,14 @@ fun SettingsHomeHost(
                 selected = selected,
                 onSelect = { selected = it },
             )
-            // 右栏自己限宽 840 居中（外壳已放权）
+            // 右栏自己按表单档限宽并居中（外壳已放权）
             Box(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(),
                 contentAlignment = Alignment.TopCenter,
             ) {
-                Box(modifier = Modifier.widthIn(max = HanimeDefaults.Widths.contentMax)) {
+                Box(modifier = Modifier.widthIn(max = HanimeDefaults.Widths.formMax)) {
                     HomeSettingsRouteScreen(
                         page = selected.page,
                         onNavigateToHKeyframes = onNavigateToHKeyframes,

@@ -103,7 +103,7 @@ fun CrashScreen(
         ) {
             Column(
                 modifier = Modifier
-                    .widthIn(max = 840.dp)
+                    .widthIn(max = HanimeDefaults.Widths.readingMax)
                     .fillMaxWidth()
                     .verticalScroll(rememberScrollState())
                     .padding(

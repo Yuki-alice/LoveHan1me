@@ -1,16 +1,13 @@
 package lovehan1me.app.navigation.settings
 
 import androidx.compose.foundation.layout.RowScope
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.widthIn
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import lovehan1me.ui.adaptive.ContentColumn
 import lovehan1me.ui.component.appbar.HanimeTopAppBar
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.app.navigation.main.HanimeScreen
@@ -26,12 +23,12 @@ fun SettingsScaffold(
     actions: @Composable RowScope.() -> Unit = {},
     floatingActionButton: @Composable () -> Unit = {},
     /**
-     * 内容区最大宽度。默认 [HanimeDefaults.Widths.contentMax]（单栏表单页的可读行宽）。
+     * 内容区最大宽度。默认 [HanimeDefaults.Widths.formMax]（单栏表单页的可读行宽）。
      *
      * 双栏形态（P5.5）必须传 [Dp.Unspecified]：外壳的限宽会**连同左栏 280dp 一起**算进
-     * 840dp，导致右栏只剩 560dp。双栏由右栏自己限宽。
+     * 表单行宽，导致右栏被挤窄。双栏由右栏自己限宽。
      */
-    contentMaxWidth: Dp = HanimeDefaults.Widths.contentMax,
+    contentMaxWidth: Dp = HanimeDefaults.Widths.formMax,
     content: @Composable () -> Unit,
 ) {
     fun navigateBack() {
@@ -54,25 +51,13 @@ fun SettingsScaffold(
         contentHorizontalPadding = 0.dp,
         floatingActionButton = floatingActionButton,
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = HanimeDefaults.Spacing.contentHorizontal),
-            contentAlignment = Alignment.TopCenter,
+        // 宽屏限宽：设置页是文本密集型表单，桌面全屏下若把行宽拉满，可读性会明显下降。
+        // 上限大于可用宽度时（手机 / 窄窗）该约束不生效，故窄屏零影响。
+        ContentColumn(
+            maxWidth = contentMaxWidth,
+            modifier = Modifier.padding(horizontal = HanimeDefaults.Spacing.contentHorizontal),
         ) {
-            // 宽屏限宽：设置页是文本密集型表单，桌面全屏下若把行宽拉满，可读性会明显下降。
-            // 上限大于可用宽度时（手机 / 窄窗）该约束不生效，故窄屏零影响。
-            // 注意 widthIn 必须排在 fillMaxSize 之前，否则先被 fillMaxSize 拉满再去限制会冲突。
-            Box(
-                modifier = Modifier
-                    .let {
-                        if (contentMaxWidth == Dp.Unspecified) it
-                        else it.widthIn(max = contentMaxWidth)
-                    }
-                    .fillMaxSize(),
-            ) {
-                content()
-            }
+            content()
         }
     }
 }
