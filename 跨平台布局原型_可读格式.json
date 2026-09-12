@@ -1,0 +1,469 @@
+{
+  "source": {
+    "platform": "Ardot",
+    "fileId": "724724560492703",
+    "fileUrl": "https://ardot.tencent.com/file/724724560492703",
+    "pageName": "Page 1",
+    "extractedAt": "2026-09-12T12:00:53+08:00",
+    "extractor": "WorkBuddy design-to-code skill",
+    "companionDoc": "跨平台布局原型_可读格式.md"
+  },
+  "meta": {
+    "topLevelNodeCount": 16,
+    "counts": {
+      "titleBlocks": 3,
+      "pageScreens": 11,
+      "specBlocks": 2,
+      "total": 16
+    }
+  },
+  "designSystem": {
+    "breakpoints": [
+      {
+        "name": "Compact",
+        "range": [0, 600],
+        "unit": "dp",
+        "navigation": "NavigationBar",
+        "panes": 1,
+        "notes": "底部 3 项：首页 / 发现 / 我的"
+      },
+      {
+        "name": "Medium",
+        "range": [600, 840],
+        "unit": "dp",
+        "navigation": "CollapsedNavigationRail",
+        "railWidth": 80,
+        "panes": 1,
+        "notes": "竖屏平板"
+      },
+      {
+        "name": "Expanded",
+        "range": [840, 1200],
+        "unit": "dp",
+        "navigation": "CollapsedNavigationRail",
+        "railWidth": 80,
+        "panes": 1,
+        "notes": "平板横屏"
+      },
+      {
+        "name": "Large",
+        "range": [1200, 1600],
+        "unit": "dp",
+        "navigation": "ExpandedNavigationRail",
+        "railWidth": 220,
+        "panes": 2,
+        "notes": "桌面，含视频详情侧栏"
+      },
+      {
+        "name": "ExtraLarge",
+        "range": [1600, null],
+        "unit": "dp",
+        "navigation": "ExpandedNavigationRail",
+        "railWidth": 220,
+        "panes": 2,
+        "notes": "超宽桌面"
+      }
+    ],
+    "colors": {
+      "pageBackground": "#fdf8fa",
+      "cardSurfaceNeutral": "#f6edef",
+      "cardSurfaceLow": "#f1e1e5",
+      "cardSurfaceLowest": "#f2ebee",
+      "secondaryContainer": "#f5dde5",
+      "tertiaryContainer": "#ffd9e2",
+      "surfaceContainerHighest": "#ecdedf",
+      "textPrimary": "#1f1b1b",
+      "textSecondary": "#524344",
+      "textTertiary": "#8a7278",
+      "accent": "#9f4058",
+      "playerSurfaceDark": "#293221",
+      "playerSurfaceMid": "#5c382f",
+      "bannerGradientStart": "#583d8c",
+      "bannerGradientEnd": "#ed739e"
+    },
+    "shapes": {
+      "cornerRadiusValues": [12, 16, 20, 24, 28],
+      "pill": {"mode": "percent", "value": 50},
+      "pillAbsolute": 99
+    },
+    "typography": {
+      "display": {"family": "Noto Sans SC", "weight": "Bold", "sizes": [26, 30]},
+      "title": {"family": "Noto Sans SC", "weight": "SemiBold", "sizes": [18, 20, 22]},
+      "subtitle": {"family": "Noto Sans SC", "weight": "SemiBold", "sizes": [14, 15]},
+      "body": {"family": "Noto Sans SC", "weight": "Regular", "sizes": [12, 13, 14, 15]},
+      "latin": {"family": "Inter", "weight": "SemiBold", "sizes": [13, 15]}
+    },
+    "spacing": [4, 8, 12, 16, 20, 24, 28, 44]
+  },
+  "titleBlocks": [
+    {
+      "nodeId": "3:1",
+      "title": "LoveHan1me 跨平台布局原型 —— 导航形态与窗格重设计",
+      "subtitle": "一级入口收敛为 3 个：首页 / 搜索 / 资料库　·　Compact 用底部导航栏（设置里可切换悬浮胶囊形态）　·　Medium 与 Expanded 用折叠 NavigationRail　·　Large 起 2 窗格　·　tabletMode 开关取消，形态完全由可用宽度决定",
+      "size": {"width": 3560, "height": 92}
+    },
+    {
+      "nodeId": "3:524",
+      "title": "补充断点覆盖 —— 把每个「页面 × 断点」都画出来",
+      "subtitle": "首页 Medium 3×3（竖屏平板 768×1024）· 首页 XL 5×2（桌面 1600×1000，展开 NavigationRail 220dp）· 发现页 Compact · 视频详情 Compact 单栏 · 我的 Expanded 宫格（1024×768）",
+      "size": {"width": 1400, "height": "hug_contents"}
+    },
+    {
+      "nodeId": "3:1154",
+      "title": "设置页 —— 独立全屏、无 Rail 的响应式双栏",
+      "subtitle": "Large / XL：左栏分类导航 280dp + 右栏内容（限宽 840 居中）　·　Compact / Medium：单栏分区滚动，顶栏只留返回 + 标题　·　任何断点都不显示 NavigationRail",
+      "size": {"width": 1700, "height": "hug_contents"}
+    }
+  ],
+  "specBlocks": [
+    {
+      "nodeId": "3:8",
+      "name": "导航栏两种形态",
+      "purpose": "对比标准贴底 vs 悬浮胶囊",
+      "items": [
+        {"column": "standard", "name": "标准贴底", "width": 393, "notes": "标准 NavigationBar，矩形贴底"},
+        {"column": "floating", "name": "悬浮胶囊", "width": 393, "notes": "Surface 胶囊，距左右 16dp + 距底 16dp + navigationBarsPadding"}
+      ],
+      "size": {"width": 900, "height": 340}
+    },
+    {
+      "nodeId": "3:461",
+      "name": "分类区块 · 响应式矩阵规格",
+      "purpose": "定义分类区块的列×行分档",
+      "rule": "矩阵由「可用内容宽度」驱动，不绑定窗口断点；常驻 Rail 会吃掉 80–220dp；四档阈值按最小卡宽 170dp 反推",
+      "tiers": [
+        {"breakpoint": "Compact", "columns": 2, "rows": 4, "capacity": 8, "spacing": 12},
+        {"breakpoint": "Medium", "columns": 3, "rows": 3, "capacity": 9, "spacing": 16},
+        {"breakpoint": "Expanded", "columns": 4, "rows": 2, "capacity": 8, "spacing": 16},
+        {"breakpoint": "Large / XL", "columns": 5, "rows": 2, "capacity": 10, "spacing": 20}
+      ],
+      "implementationNote": "落地改走 GridCells.Adaptive + 最小卡宽分档（145/160/180/200 dp），未严格按此表",
+      "size": {"width": 940, "height": 340}
+    }
+  ],
+  "screens": [
+    {
+      "nodeId": "3:4",
+      "name": "手机 · 首页（Compact <600dp）",
+      "breakpoint": "Compact",
+      "size": {"width": 393, "height": 1080},
+      "position": {"x": 0, "y": 150},
+      "rootLayout": "vertical",
+      "rootFill": "#fdf8fa",
+      "showNavigationRail": false,
+      "showBottomNav": true,
+      "structure": [
+        {"name": "状态栏", "height": 62, "layout": "horizontal", "padding": 24, "children": ["时间 9:41 (Inter SemiBold 15)", "系统图标 66×14"]},
+        {"name": "顶栏", "height": 64, "layout": "horizontal", "gap": 10, "padding": 16, "children": [
+          "搜索框胶囊 (fill×40, fill=#ecdedf, cornerRadius=20)",
+          "新番列表胶囊 (hug×40, fill=#f5dde5, cornerRadius=20)",
+          "账号头像 (34×34, fill=#ffd9e2, cornerRadius=99)"
+        ]},
+        {"name": "内容区", "layout": "vertical", "gap": 24, "padding": 16, "children": [
+          "Banner 精选 (fill×176, GRADIENT_LINEAR #583d8c→#ed739e 45°, cornerRadius=28)",
+          "分类 · 最新更新 (fill×hug)"
+        ]},
+        {"name": "底部导航栏", "height": 80, "fill": "#ecdedf", "padding": 8, "gap": 4, "items": [
+          {"label": "首页", "selected": true},
+          {"label": "发现", "selected": false},
+          {"label": "我的", "selected": false}
+        ]}
+      ]
+    },
+    {
+      "nodeId": "3:5",
+      "name": "手机 · 我的（Compact）",
+      "breakpoint": "Compact",
+      "size": {"width": 393, "height": 852},
+      "position": {"x": 493, "y": 150},
+      "rootLayout": "vertical",
+      "rootFill": "#fdf8fa",
+      "showNavigationRail": false,
+      "showBottomNav": true,
+      "structure": [
+        {"name": "状态栏", "height": 62},
+        {"name": "顶栏", "height": 64, "gap": 18, "padding": 16, "children": [
+          "「我的」标题 (Noto Sans SC SemiBold 22)",
+          "设置图标 22×22"
+        ]},
+        {"name": "内容区", "gap": 12, "padding": 16, "items": [
+          {"type": "card", "name": "签到首卡", "fill": "#f6edef", "cornerRadius": 16},
+          {"type": "card", "name": "登录账户卡", "fill": "#f5dde5", "cornerRadius": 20},
+          {"type": "sectionHeader", "text": "我的内容", "color": "#524344"},
+          {"type": "row", "name": "收藏", "height": 56, "fill": "#f1e1e5", "cornerRadius": 16},
+          {"type": "row", "name": "稍后看", "height": 56, "fill": "#f1e1e5", "cornerRadius": 16},
+          {"type": "row", "name": "播放列表", "height": 56, "fill": "#f1e1e5", "cornerRadius": 16},
+          {"type": "row", "name": "订阅", "height": 56, "fill": "#f1e1e5", "cornerRadius": 16},
+          {"type": "row", "name": "观看历史", "height": 56, "fill": "#f1e1e5", "cornerRadius": 16},
+          {"type": "row", "name": "下载", "height": 56, "fill": "#f1e1e5", "cornerRadius": 16}
+        ]},
+        {"name": "底部导航栏", "items": [
+          {"label": "首页"}, {"label": "发现"}, {"label": "我的", "selected": true}
+        ]}
+      ]
+    },
+    {
+      "nodeId": "3:6",
+      "name": "平板横屏 · 首页（Expanded 840–1199dp）",
+      "breakpoint": "Expanded",
+      "size": {"width": 1024, "height": 768},
+      "position": {"x": 986, "y": 150},
+      "rootLayout": "horizontal",
+      "rootFill": "#fdf8fa",
+      "showNavigationRail": true,
+      "railType": "collapsed",
+      "railWidth": 80,
+      "structure": [
+        {"name": "NavigationRail", "width": 80, "fill": "#ecdedf", "padding": 8, "items": [
+          {"name": "展开切换", "height": 48, "cornerRadius": 16},
+          {"name": "首页", "selected": true, "height": 60},
+          {"name": "发现", "height": 60},
+          {"name": "我的", "height": 60},
+          {"name": "弹性占位"},
+          {"name": "设置", "height": 56, "cornerRadius": 16}
+        ]},
+        {"name": "主内容列", "layout": "vertical", "children": [
+          {"name": "顶栏", "height": 64, "gap": 18, "padding": 16},
+          {"name": "内容区", "gap": 20, "padding": 16}
+        ]}
+      ]
+    },
+    {
+      "nodeId": "3:7",
+      "name": "桌面宽屏 · 视频详情（Large 1200dp+）",
+      "breakpoint": "Large",
+      "size": {"width": 1440, "height": 1000},
+      "position": {"x": 2110, "y": 150},
+      "rootLayout": "horizontal",
+      "rootFill": "#fdf8fa",
+      "showNavigationRail": false,
+      "panes": ["主内容区", "侧栏"],
+      "structure": [
+        {
+          "name": "主内容区", "layout": "vertical", "children": [
+            {"name": "顶栏", "height": 64, "gap": 14, "padding": 20},
+            {"name": "内容区", "gap": 18, "padding": "24,24,8,24", "note": "播放器 + 标题 + 操作 + tabs + 简介"}
+          ]
+        },
+        {
+          "name": "侧栏 · 接下来播放 360dp",
+          "width": 360,
+          "fill": "#f6edef",
+          "padding": 20,
+          "gap": 14,
+          "items": ["侧栏标题行", "推荐·1", "推荐·2", "推荐·3", "推荐·4", "推荐·5", "推荐·6", "推荐·7", "推荐·8"]
+        }
+      ]
+    },
+    {
+      "nodeId": "3:527",
+      "name": "首页 · Medium 3×3（竖屏平板 768×1024）",
+      "breakpoint": "Medium",
+      "size": {"width": 768, "height": 1024},
+      "position": {"x": 0, "y": 2400},
+      "rootLayout": "horizontal",
+      "showNavigationRail": true,
+      "railType": "collapsed",
+      "railWidth": 80,
+      "structure": [
+        {"name": "NavigationRail", "width": 80, "items": ["展开切换", "首页(选中)", "发现", "我的", "弹性占位", "设置"]},
+        {"name": "主内容列", "children": [
+          {"name": "顶栏", "height": 64},
+          {"name": "内容区", "note": "3×3 分类网格（按可用内容宽度 656dp → 3 列反推）"}
+        ]}
+      ]
+    },
+    {
+      "nodeId": "3:592",
+      "name": "首页 · XL 5×2（桌面 1600×1000）",
+      "breakpoint": "ExtraLarge",
+      "size": {"width": 1600, "height": 1000},
+      "position": {"x": 2978, "y": 2400},
+      "rootLayout": "horizontal",
+      "showNavigationRail": true,
+      "railType": "expanded",
+      "railWidth": 220,
+      "structure": [
+        {"name": "NavigationRail 展开 220dp", "width": 220, "fill": "#ecdedf", "padding": 12, "items": [
+          {"name": "品牌区", "height": 56},
+          {"name": "首页", "height": 56, "selected": true, "fill": "#f5dde5", "cornerRadius": 28},
+          {"name": "发现", "height": 56, "cornerRadius": 28},
+          {"name": "我的", "height": 56, "cornerRadius": 28},
+          {"name": "弹性占位"},
+          {"name": "设置", "height": 56, "cornerRadius": 28}
+        ]},
+        {"name": "主内容列", "children": [
+          {"name": "顶栏", "height": 64, "padding": "16,32"},
+          {"name": "内容区", "padding": "32,32", "note": "5×2 分类网格（按可用内容宽度 ~1340dp → 5 列反推）"}
+        ]}
+      ]
+    },
+    {
+      "nodeId": "3:657",
+      "name": "我的 · Expanded 宫格（1024×768）",
+      "breakpoint": "Expanded",
+      "size": {"width": 1024, "height": 768},
+      "position": {"x": 1854, "y": 2400},
+      "rootLayout": "horizontal",
+      "showNavigationRail": true,
+      "railType": "collapsed",
+      "railWidth": 80,
+      "structure": [
+        {"name": "NavigationRail", "width": 80, "items": ["展开切换", "首页", "发现", "我的(选中)", "弹性占位", "设置"]},
+        {"name": "主内容列", "children": [
+          {"name": "顶栏", "height": 64},
+          {"name": "内容区", "gap": 12, "note": "签到卡 + 登录卡 + 6 个宫格 tile（每行 3-4 个）"}
+        ]}
+      ]
+    },
+    {
+      "nodeId": "3:811",
+      "name": "发现 · Compact（393×852）",
+      "breakpoint": "Compact",
+      "size": {"width": 393, "height": 852},
+      "position": {"x": 868, "y": 2400},
+      "rootLayout": "vertical",
+      "showBottomNav": true,
+      "structure": [
+        {"name": "状态栏", "height": 62},
+        {"name": "顶栏", "height": 64, "gap": 12, "padding": 16, "items": [
+          "返回 22×22",
+          "搜索输入框 (fill×40, fill=#ecdedf, cornerRadius=20)",
+          "「取消」文字按钮 (Noto Sans SC Medium 13, color=#9f4058)"
+        ]},
+        {"name": "内容区", "gap": 24, "padding": 16, "items": ["分区·搜索历史", "分区·热门搜索"]},
+        {"name": "底部导航栏", "items": [{"label": "首页"}, {"label": "发现", "selected": true}, {"label": "我的"}]}
+      ]
+    },
+    {
+      "nodeId": "3:889",
+      "name": "视频详情 · Compact（393×852 单栏）",
+      "breakpoint": "Compact",
+      "size": {"width": 393, "height": 852},
+      "position": {"x": 1361, "y": 2400},
+      "rootLayout": "vertical",
+      "showNavigationRail": false,
+      "showBottomNav": false,
+      "structure": [
+        {"name": "状态栏", "height": 62},
+        {"name": "顶栏", "height": 56, "gap": 14, "padding": 16, "items": ["返回 22×22", "弹性占位", "分享", "下载", "更多"]},
+        {"name": "播放器 16:9", "height": 221, "fill": "GRADIENT_LINEAR #293221→#5c382f", "items": ["弹性占位", "播放按钮 56×56 (fill=#ffffff, cornerRadius=99)", "弹性占位", "控制条"]},
+        {"name": "内容区", "gap": 14, "padding": 16, "items": [
+          "视频标题 (Noto Sans SC SemiBold 18)",
+          "元信息行",
+          "操作胶囊组",
+          "页签行",
+          "简介正文 (Noto Sans SC Regular 12, color=#8a7278)"
+        ]},
+        {"name": "相关推荐", "gap": 10, "padding": 16, "items": ["分区名", "推荐·1", "推荐·2"]}
+      ]
+    },
+    {
+      "nodeId": "3:1036",
+      "name": "设置 · Large 双栏（1440×1000，无 Rail）",
+      "breakpoint": "Large",
+      "size": {"width": 1440, "height": 1000},
+      "position": {"x": 0, "y": 3600},
+      "rootLayout": "vertical",
+      "showNavigationRail": false,
+      "panes": ["左栏 280dp", "右栏"],
+      "implementationDeviation": {
+        "prototype": "右栏限宽 840 居中",
+        "implementation": "右栏限宽 640 居中（formMax，本批改动）",
+        "reason": "见《跨平台响应式布局重设计方案》§4.3 落地记录"
+      },
+      "structure": [
+        {"name": "顶栏", "height": 64, "gap": 16, "padding": 24, "items": ["返回 22×22", "「设置」标题 (SemiBold 22)", "「恢复默认」动作 (Medium 13, color=#9f4058)"]},
+        {"name": "主体", "layout": "horizontal", "children": [
+          {"name": "左栏 · 设置分类 280dp", "width": 280, "fill": "#f6edef", "padding": 16, "note": "7 个分类项 (NavigationDrawerItem 形态)"},
+          {"name": "右栏 · 设置内容", "width": "fill_container", "height": "fill_container", "gap": 20, "padding": 32}
+        ]}
+      ]
+    },
+    {
+      "nodeId": "3:1118",
+      "name": "设置 · Compact 单栏（393×852，无 Rail）",
+      "breakpoint": "Compact",
+      "size": {"width": 393, "height": 852},
+      "position": {"x": 1590, "y": 3600},
+      "rootLayout": "vertical",
+      "showNavigationRail": false,
+      "showBottomNav": false,
+      "structure": [
+        {"name": "状态栏", "height": 62},
+        {"name": "顶栏", "height": 56, "gap": 16, "padding": 16, "items": ["返回 22×22", "「设置」标题 (SemiBold 20)"]},
+        {"name": "内容区", "gap": 16, "padding": 16, "items": [
+          {"type": "group", "name": "播放", "fill": "#f2ebee", "cornerRadius": 20},
+          {"type": "group", "name": "播放记录", "fill": "#f2ebee", "cornerRadius": 20},
+          {"type": "group", "name": "进阶设置", "fill": "#f2ebee", "cornerRadius": 20}
+        ]}
+      ]
+    }
+  ],
+  "implementationMap": {
+    "3:4_3:6_3:527_3:592_homeTopBar": {
+      "file": "shared/src/commonMain/kotlin/lovehan1me/feature/home/homepage/component/HomeTopBar.kt",
+      "status": "shipped"
+    },
+    "3-tab_mainTab": {
+      "file": "shared/src/commonMain/kotlin/lovehan1me/app/navigation/main/MainTab.kt",
+      "status": "shipped"
+    },
+    "compactNavBar_plus_mediumRail": {
+      "file": "shared/src/commonMain/kotlin/lovehan1me/app/navigation/main/MainScaffold.kt",
+      "status": "shipped"
+    },
+    "3:8_floatingNavBar": {
+      "file": "shared/src/commonMain/kotlin/lovehan1me/app/navigation/main/MainScaffold.kt",
+      "status": "shipped"
+    },
+    "3:7_videoDualPane": {
+      "file": "shared/src/commonMain/kotlin/lovehan1me/feature/video/VideoShellContent.kt",
+      "status": "shipped"
+    },
+    "videoPlayerProportionalHeight": {
+      "file": "shared/src/commonMain/kotlin/lovehan1me/ui/adaptive/PageMetrics.kt",
+      "function": "rememberWindowHeightDp",
+      "status": "shipped"
+    },
+    "3:1036_3:1118_settingsTwoPane": {
+      "file": "shared/src/commonMain/kotlin/lovehan1me/app/navigation/settings/SettingsTwoPaneHost.kt",
+      "status": "shipped"
+    },
+    "contentColumn_formMax_640_readingMax_720": {
+      "files": [
+        "shared/src/commonMain/kotlin/lovehan1me/ui/adaptive/ContentColumn.kt",
+        "shared/src/commonMain/kotlin/lovehan1me/ui/theme/Defaults.kt"
+      ],
+      "status": "shipped (this batch)"
+    },
+    "3:889_3:527_videoReadingMaxWidth": {
+      "files": [
+        "shared/src/commonMain/kotlin/lovehan1me/feature/video/VideoIntroductionScreen.kt",
+        "shared/src/commonMain/kotlin/lovehan1me/feature/video/CommentScreen.kt",
+        "shared/src/commonMain/kotlin/lovehan1me/feature/video/ChildCommentScreen.kt",
+        "shared/src/commonMain/kotlin/lovehan1me/app/navigation/main/VideoTabScreens.kt",
+        "shared/src/commonMain/kotlin/lovehan1me/app/navigation/main/PreviewCommentRoute.kt"
+      ],
+      "status": "pending-visual-confirmation",
+      "blockers": [
+        "5 个接入点（含 2 个 Scaffold 根节点）",
+        "视频页需真机 + 登录才看得到",
+        "接入后会产生真实的宽屏视觉变化"
+      ]
+    },
+    "3:5_mineSixEntries": {
+      "file": "shared/src/commonMain/kotlin/lovehan1me/app/navigation/main/MineSection.kt",
+      "status": "shipped"
+    },
+    "designTokens": {
+      "files": [
+        "shared/src/commonMain/kotlin/lovehan1me/ui/theme/Defaults.kt",
+        "shared/src/commonMain/kotlin/lovehan1me/ui/theme/Shape.kt",
+        "shared/src/commonMain/kotlin/lovehan1me/ui/theme/Type.kt",
+        "shared/src/commonMain/kotlin/lovehan1me/ui/theme/Motion.kt"
+      ],
+      "status": "shipped"
+    }
+  }
+}
