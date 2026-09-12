@@ -17,12 +17,22 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.platform.UriHandler
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import lovehan1me.ui.model.HorizontalCardCountConfig
 import lovehan1me.core.constant.HA1_GITHUB_URL
 import lovehan1me.Res
 import lovehan1me.video_language
+import lovehan1me.contrast_level
+import lovehan1me.contrast_level_summary
+import lovehan1me.contrast_level_standard
+import lovehan1me.contrast_level_medium
+import lovehan1me.contrast_level_high
+import lovehan1me.nav_bar_style
+import lovehan1me.nav_bar_style_summary
+import lovehan1me.nav_bar_style_standard
+import lovehan1me.nav_bar_style_floating
 import lovehan1me.video
 import lovehan1me.version
 import lovehan1me.user_terms_summary
@@ -149,12 +159,14 @@ import lovehan1me.ui.component.SettingSwitchItem
 import lovehan1me.ui.component.SettingsAnimatedVisibility
 import lovehan1me.ui.component.SettingsSegmentedGroup
 import lovehan1me.ui.component.lazy.LazyColumn
+import lovehan1me.ui.component.lazy.AnimatedLazyListScope
 import lovehan1me.ui.adaptive.WindowWidthSizeClass
 import lovehan1me.ui.adaptive.rememberContentWidthSizeClass
 import lovehan1me.feature.settings.dialog.HomeCategoryLayoutDialog
 import lovehan1me.feature.settings.dialog.HorizontalCardCountDialog
 import lovehan1me.feature.settings.dialog.SearchGridColumnsDialog
 import lovehan1me.feature.settings.model.HomeSettingsUiState
+import lovehan1me.feature.settings.model.HomeSettingsActions
 import lovehan1me.ui.theme.HanimeDefaults
 
 enum class HomeSettingsPage {
@@ -167,60 +179,40 @@ enum class HomeSettingsPage {
     About,
 }
 
+/** 与 `NavBarStyle.Floating.value` 对齐。 */
+private const val NAV_BAR_STYLE_FLOATING = "floating"
+
+/** 与 `ContrastLevel.Medium/High.value` 对齐（标签本身在 UI 层用 stringResource 算）。 */
+private const val CONTRAST_LEVEL_MEDIUM = "medium"
+private const val CONTRAST_LEVEL_HIGH = "high"
+
 private enum class HomeSettingsChoiceDialog {
     VideoLanguage,
     VideoQuality,
     AppLanguage,
     DisplayDensity,
+    NavBarStyle,
+    ContrastLevel,
 }
 
-/** Renders one settings category while keeping the existing preference callbacks intact. */
+/**
+ * 设置页的**分类路由**（审计重构：原先是 43 个回调 + 500 行巨型函数）。
+ *
+ * 这里只做三件事：装配弹窗、算几个页面级派生值、按 [page] 路由到对应分类。
+ * 每个分类的具体条目在文件末尾的 `LazyListScope` 扩展函数里，可以各自独立修改。
+ *
+ * 回调由 [HomeSettingsActions] 聚合传入 —— 路由层只需要构造一次，
+ * 加一个设置项时改动面从「改 4 个文件的参数列表」收敛到「改 1 个类 + 1 个分类函数」。
+ */
 @Composable
 fun HomeSettingsScreen(
     page: HomeSettingsPage,
     state: HomeSettingsUiState,
     isLoggedIn: Boolean,
-    onVideoLanguageChange: (String) -> Unit,
-    onVideoQualityChange: (String) -> Unit,
-    onDarkModeChange: (String) -> Unit,
-    onUseDynamicColorChange: (Boolean) -> Unit,
-    onHapticFeedbackChange: (Boolean) -> Unit,
-    onFunLoadingHintsChange: (Boolean) -> Unit,
-    onThemeAccentColorChange: (Int) -> Unit,
-    onAppPaletteStyleChange: (Int) -> Unit,
-    onAllowPipModeChange: (Boolean) -> Unit,
-    onAllowResumePlaybackChange: (Boolean) -> Unit,
-    onShowPlayedIndicatorChange: (Boolean) -> Unit,
-    onSearchArtistIgnoreVideoTypeChange: (Boolean) -> Unit,
-    onDisableMobileDataWarningChange: (Boolean) -> Unit,
-    onDisablePredictiveBackChange: (Boolean) -> Unit,
-    onVideoLandscapeLayoutStyleChange: (String) -> Unit,
-    onCheckInEnabledChange: (Boolean) -> Unit,
-    onDisableCommentsChange: (Boolean) -> Unit,
-    onCollapseDownloadedGroupChange: (Boolean) -> Unit,
-    onSearchGridColumnsConfigChange: (SearchGridColumnsConfig) -> Unit,
-    onHorizontalCardCountConfigChange: (HorizontalCardCountConfig) -> Unit,
-    onSecureModeChange: (Boolean) -> Unit,
-    onAlwaysShowUpdateCardChange: (Boolean) -> Unit,
-    onDisplayDensityChange: (Int) -> Unit,
-    onTriggerCrash: () -> Unit,
-    onHomeCategoryPreferencesChange: (List<String>, Set<String>) -> Unit,
+    actions: HomeSettingsActions,
     hKeyframeSettingsContent: @Composable () -> Unit,
     networkSettingsContent: @Composable () -> Unit,
     downloadSettingsContent: @Composable () -> Unit,
-    onOpenAppLanguageSettings: (String) -> Unit,
-    onOpenApplyDeepLinks: () -> Unit,
-    onOpenFakeLauncherIcon: () -> Unit,
-    onOpenOpenSourceLicense: () -> Unit,
-    onClearCache: () -> Unit,
-    onExportBackup: () -> Unit,
-    onImportBackup: () -> Unit,
-    onExportLocalLists: () -> Unit,
-    onImportLocalLists: () -> Unit,
-    onExportOnlineLists: () -> Unit,
-    onImportOnlineLists: () -> Unit,
-    onSubmitBug: () -> Unit,
-    onOpenForum: () -> Unit,
 ) {
     var activeDialog by rememberSaveable { mutableStateOf<HomeSettingsChoiceDialog?>(null) }
     var showSearchGridColumnsDialog by rememberSaveable { mutableStateOf(false) }
@@ -245,7 +237,7 @@ fun HomeSettingsScreen(
         onDismiss = { activeDialog = null },
         onSelect = {
             activeDialog = null
-            onVideoLanguageChange(it)
+            actions.videoLanguageChange(it)
         },
     )
     ChoiceDialog(
@@ -256,7 +248,7 @@ fun HomeSettingsScreen(
         onDismiss = { activeDialog = null },
         onSelect = {
             activeDialog = null
-            onVideoQualityChange(it)
+            actions.videoQualityChange(it)
         },
     )
     ChoiceDialog(
@@ -272,7 +264,7 @@ fun HomeSettingsScreen(
         onDismiss = { activeDialog = null },
         onSelect = {
             activeDialog = null
-            onOpenAppLanguageSettings(it)
+            actions.openAppLanguageSettings(it)
         },
     )
     ChoiceDialog(
@@ -283,7 +275,36 @@ fun HomeSettingsScreen(
         onDismiss = { activeDialog = null },
         onSelect = { value ->
             activeDialog = null
-            onDisplayDensityChange(value.toInt())
+            actions.displayDensityChange(value.toInt())
+        },
+    )
+    ChoiceDialog(
+        visible = activeDialog == HomeSettingsChoiceDialog.ContrastLevel,
+        title = stringResource(Res.string.contrast_level),
+        options = listOf(
+            stringResource(Res.string.contrast_level_standard) to "standard",
+            stringResource(Res.string.contrast_level_medium) to "medium",
+            stringResource(Res.string.contrast_level_high) to "high",
+        ),
+        selectedValue = state.contrastLevel,
+        onDismiss = { activeDialog = null },
+        onSelect = {
+            activeDialog = null
+            actions.contrastLevelChange(it)
+        },
+    )
+    ChoiceDialog(
+        visible = activeDialog == HomeSettingsChoiceDialog.NavBarStyle,
+        title = stringResource(Res.string.nav_bar_style),
+        options = listOf(
+            stringResource(Res.string.nav_bar_style_standard) to "standard",
+            stringResource(Res.string.nav_bar_style_floating) to "floating",
+        ),
+        selectedValue = state.navBarStyle,
+        onDismiss = { activeDialog = null },
+        onSelect = {
+            activeDialog = null
+            actions.navBarStyleChange(it)
         },
     )
 
@@ -293,7 +314,7 @@ fun HomeSettingsScreen(
             onDismiss = { showSearchGridColumnsDialog = false },
             onConfirm = {
                 showSearchGridColumnsDialog = false
-                onSearchGridColumnsConfigChange(it)
+                actions.searchGridColumnsConfigChange(it)
             },
         )
     }
@@ -303,7 +324,7 @@ fun HomeSettingsScreen(
             onDismiss = { showHorizontalCardCountDialog = false },
             onConfirm = {
                 showHorizontalCardCountDialog = false
-                onHorizontalCardCountConfigChange(it)
+                actions.horizontalCardCountConfigChange(it)
             },
         )
     }
@@ -313,7 +334,7 @@ fun HomeSettingsScreen(
             onDismiss = { showHomeCategoryDialog = false },
             onConfirm = { order, hiddenKeys ->
                 showHomeCategoryDialog = false
-                onHomeCategoryPreferencesChange(order, hiddenKeys)
+                actions.homeCategoryPreferencesChange(order, hiddenKeys)
             },
         )
     }
@@ -331,380 +352,27 @@ fun HomeSettingsScreen(
         verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.small),
     ) {
         when (page) {
-            HomeSettingsPage.VideoPlayback -> {
-                item {
-                    SettingsSection(stringResource(Res.string.video)) {
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.video_language),
-                            valueText = state.videoLanguageLabel,
-                            iconRes = Res.drawable.ic_simp_to_trad,
-                            onClick = { activeDialog = HomeSettingsChoiceDialog.VideoLanguage },
-                        )
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.default_video_quilty),
-                            valueText = state.defaultVideoQuality,
-                            iconRes = Res.drawable.ic_video_quilty,
-                            onClick = { activeDialog = HomeSettingsChoiceDialog.VideoQuality },
-                        )
-                        SettingSwitchItem(
-                            title = stringResource(Res.string.allow_pip_title),
-                            summary = stringResource(Res.string.allow_pip_disc),
-                            checked = state.allowPipMode,
-                            iconRes = Res.drawable.ic_pip_mode,
-                            onCheckedChange = onAllowPipModeChange,
-                        )
-                        SettingSwitchItem(
-                            title = stringResource(Res.string.resume_playback_title),
-                            summary = stringResource(Res.string.resume_playback_summary),
-                            checked = state.allowResumePlayback,
-                            iconRes = Res.drawable.ic_skip,
-                            onCheckedChange = onAllowResumePlaybackChange,
-                        )
-                        SettingSwitchItem(
-                            title = stringResource(Res.string.show_played_indicator),
-                            summary = stringResource(Res.string.show_played_indicator_summary),
-                            checked = state.showPlayedIndicator,
-                            iconRes = Res.drawable.ic_history,
-                            onCheckedChange = onShowPlayedIndicatorChange,
-                        )
-                    }
-                }
-                item {
-                    hKeyframeSettingsContent()
-                }
-            }
+            HomeSettingsPage.VideoPlayback -> videoPlaybackSection(state, actions, openChoice = { activeDialog = it }, hKeyframeSettingsContent = hKeyframeSettingsContent)
 
-            HomeSettingsPage.NetworkDownload -> {
-                item {
-                    networkSettingsContent()
-                }
-                item {
-                    SettingsSegmentedGroup {
-                        SettingSwitchItem(
-                            title = stringResource(Res.string.disable_mobile_data_warning),
-                            summary = stringResource(Res.string.disable_mobile_data_warning_summary),
-                            checked = state.disableMobileDataWarning,
-                            iconRes = Res.drawable.ic_mobile_data,
-                            onCheckedChange = onDisableMobileDataWarningChange,
-                        )
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.apply_deep_links),
-                            summary = stringResource(Res.string.apply_deep_links_summary),
-                            iconRes = Res.drawable.ic_add_link,
-                            onClick = onOpenApplyDeepLinks,
-                        )
-                    }
-                }
-                item {
-                    downloadSettingsContent()
-                }
-                item {
-                    SettingsSegmentedGroup {
-                        SettingSwitchItem(
-                            title = stringResource(Res.string.collapse_downloaded_groups),
-                            summary = stringResource(Res.string.collapse_downloaded_groups_summary),
-                            checked = state.collapseDownloadedGroup,
-                            iconRes = Res.drawable.ic_fold,
-                            onCheckedChange = onCollapseDownloadedGroupChange,
-                        )
-                    }
-                }
-            }
+            HomeSettingsPage.NetworkDownload -> networkDownloadSection(state, actions, networkSettingsContent, downloadSettingsContent)
 
-            HomeSettingsPage.Appearance -> {
-                item {
-                    SettingsSection(stringResource(Res.string.accent_color)) {
-                        SettingSwitchItem(
-                            title = stringResource(Res.string.dynamic_color_title),
-                            summary = stringResource(Res.string.dynamic_color_summary),
-                            checked = state.useDynamicColor,
-                            enabled = state.dynamicColorEnabled,
-                            iconRes = Res.drawable.ic_palette,
-                            onCheckedChange = onUseDynamicColorChange,
-                        )
-                        SettingsAnimatedVisibility(
-                            visible = !state.useDynamicColor || !state.dynamicColorEnabled,
-                        ) {
-                            ThemeAccentColorPicker(
-                                selectedId = state.themeAccentColorId,
-                                onSelect = onThemeAccentColorChange,
-                            )
-                        }
-                    }
-                }
-                item {
-                    SettingsSection(stringResource(Res.string.display)) {
-                        DarkModePicker(
-                            selectedValue = state.darkMode,
-                            onSelect = onDarkModeChange,
-                        )
-                        AppPalettePicker(
-                            selectedId = state.appPaletteStyleId,
-                            accentColorId = state.themeAccentColorId,
-                            dynamicColor = state.useDynamicColor,
-                            darkMode = state.darkMode,
-                            onSelect = onAppPaletteStyleChange,
-                        )
-                    }
-                }
-                item {
-                    SettingsSection(stringResource(Res.string.app_lang)) {
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.app_lang),
-                            summary = stringResource(Res.string.app_lang_sum),
-                            valueText = state.appLanguageLabel,
-                            iconRes = Res.drawable.ic_setting_lang,
-                            onClick = { activeDialog = HomeSettingsChoiceDialog.AppLanguage },
-                        )
-                    }
-                }
-            }
+            HomeSettingsPage.Appearance -> appearanceSection(state, actions, openChoice = { activeDialog = it })
 
-            HomeSettingsPage.InterfaceInteraction -> {
-                item {
-                    SettingsSection(stringResource(Res.string.perception)) {
-                        SettingSwitchItem(
-                            title = stringResource(Res.string.haptic_feedback),
-                            summary = stringResource(Res.string.haptic_feedback_summary),
-                            checked = state.hapticFeedbackEnabled,
-                            iconRes = Res.drawable.ic_mobile_vibrate,
-                            onCheckedChange = onHapticFeedbackChange,
-                        )
-                    }
-                }
-                item {
-                    SettingsSection(stringResource(Res.string.settings_layout_content)) {
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.horizontal_card_count_title),
-                            summary = stringResource(Res.string.horizontal_card_count_summary),
-                            valueText = state.horizontalCardCountSummary,
-                            iconRes = Res.drawable.ic_row,
-                            onClick = { showHorizontalCardCountDialog = true },
-                        )
-                        SettingSwitchItem(
-                            title = stringResource(Res.string.search_artist_ignore_video_type),
-                            summary = stringResource(Res.string.search_artist_ignore_video_type_summary),
-                            checked = state.searchArtistIgnoreVideoType,
-                            iconRes = Res.drawable.ic_prohibit,
-                            onCheckedChange = onSearchArtistIgnoreVideoTypeChange,
-                        )
-                        SettingSwitchItem(
-                            title = stringResource(Res.string.disable_predictive_back_title),
-                            summary = stringResource(Res.string.temporarily_unavailable),
-                            checked = state.disablePredictiveBack,
-                            iconRes = Res.drawable.ic_swipe_right,
-                            onCheckedChange = onDisablePredictiveBackChange,
-                            enabled = false,
-                        )
-                        // P0：「平板模式」开关已删除。它的两个语义分别归位——
-                        // 「要不要双栏」由可用内容宽度决定（恒开，不再是开关）；
-                        // 「双栏长什么样」保留为下面的布局风格选择（恒显，不再被开关门控）。
-                        VideoLandscapeLayoutStylePicker(
-                            selectedValue = state.videoLandscapeLayoutStyle,
-                            onSelect = onVideoLandscapeLayoutStyleChange,
-                        )
-                        SettingSwitchItem(
-                            title = stringResource(Res.string.enable_check_in_feature),
-                            summary = stringResource(Res.string.enable_check_in_feature_summary),
-                            checked = state.checkInEnabled,
-                            iconRes = Res.drawable.ic_thumb_up_off_alt,
-                            onCheckedChange = onCheckInEnabledChange,
-                        )
-                        SettingSwitchItem(
-                            title = stringResource(Res.string.fun_loading_hints),
-                            summary = stringResource(Res.string.fun_loading_hints_summary),
-                            checked = state.funLoadingHints,
-                            iconRes = Res.drawable.ic_pet_supplies,
-                            onCheckedChange = onFunLoadingHintsChange,
-                        )
-                        SettingsAnimatedVisibility(visible = showDensitySettings) {
-                            SettingNavigationItem(
-                                title = stringResource(Res.string.search_grid_columns_title),
-                                summary = stringResource(Res.string.search_grid_columns_summary),
-                                valueText = state.searchGridColumnsSummary,
-                                iconRes = Res.drawable.ic_grid,
-                                onClick = { showSearchGridColumnsDialog = true },
-                            )
-                        }
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.home_category_layout),
-                            summary = stringResource(Res.string.home_category_layout_summary,
-                                state.homeCategoryItems.size - state.hiddenHomeCategoryKeys.size,
-                                state.homeCategoryItems.size,
-                            ),
-                            iconRes = Res.drawable.ic_sort,
-                            onClick = { showHomeCategoryDialog = true },
-                        )
-                    }
-                }
-            }
+            HomeSettingsPage.InterfaceInteraction -> interfaceInteractionSection(
+                state = state,
+                actions = actions,
+                openChoice = { activeDialog = it },
+                showDensitySettings = showDensitySettings,
+                openSearchGridColumns = { showSearchGridColumnsDialog = true },
+                openHomeCategory = { showHomeCategoryDialog = true },
+                openHorizontalCardCount = { showHorizontalCardCountDialog = true },
+            )
 
-            HomeSettingsPage.DataPrivacy -> {
-                item {
-                    SettingsSection(stringResource(Res.string.privacy)) {
-                        SettingSwitchItem(
-                            title = stringResource(Res.string.secure_mode),
-                            summary = stringResource(Res.string.secure_mode_summary),
-                            checked = state.secureMode,
-                            iconRes = Res.drawable.ic_admin_panel_settings,
-                            onCheckedChange = onSecureModeChange,
-                        )
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.fake_app_icon),
-                            summary = stringResource(Res.string.select_fake_icon),
-                            valueText = state.fakeLauncherIconName,
-                            iconRes = Res.drawable.ic_mask,
-                            onClick = onOpenFakeLauncherIcon,
-                        )
-                        SettingSwitchItem(
-                            title = stringResource(Res.string.disable_comments_title),
-                            summary = stringResource(Res.string.disable_comments_sum),
-                            checked = state.disableComments,
-                            iconRes = Res.drawable.ic_comments,
-                            onCheckedChange = onDisableCommentsChange,
-                        )
-                    }
-                }
-                item {
-                    SettingsSection(stringResource(Res.string.settings_data)) {
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.backup_export_title),
-                            summary = stringResource(Res.string.backup_export_summary),
-                            iconRes = Res.drawable.ic_export,
-                            onClick = onExportBackup,
-                        )
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.backup_import_title),
-                            summary = stringResource(Res.string.backup_import_summary),
-                            iconRes = Res.drawable.ic_download,
-                            onClick = onImportBackup,
-                        )
-                    }
-                }
-                item {
-                    SettingsSection(stringResource(Res.string.cache_section)) {
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.clear_cache),
-                            summary = state.cacheSummary,
-                            iconRes = Res.drawable.ic_clear_all,
-                            onClick = onClearCache,
-                        )
-                    }
-                }
-                item {
-                    SettingsSection(stringResource(Res.string.local_data_section)) {
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.local_data_export_title),
-                            summary = stringResource(Res.string.local_data_export_summary),
-                            iconRes = Res.drawable.ic_export,
-                            onClick = onExportLocalLists,
-                        )
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.local_data_import_title),
-                            summary = stringResource(Res.string.local_data_import_summary),
-                            iconRes = Res.drawable.ic_download,
-                            onClick = onImportLocalLists,
-                        )
-                    }
-                }
-                if (isLoggedIn) {
-                    item {
-                        SettingsSection(stringResource(Res.string.online_data_section)) {
-                            SettingNavigationItem(
-                                title = stringResource(Res.string.online_data_export_title),
-                                summary = stringResource(Res.string.online_data_export_summary),
-                                iconRes = Res.drawable.ic_export,
-                                onClick = onExportOnlineLists,
-                            )
-                            SettingNavigationItem(
-                                title = stringResource(Res.string.online_data_import_title),
-                                summary = stringResource(Res.string.online_data_import_summary),
-                                iconRes = Res.drawable.ic_download,
-                                onClick = onImportOnlineLists,
-                            )
-                        }
-                    }
-                }
-            }
+            HomeSettingsPage.DataPrivacy -> dataPrivacySection(state, actions, isLoggedIn)
 
-            HomeSettingsPage.DeveloperOptions -> {
-                item {
-                    SettingsSection(stringResource(Res.string.developer_options)) {
-                        SettingSwitchItem(
-                            title = stringResource(Res.string.always_show_update_card),
-                            summary = stringResource(Res.string.simulated_update_data),
-                            checked = state.alwaysShowUpdateCard,
-                            iconRes = Res.drawable.ic_security_update,
-                            onCheckedChange = onAlwaysShowUpdateCardChange,
-                        )
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.application_dpi),
-                            summary = stringResource(Res.string.display_density),
-                            valueText = "${state.displayDensityPercent}%",
-                            iconRes = Res.drawable.ic_fullscreen,
-                            onClick = { activeDialog = HomeSettingsChoiceDialog.DisplayDensity },
-                        )
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.trigger_crash),
-                            summary = stringResource(Res.string.trigger_crash_summary),
-                            iconRes = Res.drawable.ic_bug_report,
-                            onClick = onTriggerCrash,
-                        )
-                    }
-                }
-            }
+            HomeSettingsPage.DeveloperOptions -> developerOptionsSection(state, actions, openChoice = { activeDialog = it })
 
-            HomeSettingsPage.About -> {
-                item {
-                    SettingsSection(stringResource(Res.string.information)) {
-                        SettingInfoItem(
-                            title = stringResource(Res.string.version),
-                            summary = state.versionSummary,
-                            iconRes = Res.drawable.ic_info,
-                        )
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.developer),
-                            summary = "@daisukiKaffuChino",
-                            iconRes = Res.drawable.ic_person,
-                            onClick = { uriHandler.openUri("https://github.com/daisukiKaffuChino") },
-                        )
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.user_terms),
-                            summary = stringResource(Res.string.user_terms_summary),
-                            iconRes = Res.drawable.ic_inbox_text,
-                            onClick = { showUsageTerms = true },
-                        )
-                    }
-                }
-                item {
-                    SettingsSection("GitHub") {
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.project_repository),
-                            summary = "daisukiKaffuChino/Han1meViewer",
-                            iconRes = Res.drawable.ic_ext_link,
-                            onClick = { uriHandler.openUri(HA1_GITHUB_URL) },
-                        )
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.submit_bug),
-                            summary = stringResource(Res.string.submit_bug_summary),
-                            iconRes = Res.drawable.ic_bug_report,
-                            onClick = onSubmitBug,
-                        )
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.forum),
-                            summary = stringResource(Res.string.forum_summary),
-                            iconRes = Res.drawable.ic_forum,
-                            onClick = onOpenForum,
-                        )
-                        SettingNavigationItem(
-                            title = stringResource(Res.string.open_source_license),
-                            summary = stringResource(Res.string.open_source_license_summary),
-                            iconRes = Res.drawable.ic_gavel,
-                            onClick = onOpenOpenSourceLicense,
-                        )
-                    }
-                }
-            }
+            HomeSettingsPage.About -> aboutSection(state, actions, uriHandler = uriHandler, openUsageTerms = { showUsageTerms = true })
         }
     }
 }
@@ -742,6 +410,7 @@ private fun previewHomeSettingsState() = HomeSettingsUiState(
     disableMobileDataWarning = false,
     disablePredictiveBack = false,
     videoLandscapeLayoutStyle = "classic",
+    navBarStyle = "standard",
     disableComments = false,
     collapseDownloadedGroup = false,
     useDynamicColor = false,
@@ -754,6 +423,7 @@ private fun previewHomeSettingsState() = HomeSettingsUiState(
     dynamicColorEnabled = true,
     themeAccentColorId = 0,
     appPaletteStyleId = 1,
+    contrastLevel = "standard",
     searchGridColumnsSummary = "2 / 3 / 4 / 5",
     searchGridColumnsConfig = SearchGridColumnsConfig(),
     horizontalCardCountSummary = "1.5 / 2.1 / 4.1 / 5.1",
@@ -766,3 +436,484 @@ private fun previewHomeSettingsState() = HomeSettingsUiState(
     alwaysShowUpdateCard = false,
     displayDensityPercent = 100,
 )
+
+/**
+ * 设置分类「VideoPlayback」的分支内容（审计后可独立编辑；原先是 HomeSettingsScreen 里的一段）。
+ *
+ * 是 `AnimatedLazyListScope`（项目自定义的 LazyColumn 作用域）扩展而非 @Composable：原实现就是往同一个 LazyColumn 里 `item {}`，
+ * 抽出时保持这个形状 —— 不改动滚动结构（性能不变），也让每个分类各自成块。
+ */
+private fun AnimatedLazyListScope.videoPlaybackSection(
+    state: HomeSettingsUiState,
+    actions: HomeSettingsActions,
+    openChoice: (HomeSettingsChoiceDialog) -> Unit,
+    hKeyframeSettingsContent: @Composable () -> Unit,
+) {
+    item {
+        SettingsSection(stringResource(Res.string.video)) {
+            SettingNavigationItem(
+                title = stringResource(Res.string.video_language),
+                valueText = state.videoLanguageLabel,
+                iconRes = Res.drawable.ic_simp_to_trad,
+                onClick = { openChoice(HomeSettingsChoiceDialog.VideoLanguage) },
+            )
+            SettingNavigationItem(
+                title = stringResource(Res.string.default_video_quilty),
+                valueText = state.defaultVideoQuality,
+                iconRes = Res.drawable.ic_video_quilty,
+                onClick = { openChoice(HomeSettingsChoiceDialog.VideoQuality) },
+            )
+            SettingSwitchItem(
+                title = stringResource(Res.string.allow_pip_title),
+                summary = stringResource(Res.string.allow_pip_disc),
+                checked = state.allowPipMode,
+                iconRes = Res.drawable.ic_pip_mode,
+                onCheckedChange = actions.allowPipModeChange,
+            )
+            SettingSwitchItem(
+                title = stringResource(Res.string.resume_playback_title),
+                summary = stringResource(Res.string.resume_playback_summary),
+                checked = state.allowResumePlayback,
+                iconRes = Res.drawable.ic_skip,
+                onCheckedChange = actions.allowResumePlaybackChange,
+            )
+            SettingSwitchItem(
+                title = stringResource(Res.string.show_played_indicator),
+                summary = stringResource(Res.string.show_played_indicator_summary),
+                checked = state.showPlayedIndicator,
+                iconRes = Res.drawable.ic_history,
+                onCheckedChange = actions.showPlayedIndicatorChange,
+            )
+        }
+    }
+    item {
+        hKeyframeSettingsContent()
+    }
+}
+
+/**
+ * 设置分类「NetworkDownload」的分支内容（审计后可独立编辑；原先是 HomeSettingsScreen 里的一段）。
+ *
+ * 是 `AnimatedLazyListScope`（项目自定义的 LazyColumn 作用域）扩展而非 @Composable：原实现就是往同一个 LazyColumn 里 `item {}`，
+ * 抽出时保持这个形状 —— 不改动滚动结构（性能不变），也让每个分类各自成块。
+ */
+private fun AnimatedLazyListScope.networkDownloadSection(
+    state: HomeSettingsUiState,
+    actions: HomeSettingsActions,
+    networkSettingsContent: @Composable () -> Unit,
+    downloadSettingsContent: @Composable () -> Unit,
+) {
+    item {
+        networkSettingsContent()
+    }
+    item {
+        SettingsSegmentedGroup {
+            SettingSwitchItem(
+                title = stringResource(Res.string.disable_mobile_data_warning),
+                summary = stringResource(Res.string.disable_mobile_data_warning_summary),
+                checked = state.disableMobileDataWarning,
+                iconRes = Res.drawable.ic_mobile_data,
+                onCheckedChange = actions.disableMobileDataWarningChange,
+            )
+            SettingNavigationItem(
+                title = stringResource(Res.string.apply_deep_links),
+                summary = stringResource(Res.string.apply_deep_links_summary),
+                iconRes = Res.drawable.ic_add_link,
+                onClick = actions.openApplyDeepLinks,
+            )
+        }
+    }
+    item {
+        downloadSettingsContent()
+    }
+    item {
+        SettingsSegmentedGroup {
+            SettingSwitchItem(
+                title = stringResource(Res.string.collapse_downloaded_groups),
+                summary = stringResource(Res.string.collapse_downloaded_groups_summary),
+                checked = state.collapseDownloadedGroup,
+                iconRes = Res.drawable.ic_fold,
+                onCheckedChange = actions.collapseDownloadedGroupChange,
+            )
+        }
+    }
+}
+
+/**
+ * 设置分类「Appearance」的分支内容（审计后可独立编辑；原先是 HomeSettingsScreen 里的一段）。
+ *
+ * 是 `AnimatedLazyListScope`（项目自定义的 LazyColumn 作用域）扩展而非 @Composable：原实现就是往同一个 LazyColumn 里 `item {}`，
+ * 抽出时保持这个形状 —— 不改动滚动结构（性能不变），也让每个分类各自成块。
+ */
+private fun AnimatedLazyListScope.appearanceSection(
+    state: HomeSettingsUiState,
+    actions: HomeSettingsActions,
+    openChoice: (HomeSettingsChoiceDialog) -> Unit,
+) {
+    item {
+        SettingsSection(stringResource(Res.string.accent_color)) {
+            SettingSwitchItem(
+                title = stringResource(Res.string.dynamic_color_title),
+                summary = stringResource(Res.string.dynamic_color_summary),
+                checked = state.useDynamicColor,
+                enabled = state.dynamicColorEnabled,
+                iconRes = Res.drawable.ic_palette,
+                onCheckedChange = actions.useDynamicColorChange,
+            )
+            SettingsAnimatedVisibility(
+                visible = !state.useDynamicColor || !state.dynamicColorEnabled,
+            ) {
+                ThemeAccentColorPicker(
+                    selectedId = state.themeAccentColorId,
+                    onSelect = actions.themeAccentColorChange,
+                )
+            }
+        }
+    }
+    item {
+        SettingsSection(stringResource(Res.string.display)) {
+            DarkModePicker(
+                selectedValue = state.darkMode,
+                onSelect = actions.darkModeChange,
+            )
+            AppPalettePicker(
+                selectedId = state.appPaletteStyleId,
+                accentColorId = state.themeAccentColorId,
+                dynamicColor = state.useDynamicColor,
+                darkMode = state.darkMode,
+                onSelect = actions.appPaletteStyleChange,
+            )
+            // 审计 P2：动态对比度（默认档 = 原写死的 0.0，老用户视觉不变）
+            SettingNavigationItem(
+                title = stringResource(Res.string.contrast_level),
+                summary = stringResource(Res.string.contrast_level_summary),
+                valueText = stringResource(
+                    when (state.contrastLevel) {
+                        CONTRAST_LEVEL_MEDIUM -> Res.string.contrast_level_medium
+                        CONTRAST_LEVEL_HIGH -> Res.string.contrast_level_high
+                        else -> Res.string.contrast_level_standard
+                    }
+                ),
+                iconRes = Res.drawable.ic_palette,
+                onClick = { openChoice(HomeSettingsChoiceDialog.ContrastLevel) },
+            )
+        }
+    }
+    item {
+        SettingsSection(stringResource(Res.string.app_lang)) {
+            SettingNavigationItem(
+                title = stringResource(Res.string.app_lang),
+                summary = stringResource(Res.string.app_lang_sum),
+                valueText = state.appLanguageLabel,
+                iconRes = Res.drawable.ic_setting_lang,
+                onClick = { openChoice(HomeSettingsChoiceDialog.AppLanguage) },
+            )
+        }
+    }
+}
+
+/**
+ * 设置分类「InterfaceInteraction」的分支内容（审计后可独立编辑；原先是 HomeSettingsScreen 里的一段）。
+ *
+ * 是 `AnimatedLazyListScope`（项目自定义的 LazyColumn 作用域）扩展而非 @Composable：原实现就是往同一个 LazyColumn 里 `item {}`，
+ * 抽出时保持这个形状 —— 不改动滚动结构（性能不变），也让每个分类各自成块。
+ */
+private fun AnimatedLazyListScope.interfaceInteractionSection(
+    state: HomeSettingsUiState,
+    actions: HomeSettingsActions,
+    openChoice: (HomeSettingsChoiceDialog) -> Unit,
+    showDensitySettings: Boolean,
+    openSearchGridColumns: () -> Unit,
+    openHomeCategory: () -> Unit,
+    openHorizontalCardCount: () -> Unit,
+) {
+    item {
+        SettingsSection(stringResource(Res.string.perception)) {
+            SettingSwitchItem(
+                title = stringResource(Res.string.haptic_feedback),
+                summary = stringResource(Res.string.haptic_feedback_summary),
+                checked = state.hapticFeedbackEnabled,
+                iconRes = Res.drawable.ic_mobile_vibrate,
+                onCheckedChange = actions.hapticFeedbackChange,
+            )
+        }
+    }
+    item {
+        SettingsSection(stringResource(Res.string.settings_layout_content)) {
+            SettingNavigationItem(
+                title = stringResource(Res.string.horizontal_card_count_title),
+                summary = stringResource(Res.string.horizontal_card_count_summary),
+                valueText = state.horizontalCardCountSummary,
+                iconRes = Res.drawable.ic_row,
+                onClick = { openHorizontalCardCount() },
+            )
+            SettingSwitchItem(
+                title = stringResource(Res.string.search_artist_ignore_video_type),
+                summary = stringResource(Res.string.search_artist_ignore_video_type_summary),
+                checked = state.searchArtistIgnoreVideoType,
+                iconRes = Res.drawable.ic_prohibit,
+                onCheckedChange = actions.searchArtistIgnoreVideoTypeChange,
+            )
+            SettingSwitchItem(
+                title = stringResource(Res.string.disable_predictive_back_title),
+                summary = stringResource(Res.string.temporarily_unavailable),
+                checked = state.disablePredictiveBack,
+                iconRes = Res.drawable.ic_swipe_right,
+                onCheckedChange = actions.disablePredictiveBackChange,
+                enabled = false,
+            )
+            // P0：「平板模式」开关已删除。它的两个语义分别归位——
+            // 「要不要双栏」由可用内容宽度决定（恒开，不再是开关）；
+            // 「双栏长什么样」保留为下面的布局风格选择（恒显，不再被开关门控）。
+            VideoLandscapeLayoutStylePicker(
+                selectedValue = state.videoLandscapeLayoutStyle,
+                onSelect = actions.videoLandscapeLayoutStyleChange,
+            )
+            // P6：底栏形态。**只影响 Compact 宽度** —— Medium+ 走 NavigationRail，
+            // 该设置对它们无意义，故摘要里写明作用域，避免用户在大屏上调了没反应。
+            SettingNavigationItem(
+                title = stringResource(Res.string.nav_bar_style),
+                summary = stringResource(Res.string.nav_bar_style_summary),
+                valueText = stringResource(
+                    if (state.navBarStyle == NAV_BAR_STYLE_FLOATING) {
+                        Res.string.nav_bar_style_floating
+                    } else {
+                        Res.string.nav_bar_style_standard
+                    }
+                ),
+                iconRes = Res.drawable.ic_row,
+                onClick = { openChoice(HomeSettingsChoiceDialog.NavBarStyle) },
+            )
+            SettingSwitchItem(
+                title = stringResource(Res.string.enable_check_in_feature),
+                summary = stringResource(Res.string.enable_check_in_feature_summary),
+                checked = state.checkInEnabled,
+                iconRes = Res.drawable.ic_thumb_up_off_alt,
+                onCheckedChange = actions.checkInEnabledChange,
+            )
+            SettingSwitchItem(
+                title = stringResource(Res.string.fun_loading_hints),
+                summary = stringResource(Res.string.fun_loading_hints_summary),
+                checked = state.funLoadingHints,
+                iconRes = Res.drawable.ic_pet_supplies,
+                onCheckedChange = actions.funLoadingHintsChange,
+            )
+            SettingsAnimatedVisibility(visible = showDensitySettings) {
+                SettingNavigationItem(
+                    title = stringResource(Res.string.search_grid_columns_title),
+                    summary = stringResource(Res.string.search_grid_columns_summary),
+                    valueText = state.searchGridColumnsSummary,
+                    iconRes = Res.drawable.ic_grid,
+                    onClick = { openSearchGridColumns() },
+                )
+            }
+            SettingNavigationItem(
+                title = stringResource(Res.string.home_category_layout),
+                summary = stringResource(Res.string.home_category_layout_summary,
+                    state.homeCategoryItems.size - state.hiddenHomeCategoryKeys.size,
+                    state.homeCategoryItems.size,
+                ),
+                iconRes = Res.drawable.ic_sort,
+                onClick = { openHomeCategory() },
+            )
+        }
+    }
+}
+
+/**
+ * 设置分类「DataPrivacy」的分支内容（审计后可独立编辑；原先是 HomeSettingsScreen 里的一段）。
+ *
+ * 是 `AnimatedLazyListScope`（项目自定义的 LazyColumn 作用域）扩展而非 @Composable：原实现就是往同一个 LazyColumn 里 `item {}`，
+ * 抽出时保持这个形状 —— 不改动滚动结构（性能不变），也让每个分类各自成块。
+ */
+private fun AnimatedLazyListScope.dataPrivacySection(
+    state: HomeSettingsUiState,
+    actions: HomeSettingsActions,
+    isLoggedIn: Boolean,
+) {
+    item {
+        SettingsSection(stringResource(Res.string.privacy)) {
+            SettingSwitchItem(
+                title = stringResource(Res.string.secure_mode),
+                summary = stringResource(Res.string.secure_mode_summary),
+                checked = state.secureMode,
+                iconRes = Res.drawable.ic_admin_panel_settings,
+                onCheckedChange = actions.secureModeChange,
+            )
+            SettingNavigationItem(
+                title = stringResource(Res.string.fake_app_icon),
+                summary = stringResource(Res.string.select_fake_icon),
+                valueText = state.fakeLauncherIconName,
+                iconRes = Res.drawable.ic_mask,
+                onClick = actions.openFakeLauncherIcon,
+            )
+            SettingSwitchItem(
+                title = stringResource(Res.string.disable_comments_title),
+                summary = stringResource(Res.string.disable_comments_sum),
+                checked = state.disableComments,
+                iconRes = Res.drawable.ic_comments,
+                onCheckedChange = actions.disableCommentsChange,
+            )
+        }
+    }
+    item {
+        SettingsSection(stringResource(Res.string.settings_data)) {
+            SettingNavigationItem(
+                title = stringResource(Res.string.backup_export_title),
+                summary = stringResource(Res.string.backup_export_summary),
+                iconRes = Res.drawable.ic_export,
+                onClick = actions.exportBackup,
+            )
+            SettingNavigationItem(
+                title = stringResource(Res.string.backup_import_title),
+                summary = stringResource(Res.string.backup_import_summary),
+                iconRes = Res.drawable.ic_download,
+                onClick = actions.importBackup,
+            )
+        }
+    }
+    item {
+        SettingsSection(stringResource(Res.string.cache_section)) {
+            SettingNavigationItem(
+                title = stringResource(Res.string.clear_cache),
+                summary = state.cacheSummary,
+                iconRes = Res.drawable.ic_clear_all,
+                onClick = actions.clearCache,
+            )
+        }
+    }
+    item {
+        SettingsSection(stringResource(Res.string.local_data_section)) {
+            SettingNavigationItem(
+                title = stringResource(Res.string.local_data_export_title),
+                summary = stringResource(Res.string.local_data_export_summary),
+                iconRes = Res.drawable.ic_export,
+                onClick = actions.exportLocalLists,
+            )
+            SettingNavigationItem(
+                title = stringResource(Res.string.local_data_import_title),
+                summary = stringResource(Res.string.local_data_import_summary),
+                iconRes = Res.drawable.ic_download,
+                onClick = actions.importLocalLists,
+            )
+        }
+    }
+    if (isLoggedIn) {
+        item {
+            SettingsSection(stringResource(Res.string.online_data_section)) {
+                SettingNavigationItem(
+                    title = stringResource(Res.string.online_data_export_title),
+                    summary = stringResource(Res.string.online_data_export_summary),
+                    iconRes = Res.drawable.ic_export,
+                    onClick = actions.exportOnlineLists,
+                )
+                SettingNavigationItem(
+                    title = stringResource(Res.string.online_data_import_title),
+                    summary = stringResource(Res.string.online_data_import_summary),
+                    iconRes = Res.drawable.ic_download,
+                    onClick = actions.importOnlineLists,
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 设置分类「DeveloperOptions」的分支内容（审计后可独立编辑；原先是 HomeSettingsScreen 里的一段）。
+ *
+ * 是 `AnimatedLazyListScope`（项目自定义的 LazyColumn 作用域）扩展而非 @Composable：原实现就是往同一个 LazyColumn 里 `item {}`，
+ * 抽出时保持这个形状 —— 不改动滚动结构（性能不变），也让每个分类各自成块。
+ */
+private fun AnimatedLazyListScope.developerOptionsSection(
+    state: HomeSettingsUiState,
+    actions: HomeSettingsActions,
+    openChoice: (HomeSettingsChoiceDialog) -> Unit,
+) {
+    item {
+        SettingsSection(stringResource(Res.string.developer_options)) {
+            SettingSwitchItem(
+                title = stringResource(Res.string.always_show_update_card),
+                summary = stringResource(Res.string.simulated_update_data),
+                checked = state.alwaysShowUpdateCard,
+                iconRes = Res.drawable.ic_security_update,
+                onCheckedChange = actions.alwaysShowUpdateCardChange,
+            )
+            SettingNavigationItem(
+                title = stringResource(Res.string.application_dpi),
+                summary = stringResource(Res.string.display_density),
+                valueText = "${state.displayDensityPercent}%",
+                iconRes = Res.drawable.ic_fullscreen,
+                onClick = { openChoice(HomeSettingsChoiceDialog.DisplayDensity) },
+            )
+            SettingNavigationItem(
+                title = stringResource(Res.string.trigger_crash),
+                summary = stringResource(Res.string.trigger_crash_summary),
+                iconRes = Res.drawable.ic_bug_report,
+                onClick = actions.triggerCrash,
+            )
+        }
+    }
+}
+
+/**
+ * 设置分类「About」的分支内容（审计后可独立编辑；原先是 HomeSettingsScreen 里的一段）。
+ *
+ * 是 `AnimatedLazyListScope`（项目自定义的 LazyColumn 作用域）扩展而非 @Composable：原实现就是往同一个 LazyColumn 里 `item {}`，
+ * 抽出时保持这个形状 —— 不改动滚动结构（性能不变），也让每个分类各自成块。
+ */
+private fun AnimatedLazyListScope.aboutSection(
+    state: HomeSettingsUiState,
+    actions: HomeSettingsActions,
+    uriHandler: UriHandler,
+    openUsageTerms: () -> Unit,
+) {
+    item {
+        SettingsSection(stringResource(Res.string.information)) {
+            SettingInfoItem(
+                title = stringResource(Res.string.version),
+                summary = state.versionSummary,
+                iconRes = Res.drawable.ic_info,
+            )
+            SettingNavigationItem(
+                title = stringResource(Res.string.developer),
+                summary = "@daisukiKaffuChino",
+                iconRes = Res.drawable.ic_person,
+                onClick = { uriHandler.openUri("https://github.com/daisukiKaffuChino") },
+            )
+            SettingNavigationItem(
+                title = stringResource(Res.string.user_terms),
+                summary = stringResource(Res.string.user_terms_summary),
+                iconRes = Res.drawable.ic_inbox_text,
+                onClick = { openUsageTerms() },
+            )
+        }
+    }
+    item {
+        SettingsSection("GitHub") {
+            SettingNavigationItem(
+                title = stringResource(Res.string.project_repository),
+                summary = "daisukiKaffuChino/Han1meViewer",
+                iconRes = Res.drawable.ic_ext_link,
+                onClick = { uriHandler.openUri(HA1_GITHUB_URL) },
+            )
+            SettingNavigationItem(
+                title = stringResource(Res.string.submit_bug),
+                summary = stringResource(Res.string.submit_bug_summary),
+                iconRes = Res.drawable.ic_bug_report,
+                onClick = actions.submitBug,
+            )
+            SettingNavigationItem(
+                title = stringResource(Res.string.forum),
+                summary = stringResource(Res.string.forum_summary),
+                iconRes = Res.drawable.ic_forum,
+                onClick = actions.openForum,
+            )
+            SettingNavigationItem(
+                title = stringResource(Res.string.open_source_license),
+                summary = stringResource(Res.string.open_source_license_summary),
+                iconRes = Res.drawable.ic_gavel,
+                onClick = actions.openOpenSourceLicense,
+            )
+        }
+    }
+}

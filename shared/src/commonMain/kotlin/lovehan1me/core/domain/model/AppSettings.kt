@@ -87,12 +87,54 @@ enum class VideoLandscapeLayoutStyle(val value: String) {
     }
 }
 
+/**
+ * 底栏形态（P6）。**只影响 Compact 宽度下的底栏**，Medium+ 的 NavigationRail 不受影响。
+ *
+ * - [Standard]：M3 `NavigationBar` 贴底；
+ * - [Floating]：三个 pill 装在圆角胶囊容器内，浮在内容之上（距底 16dp + 手势 inset）。
+ */
+enum class NavBarStyle(val value: String) {
+    Standard("standard"),
+    Floating("floating");
+
+    companion object {
+        fun fromValue(value: String): NavBarStyle =
+            entries.firstOrNull { it.value == value } ?: Standard
+    }
+}
+
+/**
+ * 动态对比度档位。
+ *
+ * [spec] 直接喂给 m3color 的 scheme 构造（HCT 对比度偏移，合法范围 -1.0 ~ 1.0）。
+ * 三档取值照 M3 规范：standard = 0.0、medium = 0.5、high = 1.0。
+ * 没有提供「降低对比度」（负值）—— 那会让可读性下降，不属于设置项该鼓励的方向。
+ */
+enum class ContrastLevel(val value: String, val spec: Double) {
+    Standard("standard", 0.0),
+    Medium("medium", 0.5),
+    High("high", 1.0);
+
+    companion object {
+        fun fromValue(value: String): ContrastLevel =
+            entries.firstOrNull { it.value == value } ?: Standard
+    }
+}
+
 data class AppSettings(
     val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     val themeMode: ThemeMode = ThemeMode.Light,
     val useDynamicColor: Boolean = false,
     val themeAccent: ThemeAccent = ThemeAccent.Pink,
     val paletteStyle: PaletteStyle = PaletteStyle.TonalSpot,
+    /**
+     * 动态对比度（审计 P2 接通）。
+     *
+     * 此前 `Theme.kt` 把它写死成 0.0 —— M3 Expressive 的「动态对比度」支柱等于没接，
+     * 8 种调色板的自由度被砍掉一半。**默认档即原行为（0.0）**，所以老用户升级后
+     * 视觉零变化，只有主动去设置里调才会变。
+     */
+    val contrastLevel: ContrastLevel = ContrastLevel.Standard,
     val fakeLauncherIcon: String = DEFAULT_LAUNCHER_ICON,
     val allowPipMode: Boolean = true,
     val secureMode: Boolean = false,
@@ -100,6 +142,7 @@ data class AppSettings(
     val hapticFeedbackEnabled: Boolean = false,
     val disablePredictiveBack: Boolean = false,
     val videoLandscapeLayoutStyle: VideoLandscapeLayoutStyle = VideoLandscapeLayoutStyle.Classic,
+    val navBarStyle: NavBarStyle = NavBarStyle.Standard,
     val usageNoticeAccepted: Boolean = false,
     val usageSourceVerified: Boolean = false,
     val usageSourcePending: Boolean = false,

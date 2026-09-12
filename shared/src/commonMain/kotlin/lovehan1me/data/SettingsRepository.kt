@@ -5,7 +5,9 @@ import lovehan1me.ui.model.SearchGridColumnsConfig
 import lovehan1me.core.domain.model.AppLanguage
 import lovehan1me.core.domain.model.AppSettings
 import lovehan1me.core.domain.model.DisplayDensity
+import lovehan1me.core.domain.model.NavBarStyle
 import lovehan1me.core.domain.model.PaletteStyle
+import lovehan1me.core.domain.model.ContrastLevel
 import lovehan1me.core.domain.model.PlayerKernel
 import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.core.domain.model.ThemeAccent
@@ -91,6 +93,7 @@ object SettingsRepository : SettingsStore {
     val disableMobileDataWarning get() = current.disableMobileDataWarning
     val disablePredictiveBack get() = current.disablePredictiveBack
     val videoLandscapeLayoutStyle get() = current.videoLandscapeLayoutStyle
+    val navBarStyle get() = current.navBarStyle
     val hapticFeedbackEnabled get() = current.hapticFeedbackEnabled
     val funLoadingHints get() = current.funLoadingHints
     val secureMode get() = current.secureMode
@@ -122,6 +125,7 @@ object SettingsRepository : SettingsStore {
     suspend fun setDynamicColor(value: Boolean) = update { it.copy(useDynamicColor = value) }
     suspend fun setThemeAccent(value: ThemeAccent) = update { it.copy(themeAccent = value) }
     suspend fun setPaletteStyle(value: PaletteStyle) = update { it.copy(paletteStyle = value) }
+    suspend fun setContrastLevel(value: ContrastLevel) = update { it.copy(contrastLevel = value) }
     suspend fun setLauncherIcon(value: String) = update { it.copy(fakeLauncherIcon = value) }
     suspend fun setHapticFeedback(value: Boolean) = update { it.copy(hapticFeedbackEnabled = value) }
     suspend fun setCheckInEnabled(value: Boolean) = update { it.copy(checkInEnabled = value) }
@@ -138,6 +142,8 @@ object SettingsRepository : SettingsStore {
     suspend fun setDisplayDensity(value: DisplayDensity) = update { it.copy(displayDensity = value) }
     suspend fun setVideoLandscapeLayoutStyle(value: VideoLandscapeLayoutStyle) =
         update { it.copy(videoLandscapeLayoutStyle = value) }
+
+    suspend fun setNavBarStyle(value: NavBarStyle) = update { it.copy(navBarStyle = value) }
 
     private fun String.withTrailingSlash() = if (endsWith('/')) this else "$this/"
 

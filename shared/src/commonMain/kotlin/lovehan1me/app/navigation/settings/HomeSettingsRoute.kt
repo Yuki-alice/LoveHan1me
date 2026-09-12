@@ -106,7 +106,9 @@ import lovehan1me.data.LocalListRepository
 import lovehan1me.data.OnlineListsBackup
 import lovehan1me.core.domain.model.AppLanguage
 import lovehan1me.core.domain.model.DisplayDensity
+import lovehan1me.core.domain.model.NavBarStyle
 import lovehan1me.core.domain.model.PaletteStyle
+import lovehan1me.core.domain.model.ContrastLevel
 import lovehan1me.core.domain.model.ThemeAccent
 import lovehan1me.core.domain.model.ThemeMode
 import lovehan1me.core.domain.model.VideoLandscapeLayoutStyle
@@ -114,6 +116,7 @@ import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.feature.settings.HomeSettingsPage
 import lovehan1me.feature.settings.HomeSettingsScreen
 import lovehan1me.feature.settings.model.HomeSettingsUiState
+import lovehan1me.feature.settings.model.HomeSettingsActions
 import lovehan1me.feature.home.homepage.defaultHomeCategoryPreferenceItems
 import lovehan1me.feature.home.homepage.hiddenHomeCategoryKeys
 import lovehan1me.feature.home.homepage.homeCategoryOrder
@@ -280,108 +283,174 @@ fun HomeSettingsRouteScreen(
         page = page,
         state = uiState,
         isLoggedIn = isLoggedIn,
-        onVideoLanguageChange = { value ->
-            if (value != SettingsRepository.videoLanguage) {
-                coroutineScope.launch {
-                    SettingsRepository.update { it.copy(videoLanguage = value) }
-                    showRestartConfirmDialog = true
+        actions = HomeSettingsActions(
+            videoLanguageChange = { value ->
+                if (value != SettingsRepository.videoLanguage) {
+                    coroutineScope.launch {
+                        SettingsRepository.update { it.copy(videoLanguage = value) }
+                        showRestartConfirmDialog = true
+                    }
                 }
-            }
-        },
-        onVideoQualityChange = { value ->
-            coroutineScope.launch {
-                SettingsRepository.update { it.copy(videoQuality = value) }
-                SonnerToast.success(getString(Res.string.success_value, value))
-            }
-        },
-        onDarkModeChange = { value ->
-            if (value != SettingsRepository.useDarkMode) {
-                coroutineScope.launch { SettingsRepository.setThemeMode(ThemeMode.fromValue(value)) }
-            }
-        },
-        onUseDynamicColorChange = { enabled ->
-            coroutineScope.launch { SettingsRepository.setDynamicColor(enabled) }
-        },
-        onHapticFeedbackChange = { enabled ->
-            coroutineScope.launch { SettingsRepository.setHapticFeedback(enabled) }
-        },
-        onFunLoadingHintsChange = { enabled ->
-            coroutineScope.launch { SettingsRepository.update { it.copy(funLoadingHints = enabled) } }
-        },
-        onThemeAccentColorChange = { id ->
-            coroutineScope.launch { SettingsRepository.setThemeAccent(ThemeAccent.fromId(id)) }
-        },
-        onAppPaletteStyleChange = { id ->
-            coroutineScope.launch { SettingsRepository.setPaletteStyle(PaletteStyle.fromId(id)) }
-        },
-        onAllowPipModeChange = { enabled ->
-            if (enabled && !isPipPermissionGranted()) {
-                SonnerToast.warning(requestPipText)
-                openPipPermissionSettings()
-                coroutineScope.launch { SettingsRepository.update { it.copy(allowPipMode = false) } }
-                return@HomeSettingsScreen
-            }
-            coroutineScope.launch { SettingsRepository.update { it.copy(allowPipMode = enabled) } }
-        },
-        onAllowResumePlaybackChange = {
-            coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(allowResumePlayback = it) } }
-        },
-        onShowPlayedIndicatorChange = {
-            coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(showPlayedIndicator = it) } }
-        },
-        onSearchArtistIgnoreVideoTypeChange = {
-            coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(searchArtistIgnoreVideoType = it) } }
-        },
-        onDisableMobileDataWarningChange = {
-            coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(disableMobileDataWarning = it) } }
-        },
-        onDisablePredictiveBackChange = {
-            coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(disablePredictiveBack = it) } }
-        },
-        onVideoLandscapeLayoutStyleChange = { value ->
-            coroutineScope.launch {
-                SettingsRepository.setVideoLandscapeLayoutStyle(
-                    VideoLandscapeLayoutStyle.fromValue(value)
+            },
+            videoQualityChange = { value ->
+                coroutineScope.launch {
+                    SettingsRepository.update { it.copy(videoQuality = value) }
+                    SonnerToast.success(getString(Res.string.success_value, value))
+                }
+            },
+            darkModeChange = { value ->
+                if (value != SettingsRepository.useDarkMode) {
+                    coroutineScope.launch { SettingsRepository.setThemeMode(ThemeMode.fromValue(value)) }
+                }
+            },
+            useDynamicColorChange = { enabled ->
+                coroutineScope.launch { SettingsRepository.setDynamicColor(enabled) }
+            },
+            hapticFeedbackChange = { enabled ->
+                coroutineScope.launch { SettingsRepository.setHapticFeedback(enabled) }
+            },
+            funLoadingHintsChange = { enabled ->
+                coroutineScope.launch { SettingsRepository.update { it.copy(funLoadingHints = enabled) } }
+            },
+            themeAccentColorChange = { id ->
+                coroutineScope.launch { SettingsRepository.setThemeAccent(ThemeAccent.fromId(id)) }
+            },
+            appPaletteStyleChange = { id ->
+                coroutineScope.launch { SettingsRepository.setPaletteStyle(PaletteStyle.fromId(id)) }
+            },
+            contrastLevelChange = { value ->
+                coroutineScope.launch { SettingsRepository.setContrastLevel(ContrastLevel.fromValue(value)) }
+            },
+            allowPipModeChange = { enabled ->
+                if (enabled && !isPipPermissionGranted()) {
+                    SonnerToast.warning(requestPipText)
+                    openPipPermissionSettings()
+                    coroutineScope.launch { SettingsRepository.update { it.copy(allowPipMode = false) } }
+                } else {
+                    coroutineScope.launch { SettingsRepository.update { it.copy(allowPipMode = enabled) } }
+                }
+            },
+            allowResumePlaybackChange = {
+                coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(allowResumePlayback = it) } }
+            },
+            showPlayedIndicatorChange = {
+                coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(showPlayedIndicator = it) } }
+            },
+            searchArtistIgnoreVideoTypeChange = {
+                coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(searchArtistIgnoreVideoType = it) } }
+            },
+            disableMobileDataWarningChange = {
+                coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(disableMobileDataWarning = it) } }
+            },
+            disablePredictiveBackChange = {
+                coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(disablePredictiveBack = it) } }
+            },
+            videoLandscapeLayoutStyleChange = { value ->
+                coroutineScope.launch {
+                    SettingsRepository.setVideoLandscapeLayoutStyle(
+                        VideoLandscapeLayoutStyle.fromValue(value)
+                    )
+                }
+            },
+            navBarStyleChange = { value ->
+                coroutineScope.launch {
+                    SettingsRepository.setNavBarStyle(NavBarStyle.fromValue(value))
+                }
+            },
+            checkInEnabledChange = {
+                coroutineScope.launch {
+                    SettingsRepository.setCheckInEnabled(it)
+                }
+            },
+            disableCommentsChange = {
+                coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(disableComments = it) } }
+            },
+            collapseDownloadedGroupChange = {
+                coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(collapseDownloadedGroup = it) } }
+            },
+            searchGridColumnsConfigChange = { config ->
+                coroutineScope.launch { SettingsRepository.update { it.copy(searchGridColumnsCompact = config.compactColumns, searchGridColumnsMedium = config.mediumColumns, searchGridColumnsExpanded = config.expandedColumns, searchGridColumnsLarge = config.largeColumns) } }
+            },
+            horizontalCardCountConfigChange = { config ->
+                coroutineScope.launch { SettingsRepository.update { it.copy(horizontalCardCountNarrow = config.narrowCount, horizontalCardCountCompact = config.compactCount, horizontalCardCountMedium = config.mediumCount, horizontalCardCountExpanded = config.expandedCount) } }
+            },
+            homeCategoryPreferencesChange = { order, hiddenKeys ->
+                coroutineScope.launch { saveHomeCategoryPreferences(order, hiddenKeys) }
+            },
+            secureModeChange = { enabled ->
+                coroutineScope.launch {
+                    SettingsRepository.update { it.copy(secureMode = enabled) }
+                    applySecureMode(enabled)
+                }
+            },
+            alwaysShowUpdateCardChange = { enabled ->
+                coroutineScope.launch { SettingsRepository.setAlwaysShowUpdateCard(enabled) }
+            },
+            displayDensityChange = { percent ->
+                coroutineScope.launch {
+                    SettingsRepository.setDisplayDensity(DisplayDensity.fromPercent(percent))
+                }
+            },
+            triggerCrash = {
+                throw RuntimeException("Crash triggered from developer options")
+            },
+            openAppLanguageSettings = { value ->
+                val language = AppLanguage.fromPreference(value)
+                if (SettingsRepository.current.appLanguage != language) {
+                    coroutineScope.launch {
+                        SettingsRepository.setLanguage(language)
+                        applyAppLanguage(language)
+                    }
+                }
+            },
+            openApplyDeepLinks = {
+                if (!supportsPerAppLinks()) {
+                    SonnerToast.warning(deepLinksWarnText)
+                } else {
+                    showApplyDeepLinksDialog = true
+                }
+            },
+            openFakeLauncherIcon = { showLauncherPicker = true },
+            openOpenSourceLicense = onNavigateToOpenSourceLicenses,
+            clearCache = {
+                coroutineScope.launch {
+                    if (getCacheDirSize() == 0L) SonnerToast.info(cacheEmptyText)
+                    else showClearCacheConfirm = true
+                }
+            },
+            exportBackup = {
+                exportLauncher("Han1meViewer-backup-${currentEpochMillis()}.json")
+            },
+            importBackup = {
+                importLauncher()
+            },
+            exportLocalLists = {
+                localListsExportLauncher(
+                    "Han1meViewer-local-lists-${currentEpochMillis()}.json"
                 )
-            }
-        },
-        onCheckInEnabledChange = {
-            coroutineScope.launch {
-                SettingsRepository.setCheckInEnabled(it)
-            }
-        },
-        onDisableCommentsChange = {
-            coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(disableComments = it) } }
-        },
-        onCollapseDownloadedGroupChange = {
-            coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(collapseDownloadedGroup = it) } }
-        },
-        onSearchGridColumnsConfigChange = { config ->
-            coroutineScope.launch { SettingsRepository.update { it.copy(searchGridColumnsCompact = config.compactColumns, searchGridColumnsMedium = config.mediumColumns, searchGridColumnsExpanded = config.expandedColumns, searchGridColumnsLarge = config.largeColumns) } }
-        },
-        onHorizontalCardCountConfigChange = { config ->
-            coroutineScope.launch { SettingsRepository.update { it.copy(horizontalCardCountNarrow = config.narrowCount, horizontalCardCountCompact = config.compactCount, horizontalCardCountMedium = config.mediumCount, horizontalCardCountExpanded = config.expandedCount) } }
-        },
-        onHomeCategoryPreferencesChange = { order, hiddenKeys ->
-            coroutineScope.launch { saveHomeCategoryPreferences(order, hiddenKeys) }
-        },
-        onSecureModeChange = { enabled ->
-            coroutineScope.launch {
-                SettingsRepository.update { it.copy(secureMode = enabled) }
-                applySecureMode(enabled)
-            }
-        },
-        onAlwaysShowUpdateCardChange = { enabled ->
-            coroutineScope.launch { SettingsRepository.setAlwaysShowUpdateCard(enabled) }
-        },
-        onDisplayDensityChange = { percent ->
-            coroutineScope.launch {
-                SettingsRepository.setDisplayDensity(DisplayDensity.fromPercent(percent))
-            }
-        },
-        onTriggerCrash = {
-            throw RuntimeException("Crash triggered from developer options")
-        },
+            },
+            importLocalLists = {
+                localListsImportLauncher()
+            },
+            exportOnlineLists = {
+                if (!SettingsRepository.isAlreadyLogin) {
+                    SonnerToast.warning(loginFirstText)
+                } else {
+                    onlineListsExportLauncher(
+                        "Han1meViewer-online-lists-${currentEpochMillis()}.json"
+                    )
+                }
+            },
+            importOnlineLists = {
+                if (!SettingsRepository.isAlreadyLogin) {
+                    SonnerToast.warning(loginFirstText)
+                } else {
+                    onlineListsImportLauncher()
+                }
+            },
+            submitBug = { uriHandler.openUri(HA1_GITHUB_ISSUE_URL) },
+            openForum = { uriHandler.openUri(HA1_GITHUB_FORUM_URL) },
+        ),
         hKeyframeSettingsContent = {
             HKeyframeSettingsRouteScreen(
                 onNavigateToHKeyframes = onNavigateToHKeyframes,
@@ -391,62 +460,6 @@ fun HomeSettingsRouteScreen(
         },
         networkSettingsContent = { NetworkSettingsRouteScreen(embedded = true) },
         downloadSettingsContent = downloadSettingsContent,
-        onOpenAppLanguageSettings = { value ->
-            val language = AppLanguage.fromPreference(value)
-            if (SettingsRepository.current.appLanguage != language) {
-                coroutineScope.launch {
-                    SettingsRepository.setLanguage(language)
-                    applyAppLanguage(language)
-                }
-            }
-        },
-        onOpenApplyDeepLinks = {
-            if (!supportsPerAppLinks()) {
-                SonnerToast.warning(deepLinksWarnText)
-            } else {
-                showApplyDeepLinksDialog = true
-            }
-        },
-        onOpenFakeLauncherIcon = { showLauncherPicker = true },
-        onOpenOpenSourceLicense = onNavigateToOpenSourceLicenses,
-        onClearCache = {
-            coroutineScope.launch {
-                if (getCacheDirSize() == 0L) SonnerToast.info(cacheEmptyText)
-                else showClearCacheConfirm = true
-            }
-        },
-        onExportBackup = {
-            exportLauncher("Han1meViewer-backup-${currentEpochMillis()}.json")
-        },
-        onImportBackup = {
-            importLauncher()
-        },
-        onExportLocalLists = {
-            localListsExportLauncher(
-                "Han1meViewer-local-lists-${currentEpochMillis()}.json"
-            )
-        },
-        onImportLocalLists = {
-            localListsImportLauncher()
-        },
-        onExportOnlineLists = {
-            if (!SettingsRepository.isAlreadyLogin) {
-                SonnerToast.warning(loginFirstText)
-                return@HomeSettingsScreen
-            }
-            onlineListsExportLauncher(
-                "Han1meViewer-online-lists-${currentEpochMillis()}.json"
-            )
-        },
-        onImportOnlineLists = {
-            if (!SettingsRepository.isAlreadyLogin) {
-                SonnerToast.warning(loginFirstText)
-                return@HomeSettingsScreen
-            }
-            onlineListsImportLauncher()
-        },
-        onSubmitBug = { uriHandler.openUri(HA1_GITHUB_ISSUE_URL) },
-        onOpenForum = { uriHandler.openUri(HA1_GITHUB_FORUM_URL) },
     )
 
     ConfirmDialog(
@@ -634,6 +647,9 @@ private fun buildHomeSettingsUiState(
         disableMobileDataWarning = SettingsRepository.disableMobileDataWarning,
         disablePredictiveBack = SettingsRepository.disablePredictiveBack,
         videoLandscapeLayoutStyle = SettingsRepository.videoLandscapeLayoutStyle.value,
+        // 只存值，标签在 UI 层用 stringResource 算 —— 本函数是**非 composable** 的
+        // buildHomeSettingsUiState，在这里调 stringResource 编译不过。
+        navBarStyle = SettingsRepository.navBarStyle.value,
         disableComments = SettingsRepository.current.disableComments,
         collapseDownloadedGroup = SettingsRepository.collapseDownloadedGroup,
         useDynamicColor = SettingsRepository.useDynamicColor,
@@ -646,6 +662,7 @@ private fun buildHomeSettingsUiState(
         dynamicColorEnabled = supportsPerAppLinks(),
         themeAccentColorId = SettingsRepository.current.themeAccent.id,
         appPaletteStyleId = SettingsRepository.current.paletteStyle.id,
+        contrastLevel = SettingsRepository.current.contrastLevel.value,
         searchGridColumnsSummary = listOf(
             searchGridColumnsConfig.compactColumns,
             searchGridColumnsConfig.mediumColumns,

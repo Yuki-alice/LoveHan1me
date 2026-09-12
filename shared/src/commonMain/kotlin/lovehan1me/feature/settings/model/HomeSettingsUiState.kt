@@ -18,6 +18,7 @@ data class HomeSettingsUiState(
     val disableMobileDataWarning: Boolean,
     val disablePredictiveBack: Boolean,
     val videoLandscapeLayoutStyle: String,
+    val navBarStyle: String,
     val disableComments: Boolean,
     val collapseDownloadedGroup: Boolean,
     val useDynamicColor: Boolean,
@@ -30,6 +31,8 @@ data class HomeSettingsUiState(
     val dynamicColorEnabled: Boolean,
     val themeAccentColorId: Int,
     val appPaletteStyleId: Int,
+    /** 只存值（standard/medium/high），标签在 UI 层用 stringResource 算。 */
+    val contrastLevel: String,
     val searchGridColumnsSummary: String,
     val searchGridColumnsConfig: SearchGridColumnsConfig,
     val horizontalCardCountSummary: String,
