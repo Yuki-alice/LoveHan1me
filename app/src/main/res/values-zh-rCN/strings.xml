@@ -712,6 +712,11 @@
     <string name="dark_mode_picker_summary">选择应用如何跟随浅色与深色外观</string>
     <string name="palette_style">调色板样式</string>
     <string name="palette_style_summary">选择 Material 颜色如何根据强调色生成</string>
+    <string name="contrast_level">动态对比度</string>
+    <string name="contrast_level_summary">调整由强调色生成的颜色的对比度</string>
+    <string name="contrast_level_standard">标准</string>
+    <string name="contrast_level_medium">中等</string>
+    <string name="contrast_level_high">高</string>
     <string name="temporarily_unavailable">暂不可用</string>
     <string name="information">信息</string>
     <string name="version">版本号</string>

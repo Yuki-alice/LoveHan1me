@@ -5,6 +5,7 @@ import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import lovehan1me.ui.adaptive.rememberRelatedPaneWidth
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
@@ -23,7 +24,6 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsTopHeight
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -52,6 +52,7 @@ import lovehan1me.feature.player.PlaybackEngine
 import lovehan1me.feature.player.PlaybackQuality
 import lovehan1me.ui.component.rememberHapticFeedback
 import kotlin.math.roundToInt
+import lovehan1me.ui.theme.HanimeDefaults
 
 data class ClassicTabletLayoutConfig(
     val relatedItems: List<HanimeInfo>,
@@ -325,10 +326,13 @@ fun VideoShellContent(
 
     if (showClassicSideRelated) {
         val indicatorWidth = 28.dp
+        // P5：固定像素宽度，不再按 `maxWidth * 0.38f` 随窗口比例放大。
+        val relatedPaneWidth = rememberRelatedPaneWidth()
         BoxWithConstraints(modifier = modifier.fillMaxSize()) {
             val sideWidth by animateDpAsState(
-                targetValue = if (isSideRelatedCollapsed) indicatorWidth else maxWidth * 0.38f,
-                animationSpec = tween(durationMillis = 300),
+                targetValue = if (isSideRelatedCollapsed) indicatorWidth else relatedPaneWidth,
+                // P6：宽度是空间属性，走 spatial 档而非硬编码 tween(300)。
+                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
                 label = "sideRelatedWidth",
             )
             Row(modifier = Modifier.fillMaxSize()) {
@@ -369,6 +373,8 @@ fun VideoShellContent(
                     .weight(1f)
                     .fillMaxHeight(),
             )
+            // P5：固定 360dp（内容宽 < 1000dp 时 320dp）。原 `fillMaxWidth(0.38f)`
+            // 在 2560dp 窗口下会变成 973dp 的巨型侧栏，注意力被完全拉走。
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -377,7 +383,7 @@ fun VideoShellContent(
                         WindowInsets.safeDrawing.only(WindowInsetsSides.Start)
                     )
                     .background(MaterialTheme.colorScheme.background)
-                    .fillMaxWidth(0.38f),
+                    .width(rememberRelatedPaneWidth()),
             ) {
                 tabsContent()
             }
@@ -414,7 +420,7 @@ private fun RelatedCollapseIndicator(
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .size(22.dp)
-                .clip(RoundedCornerShape(50))
+                .clip(HanimeDefaults.Corners.pill)
                 .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)),
         )
     }

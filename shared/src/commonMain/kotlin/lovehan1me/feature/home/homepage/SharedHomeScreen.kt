@@ -4,7 +4,7 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.togetherWith
-import androidx.compose.animation.core.tween
+import lovehan1me.ui.theme.contentFade
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,9 +16,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
@@ -29,27 +27,19 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import lovehan1me.core.constant.HA1_GITHUB_URL
 import lovehan1me.core.constant.HanimeConstants
 import lovehan1me.Res
 import lovehan1me.checking_for_updates
-import lovehan1me.ic_menu
-import lovehan1me.ic_newspaper
-import lovehan1me.ic_refresh
-import lovehan1me.ic_search
 import lovehan1me.data.AppUpdateState
 import lovehan1me.data.SettingsRepository
 import lovehan1me.core.domain.model.AppUpdateInfo
 import lovehan1me.core.domain.state.PageState
 import lovehan1me.core.domain.state.dataOrNull
 import lovehan1me.simulated_update_description
-import lovehan1me.open_menu
-import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.component.PageContent
 import lovehan1me.ui.component.PullRefreshOverlay
-import lovehan1me.ui.component.appbar.HanimeTopAppBar
 import lovehan1me.ui.component.isFirstPageEmpty
 import lovehan1me.ui.component.isFirstPageError
 import lovehan1me.ui.component.isFirstPageLoading
@@ -58,6 +48,7 @@ import lovehan1me.feature.home.homepage.component.AppUpdateCard
 import lovehan1me.ui.component.rememberRandomLoadingHint
 import lovehan1me.core.util.toNetworkErrorMessageRes
 import lovehan1me.core.util.isDebugBuild
+import lovehan1me.feature.home.homepage.component.HomeTopBar
 
 /**
  * M1/M2：三端共享的首页容器（对标 `:app` 的 `HomePageScreen`，去掉 Android 专属依赖）。
@@ -180,11 +171,12 @@ fun SharedHomeScreen(
             ) {
                 val homeData = pageState.dataOrNull
                 if (homeData != null) {
+                    // transitionSpec 的 lambda **不是** @Composable 上下文，
+                    // 所以 contentFade()（内部要读 MaterialTheme.motionScheme）必须在外面先算好。
+                    val contentTransition = contentFade()
                     AnimatedContent(
                         targetState = homeData,
-                        transitionSpec = {
-                            fadeIn(tween(300)) togetherWith fadeOut(tween(200))
-                        },
+                        transitionSpec = { contentTransition },
                         label = "HomeContentAnimation",
                     ) { data ->
                         HomePageContent(
@@ -206,40 +198,14 @@ fun SharedHomeScreen(
             )
             }
         }
-        HanimeTopAppBar(
-            title = { Text("Han1meViewer") },
-            navigationIcon = {
-                if (showNavigationIcon) {
-                    IconButton(onClick = onOpenDrawer) {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_menu),
-                            // 无障碍标签（此前为 null，屏幕阅读器与 XCUITest 都找不到该按钮）
-                            contentDescription = stringResource(Res.string.open_menu),
-                        )
-                    }
-                }
-            },
+        // P4：顶栏换成「搜索框 · 新番列表 · 账号头像」三件套。
+        // 抽屉已随 P2 退役，[showNavigationIcon] / [onOpenDrawer] 仅在 :app 的旧壳里还传值，
+        // 这里不再渲染汉堡按钮（功能入口已在底栏 / Rail 上）。
+        HomeTopBar(
+            onSearchClick = { onEvent(HomeUiEvent.OpenSearchPage()) },
+            onNewAnimeListClick = { onEvent(HomeUiEvent.NavigateToPreview) },
+            onAvatarClick = { onEvent(HomeUiEvent.OpenMine) },
             modifier = Modifier.zIndex(1f),
-            actions = {
-                IconButton(onClick = { viewModel.getHomePage(isRefresh = true) }) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_refresh),
-                        contentDescription = null,
-                    )
-                }
-                IconButton(onClick = { onEvent(HomeUiEvent.OpenSearchPage()) }) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_search),
-                        contentDescription = null,
-                    )
-                }
-                IconButton(onClick = { onEvent(HomeUiEvent.NavigateToPreview) }) {
-                    Icon(
-                        painter = painterResource(Res.drawable.ic_newspaper),
-                        contentDescription = null,
-                    )
-                }
-            },
         )
     }
 }

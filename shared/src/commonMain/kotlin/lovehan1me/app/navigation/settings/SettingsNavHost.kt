@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import lovehan1me.ui.component.appbar.HanimeTopAppBar
 import lovehan1me.ui.component.appbar.HanimeScaffold
@@ -24,6 +25,13 @@ fun SettingsScaffold(
     onNavigateBack: (() -> Boolean)? = null,
     actions: @Composable RowScope.() -> Unit = {},
     floatingActionButton: @Composable () -> Unit = {},
+    /**
+     * 内容区最大宽度。默认 [HanimeDefaults.Widths.contentMax]（单栏表单页的可读行宽）。
+     *
+     * 双栏形态（P5.5）必须传 [Dp.Unspecified]：外壳的限宽会**连同左栏 280dp 一起**算进
+     * 840dp，导致右栏只剩 560dp。双栏由右栏自己限宽。
+     */
+    contentMaxWidth: Dp = HanimeDefaults.Widths.contentMax,
     content: @Composable () -> Unit,
 ) {
     fun navigateBack() {
@@ -57,7 +65,10 @@ fun SettingsScaffold(
             // 注意 widthIn 必须排在 fillMaxSize 之前，否则先被 fillMaxSize 拉满再去限制会冲突。
             Box(
                 modifier = Modifier
-                    .widthIn(max = HanimeDefaults.Widths.contentMax)
+                    .let {
+                        if (contentMaxWidth == Dp.Unspecified) it
+                        else it.widthIn(max = contentMaxWidth)
+                    }
                     .fillMaxSize(),
             ) {
                 content()

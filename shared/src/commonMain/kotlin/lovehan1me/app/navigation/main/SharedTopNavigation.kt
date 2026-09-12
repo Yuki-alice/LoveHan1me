@@ -66,6 +66,7 @@ import lovehan1me.app.navigation.settings.OpenSourceLicensesRoute
 import lovehan1me.app.navigation.settings.PlayerSettingsRoute
 import lovehan1me.app.navigation.settings.PlayerSettingsRouteScreen
 import lovehan1me.app.navigation.settings.SettingsDestinationSpec
+import lovehan1me.app.navigation.settings.SettingsHomeHost
 import lovehan1me.app.navigation.settings.SettingsScaffold
 import lovehan1me.app.navigation.settings.SharedHKeyframesRoute
 import lovehan1me.app.navigation.settings.SharedHKeyframesRouteScreen
@@ -80,9 +81,8 @@ import lovehan1me.feature.account.UserAccountViewModel
 import lovehan1me.app.sharedViewModel
 import lovehan1me.feature.settings.HomeSettingsPage
 import lovehan1me.feature.settings.OpenSourceLicensesScreen
-import lovehan1me.feature.settings.SettingsMainScreen
 import lovehan1me.ui.theme.fadeScale
-import lovehan1me.ui.theme.materialSharedAxisX
+import lovehan1me.ui.theme.sharedAxisX
 import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
@@ -122,22 +122,23 @@ fun SharedTopNavigation(
     // 头像裁剪结果在 AccountRoute 与 AvatarCropRoute 之间传递（原 :app TopNavigation 同构）
     var pendingAvatarCropResult by remember { mutableStateOf<String?>(null) }
 
-    fun pageTransition() = NavDisplay.transitionSpec {
-        materialSharedAxisX(
-            initialOffsetX = { (it * PageTransitionOffsetFactor).toInt() },
-            targetOffsetX = { -(it * PageTransitionOffsetFactor).toInt() },
-        )
-    } + NavDisplay.popTransitionSpec {
-        materialSharedAxisX(
-            initialOffsetX = { -(it * PageTransitionOffsetFactor).toInt() },
-            targetOffsetX = { (it * PageTransitionOffsetFactor).toInt() },
-        )
-    } + NavDisplay.predictivePopTransitionSpec {
-        materialSharedAxisX(
-            initialOffsetX = { -(it * PageTransitionOffsetFactor).toInt() },
-            targetOffsetX = { (it * PageTransitionOffsetFactor).toInt() },
-        )
-    }
+    // 审计 P1：转场规格必须在 composable 上下文先算好再交给 NavDisplay ——
+    // `transitionSpec {}` / entry metadata 的 lambda 都不是 @Composable，
+    // 里面直接调 motionScheme 驱动的工厂函数会编译不过。
+    val pageForward = sharedAxisX(
+        initialOffsetX = { (it * PageTransitionOffsetFactor).toInt() },
+        targetOffsetX = { -(it * PageTransitionOffsetFactor).toInt() },
+    )
+    val pageBackward = sharedAxisX(
+        initialOffsetX = { -(it * PageTransitionOffsetFactor).toInt() },
+        targetOffsetX = { (it * PageTransitionOffsetFactor).toInt() },
+    )
+
+    // ⚠️ `+` 必须留在上一行行尾：行首的 `+` 会被 Kotlin 解析成一元运算符而报
+    //    "Unresolved reference 'unaryPlus'"。
+    fun pageTransition() = NavDisplay.transitionSpec { pageForward } +
+        NavDisplay.popTransitionSpec { pageBackward } +
+        NavDisplay.predictivePopTransitionSpec { pageBackward }
 
     fun videoTransition() = NavDisplay.transitionSpec {
         ContentTransform(EnterTransition.None, ExitTransition.None)
@@ -147,9 +148,10 @@ fun SharedTopNavigation(
         ContentTransform(EnterTransition.None, ExitTransition.None)
     }
 
+    // 顶层 Tab 切换也是「页面级」转场（整屏换内容），同样走 slow spatial 拿呼吸感。
     val defaultTransition = fadeScale(
         effectSpec = MaterialTheme.motionScheme.defaultEffectsSpec(),
-        spatialSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+        spatialSpec = MaterialTheme.motionScheme.slowSpatialSpec(),
     )
 
     SharedTransitionLayout {
@@ -170,6 +172,7 @@ fun SharedTopNavigation(
                     showNavigationIcon = showHomeNavigationIcon,
                     onOpenDrawer = onOpenDrawer,
                     onNavigateToPreview = { backStack.add(PreviewRoute) },
+                onNavigateToMine = { backStack.navigateMainTab(MainTab.Mine) },
                 onNavigateToSearch = { query -> backStack.add(SearchRoute(query = query)) },
                 onNavigateToSearchAdvanced = { params ->
                     backStack.add(
@@ -356,24 +359,23 @@ fun SharedTopNavigation(
             }
         }
         entry<HomeSettingsRoute> {
-            SettingsScaffold(
+            // P5.5：宽屏（内容宽 ≥ 900dp）走 List-Detail 双栏，窄屏仍是原来的钻取式。
+            SettingsHomeHost(
                 backStack = backStack,
-                destination = SettingsDestinationSpec.Home,
-                fallbackDestination = HomeRoute,
-            ) {
-                SettingsMainScreen(
-                    onOpenVideoPlayback = { backStack.add(VideoPlaybackSettingsRoute) },
-                    onOpenPlayerSettings = { backStack.add(PlayerSettingsRoute) },
-                    onOpenNetworkDownload = { backStack.add(NetworkDownloadSettingsRoute) },
-                    onOpenAppearance = { backStack.add(AppearanceSettingsRoute) },
-                    onOpenInterfaceInteraction = {
-                        backStack.add(InterfaceInteractionSettingsRoute)
-                    },
-                    onOpenDataPrivacy = { backStack.add(DataPrivacySettingsRoute) },
-                    onOpenDeveloperOptions = { backStack.add(DeveloperOptionsSettingsRoute) },
-                    onOpenAbout = { backStack.add(AboutSettingsRoute) },
-                )
-            }
+                onOpenVideoPlayback = { backStack.add(VideoPlaybackSettingsRoute) },
+                onOpenPlayerSettings = { backStack.add(PlayerSettingsRoute) },
+                onOpenNetworkDownload = { backStack.add(NetworkDownloadSettingsRoute) },
+                onOpenAppearance = { backStack.add(AppearanceSettingsRoute) },
+                onOpenInterfaceInteraction = {
+                    backStack.add(InterfaceInteractionSettingsRoute)
+                },
+                onOpenDataPrivacy = { backStack.add(DataPrivacySettingsRoute) },
+                onOpenDeveloperOptions = { backStack.add(DeveloperOptionsSettingsRoute) },
+                onOpenAbout = { backStack.add(AboutSettingsRoute) },
+                onNavigateToHKeyframes = { backStack.add(HKeyframesRoute) },
+                onNavigateToSharedHKeyframes = { backStack.add(SharedHKeyframesRoute) },
+                onNavigateToOpenSourceLicenses = { backStack.add(OpenSourceLicensesRoute) },
+            )
         }
         entry<VideoPlaybackSettingsRoute>(metadata = pageTransition()) {
             SettingsScaffold(

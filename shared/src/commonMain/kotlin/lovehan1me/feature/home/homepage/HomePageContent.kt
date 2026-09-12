@@ -21,7 +21,8 @@ import lovehan1me.feature.preview.fakeHomePage
 import lovehan1me.feature.home.homepage.component.AnnouncementCard
 import lovehan1me.feature.home.homepage.component.AppUpdateCard
 import lovehan1me.feature.home.homepage.component.BannerCarousel
-import lovehan1me.feature.home.homepage.component.CategoryRow
+import lovehan1me.feature.home.homepage.component.CategoryBlock
+import lovehan1me.ui.adaptive.rememberPageHorizontalMargin
 
 /**
  * 渲染首页可滚动内容区域。
@@ -53,6 +54,9 @@ fun HomePageContent(
     val categories = remember(data.page, isAVSite) {
         buildCategoryList(data.page, isAVSite)
     }
+    // P4：页面左右边距统一由窗口档驱动，各区块不再各写各的 12.dp，
+    // 否则分类矩阵（按扣边距后的宽度分档）会比 banner 宽出一截、视觉对不齐。
+    val margin = rememberPageHorizontalMargin()
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         state = listState,
@@ -66,7 +70,7 @@ fun HomePageContent(
                         onEvent(HomeUiEvent.OpenVideo(it))
                     }
                 },
-                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp)
+                modifier = Modifier.padding(horizontal = margin, vertical = 6.dp)
             )
         }
         if (updateInfo != null) {
@@ -79,7 +83,7 @@ fun HomePageContent(
                     onIgnoreClick = {
                         onEvent(HomeUiEvent.IgnoreUpdate(updateInfo.versionCode))
                     },
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                    modifier = Modifier.padding(horizontal = margin, vertical = 6.dp),
                 )
             }
         }
@@ -91,7 +95,7 @@ fun HomePageContent(
                         onEvent(HomeUiEvent.ShowAnnouncementDialog(announcement))
                     },
                     onClose = null,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                    modifier = Modifier.padding(horizontal = margin, vertical = 4.dp),
                 )
             }
         }
@@ -103,13 +107,13 @@ fun HomePageContent(
                         onEvent(HomeUiEvent.ShowAnnouncementDialog(announcement))
                     },
                     onClose = onCloseAnnouncement,
-                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    modifier = Modifier.padding(horizontal = margin, vertical = 4.dp)
                 )
             }
         }
         categories.forEach { category ->
             item(key = "category_${category.titleRes}") {
-                CategoryRow(
+                CategoryBlock(
                     title = stringResource(category.titleRes),
                     videos = category.videos,
                     onMoreClick = {

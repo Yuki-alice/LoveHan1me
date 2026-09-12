@@ -2,28 +2,48 @@
 
 package lovehan1me.app.navigation.main
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LocalContentColor
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.WideNavigationRail
 import androidx.compose.material3.WideNavigationRailItem
 import androidx.compose.material3.WideNavigationRailValue
 import androidx.compose.material3.rememberWideNavigationRailState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.Res
+import lovehan1me.core.domain.model.NavBarStyle
+import lovehan1me.data.SettingsRepository
 import lovehan1me.app.navigation.settings.AboutSettingsRoute
 import lovehan1me.app.navigation.settings.AppearanceSettingsRoute
 import lovehan1me.app.navigation.settings.DataPrivacySettingsRoute
@@ -86,6 +106,10 @@ fun MainScaffold(
     val selectedTab = MainTab.fromRoute(backStack.topLevelKey) ?: MainTab.Fallback
     val onSelectTab: (MainTab) -> Unit = { backStack.addTopLevel(it.route) }
     val onOpenSettings: () -> Unit = { backStack.add(HomeSettingsRoute) }
+    // 底栏形态走 settings flow（而非 `SettingsRepository.navBarStyle` 的快照 getter），
+    // 否则改完设置要重启才生效。
+    val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
+    val navBarStyle = settings.navBarStyle
 
     val page: @Composable () -> Unit = {
         ProvideContentWidth {
@@ -124,6 +148,35 @@ fun MainScaffold(
                 page()
             }
         }
+    } else if (navBarStyle == NavBarStyle.Floating) {
+        // P6 悬浮胶囊：**不占布局高度**，所以 Scaffold 的 innerPadding 算不到它。
+        // 解法是在 bottomBar 放一个等高的透明占位 —— 这样内容区底边距自动让出胶囊的位置，
+        // 不必给每个列表页手动加 contentPadding（那要改十几处，且容易漏）。
+        Box(modifier = Modifier.fillMaxSize()) {
+            Scaffold(
+                bottomBar = {
+                    Spacer(
+                        modifier = Modifier
+                            .navigationBarsPadding()
+                            .height(FloatingNavBarReserve),
+                    )
+                },
+                containerColor = HanimeDefaults.Colors.pageSurface,
+            ) { innerPadding ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                ) {
+                    page()
+                }
+            }
+            MainFloatingNavBar(
+                selectedTab = selectedTab,
+                onSelectTab = onSelectTab,
+                modifier = Modifier.align(Alignment.BottomCenter),
+            )
+        }
     } else {
         Scaffold(
             bottomBar = {
@@ -138,6 +191,92 @@ fun MainScaffold(
             ) {
                 page()
             }
+        }
+    }
+}
+
+/** 悬浮胶囊总占位高度 = 胶囊 72dp + 距底 16dp（手势 inset 另计）。 */
+private val FloatingNavBarReserve = 88.dp
+
+/**
+ * Compact 的悬浮形态（P6）：三个 pill 装在圆角胶囊容器内。
+ *
+ * M3 Expressive **没有重做 NavigationBar**，所以这是自研 composition —— 好处是完全掌控
+ * 间距与遮挡补偿（见 [MainScaffold] 里透明占位的注释）。
+ */
+@Composable
+private fun MainFloatingNavBar(
+    selectedTab: MainTab,
+    onSelectTab: (MainTab) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .navigationBarsPadding()
+            .padding(bottom = 16.dp),
+        shape = HanimeDefaults.Corners.pill,
+        color = MaterialTheme.colorScheme.surfaceContainer,
+        tonalElevation = 3.dp,
+        shadowElevation = 3.dp,
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(72.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            MainTab.entries.forEach { tab ->
+                FloatingNavBarItem(
+                    selected = tab == selectedTab,
+                    onClick = { onSelectTab(tab) },
+                    icon = {
+                        Icon(
+                            painter = painterResource(tab.iconRes),
+                            contentDescription = stringResource(tab.titleRes),
+                        )
+                    },
+                    label = { Text(stringResource(tab.titleRes)) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun FloatingNavBarItem(
+    selected: Boolean,
+    onClick: () -> Unit,
+    icon: @Composable () -> Unit,
+    label: @Composable () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val contentColor =
+        if (selected) MaterialTheme.colorScheme.onSecondaryContainer
+        else MaterialTheme.colorScheme.onSurfaceVariant
+    val containerColor by animateColorAsState(
+        targetValue = if (selected) {
+            MaterialTheme.colorScheme.secondaryContainer
+        } else {
+            Color.Transparent
+        },
+        // 动效统一：走 motionScheme，不用硬编码 tween（P6）。
+        animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
+        label = "floatingNavBarItem",
+    )
+    Column(
+        modifier = modifier
+            .clip(HanimeDefaults.Corners.pill)
+            .background(containerColor)
+            .clickable(role = Role.Button, onClick = onClick)
+            .padding(horizontal = 20.dp, vertical = 8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        CompositionLocalProvider(LocalContentColor provides contentColor) {
+            icon()
+            ProvideTextStyle(MaterialTheme.typography.labelSmall) { label() }
         }
     }
 }

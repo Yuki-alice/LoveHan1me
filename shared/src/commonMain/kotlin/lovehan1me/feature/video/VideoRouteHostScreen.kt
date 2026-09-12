@@ -24,6 +24,8 @@ import androidx.compose.ui.unit.dp
 import lovehan1me.data.SettingsRepository
 import lovehan1me.ui.adaptive.WindowWidthBreakpoints
 import lovehan1me.ui.adaptive.rememberContentWidthDp
+import lovehan1me.ui.adaptive.rememberRelatedPaneWidth
+import lovehan1me.ui.adaptive.rememberWindowHeightDp
 import lovehan1me.Res
 import lovehan1me.add_failed
 import lovehan1me.add_success
@@ -146,7 +148,13 @@ fun VideoRouteHostScreen(
     //     videoLandscapeLayoutStyle）。
     //   - 删方向：iOS 侧 `isLandscapeOrientation()` 恒为 false，等于 iPad 永远拿不到
     //     双栏；而「横屏手机」的宽度本就会超过 840dp，宽度已经隐含了方向语义。
-    val isDualPane = rememberContentWidthDp() >= WindowWidthBreakpoints.ExpandedDp
+    val contentWidth = rememberContentWidthDp()
+    val isDualPane = contentWidth >= WindowWidthBreakpoints.ExpandedDp
+    // P5：侧栏固定宽度（双栏时才占宽），用来反推主栏真实宽度。
+    val relatedPaneWidth = rememberRelatedPaneWidth()
+    val mainPaneWidth = (contentWidth - if (isDualPane) relatedPaneWidth else 0.dp)
+        .coerceAtLeast(0.dp)
+    val windowHeight = rememberWindowHeightDp()
     val hostUiState by viewModel.videoHostUiStateFlow.collectAsStateWithLifecycle()
     val videoState by viewModel.hanimeVideoStateFlow.collectAsStateWithLifecycle()
     val video = viewModel.hanimeVideoFlow.collectAsStateWithLifecycle().value
@@ -497,10 +505,16 @@ fun VideoRouteHostScreen(
         }
     }
 
+    // P5：比例式播放器高度。原来固定 250dp（单栏）/ 400dp（双栏），
+    // 在 1920dp 宽的桌面窗口下播放器只占 13% 宽度，小得荒谬。
+    // 取「主栏宽 × 9/16」与「窗高 × 0.55」的较小值，再兜底 240dp：
+    // 前者保证 16:9 不溢出，后者防止宽而矮的窗口把播放器顶到屏幕外。
     val resolvedPlayerHeightDp = when {
         hostUiState.isInPipMode -> null
-        isDualPane -> if (isSideRelatedCollapsed) 500.dp else 400.dp
-        else -> 250.dp
+        else -> maxOf(
+            240.dp,
+            minOf(mainPaneWidth * 9f / 16f, windowHeight * 0.55f),
+        )
     }
 
     LaunchedEffect(resolvedPlayerHeightDp, hostUiState.playerHeightDp) {

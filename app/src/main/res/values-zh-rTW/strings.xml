@@ -698,6 +698,11 @@
     <string name="dark_mode_picker_summary">選擇應用程式如何跟隨淺色與深色外觀</string>
     <string name="palette_style">調色盤樣式</string>
     <string name="palette_style_summary">選擇 Material 顏色如何根據強調色產生</string>
+    <string name="contrast_level">動態對比度</string>
+    <string name="contrast_level_summary">調整由強調色產生的顏色的對比度</string>
+    <string name="contrast_level_standard">標準</string>
+    <string name="contrast_level_medium">中等</string>
+    <string name="contrast_level_high">高</string>
     <string name="temporarily_unavailable">暫時無法使用</string>
     <string name="information">資訊</string>
     <string name="version">版本號</string>

@@ -78,6 +78,8 @@
     <string name="about">關於</string>
     <string name="current_version">目前版本：%1$s</string>
     <string name="search_placeholder">請輸入關鍵字</string>
+    <string name="home_search_hint">搜尋番劇、角色、聲優</string>
+    <string name="new_anime_list">新番列表</string>
     <string name="downloading">正在下載</string>
     <string name="downloading_s">正在下載：%1$s</string>
     <string name="downloaded">已下載</string>
@@ -107,6 +109,10 @@
     <string name="player_settings">播放器設定</string>
     <string name="video_landscape_layout_style">播放頁橫向版面樣式</string>
     <string name="video_landscape_layout_style_summary">選擇橫向播放頁中播放器、分頁與推薦內容的排列方式</string>
+    <string name="nav_bar_style">導覽列樣式</string>
+    <string name="nav_bar_style_summary">僅影響窄螢幕底欄 —— 寬螢幕使用側邊導覽列</string>
+    <string name="nav_bar_style_standard">標準貼底</string>
+    <string name="nav_bar_style_floating">懸浮膠囊</string>
     <string name="layout_style_classic">經典</string>
     <string name="layout_style_dual_pane">雙欄</string>
     <string name="search_grid_columns_title">影片網格欄數</string>
@@ -709,6 +715,11 @@
     <string name="dark_mode_picker_summary">選擇應用程式如何跟隨淺色與深色外觀</string>
     <string name="palette_style">調色盤樣式</string>
     <string name="palette_style_summary">選擇 Material 顏色如何根據強調色產生</string>
+    <string name="contrast_level">動態對比度</string>
+    <string name="contrast_level_summary">調整由強調色產生的顏色的對比度</string>
+    <string name="contrast_level_standard">標準</string>
+    <string name="contrast_level_medium">中等</string>
+    <string name="contrast_level_high">高</string>
     <string name="temporarily_unavailable">暫時無法使用</string>
     <string name="information">資訊</string>
     <string name="version">版本號</string>

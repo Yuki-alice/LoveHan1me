@@ -10,6 +10,8 @@ import lovehan1me.core.domain.model.Announcement
 sealed interface HomeUiEvent {
     data object OpenDrawer : HomeUiEvent
     data object NavigateToPreview : HomeUiEvent
+    /** 顶栏头像 → 一级目的地「我的」（P4 新增）。 */
+    data object OpenMine : HomeUiEvent
     data class OpenSearchPage(val query: String = "") : HomeUiEvent
     data class NavigateToSearchAdvanced(val params: Map<String, String>) : HomeUiEvent
     data class OpenVideo(val videoCode: String) : HomeUiEvent

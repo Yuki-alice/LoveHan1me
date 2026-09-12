@@ -59,6 +59,7 @@ import kotlin.time.Clock
 fun SharedHomeRouteScreen(
     onOpenDrawer: () -> Unit,
     onNavigateToPreview: () -> Unit,
+    onNavigateToMine: () -> Unit,
     onNavigateToSearch: (String?) -> Unit,
     onNavigateToSearchAdvanced: (Map<String, String>) -> Unit,
     onNavigateToVideo: (String) -> Unit,
@@ -98,6 +99,7 @@ fun SharedHomeRouteScreen(
                 when (event) {
                     is HomeUiEvent.OpenDrawer -> onOpenDrawer()
                     is HomeUiEvent.NavigateToPreview -> onNavigateToPreview()
+                    is HomeUiEvent.OpenMine -> onNavigateToMine()
                     is HomeUiEvent.OpenSearchPage -> onNavigateToSearch(event.query)
                     is HomeUiEvent.NavigateToSearchAdvanced -> onNavigateToSearchAdvanced(event.params)
                     is HomeUiEvent.OpenVideo -> onNavigateToVideo(event.videoCode)

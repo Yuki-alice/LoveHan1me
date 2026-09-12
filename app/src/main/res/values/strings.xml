@@ -727,6 +727,11 @@ Recommendations are as follows:\n
     <string name="dark_mode_picker_summary">Choose how the app follows light and dark appearance</string>
     <string name="palette_style">Palette style</string>
     <string name="palette_style_summary">Choose how Material colors are generated from the accent color</string>
+    <string name="contrast_level">Dynamic contrast</string>
+    <string name="contrast_level_summary">Adjust the contrast of colors generated from the accent color</string>
+    <string name="contrast_level_standard">Standard</string>
+    <string name="contrast_level_medium">Medium</string>
+    <string name="contrast_level_high">High</string>
     <string name="temporarily_unavailable">Temporarily unavailable</string>
     <string name="information">Information</string>
     <string name="version">Version</string>

@@ -78,6 +78,8 @@
     <string name="about">About</string>
     <string name="current_version">Current Version: %1$s</string>
     <string name="search_placeholder">Enter keywords</string>
+    <string name="home_search_hint">Search anime, characters, cast</string>
+    <string name="new_anime_list">New Anime</string>
     <string name="downloading">Downloading</string>
     <string name="downloading_s">Downloading: %1$s</string>
     <string name="downloaded">Downloaded</string>
@@ -107,6 +109,10 @@
     <string name="player_settings">Player Settings</string>
     <string name="video_landscape_layout_style">Landscape video page layout</string>
     <string name="video_landscape_layout_style_summary">Choose how the player, tabs, and related videos are arranged in landscape</string>
+    <string name="nav_bar_style">Navigation bar style</string>
+    <string name="nav_bar_style_summary">Compact width only — wider screens use the side rail</string>
+    <string name="nav_bar_style_standard">Standard</string>
+    <string name="nav_bar_style_floating">Floating pill</string>
     <string name="layout_style_classic">Classic</string>
     <string name="layout_style_dual_pane">Dual-pane</string>
     <string name="search_grid_columns_title">Video Grid Columns</string>
@@ -738,6 +744,11 @@ Recommendations are as follows:\n
     <string name="dark_mode_picker_summary">Choose how the app follows light and dark appearance</string>
     <string name="palette_style">Palette style</string>
     <string name="palette_style_summary">Choose how Material colors are generated from the accent color</string>
+    <string name="contrast_level">Dynamic contrast</string>
+    <string name="contrast_level_summary">Adjust the contrast of colors generated from the accent color</string>
+    <string name="contrast_level_standard">Standard</string>
+    <string name="contrast_level_medium">Medium</string>
+    <string name="contrast_level_high">High</string>
     <string name="temporarily_unavailable">Temporarily unavailable</string>
     <string name="information">Information</string>
     <string name="version">Version</string>
