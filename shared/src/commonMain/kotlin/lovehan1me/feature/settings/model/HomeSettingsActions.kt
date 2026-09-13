@@ -33,6 +33,7 @@ class HomeSettingsActions(
     val contrastLevelChange: (String) -> Unit,
     val allowPipModeChange: (Boolean) -> Unit,
     val allowResumePlaybackChange: (Boolean) -> Unit,
+    val autoPlayOnEnterChange: (Boolean) -> Unit,
     val showPlayedIndicatorChange: (Boolean) -> Unit,
     val searchArtistIgnoreVideoTypeChange: (Boolean) -> Unit,
     val disableMobileDataWarningChange: (Boolean) -> Unit,

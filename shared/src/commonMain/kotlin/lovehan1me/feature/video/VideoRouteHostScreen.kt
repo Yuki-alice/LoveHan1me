@@ -310,12 +310,10 @@ fun VideoRouteHostScreen(
 
     fun enterFullscreen(forceLandscape: Boolean = false) {
         isFullscreen = true
-        val engineState = playbackController.state.value.engine
-        platformHost.applyFullscreen(
-            true,
-            forceLandscape = forceLandscape ||
-                    !(engineState.videoWidth > 0 && engineState.videoHeight > engineState.videoWidth),
-        )
+        // ⚠️ 尺寸还没上报时**不要**据此判定竖屏：原式 `!(w>0 && h>w)` 在 `w==0` 时恒为 true，
+        // 于是竖屏视频首次进全屏会被强行转横屏，而且事后不会纠正（不会再进一次全屏）。
+        // 现在先按横屏进入（绝大多数视频是横屏），尺寸到达后由下面的 LaunchedEffect 纠正。
+        platformHost.applyFullscreen(true, forceLandscape = forceLandscape)
     }
 
     fun updatePipAction() {
@@ -343,6 +341,9 @@ fun VideoRouteHostScreen(
 
             override fun onPipModeChanged(isInPip: Boolean) {
                 viewModel.setPipMode(isInPip)
+                // 进 PiP 就退出全屏：两者互斥（此前不同步 —— 从全屏进 PiP 会让
+                // isFullscreen 假真，退出 PiP 后系统栏已恢复、顶部却被当成全屏处理）。
+                if (isInPip) exitFullscreen()
                 updatePipAction()
             }
 
@@ -368,6 +369,22 @@ fun VideoRouteHostScreen(
             if (isFullscreen) {
                 platformHost.applyFullscreen(false)
             }
+        }
+    }
+
+    // 全屏期间尺寸上报后按**实际**比例再应用一次方向：竖屏视频会被正确留在竖屏，
+    // 横屏视频保持横屏（幂等，不会来回抖）。
+    LaunchedEffect(
+        isFullscreen,
+        playbackController,
+        playbackState.engine.videoWidth,
+        playbackState.engine.videoHeight,
+    ) {
+        if (!isFullscreen) return@LaunchedEffect
+        val width = playbackController.state.value.engine.videoWidth
+        val height = playbackController.state.value.engine.videoHeight
+        if (width > 0 && height > 0) {
+            platformHost.applyFullscreen(true, forceLandscape = height <= width)
         }
     }
 
@@ -509,7 +526,10 @@ fun VideoRouteHostScreen(
                                     preferredQuality = request.preferredQuality,
                                     artworkUri = request.artworkUri,
                                     startPositionMs = request.startPositionMs,
-                                    playWhenReady = true,
+                                    // M5-3：进入详情页是否自动播放由设置决定（默认**关**）。
+                    // 关了之后：媒体仍然加载并渲染首帧，但停在暂停态 —— 用户看到
+                    // "封面/首帧 + 中央播放键"，由自己决定何时开播（移动网络下尤其重要）。
+                    playWhenReady = SettingsRepository.autoPlayOnEnter,
                                 )
                             }
                         }
@@ -641,6 +661,7 @@ fun VideoRouteHostScreen(
         brightnessGestureEnabled = platformHost.supportsBrightness(),
         onSeekBy = playbackController::seekBy,
         durationMs = playbackState.engine.durationMs,
+        fullscreenEnabled = platformHost.supportsFullscreen(),
         showResumeButton = showResumeButton,
         onPlayClick = playbackController::togglePlayPause,
         onReplay = playbackController::replay,
@@ -875,7 +896,10 @@ fun VideoRouteHostScreen(
                     preferredQuality = it.preferredQuality,
                     artworkUri = it.artworkUri,
                     startPositionMs = it.startPositionMs,
-                    playWhenReady = true,
+                    // M5-3：进入详情页是否自动播放由设置决定（默认**关**）。
+                    // 关了之后：媒体仍然加载并渲染首帧，但停在暂停态 —— 用户看到
+                    // "封面/首帧 + 中央播放键"，由自己决定何时开播（移动网络下尤其重要）。
+                    playWhenReady = SettingsRepository.autoPlayOnEnter,
                 )
             }
         },

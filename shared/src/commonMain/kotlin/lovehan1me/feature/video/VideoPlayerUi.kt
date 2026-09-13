@@ -162,6 +162,8 @@ fun VideoPlayerUi(
     onBackClick: () -> Unit = {},
     onHomeClick: () -> Unit = {},
     onFullscreenClick: () -> Unit = {},
+    /** 平台是否支持全屏（iOS 尚未实现 → false 时不显示入口，避免"按了没反应"）。 */
+    fullscreenEnabled: Boolean = true,
     onLockClick: () -> Unit = {},
     onProgressChange: (Float) -> Unit = {},
     /** M5-3：相对跳转（双击左右快退/快进）。传毫秒增量。 */
@@ -1041,18 +1043,21 @@ fun VideoPlayerUi(
                         Spacer(modifier = Modifier.width(2.dp))
 
                         /**
-                         * Fullscreen
+                         * Fullscreen —— 平台没实现全屏时不显示入口（iOS 目前未实现），
+                         * 免得按钮按下去什么都不发生（"状态撒谎"）。
                          */
-                        IconButton(
-                            onClick = onFullscreenClick,
-                            modifier = Modifier.size(26.dp)
-                        ) {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_fullscreen),
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
+                        if (fullscreenEnabled) {
+                            IconButton(
+                                onClick = onFullscreenClick,
+                                modifier = Modifier.size(26.dp)
+                            ) {
+                                Icon(
+                                    painter = painterResource(Res.drawable.ic_fullscreen),
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
                         }
                     }
                 }

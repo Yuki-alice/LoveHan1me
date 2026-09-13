@@ -29,6 +29,15 @@ interface VideoPageHost {
     /** 播放状态变化时刷新 PiP RemoteAction（暂停/播放图标），非 PiP 下可空实现。 */
     fun refreshPipAction(isPlaying: Boolean, toggleDescription: String) {}
 
+    /**
+     * 本平台是否实现了全屏。
+     *
+     * iOS 目前**没有**实现（`IosVideoPageHost` 未覆写 [applyFullscreen]）：
+     * 此前调用方无条件把 `isFullscreen` 置真，于是 UI 切成全屏形态、画面却没全屏 ——
+     * 与"亮度手势假动作"同一类问题。UI 据此隐藏全屏入口，不撒谎。
+     */
+    fun supportsFullscreen(): Boolean = true
+
     /** 全屏切换（含横竖屏与系统栏），UI 侧 isFullscreen 状态由调用方维护。 */
     fun applyFullscreen(fullscreen: Boolean, forceLandscape: Boolean = false) {}
 

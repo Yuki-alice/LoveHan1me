@@ -115,6 +115,8 @@ fun VideoShellContent(
     onSeekBy: (Long) -> Unit,
     /** M5-3：视频总时长（双击 HUD 换算百分比用）。 */
     durationMs: Long,
+    /** 平台是否支持全屏（iOS 未实现 → false 时隐藏入口）。 */
+    fullscreenEnabled: Boolean,
     onLongPressStart: () -> Unit,
     onLongPressEnd: () -> Unit,
     onVolumeChange: (Float) -> Unit,
@@ -219,6 +221,7 @@ fun VideoShellContent(
                     brightnessGestureEnabled = brightnessGestureEnabled,
                     onSeekBy = onSeekBy,
                     durationMs = durationMs,
+                    fullscreenEnabled = fullscreenEnabled,
                     onLongPressStart = onLongPressStart,
                     onLongPressEnd = onLongPressEnd,
                     onVolumeChange = onVolumeChange,
@@ -304,6 +307,7 @@ fun VideoShellContent(
                     brightnessGestureEnabled = brightnessGestureEnabled,
                     onSeekBy = onSeekBy,
                     durationMs = durationMs,
+                    fullscreenEnabled = fullscreenEnabled,
                     onLongPressStart = onLongPressStart,
                     onLongPressEnd = onLongPressEnd,
                     onVolumeChange = onVolumeChange,

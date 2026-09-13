@@ -64,6 +64,9 @@ import lovehan1me.search_grid_columns_summary
 import lovehan1me.search_artist_ignore_video_type_summary
 import lovehan1me.search_artist_ignore_video_type
 import lovehan1me.resume_playback_title
+import lovehan1me.auto_play_on_enter_summary
+import lovehan1me.auto_play_on_enter_title
+import lovehan1me.ic_play_circle
 import lovehan1me.resume_playback_summary
 import lovehan1me.project_repository
 import lovehan1me.privacy
@@ -416,6 +419,7 @@ private fun previewHomeSettingsState() = HomeSettingsUiState(
     appLanguageLabel = "Follow system",
     allowPipMode = true,
     allowResumePlayback = true,
+    autoPlayOnEnter = false,
     showPlayedIndicator = true,
     searchArtistIgnoreVideoType = false,
     disableMobileDataWarning = false,
@@ -483,6 +487,13 @@ private fun AnimatedLazyListScope.videoPlaybackSection(
                 checked = state.allowResumePlayback,
                 iconRes = Res.drawable.ic_skip,
                 onCheckedChange = actions.allowResumePlaybackChange,
+            )
+            SettingSwitchItem(
+                title = stringResource(Res.string.auto_play_on_enter_title),
+                summary = stringResource(Res.string.auto_play_on_enter_summary),
+                checked = state.autoPlayOnEnter,
+                iconRes = Res.drawable.ic_play_circle,
+                onCheckedChange = actions.autoPlayOnEnterChange,
             )
             SettingSwitchItem(
                 title = stringResource(Res.string.show_played_indicator),

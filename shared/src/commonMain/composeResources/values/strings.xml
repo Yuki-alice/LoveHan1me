@@ -464,6 +464,8 @@ Recommendations are as follows:\n
     <string name="new_anime_trailers">New Anime Trailers</string>
     <string name="permission_error">Permission error, please try to re-specify the folder!</string>
     <string name="resume_playback_title">Resume Playback</string>
+    <string name="auto_play_on_enter_title">Autoplay on open</string>
+    <string name="auto_play_on_enter_summary">Start playing as soon as a video page opens. Off by default: the video loads and shows its first frame but stays paused until you tap play.</string>
     <string name="resume_playback_summary">Automatically jump to the last playback position if there is play history</string>
     <string name="saved">Saved</string>
     <string name="i_understand">I understand</string>

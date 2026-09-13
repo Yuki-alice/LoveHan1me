@@ -465,6 +465,8 @@
     <string name="new_anime_trailers">新番預告片</string>
     <string name="permission_error">权限错误，请尝试重新指定文件夹！</string>
     <string name="resume_playback_title">续播功能</string>
+    <string name="auto_play_on_enter_title">进入详情页自动播放</string>
+    <string name="auto_play_on_enter_summary">打开影片页后立即开始播放。默认关闭：会先加载并停在首帧，点播放键才开始</string>
     <string name="resume_playback_summary">如有播放记录，将自动跳转到上次退出时的位置</string>
     <string name="saved">已保存</string>
     <string name="i_understand">我明白了</string>

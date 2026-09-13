@@ -82,6 +82,8 @@ object SettingsRepository : SettingsStore {
     val safDownloadPath get() = current.safDownloadPath
     val useDarkMode get() = current.themeMode.value
     val allowResumePlayback get() = current.allowResumePlayback
+    /** 进入详情页是否自动播放（默认 false）。 */
+    val autoPlayOnEnter get() = current.autoPlayOnEnter
     val searchArtistIgnoreVideoType get() = current.searchArtistIgnoreVideoType
     val disableMobileDataWarning get() = current.disableMobileDataWarning
     val disablePredictiveBack get() = current.disablePredictiveBack
@@ -110,6 +112,9 @@ object SettingsRepository : SettingsStore {
     suspend fun setLoginState(value: Boolean) = update { it.copy(isAlreadyLogin = value) }
     suspend fun dismissLocalListNotice() = update { it.copy(localListNoticeDismissed = true) }
     suspend fun setCloudFlareCookie(value: String, host: String = current.cloudFlareCookieHost) = update { it.copy(cloudFlareCookie = value, cloudFlareCookieHost = host.lowercase()) }
+
+    /** 进入详情页是否自动播放（默认关）。 */
+    suspend fun setAutoPlayOnEnter(value: Boolean) = update { it.copy(autoPlayOnEnter = value) }
 
     /** 落盘 CF 验证浏览器自报的真实 UA（供 HTTP 层对齐，见 currentHttpUserAgent 的 KDoc）。 */
     suspend fun setDesktopBrowserUserAgent(value: String) =

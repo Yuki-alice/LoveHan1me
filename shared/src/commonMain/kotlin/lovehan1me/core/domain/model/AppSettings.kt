@@ -186,6 +186,14 @@ data class AppSettings(
     val videoQuality: String = "1080P",
     val showPlayedIndicator: Boolean = true,
     val allowResumePlayback: Boolean = true,
+
+    /**
+     * 进入视频详情页是否**自动开始播放**。
+     *
+     * 默认 **false**（用户要求）：进去先停在封面 + 播放按钮，由用户决定何时开播 ——
+     * 移动网络下尤其重要（此前是一进去就播，配上"移动数据提醒"才勉强兜住）。
+     */
+    val autoPlayOnEnter: Boolean = false,
     val mpvProfile: String = "fast",
     val enableGpuNextRenderer: Boolean = false,
     val mpvInterpolation: Boolean = false,
