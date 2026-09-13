@@ -71,11 +71,6 @@ object SettingsRepository : SettingsStore {
     val dohCustomUrl get() = current.dohCustomUrl
     val dohBootstrapIps get() = current.dohBootstrapIps
     val dohTimeoutSeconds get() = current.dohTimeoutSeconds
-    val whenCountdownRemind get() = current.whenCountdownRemindSeconds * 1_000
-    val showCommentWhenCountdown get() = current.showCommentWhenCountdown
-    val hKeyframesEnable get() = current.hKeyframesEnable
-    val sharedHKeyframesEnable get() = current.sharedHKeyframesEnable
-    val sharedHKeyframesUseFirst get() = current.sharedHKeyframesUseFirst
     val proxyType get() = current.proxyType.id
     val proxyIp get() = current.proxyIp
     val proxyPort get() = current.proxyPort

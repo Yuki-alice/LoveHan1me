@@ -15,8 +15,6 @@ import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.dao.CheckInRecordDatabase
 import lovehan1me.data.database.dao.DownloadDatabase
 import lovehan1me.data.database.dao.HistoryDatabase
-import lovehan1me.data.database.dao.MiscellanyDatabase
-import lovehan1me.data.database.entity.HKeyframeEntity
 import lovehan1me.data.database.entity.CheckInRecordEntity
 import lovehan1me.data.database.entity.WatchHistoryEntity
 import lovehan1me.data.database.entity.download.DownloadCategoryEntity
@@ -43,7 +41,6 @@ object BackupManager {
         val appVersionName: String = appVersionNameRaw(),
         val exportedAt: Long = currentEpochMillis(),
         val settings: Map<String, PreferenceValue>? = null,
-        val hKeyframes: List<HKeyframeEntity>? = null,
         val checkInRecords: List<CheckInRecordEntity>? = null,
         val watchHistories: List<WatchHistoryEntity>? = null,
         val downloadGroups: List<DownloadGroupEntity>? = null,
@@ -93,13 +90,6 @@ object BackupManager {
     }
 
     private suspend fun applyBackup(backup: BackupData) {
-        backup.hKeyframes?.let { hKeyframes ->
-            Han1meDatabases.miscellany.hKeyframeDao.apply {
-                deleteAll()
-                insertAll(hKeyframes)
-            }
-        }
-
         backup.checkInRecords?.let { checkInRecords ->
             Han1meDatabases.checkInRecord.checkInDao().apply {
                 deleteAll()
@@ -160,7 +150,6 @@ object BackupManager {
         settings = DataStoreManager.exportBackup().mapValuesNotNull { (_, value) ->
             value.toPreferenceValue()
         },
-        hKeyframes = Han1meDatabases.miscellany.hKeyframeDao.getAll(),
         checkInRecords = Han1meDatabases.checkInRecord.checkInDao().getAllRecords(),
         watchHistories = Han1meDatabases.history.watchHistory.getAll(),
         downloadGroups = Han1meDatabases.download.downloadGroupDao.getAllGroupsOnce(),

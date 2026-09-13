@@ -1,22 +1,10 @@
 package lovehan1me.data
 
-import lovehan1me.core.util.LogUtil
-import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.dao.Han1meDatabases
-import lovehan1me.data.database.entity.HKeyframeEntity
-import lovehan1me.data.database.entity.HKeyframeHeader
-import lovehan1me.data.database.entity.HKeyframeType
 import lovehan1me.data.database.entity.SearchHistoryEntity
 import lovehan1me.data.database.entity.WatchHistoryEntity
 import lovehan1me.data.database.entity.download.DownloadGroupEntity
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.flow
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.Json
-import lovehan1me.core.platform.readAssetBytes
-import lovehan1me.core.platform.readAssetText
 
 /**
  * @project Hanime1
@@ -24,99 +12,6 @@ import lovehan1me.core.platform.readAssetText
  * @time 2022/06/22 022 23:00
  */
 object DatabaseRepo {
-
-    object HKeyframe {
-        private val hKeyframeDao = Han1meDatabases.miscellany.hKeyframeDao
-
-        fun loadAll(keyword: String? = null) =
-            if (keyword != null) hKeyframeDao.loadAll(keyword)
-            else hKeyframeDao.loadAll()
-
-        // #issue-106: 剧集分类
-        fun loadAllShared(): Flow<List<HKeyframeType>> = flow {
-            // P6a：走 composeResources/files（清单文件 index.txt 于构建期生成；三端同源）
-            val fileNames = readAssetText("h_keyframes/index.txt")
-                ?.lineSequence()
-                ?.filter { it.isNotBlank() && it.endsWith(".json") }
-                ?.toList()
-                .orEmpty()
-            val loaded = ArrayList<HKeyframeEntity>(fileNames.size)
-            for (fileName in fileNames) {
-                try {
-                    val bytes = readAssetBytes("h_keyframes/$fileName") ?: continue
-                    loaded.add(Json.decodeFromString<HKeyframeEntity>(bytes.decodeToString()))
-                } catch (e: Exception) {
-                    e.printStackTrace()
-                }
-            }
-            val res = loaded
-                .sortedWith(
-                    compareBy<HKeyframeEntity> { it.group }.thenBy { it.episode }
-                )
-                .groupBy { it.group ?: "???" }
-                .flatMap { (group, entities) ->
-                    listOf(HKeyframeHeader(title = group, attached = entities)) + entities
-                }
-            emit(res)
-        }
-
-        suspend fun findBy(videoCode: String) =
-            hKeyframeDao.findBy(videoCode)
-
-        fun observe(videoCode: String): Flow<HKeyframeEntity?> {
-            if (SettingsRepository.sharedHKeyframesEnable) {
-                return flow t@{
-                    val find = hKeyframeDao.findBy(videoCode)
-                    if (find == null || SettingsRepository.sharedHKeyframesUseFirst) {
-                        val bytes = readAssetBytes("h_keyframes/$videoCode.json")
-                        if (bytes == null) {
-                            // 资源缺失（android 读 assets 找不到文件；desktop/ios 无资源目录）
-                            LogUtil.w("HKeyframe", "未找到关键帧文件: $videoCode.json")
-                        } else {
-                            runCatching {
-                                val entity = Json.decodeFromString<HKeyframeEntity>(bytes.decodeToString())
-                                this@t.emit(entity)
-                            }.onFailure { e ->
-                                LogUtil.e("HKeyframe", "读取关键帧失败: ${e.message}", e)
-                            }
-                        }
-                    } else {
-                        hKeyframeDao.observe(videoCode).collect {
-                            this@t.emit(it)
-                        }
-                    }
-                }.catch t@{ e ->
-                    e.printStackTrace()
-                    hKeyframeDao.observe(videoCode).collect {
-                        this@t.emit(it)
-                    }
-                }
-            }
-            return hKeyframeDao.observe(videoCode)
-        }
-
-        suspend fun insert(entity: HKeyframeEntity) = hKeyframeDao.insert(entity)
-
-        suspend fun update(entity: HKeyframeEntity) = hKeyframeDao.update(entity)
-
-        suspend fun delete(entity: HKeyframeEntity) =
-            hKeyframeDao.delete(entity)
-
-        suspend fun modifyKeyframe(
-            videoCode: String,
-            oldKeyframe: HKeyframeEntity.Keyframe, keyframe: HKeyframeEntity.Keyframe,
-        ) = hKeyframeDao.modifyKeyframe(videoCode, oldKeyframe, keyframe)
-
-        suspend fun appendKeyframe(
-            videoCode: String, title: String,
-            keyframe: HKeyframeEntity.Keyframe,
-        ) = hKeyframeDao.appendKeyframe(videoCode, title, keyframe)
-
-        suspend fun removeKeyframe(
-            videoCode: String,
-            keyframe: HKeyframeEntity.Keyframe,
-        ) = hKeyframeDao.removeKeyframe(videoCode, keyframe)
-    }
 
     object SearchHistory {
         private val searchHistoryDao = Han1meDatabases.history.searchHistory
