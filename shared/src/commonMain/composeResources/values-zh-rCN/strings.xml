@@ -129,38 +129,17 @@
     <string name="direct">直接连接</string>
     <string name="system_proxy">系统代理</string>
     <string name="host_or_ipv4">Host 或 IPv4</string>
-    <string name="h_keyframe_settings">关键H帧设置</string>
-    <string name="h_keyframes_enable">关键H帧，启动！</string>
-    <string name="h_keyframes_enable_tip">该功能关闭后并不会删除你的历史数据</string>
-    <string name="h_keyframes_disable_tip">开启后，播放器顶部会有相关部件显示</string>
-    <string name="h_keyframe_title_prefix">影片代码：</string>
     <string name="manage">管理</string>
-    <string name="h_keyframe_manage">关键H帧管理</string>
-    <string name="when_countdown_remind">何时开始倒计时提醒</string>
-    <string name="show_prompt_when_countdown">倒计时显示提示</string>
     <string name="will_remind_before_d_seconds">将会在 %1$d 秒前倒计时提醒</string>
-    <string name="shared_h_keyframes_enable">采用共享关键H帧集</string>
-    <string name="shared_h_keyframe_manage">共享关键H帧管理</string>
-    <string name="shared_h_keyframe_manage_tip">欢迎到 GitHub 上面提交你的关键H帧，如果不会提交，讨论区有教学文档参考</string>
-    <string name="shared_h_keyframes_enable_tip">采用好心人上传到 Github 的关键H帧集</string>
     <string name="shared">共享</string>
-    <string name="shared_h_keyframes_use_first">优先采用共享关键H帧集</string>
-    <string name="shared_h_keyframes_use_first_tip">当共享集和本地集都存在某一影片的关键H帧时，优先采用共享集</string>
     <string name="forum">讨论区</string>
     <string name="forum_summary">欢迎来吐槽，如果有重要信息也会发布到这里</string>
     <string name="submit_bug">提交 BUG</string>
     <string name="submit_bug_summary">出 BUG 了就来提交个 issue 吧</string>
-    <string name="position_ms">位置 (ms)</string>
-    <string name="prompt">提示</string>
-    <string name="modify_h_keyframe">修改关键H帧</string>
     <string name="edit">修改</string>
     <string name="title">标题</string>
     <string name="video_code">影片代码</string>
     <string name="copy_">复制</string>
-    <string name="h_keyframes_shared_by_other_detected">检测到他人分享的关键H帧</string>
-    <string name="h_keyframes_shared_by_other_not_detected">未检测到他人分享的关键H帧</string>
-    <string name="h_keyframes_import_shared">导入分享的关键H帧</string>
-    <string name="h_keyframes_import_shared_hint">粘贴分享内容</string>
     <string name="share_to_others">分享给其他人</string>
     <string name="latest_release">最新上市</string>
     <string name="chinese_subtitle">中文字幕</string>
@@ -230,11 +209,6 @@
     <string name="delete_success">删除成功</string>
     <string name="video_might_not_exist">可能该影片不存在</string>
     <string name="video_not_exist">该影片不存在</string>
-    <string name="add_to_h_keyframe">加入关键H帧</string>
-    <string name="sure_to_add_to_h_keyframe">确定要将当前时刻加入关键H帧吗？</string>
-    <string name="current_position_d_ms">当前时刻：%1$dms</string>
-    <string name="pause_then_long_press">先暂停再长按</string>
-    <string name="long_press_to_add_h_keyframe">请长按按钮添加关键H帧</string>
     <string name="video_deleted_sure_to_delete_item">影片已被删除或移动，是否删除该条目？</string>
     <string name="delete_failed">删除失败</string>
     <string name="delete_fav">删除喜欢</string>
@@ -273,7 +247,6 @@
     <string name="thumb_up_success">点赞成功！</string>
     <string name="cancel_thumb_down_success">取消点踩成功！</string>
     <string name="thumb_down_success">点踩成功！</string>
-    <string name="interval_must_greater_than_d">间隔太短，必须大于%1$ds</string>
     <string name="load_reply_failed">加载回复失败了捏</string>
     <string name="send_failed">发送失败！</string>
     <string name="sending_reply">发表回复中</string>
@@ -307,11 +280,6 @@
     <string name="extremely_low">极低</string>
     <string name="slightly_high">稍高</string>
     <string name="extremely_high">极高</string>
-    <string name="shared_h_keyframe_detected_msg">注意：如果你也有和对方相同代号的关键H帧，那么你自己的将会被覆盖\n
-\n
-标题：%1$s\n
-代号：%2$s\n
-有 %3$d 个时刻</string>
     <string name="domain_change_tips">修改域名需要重启程序，否则不起作用！\n
 不同域名不共通 Cookie，所以更换域名后需要重新进行登录操作。\n
 所以除 hanime1.me 以外的域名可能在某些时间段会重定向回 hanime1.me，这可能导致 Cookie 失效\n
@@ -745,19 +713,14 @@
     <string name="no_license_items">没有可显示的项目</string>
     <string name="no_licenses_found">未搜索到项目</string>
     <string name="global_search">全站搜索</string>
-    <string name="player_h_keyframe">关键H帧</string>
-    <string name="h_keyframes_not_enabled">未启用关键H帧</string>
     <string name="player_auto_quality">自动</string>
     <string name="player_time_format">%1$s / %2$s</string>
     <string name="player_speed_format">%1$sx</string>
-    <string name="player_keyframe_index">#%1$d</string>
-    <string name="player_keyframe_option">#%1$d %2$s</string>
     <string name="player_progress_percent">%1$d%%</string>
     <string name="player_gesture_brightness">亮度</string>
     <string name="player_gesture_volume">音量</string>
     <string name="player_gesture_progress">进度</string>
     <string name="player_play_from_beginning">从头开始播放</string>
-    <string name="player_untitled_video">未命名视频</string>
     <string name="perception">感知</string>
     <string name="check_in_feature_name">冲了么</string>
     <string name="enable_check_in_feature">启用冲了么</string>

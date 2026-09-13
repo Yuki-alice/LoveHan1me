@@ -113,38 +113,17 @@
     <string name="direct">Direct Connection</string>
     <string name="system_proxy">System Proxy</string>
     <string name="host_or_ipv4">Host or IPv4</string>
-    <string name="h_keyframe_settings">H Keyframe Settings</string>
-    <string name="h_keyframes_enable">Enable H Keyframes!</string>
-    <string name="h_keyframes_enable_tip">Disabling this feature will not delete your history data</string>
-    <string name="h_keyframes_disable_tip">When enabled, relevant components will be displayed at the top of the player</string>
-    <string name="h_keyframe_title_prefix">Video Code: </string>
     <string name="manage">Manage</string>
-    <string name="h_keyframe_manage">Manage H Keyframes</string>
-    <string name="when_countdown_remind">When to Start Countdown Reminder</string>
-    <string name="show_prompt_when_countdown">Show Prompt on Countdown</string>
     <string name="will_remind_before_d_seconds">Will remind %d seconds before countdown</string>
-    <string name="shared_h_keyframes_enable">Use Shared H Keyframes</string>
-    <string name="shared_h_keyframe_manage">Manage Shared H Keyframes</string>
-    <string name="shared_h_keyframe_manage_tip">Welcome to submit your H Keyframes on GitHub. If you don\'t know how to submit, there are tutorial documents in the discussion area for reference.</string>
-    <string name="shared_h_keyframes_enable_tip">Use the H Keyframes shared by kind-hearted people uploaded to GitHub</string>
     <string name="shared">Shared</string>
-    <string name="shared_h_keyframes_use_first">Priority to Use Shared H Keyframes</string>
-    <string name="shared_h_keyframes_use_first_tip">When both shared and local sets have H Keyframes for a video, the shared set is prioritized</string>
     <string name="forum">Forum</string>
     <string name="forum_summary">Welcome to vent. Important information will also be posted here</string>
     <string name="submit_bug">Submit Bug</string>
     <string name="submit_bug_summary">If there\'s a bug, come and submit an issue</string>
-    <string name="position_ms">Position (ms)</string>
-    <string name="prompt">Prompt</string>
-    <string name="modify_h_keyframe">Modify H Keyframe</string>
     <string name="edit">Edit</string>
     <string name="title">Title</string>
     <string name="video_code">Video Code</string>
     <string name="copy_">Copy</string>
-    <string name="h_keyframes_shared_by_other_detected">Detected H Keyframes shared by others</string>
-    <string name="h_keyframes_shared_by_other_not_detected">No H Keyframes shared by others detected</string>
-    <string name="h_keyframes_import_shared">Import shared H Keyframes</string>
-    <string name="h_keyframes_import_shared_hint">Paste shared content</string>
     <string name="share_to_others">Share with Others</string>
     <string name="latest_release">Latest Release</string>
     <string name="chinese_subtitle">Chinese Subtitle</string>
@@ -214,11 +193,6 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="delete_success">Deletion Successful</string>
     <string name="video_might_not_exist">The video might not exist</string>
     <string name="video_not_exist">Video does not exist</string>
-    <string name="add_to_h_keyframe">Add to H Keyframe</string>
-    <string name="sure_to_add_to_h_keyframe">Are you sure you want to add the current time to the H Keyframe?</string>
-    <string name="current_position_d_ms">Current Time: %dms</string>
-    <string name="pause_then_long_press">Pause first, then long press</string>
-    <string name="long_press_to_add_h_keyframe">Long press button to add H Keyframe</string>
     <string name="video_deleted_sure_to_delete_item">Video has been deleted or moved, delete this entry?</string>
     <string name="delete_failed">Deletion Failed</string>
     <string name="delete_fav">Delete Favorite</string>
@@ -257,7 +231,6 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="thumb_up_success">Thumb Up Successful!</string>
     <string name="cancel_thumb_down_success">Thumb Down Cancelled Successfully!</string>
     <string name="thumb_down_success">Thumb Down Successful!</string>
-    <string name="interval_must_greater_than_d">Interval too short, must be greater than %ds</string>
     <string name="load_reply_failed">Failed to load replies</string>
     <string name="send_failed">Send Failed!</string>
     <string name="sending_reply">Sending Reply</string>
@@ -290,7 +263,6 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="extremely_low">Extremely Low</string>
     <string name="slightly_high">Slightly High</string>
     <string name="extremely_high">Extremely High</string>
-    <string name="shared_h_keyframe_detected_msg">Note: If you also have H Keyframes with the same code as the other party, yours will be overwritten\n\nTitle: %1$s\nCode: %2$s\n%3$d moment(s) available</string>
     <string name="domain_change_tips">Changing the domain name requires restarting the program, otherwise it will not take effect!\n
 Different domains do not share the same cookies, so after changing the domain name, you need to log in again.\n
 So, except for hanime1.me, other domain names may redirect back to hanime1.me at certain times, which may cause cookies to expire\n
@@ -738,19 +710,14 @@ Recommendations are as follows:\n
     <string name="no_licenses_found">No items found</string>
     <string name="global_search">Global Search</string>
     <string name="player_anime4k_label" translatable="false">Anime4K</string>
-    <string name="player_h_keyframe">H Keyframe</string>
-    <string name="h_keyframes_not_enabled">H Keyframes are not enabled</string>
     <string name="player_auto_quality">Auto</string>
     <string name="player_time_format">%1$s / %2$s</string>
     <string name="player_speed_format">%1$sx</string>
-    <string name="player_keyframe_index">#%1$d</string>
-    <string name="player_keyframe_option">#%1$d %2$s</string>
     <string name="player_progress_percent">%1$d%%</string>
     <string name="player_gesture_brightness">Brightness</string>
     <string name="player_gesture_volume">Volume</string>
     <string name="player_gesture_progress">Progress</string>
     <string name="player_play_from_beginning">Play from beginning</string>
-    <string name="player_untitled_video">Untitled</string>
     <string name="perception">Sensing</string>
     <string-array name="loading_hints">
         <item>Hmph! I-it\'s not like I kept you waiting! The router just sneezed…</item>

@@ -12,7 +12,6 @@ import lovehan1me.site.hanime1.HanimeResolution
 import lovehan1me.Res
 import lovehan1me.add_success
 import lovehan1me.delete_success
-import lovehan1me.interval_must_greater_than_d
 import lovehan1me.data.DatabaseRepo
 import lovehan1me.data.LocalListRepository
 import lovehan1me.data.NetworkRepo
