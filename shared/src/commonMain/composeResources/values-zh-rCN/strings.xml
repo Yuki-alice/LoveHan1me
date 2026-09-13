@@ -835,7 +835,8 @@
     <string name="previous_month">上个月</string>
     <string name="next_month">下个月</string>
     <string name="cf_cdp_locating">正在查找本机已装的 Chrome / Edge 浏览器进行自动验证，无需下载任何组件……</string>
-    <string name="cf_cdp_waiting">无头浏览器已启动，正在等待验证通过（最长 2 分钟）……</string>
+    <string name="cf_cdp_waiting">验证浏览器窗口已打开，请在该窗口中完成验证（最长 2 分钟）……</string>
+    <string name="cf_use_manual">改用手动验证</string>
     <string name="cf_cdp_failed_title">自动验证不可用</string>
     <string name="cf_manual_open_browser">用系统浏览器打开验证页</string>
     <string name="cf_manual_cookie_hint">通过验证后，在浏览器开发者工具中复制以 cf_clearance 开头的 Cookie，粘贴到下方。</string>

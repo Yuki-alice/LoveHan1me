@@ -15,7 +15,6 @@ import lovehan1me.data.network.HCookieJar
 import java.io.File
 import java.net.ServerSocket
 import java.net.URI
-import java.nio.file.Files
 import kotlin.coroutines.coroutineContext
 
 /**
@@ -26,23 +25,41 @@ import kotlin.coroutines.coroutineContext
  * 是同一类解法（Managed Challenge/Turnstile 在真浏览器里自动过），
  * 但**零下载、零 JNI/CEF 原生崩溃面**。
  *
- * 流程（与旧 KCEF 窗同语义）：
- * 1. [findBrowser] 探活本机 Chrome/Edge 可执行文件；
- * 2. 临时 profile（`--user-data-dir` 指向新建空目录，避免与用户正在跑的
- *    浏览器抢锁）+ headless 起 `--remote-debugging-port`；
- * 3. 经 CDP 建页并导航到挑战 URL，轮询 `Network.getAllCookies`，
- *    出现 `cf_*` 即视为通过（与旧实现同判定）；
- * 4. 经 [persistSolvedCookies] 写回 [HCookieJar.cookieMap] + DataStore
- *    （后续请求自动携带，对齐旧语义与 iOS 端）。
+ * ## 为什么是"可见窗口"，而不是无头（2026-09-13 实测推翻原设计）
+ * 本机、经系统代理、同一台机器：
+ * - **无头**（`--headless=new` + `--no-sandbox/--disable-gpu/--enable-unsafe-swiftshader`）
+ *   访问挑战页，**47 秒后仍停在"请稍候…"**，profile 里始终没有 `cf_clearance`；
+ * - 换**可见窗口**（同一 UA、同一代理、同样全新 profile）→ **拿到了 `cf_clearance`**。
  *
- * 绑定约束（M8-1b 教训）：`cf_clearance` 绑定 UA 与出口 IP——
- * CDP 浏览器必须与应用 HTTP 层一致：UA 强制 [DESKTOP_USER_AGENT]
- * （`--user-agent`），代理按 [SettingsRepository] 的 proxy 配置透传
- * `--proxy-server`（System/Direct 模式不传参，Chrome 默认走系统代理，
- * 与 JVM 侧行为一致）。
+ * 结论：无头 + 那组自动化 flag 本身就是 CF 重点打量的指纹，Managed Challenge
+ * 不会放行。故本类**不传 `--headless`**，也不再传任何自动化专用 flag ——
+ * 用一个"与普通用户手动打开浏览器没有区别"的窗口去解挑战。
+ *
+ * ## 流程
+ * 1. [findBrowser] 探活本机 Chrome/Edge 可执行文件；
+ * 2. **持久 profile**（`~/.lovehan1me/cf-browser-profile`）起一个**可见**窗口：
+ *    Chrome 136+ 禁止对默认 profile 开远程调试，所以必须独立 profile；
+ *    但"每次全新"等于每次都被当新设备 → 持久化后重复访问常直接放行；
+ * 3. 经 CDP 建页并导航到挑战 URL，轮询 `Network.getAllCookies`，
+ *    命中 **`cf_clearance`（精确名 + 域匹配 + 值合法）** 即视为通过；
+ * 4. 经 [persistSolvedCookies] 写回 [HCookieJar.cookieMap] + DataStore，
+ *    **写回成功才算完成**（写不进去还报成功，用户只会再撞一次 403）。
+ *
+ * ## 两条绑定约束（`cf_clearance` 绑定 UA 与出口 IP）
+ * - **UA**：浏览器 `--user-agent` 用 [DESKTOP_USER_AGENT]；桌面端 HTTP 层经
+ *   `currentHttpUserAgent()` 发的也是同一个常量。**两头必须一致** ——
+ *   此前桌面 HTTP 层发的是移动 UA（`USER_AGENT`），与浏览器不一致，
+ *   导致收割回来的 clearance 永久失效，属独立于 headless 的结构性错误（已修）。
+ * - **出口 IP**：代理按 [SettingsRepository] 的 proxy 配置透传 `--proxy-server`；
+ *   System/Direct 不传参（Chrome 默认走系统代理）。
+ *
+ * ## 判定为什么收紧到 `cf_clearance`
+ * 旧实现是"名字以 `cf_` 开头即通过"，而 `cf_bm` / `cf_chl_*` 这类 cookie
+ * **挑战进行中就会下发** → 假通过 → 写回一个没用的 cookie → 重试仍 403 →
+ * 反复弹窗。[findClearanceCookie] 因此要求精确名 + 域匹配 + 值合法。
  *
  * 失败一律以 [SolveResult.Failed]/[SolveResult.Timeout]/[SolveResult.NoBrowser]
- * 返回，由窗口切手动兜底面板；进程与临时目录在 finally 里清理。
+ * 返回，由窗口切手动兜底面板；**进程**在 finally 里清理，profile 目录保留。
  */
 object CloudflareCdp {
 
@@ -50,7 +67,8 @@ object CloudflareCdp {
     private val cdpJson = Json { ignoreUnknownKeys = true }
 
     sealed interface SolveResult {
-        data class Solved(val cookieHeader: String, val cookies: List<CdpCookie>) : SolveResult
+        /** 已拿到可用的 clearance（只可能有一个）。写法回由调用方决定。 */
+        data class Solved(val clearance: CdpCookie) : SolveResult
         data object NoBrowser : SolveResult
         data class Failed(val reason: String) : SolveResult
         data object Timeout : SolveResult
@@ -127,32 +145,31 @@ object CloudflareCdp {
     // ── 求解 ────────────────────────────────────────────
 
     /**
-     * 用无头浏览器解挑战。
+     * 用一个**可见**浏览器窗口解挑战（见类 KDoc：无头实测过不了）。
      *
      * @param onStage UI 阶段文案回调（"正在启动…"/"等待通过…"）。
+     * @param proxyArg 代理参数（`--proxy-server=...`）；默认按用户代理设置解析，
+     *        可注入——真实网络验证见 `CloudflareCdpLiveTest`
      * @return Solved / NoBrowser / Failed / Timeout（调用方切手动兜底）。
      */
     suspend fun solve(
         url: String,
         timeoutMs: Long = SOLVE_TIMEOUT_MS,
         onStage: (String) -> Unit = {},
+        proxyArg: String? = proxyFlag(),
     ): SolveResult = withContext(Dispatchers.IO) {
         val browser = findBrowser() ?: return@withContext SolveResult.NoBrowser
         onStage("starting")
         val port = freePort() ?: return@withContext SolveResult.Failed("无可用本地端口")
-        val profileDir = runCatching {
-            Files.createTempDirectory("han1me-cdp").toFile()
-        }.getOrNull() ?: return@withContext SolveResult.Failed("无法创建临时目录")
+        val profileDir = runCatching { challengeProfileDirectory() }.getOrNull()
+            ?: return@withContext SolveResult.Failed("无法创建浏览器 profile 目录")
 
-        val args = buildArgs(browser, port, profileDir)
+        val args = buildArgs(browser, port, profileDir, proxyArg)
         val process = runCatching {
             ProcessBuilder(args).redirectOutput(ProcessBuilder.Redirect.DISCARD)
                 .redirectError(ProcessBuilder.Redirect.DISCARD)
                 .start()
-        }.getOrNull() ?: run {
-            profileDir.deleteRecursively()
-            return@withContext SolveResult.Failed("浏览器启动失败")
-        }
+        }.getOrNull() ?: return@withContext SolveResult.Failed("浏览器启动失败")
         try {
             onStage("waiting")
             withTimeoutOrNull(timeoutMs) {
@@ -169,40 +186,66 @@ object CloudflareCdp {
                 SolveResult.Timeout
             }
         } finally {
+            // 只杀进程；**profile 目录保留**（暖 profile 能让下次少被挑战，见类 KDoc）
             runCatching { process.destroy() }
             runCatching {
                 delay(500)
                 if (process.isAlive) process.destroyForcibly()
             }
-            runCatching { profileDir.deleteRecursively() }
         }
     }
 
-    private fun buildArgs(browser: String, port: Int, profileDir: File): List<String> {
+    /**
+     * CF 验证浏览器专用的**持久** profile 目录。
+     *
+     * 两个约束共同决定了这个形态：
+     * 1. Chrome 136+ **禁止对默认 profile 开 `--remote-debugging-port`** →
+     *    不能借用户自己的浏览器 profile，必须用独立目录；
+     * 2. 但"每次新建空 profile" = 每次都像一台新设备 → 每次都被挑战。
+     *    持久化后，上次通过验证沉淀下来的 clearance 与浏览历史会让重复访问
+     *    常常直接放行（这也是它放在用户主目录下的原因）。
+     */
+    internal fun challengeProfileDirectory(): File {
+        val dir = File(System.getProperty("user.home"), ".lovehan1me/cf-browser-profile")
+        if (!dir.exists() && !dir.mkdirs()) {
+            error("无法创建 CF 浏览器 profile 目录：$" + "{dir.absolutePath}")
+        }
+        return dir
+    }
+
+    /**
+     * 可见窗口的启动参数。
+     *
+     * ⚠️ **不要加回 `--headless` 与那组自动化 flag**（`--no-sandbox` /
+     * `--disable-gpu` / `--enable-unsafe-swiftshader` / `--disable-dev-shm-usage`）：
+     * 它们是为"无头也能跑"而加的，但实测无头**根本拿不到 clearance**（见类 KDoc），
+     * 而且这套组合本身就是 CF 重点打量的指纹。`CloudflareCdpTest` 有回归测试钉住。
+     *
+     * @param proxyArg 由 [proxyFlag] 解析或调用方注入（测试用）
+     */
+    internal fun buildArgs(
+        browser: String,
+        port: Int,
+        profileDir: File,
+        proxyArg: String? = proxyFlag(),
+    ): List<String> {
         val args = mutableListOf(
             browser,
-            "--headless=new",
+            // 必须与 HTTP 层同一个 UA：cf_clearance 绑定 (UA, 出口 IP)，见类 KDoc
+            "--user-agent=$DESKTOP_USER_AGENT",
             "--remote-debugging-port=$port",
             // Chrome 111+ 起 WS 调试连接默认拒绝（无 Origin 即 500），自动化必须显式放行；
             // 只绑 127.0.0.1 临时端口 + 用完即杀进程，对外无暴露面。
             "--remote-allow-origins=*",
             "--no-first-run",
             "--no-default-browser-check",
-            // 无头 renderer 在某些环境（无显示服务/远端会话的 macOS）不稳定，
-            // 会秒崩 target（Inspector.targetCrashed）；--no-sandbox 是自动化
-            // 惯例解法。安全面：临时空白 profile、只访问 CF 验证页、跑完即杀，
-            // 不装扩展不同步账号，可接受。
-            "--no-sandbox",
-            "--disable-gpu",
-            // 无头且无显示服务时（如 CI/服务器），渲染器初始化失败会导致
-            // target 秒崩（Inspector.targetCrashed）；SwiftShader 软渲染兜底。
-            // 实测：缺此 flag 时本机 Edge headless 必现 targetCrashed。
-            "--enable-unsafe-swiftshader",
-            "--disable-dev-shm-usage",
+            // 可见窗口：用户看得见、能自己点（Turnstile 有时需要人工交互），
+            // 也让整个会话看起来就是"一次普通浏览"
+            "--new-window",
+            "--window-size=1080,760",
             "--user-data-dir=${profileDir.absolutePath}",
-            "--user-agent=$DESKTOP_USER_AGENT",
         )
-        proxyFlag()?.let { args += it }
+        proxyArg?.let { args += it }
         args += "about:blank"
         return args
     }
@@ -238,6 +281,9 @@ object CloudflareCdp {
     }
 
     private suspend fun solveWithProcess(challengeUrl: String, port: Int): SolveResult {
+        // 判定锚定挑战 URL 的 host：clearance 是 hostOnly 语义，别把别的站的收进来
+        val challengeHost = runCatching { URI(challengeUrl).host?.lowercase() }.getOrNull()
+            ?: return SolveResult.Failed("验证地址无效")
         // 等调试端口就绪（Chrome 冷启动数秒）
         val debuggerBase = waitForDebugger(port) ?: return SolveResult.Failed("浏览器调试端口无响应")
         // 新建干净 target（fresh profile 下本就只有一个 about:blank 页，取首个 page 亦可；
@@ -269,9 +315,10 @@ object CloudflareCdp {
             while (coroutineContext.isActive && System.currentTimeMillis() < endAt) {
                 val pollId = send("Network.getAllCookies")
                 val cookies = readCookiesUntil(socket, pollId) ?: continue
-                if (hasClearanceCookies(cookies)) {
-                    val header = cookies.joinToString("; ") { "${it.name}=${it.value}" }
-                    return SolveResult.Solved(header, cookies)
+                val clearance = findClearanceCookie(cookies, challengeHost)
+                if (clearance != null) {
+                    LogUtil.d(TAG, "拿到 cf_clearance（domain=${clearance.domain}）")
+                    return SolveResult.Solved(clearance)
                 }
                 delay(POLL_INTERVAL_MS)
             }
@@ -294,9 +341,39 @@ object CloudflareCdp {
             .getOrNull()?.takeIf { it.isNotBlank() }
     }
 
-    /** 回包里是否有 cf_ 系 cookie（与旧 KCEF 窗同判定；单测入口）。 */
-    internal fun hasClearanceCookies(cookies: List<CdpCookie>): Boolean =
-        cookies.any { it.name.startsWith("cf_") }
+    /**
+     * 从回包里找出**真正的** clearance cookie（单测入口）。
+     *
+     * 旧实现是"名字以 `cf_` 开头就算通过"，而 `cf_bm` / `cf_chl_*` 这类
+     * **挑战进行中就会下发**的 cookie 也满足它 → 假通过 → 写回一个没用的 cookie
+     * → 重试仍 403 → 反复弹窗。这里收紧到三条：
+     * 1. 名字**精确**等于 [CLEARANCE_COOKIE_NAME]；
+     * 2. 域对目标 host 有效（RFC 6265：`D == host` 或 `host` 以 `.` + D 结尾）；
+     * 3. 值非空，且**不含 `;` 与控制字符** —— 它会被拼进 Cookie 请求头，
+     *    含分隔符会破坏整个请求（与 legacy WebView2 助手同一道校验）。
+     *
+     * @return 命中的 cookie；没有则 null（调用方继续轮询）
+     */
+    internal fun findClearanceCookie(cookies: List<CdpCookie>, host: String): CdpCookie? {
+        val target = host.trim().trimStart('.').lowercase()
+        if (target.isEmpty()) return null
+        return cookies.firstOrNull { cookie ->
+            cookie.name == CLEARANCE_COOKIE_NAME &&
+                cookie.value.isNotBlank() &&
+                cookie.value.none { it == ';' || it.isISOControl() } &&
+                cookie.domain.isCookieDomainAllowedFor(target)
+        }
+    }
+
+    /**
+     * RFC 6265 域匹配：`.hanime1.me` 的 cookie 对 `www.hanime1.me` 有效，
+     * 对兄弟站 `hanimeone.me` **无效**。空域一律拒绝（宁可继续等，也不写错的 cookie）。
+     */
+    private fun String.isCookieDomainAllowedFor(targetHost: String): Boolean {
+        val domain = trim().trimStart('.').trimEnd('.').lowercase()
+        if (domain.isEmpty()) return false
+        return domain == targetHost || targetHost.endsWith("." + domain)
+    }
 
     /** 读 WS 帧直到拿到指定 id 的 getAllCookies 回包（其它帧跳过；单测不覆盖，走真机）。 */
     private fun readCookiesUntil(socket: CdpWebSocket, pollId: Int): List<CdpCookie>? {
@@ -373,23 +450,34 @@ object CloudflareCdp {
     // ── 产物写回（与旧 KCEF 路径同语义） ──────────────────
 
     /**
-     * 收割到的 cookie 写回内存 + DataStore（后续请求自动携带）。
-     * 与旧 KCEF 实现块等价：`HCookieJar.loadForRequest` 在 host 匹配时叠加。
+     * 把 clearance 写回内存 + DataStore（后续请求自动携带）。
+     * `HCookieJar.loadForRequest` 在 host 匹配时叠加它。
+     *
+     * **只写 `cf_clearance` 一个**：浏览器 profile 里其它 cookie（`cf_bm`、
+     * 站点自己的会话 cookie 等）跟"应用能不能请求"无关，掺进来只会让
+     * "写回了什么"变得不可解释。
+     *
+     * @return 是否写回成功。**调用方只有拿到 true 才能把验证标记为完成** ——
+     *         写不进去还报成功，用户只会再撞一次 403，然后怀疑"验证根本没用"。
      */
-    suspend fun persistSolvedCookies(host: String, cookies: List<CdpCookie>) {
-        val okhttpCookies = cookies.mapNotNull { c ->
-            runCatching {
-                okhttp3.Cookie.Builder()
-                    .name(c.name)
-                    .value(c.value)
-                    .domain(host)
-                    .path("/")
-                    .build()
-            }.getOrNull()
-        }
-        HCookieJar.cookieMap[host] = okhttpCookies.toMutableList()
-        val cookieHeader = cookies.joinToString("; ") { "${it.name}=${it.value}" }
-        SettingsRepository.setCloudFlareCookie(cookieHeader, host)
+    suspend fun persistSolvedCookies(host: String, clearance: CdpCookie): Boolean {
+        val cookie = runCatching {
+            okhttp3.Cookie.Builder()
+                .name(clearance.name)
+                .value(clearance.value)
+                .domain(host)
+                .path("/")
+                .build()
+        }.getOrNull() ?: return false
+
+        HCookieJar.cookieMap[host] = mutableListOf(cookie)
+        return runCatching {
+            SettingsRepository.setCloudFlareCookie(
+                value = "${clearance.name}=${clearance.value}",
+                host = host,
+            )
+            true
+        }.getOrDefault(false)
     }
 
     @Serializable
@@ -415,6 +503,12 @@ object CloudflareCdp {
         val type: String = "",
         val webSocketDebuggerUrl: String = "",
     )
+
+    /**
+     * clearance cookie 的**精确**名字。判据只认它 —— `cf_bm` / `cf_chl_*` 会在
+     * 挑战进行中就下发，按前缀判定会"假通过"（见 [findClearanceCookie]）。
+     */
+    internal const val CLEARANCE_COOKIE_NAME = "cf_clearance"
 
     private const val SOLVE_TIMEOUT_MS = 120_000L
     private const val POLL_INTERVAL_MS = 2_500L

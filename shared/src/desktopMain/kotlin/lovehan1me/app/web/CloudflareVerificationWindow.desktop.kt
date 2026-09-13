@@ -33,6 +33,7 @@ import lovehan1me.cf_manual_cookie_hint
 import lovehan1me.cf_manual_open_browser
 import lovehan1me.cf_manual_retry
 import lovehan1me.cf_manual_submit
+import lovehan1me.cf_use_manual
 import lovehan1me.complete_cloudflare_verification
 import org.jetbrains.compose.resources.stringResource
 import java.awt.Desktop
@@ -44,10 +45,13 @@ import java.net.URI
  * 形态（用户要的"独立窗口弹窗"）：Compose Desktop 在 App 内再开 `Window`，
  * 与主窗口互不干扰；验证结束关窗，调用方回退路由重试原请求。
  *
- * 自动验证走 [CloudflareCdp]：探活本机 Chrome/Edge → 临时 profile 无头启动 →
- * CDP 建页导航 → 轮询 `Network.getAllCookies` 收割 `cf_*` → 写回
- * CookieJar + DataStore。与旧 KCEF 窗同语义，但**零下载**（KCEF 200MB
- * 运行时已删除）：本机无浏览器 / 启动失败 / 120 秒未通过 → 切手动兜底面板。
+ * 自动验证走 [CloudflareCdp]：探活本机 Chrome/Edge → **持久 profile + 可见窗口**
+ * 启动 → CDP 建页导航 → 轮询 `Network.getAllCookies` 收割 **`cf_clearance`** →
+ * 写回 CookieJar + DataStore。**零下载**（KCEF 的 200MB 运行时已删除）。
+ *
+ * ⚠️ 形态是"可见窗口"而非无头：实测无头 47 秒也拿不到 clearance（见
+ * [CloudflareCdp] 类 KDoc）。因此本窗只是**说明与兜底**：真正要让用户操作的
+ * 是那个浏览器窗口；本机无浏览器 / 启动失败 / 2 分钟未通过 → 切手动兜底面板。
  *
  * 手动兜底（与旧版同）：① 用系统浏览器打开验证页；② 粘贴 `cf_clearance`
  * 写回 DataStore（`HCookieJar.loadForRequest` 在 host 匹配时叠加，
@@ -74,7 +78,7 @@ fun CloudflareVerificationWindow(
                 CloudflareCdp.findBrowser()
             }
             if (browser == null) {
-                phase = CdpWindowPhase.Manual("本机未找到 Chrome / Edge 浏览器")
+                phase = CdpWindowPhase.Manual(NO_BROWSER)
                 return@launch
             }
             phase = CdpWindowPhase.Verifying
@@ -86,16 +90,20 @@ fun CloudflareVerificationWindow(
                 }
             })) {
                 is CloudflareCdp.SolveResult.Solved -> {
-                    CloudflareCdp.persistSolvedCookies(host, result.cookies)
-                    open = false
-                    onPassed()
+                    // 写回成功才回调完成；写不进去还报成功，用户只会再撞一次 403
+                    if (CloudflareCdp.persistSolvedCookies(host, result.clearance)) {
+                        open = false
+                        onPassed()
+                    } else {
+                        phase = CdpWindowPhase.Manual(IMPORT_FAILED)
+                    }
                 }
 
                 is CloudflareCdp.SolveResult.NoBrowser ->
-                    phase = CdpWindowPhase.Manual("本机未找到 Chrome / Edge 浏览器")
+                    phase = CdpWindowPhase.Manual(NO_BROWSER)
 
                 is CloudflareCdp.SolveResult.Timeout ->
-                    phase = CdpWindowPhase.Manual("120 秒内未通过验证（可能需要人工点选）")
+                    phase = CdpWindowPhase.Manual("2 分钟内未通过验证（窗口里可能还需要人工点一下）")
 
                 is CloudflareCdp.SolveResult.Failed ->
                     phase = CdpWindowPhase.Manual(result.reason)
@@ -148,6 +156,12 @@ fun CloudflareVerificationWindow(
     }
 }
 
+/** 无浏览器可用（探活与求解两条路径共用同一句文案）。 */
+private const val NO_BROWSER = "本机未找到 Chrome / Edge 浏览器"
+
+/** 拿到 clearance 但写回失败——不能当成成功，否则用户会再撞一次 403。 */
+private const val IMPORT_FAILED = "验证已通过，但凭据写回失败，请重试或改用手动方式"
+
 private sealed interface CdpWindowPhase {
     data object Locating : CdpWindowPhase
     data object Verifying : CdpWindowPhase
@@ -168,7 +182,7 @@ private fun StatusPane(
         Text(text = title, style = MaterialTheme.typography.titleMedium)
         Text(text = body, style = MaterialTheme.typography.bodyMedium)
         TextButton(onClick = onUseManual) {
-            Text(stringResource(Res.string.cf_manual_open_browser))
+            Text(stringResource(Res.string.cf_use_manual))
         }
     }
 }
