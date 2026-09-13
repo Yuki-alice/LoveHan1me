@@ -1,7 +1,11 @@
 package lovehan1me.app
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -12,6 +16,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import lovehan1me.data.SettingsRepository
@@ -33,6 +39,8 @@ import lovehan1me.app.sharedViewModel
 import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.launch
 import lovehan1me.Res
+import lovehan1me.loading
+import lovehan1me.ui.component.content.LoadingContent
 import lovehan1me.app_source_illegal_message
 import lovehan1me.app_source_illegal_title
 import lovehan1me.app_source_repository_link
@@ -51,6 +59,24 @@ import lovehan1me.app_source_verify
  * - 登录成功后经提升的 [HomePageViewModel] 刷新首页（与 `:app` `activity.viewModel`
  *   语义一致）。
  */
+/**
+ * 三段门控未过时的底衬：主题背景 + 加载指示。
+ *
+ * 刻意保持"哑"：不碰任何门控状态、不抢焦点、不显示进度百分比 ——
+ * 它的唯一职责是别让用户在对话框出现前后看到一片空白/白底。
+ */
+@Composable
+private fun StartupGateBackdrop() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background),
+        contentAlignment = Alignment.Center,
+    ) {
+        LoadingContent(message = stringResource(Res.string.loading))
+    }
+}
+
 @Composable
 fun App(
     onExit: () -> Unit = {},
@@ -130,6 +156,11 @@ fun App(
                 homeViewModel = homeViewModel,
                 platformScreens = platformScreens,
             )
+        } else {
+            // 三段门控（使用须知 → 来源确认 → 非法来源警告）未过时，下面还会叠加对话框。
+            // 此前这里**什么都不画** —— 用户看到的是"白窗 + 弹窗浮在半空"，
+            // 分不清"应用在启动"还是"界面挂了"。给一层主题化底衬（不改门控语义）。
+            StartupGateBackdrop()
         }
 
         UsageNoticeDialog(
