@@ -107,6 +107,14 @@ fun VideoShellContent(
     onOpenGifCapture: () -> Unit,
     /** M3-c：点「截图」的回调。 */
     onCaptureScreenshot: () -> Unit,
+    /** 播放失败的真实原因，透传给播放器重试卡。 */
+    errorMessage: String?,
+    /** 左半屏竖滑调亮度是否真的生效（桌面/iOS 无亮度 API → false，UI 不接管该手势）。 */
+    brightnessGestureEnabled: Boolean,
+    /** M5-3：双击左右快退/快进的相对跳转。 */
+    onSeekBy: (Long) -> Unit,
+    /** M5-3：视频总时长（双击 HUD 换算百分比用）。 */
+    durationMs: Long,
     onLongPressStart: () -> Unit,
     onLongPressEnd: () -> Unit,
     onVolumeChange: (Float) -> Unit,
@@ -207,6 +215,10 @@ fun VideoShellContent(
                     frameCaptureEnabled = frameCaptureEnabled,
                     onOpenGifCapture = onOpenGifCapture,
                     onCaptureScreenshot = onCaptureScreenshot,
+                    errorMessage = errorMessage,
+                    brightnessGestureEnabled = brightnessGestureEnabled,
+                    onSeekBy = onSeekBy,
+                    durationMs = durationMs,
                     onLongPressStart = onLongPressStart,
                     onLongPressEnd = onLongPressEnd,
                     onVolumeChange = onVolumeChange,
@@ -288,6 +300,10 @@ fun VideoShellContent(
                     frameCaptureEnabled = frameCaptureEnabled,
                     onOpenGifCapture = onOpenGifCapture,
                     onCaptureScreenshot = onCaptureScreenshot,
+                    errorMessage = errorMessage,
+                    brightnessGestureEnabled = brightnessGestureEnabled,
+                    onSeekBy = onSeekBy,
+                    durationMs = durationMs,
                     onLongPressStart = onLongPressStart,
                     onLongPressEnd = onLongPressEnd,
                     onVolumeChange = onVolumeChange,

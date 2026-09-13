@@ -155,6 +155,8 @@ fun VideoPlayerUi(
     showResumeButton: Boolean = false,
     showLoading: Boolean = false,
     showRetry: Boolean = false,
+    /** 播放失败的真实原因（引擎/网络给的消息），显示在重试卡上；空则不显示。 */
+    errorMessage: String? = null,
     onPlayClick: () -> Unit = {},
     onReplay: () -> Unit = {},
     onBackClick: () -> Unit = {},
@@ -162,6 +164,10 @@ fun VideoPlayerUi(
     onFullscreenClick: () -> Unit = {},
     onLockClick: () -> Unit = {},
     onProgressChange: (Float) -> Unit = {},
+    /** M5-3：相对跳转（双击左右快退/快进）。传毫秒增量。 */
+    onSeekBy: (Long) -> Unit = {},
+    /** 视频总时长（毫秒）。双击跳转的 HUD 要用它把 ±秒 换算成百分比。 */
+    durationMs: Long = 0L,
     onResumeClick: () -> Unit = onPlayClick,
     onRetry: () -> Unit = {},
     qualities: List<PlaybackQuality> = emptyList(),
@@ -188,12 +194,32 @@ fun VideoPlayerUi(
     onLongPressStart: () -> Unit = {},
     onLongPressEnd: () -> Unit = {},
     onVolumeChange: (Float) -> Unit = {},
+    /**
+     * 左半屏竖滑是否真的能调亮度。桌面/iOS 的平台宿主没有实现亮度 API，
+     * 此前手势照样弹 HUD 但什么都不发生 —— 那是"假动作"。为 false 时直接不接管该手势。
+     */
+    brightnessGestureEnabled: Boolean = true,
     onBrightnessChange: (Float) -> Unit = {},
     onProgressGesture: (Float) -> Unit = onProgressChange,
     progressGestureSensitivity: Float = PlayerDefaults.DEFAULT_PROGRESS_SLIDE_SENSITIVITY.toFloat(),
     videoAspectRatio: Float = 16f / 9f,
 ) {
     var showControlsState by remember { mutableStateOf(true) }
+
+    // M5-3：拖动进度条期间的**本地乐观值**。拖动中显示手指位置，而不是引擎回写的旧位置 ——
+    // 引擎 seek 后立刻 publishState，而它读到的仍是旧位置，直接显示会"拖了又弹回去"。
+    var sliderDragValue by remember { mutableStateOf<Float?>(null) }
+    var lastSliderSeekAtMs by remember { mutableLongStateOf(0L) }
+    // M5-3：双击左右快进/快退的瞬时反馈（方向 + 目标百分比），复用同一个手势浮层。
+    var doubleTapSeekFeedback by remember {
+        mutableStateOf<Pair<ProgressGestureDirection, Float>?>(null)
+    }
+    LaunchedEffect(doubleTapSeekFeedback) {
+        if (doubleTapSeekFeedback != null) {
+            delay(700)
+            doubleTapSeekFeedback = null
+        }
+    }
     var gestureType by remember { mutableStateOf<GestureIndicatorType?>(null) }
     var gesturePercent by remember { mutableFloatStateOf(0.5f) }
     var dragStartedOnLeft by remember { mutableStateOf(true) }
@@ -236,6 +262,9 @@ fun VideoPlayerUi(
     val latestProgress by rememberUpdatedState(progress)
     val latestVolume by rememberUpdatedState(currentVolume)
     val latestBrightness by rememberUpdatedState(currentBrightness)
+    val latestBrightnessGestureEnabled by rememberUpdatedState(brightnessGestureEnabled)
+    val latestOnSeekBy by rememberUpdatedState(onSeekBy)
+    val latestDurationMs by rememberUpdatedState(durationMs)
     val latestProgressSensitivity by rememberUpdatedState(progressGestureSensitivity)
     val latestOnProgressGesture by rememberUpdatedState(onProgressGesture)
     val latestOnVolumeChange by rememberUpdatedState(onVolumeChange)
@@ -315,7 +344,34 @@ fun VideoPlayerUi(
                                 showControlsState = !showControlsState
                             }
                         },
-                        onDoubleTap = { onPlayClick() },
+                        // M5-3：双击三分区 —— 左 1/3 快退、右 1/3 快进、中间播放/暂停。
+                        // 两家成熟播放器都是这个语义（本项目此前双击只能切播放/暂停，
+                        // 而快进快退是视频播放器最常用的手势）。
+                        onDoubleTap = { offset ->
+                            val stepMs = DOUBLE_TAP_SEEK_STEP_MS
+                            val third = size.width / 3f
+                            val direction = when {
+                                offset.x < third -> ProgressGestureDirection.Backward
+                                offset.x > third * 2f -> ProgressGestureDirection.Forward
+                                else -> null
+                            }
+                            if (direction == null) {
+                                onPlayClick()
+                            } else {
+                                val forward = direction == ProgressGestureDirection.Forward
+                                latestOnSeekBy(if (forward) stepMs else -stepMs)
+                                val duration = latestDurationMs
+                                if (duration > 0L) {
+                                    val stepPercent = stepMs.toFloat() / duration
+                                    val target = if (forward) {
+                                        (progress + stepPercent).coerceIn(0f, 1f)
+                                    } else {
+                                        (progress - stepPercent).coerceIn(0f, 1f)
+                                    }
+                                    doubleTapSeekFeedback = direction to target
+                                }
+                            }
+                        },
                     )
                 }
             }
@@ -427,6 +483,11 @@ fun VideoPlayerUi(
                                     } else {
                                         GestureIndicatorType.Volume
                                     }
+                                // 平台没有亮度能力时**不接管**左半屏竖滑：
+                                // 否则 HUD 会照样弹出百分比而实际什么都不发生（假动作）。
+                                if (type == GestureIndicatorType.Brightness && !latestBrightnessGestureEnabled) {
+                                    return@detectDragGestures
+                                }
                                 if (gestureType == null) {
                                     gesturePercent = when (type) {
                                         GestureIndicatorType.Progress -> gestureStartProgress
@@ -469,7 +530,18 @@ fun VideoPlayerUi(
                 },
         )
 
-        gestureType?.let { type ->
+        // 双击快进/快退有独立的瞬时反馈（700ms 后自动消失，见上面 LaunchedEffect）；
+        // 它与拖动手势复用同一个浮层组件，只是数据来源不同。
+        val seekFeedback = doubleTapSeekFeedback
+        if (seekFeedback != null) {
+            GestureIndicatorOverlay(
+                visible = true,
+                type = GestureIndicatorType.Progress,
+                percent = seekFeedback.second,
+                progressDirection = seekFeedback.first,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else gestureType?.let { type ->
             GestureIndicatorOverlay(
                 visible = true,
                 type = type,
@@ -724,7 +796,12 @@ fun VideoPlayerUi(
         }
 
         /**
-         * 中间播放按钮
+         * 缓冲/卡顿指示（**独立于控件显隐**）
+         *
+         * 此前它与下面的播放按钮共用一个 AnimatedVisibility，条件里有
+         * `(!isPlaying || effectiveShowControls)` —— 于是"播放中控件自动隐藏"时
+         * 转圈也被一起藏掉，卡顿表现为"画面定住但界面看着一切正常"。
+         * 缓冲反馈不该受控件显隐影响，故拆成独立浮层。
          */
         AnimatedVisibility(
             visible =
@@ -732,6 +809,29 @@ fun VideoPlayerUi(
                         activeSidePanel == null &&
                         gestureType == null &&
                         !isPlaybackEnded &&
+                        showLoading &&
+                        !isProgressGestureActive,
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                ContainedLoadingIndicator()
+            }
+        }
+
+        /**
+         * 中间播放/暂停按钮
+         */
+        AnimatedVisibility(
+            visible =
+                !isLocked &&
+                        activeSidePanel == null &&
+                        gestureType == null &&
+                        !isPlaybackEnded &&
+                        !showLoading &&
                         (!isPlaying || effectiveShowControls),
             enter = fadeIn(),
             exit = fadeOut(),
@@ -740,9 +840,7 @@ fun VideoPlayerUi(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
             ) {
-                if (showLoading && !isProgressGestureActive) {
-                    ContainedLoadingIndicator()
-                } else if (!isPlaying) {
+                if (!isPlaying) {
                     FilledTonalIconButton(
                         onClick = onPlayClick,
                         modifier = Modifier.size(72.dp)
@@ -862,9 +960,25 @@ fun VideoPlayerUi(
                      * Ultra Thin Slider
                      */
                     PlayerSlider(
-                        value = progress,
+                        // 拖动中显示手指位置（乐观值），松手回到引擎位置
+                        value = sliderDragValue ?: progress,
                         buffered = bufferedProgress,
-                        onValueChange = onProgressChange,
+                        onValueChange = { value ->
+                            sliderDragValue = value
+                            // 节流：拖动时**每一帧**都 seek 会让引擎反复重定位
+                            // （Exo 每次 seek 都要重新缓冲、mpv 每次 exact seek 都 flush），
+                            // 既卡又容易与引擎回写的旧位置打架。
+                            val now = nowMs()
+                            if (now - lastSliderSeekAtMs >= SLIDER_SEEK_THROTTLE_MS) {
+                                lastSliderSeekAtMs = now
+                                onProgressChange(value)
+                            }
+                        },
+                        onValueChangeFinished = {
+                            // 松手补一次最终位置：节流可能吞掉最后一次回调
+                            sliderDragValue?.let(onProgressChange)
+                            sliderDragValue = null
+                        },
                         modifier = Modifier.height(12.dp)
                     )
 
@@ -949,7 +1063,7 @@ fun VideoPlayerUi(
          * Resume 按钮
          */
         AnimatedVisibility(
-            visible = showResumeButton && activeSidePanel == null,
+            visible = showResumeButton && activeSidePanel == null && !isLocked,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .padding(bottom = 72.dp),
@@ -1006,7 +1120,7 @@ fun VideoPlayerUi(
          * Retry
          */
         AnimatedVisibility(
-            visible = showRetry && activeSidePanel == null,
+            visible = showRetry && activeSidePanel == null && !isLocked,
             modifier = Modifier.align(Alignment.Center),
             enter = fadeIn(),
             exit = fadeOut(),
@@ -1028,6 +1142,20 @@ fun VideoPlayerUi(
                         text = stringResource(Res.string.video_loading_failed),
                         style = MaterialTheme.typography.titleMedium
                     )
+
+                    // M5-3：把引擎/网络给的真实原因显示出来。
+                    // 此前 errorMessage 只写不读，用户永远只有"加载影片失败"一句，
+                    // 分不清是网络、403 还是解码器问题（也拿不到可反馈的信息）。
+                    errorMessage?.takeIf { it.isNotBlank() }?.let { reason ->
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            text = reason,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 3,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
 
                     Spacer(modifier = Modifier.height(12.dp))
 
@@ -1156,6 +1284,12 @@ private fun PlayerMenuChip(
     }
 }
 
+/** 双击左右跳转的步长（毫秒）。10 秒是 YouTube / 哔哩哔哩的通行值。 */
+private const val DOUBLE_TAP_SEEK_STEP_MS = 10_000L
+
+/** 拖动进度条时的 seek 节流间隔（毫秒，M5-3）。 */
+private const val SLIDER_SEEK_THROTTLE_MS = 120L
+
 private enum class PlayerSidePanel {
     Speed,
     SuperResolution,
@@ -1226,12 +1360,15 @@ fun PlayerSlider(
     value: Float,
     buffered: Float,
     onValueChange: (Float) -> Unit,
+    /** 松手回调：调用方据此补一次最终 seek 并清掉本地乐观值。 */
+    onValueChangeFinished: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
 ) {
 
     Slider(
         value = value,
         onValueChange = onValueChange,
+        onValueChangeFinished = onValueChangeFinished,
         modifier = modifier,
 
         /**

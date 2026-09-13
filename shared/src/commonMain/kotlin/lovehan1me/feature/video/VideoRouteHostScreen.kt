@@ -90,6 +90,7 @@ import lovehan1me.core.util.SonnerToast
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.core.util.rememberShareText
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.getString
@@ -195,6 +196,8 @@ fun VideoRouteHostScreen(
     var previousScreenBrightness by remember { mutableStateOf<Float?>(null) }
     var speedBeforeLongPress by remember { mutableStateOf<Float?>(null) }
     var showResumeButton by remember { mutableStateOf(false) }
+    /** 本次实际用于起播的位置（用于"上次看到结尾则从头"的判定）。 */
+    var startPositionUsed by remember(route.videoCode) { mutableStateOf(0L) }
     var pendingPlayback by remember { mutableStateOf<PendingPlayback?>(null) }
     var mobilePlaybackConfirmed by remember(route.videoCode, route.localUri) {
         mutableStateOf(false)
@@ -374,20 +377,35 @@ fun VideoRouteHostScreen(
         onPortrait = { exitFullscreen() },
     )
 
+    /**
+     * 落一次观看进度（M5-3）。
+     *
+     * 原本只有生命周期 ON_PAUSE 一个时机，而"应用内返回上一页 / 关窗 / 相关影片跳转"
+     * **不会**触发它 —— 那些路径的进度直接丢。现在多个时机共用本函数：
+     * ON_PAUSE（退后台）、播放中每 15s 心跳、以及播完后写回（见各自的调用点）。
+     *
+     * 取值一律用 controller 的**实时**状态，不用组合期快照（快照最多滞后一次重组）。
+     */
+    fun persistPlaybackProgress(override: Long? = null) {
+        if (route.videoCode == "-1") return
+        val position = override ?: playbackController.state.value.engine.positionMs
+        if (override == null && position <= 0L) return
+        scope.launch { DatabaseRepo.WatchHistory.updateProgress(route.videoCode, position) }
+    }
+
+    // M5-3：播放中每 15 秒落一次进度。原实现只在 ON_PAUSE 写，进程被杀或崩溃就全丢；
+    // 15s 粒度把最坏损失压到 15 秒，而写入只是本地 Room 的单行 UPDATE，代价可忽略。
+    LaunchedEffect(route.videoCode) {
+        while (true) {
+            delay(15_000)
+            if (playbackController.state.value.engine.isPlaying) persistPlaybackProgress()
+        }
+    }
+
     DisposableEffect(lifecycleOwner, playbackController, route.videoCode, isDualPane) {
         val lifecycleObserver = LifecycleEventObserver { _, event ->
             when (event) {
-                Lifecycle.Event.ON_PAUSE -> {
-                    if (route.videoCode != "-1") {
-                        val progress = playbackController.state.value.engine.positionMs
-                        scope.launch {
-                            DatabaseRepo.WatchHistory.updateProgress(
-                                route.videoCode,
-                                progress
-                            )
-                        }
-                    }
-                }
+                Lifecycle.Event.ON_PAUSE -> persistPlaybackProgress()
 
                 Lifecycle.Event.ON_STOP -> {
                     if (!hostUiState.isInPipMode) {
@@ -402,6 +420,19 @@ fun VideoRouteHostScreen(
         lifecycleOwner.lifecycle.addObserver(lifecycleObserver)
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(lifecycleObserver)
+        }
+    }
+
+    // M5-3：上次是"看到结尾"的话，这次从头开始（成熟播放器同规则）。
+    // 判据是"本次起播位置已接近总时长"，避免用户一点进来就撞上结束卡；
+    // 时长要等引擎报出来，故放在 LaunchedEffect 里随 durationMs 变化触发。
+    LaunchedEffect(route.videoCode, playbackState.engine.durationMs) {
+        val duration = playbackState.engine.durationMs
+        if (startPositionUsed > 0L && duration > 0L &&
+            startPositionUsed >= duration - NEAR_END_TOLERANCE_MS
+        ) {
+            playbackController.seekTo(0L)
+            startPositionUsed = 0L
         }
     }
 
@@ -450,12 +481,20 @@ fun VideoRouteHostScreen(
                             val history = DatabaseRepo.WatchHistory.findBy(route.videoCode)
                             showResumeButton = SettingsRepository.allowResumePlayback &&
                                     (history?.progress ?: 0L) > 5_000L
+                            // ⚠️ 这个开关必须真的拦起播位置：此前它只决定"从头播放"按钮显不显示，
+                            // 关掉之后照样从上次位置起播 —— 设置语义与实际行为不符。
+                            val resumePosition = if (SettingsRepository.allowResumePlayback) {
+                                history?.progress ?: 0L
+                            } else {
+                                0L
+                            }
+                            startPositionUsed = resumePosition
                             val request = PendingPlayback(
                                 title = info.title,
                                 qualities = qualities,
                                 preferredQuality = SettingsRepository.videoQuality,
                                 artworkUri = info.coverUrl,
-                                startPositionMs = history?.progress ?: 0L,
+                                startPositionMs = resumePosition,
                             )
                             if (!viewModel.fromDownload &&
                                 !SettingsRepository.disableMobileDataWarning &&
@@ -590,8 +629,15 @@ fun VideoRouteHostScreen(
         showPoster = !playbackState.engine.hasRenderedFirstFrame,
         showLoading =
             videoState is VideoLoadingState.Loading ||
-                    playbackState.engine.phase == PlaybackPhase.Preparing,
+                    playbackState.engine.phase == PlaybackPhase.Preparing ||
+                    // 卡顿看门狗（M5-3）：位置停滞时也转圈 —— 引擎侧的 isBuffering
+                    // 三端语义不一致，只有 Exo 是真信号，mpv/iOS 中途卡住根本不置位。
+                    playbackState.isStalled,
         showRetry = playbackState.engine.phase == PlaybackPhase.Error,
+        errorMessage = playbackState.engine.errorMessage,
+        brightnessGestureEnabled = platformHost.supportsBrightness(),
+        onSeekBy = playbackController::seekBy,
+        durationMs = playbackState.engine.durationMs,
         showResumeButton = showResumeButton,
         onPlayClick = playbackController::togglePlayPause,
         onReplay = playbackController::replay,
@@ -616,6 +662,9 @@ fun VideoRouteHostScreen(
                     qualities = qualities,
                     preferredQuality = SettingsRepository.videoQuality,
                     artworkUri = info.coverUrl,
+                    // M5-3：从**失败发生的位置**重试。此前不传 startPositionMs（默认 0），
+                    // 于是一次播放错误就把用户送回片头，"重试"名不副实。
+                    startPositionMs = playbackController.state.value.engine.positionMs,
                 )
             }
         },
@@ -833,6 +882,9 @@ fun VideoRouteHostScreen(
 
 /** 截图的 MIME：`MediaExport` 按它决定落点（非 GIF 一律进 screenshots 目录）。 */
 private const val PNG_MIME = "image/png"
+
+/** "上次看到结尾"的容差：起播位置距总时长不足这么久，就认为上次已经看完（M5-3）。 */
+private const val NEAR_END_TOLERANCE_MS = 10_000L
 
 private fun playbackProgress(positionMs: Long, durationMs: Long): Float =
     if (durationMs <= 0L) 0f else (positionMs.toFloat() / durationMs).coerceIn(0f, 1f)
