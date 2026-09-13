@@ -15,8 +15,8 @@ import lovehan1me.core.platform.AndroidVideoCacheStore
 import lovehan1me.core.platform.setDownloadWorkControllerProvider
 import lovehan1me.core.platform.setVideoCacheStoreProvider
 import lovehan1me.data.network.CloudflareVerificationCoordinator
-import lovehan1me.data.network.CloudflareVerifier
 import lovehan1me.data.network.HProxySelector
+import lovehan1me.ui.activity.MainActivity
 import lovehan1me.app.crash.CrashHandler
 import lovehan1me.core.util.AnimeShaders
 import lovehan1me.core.util.AppLanguageManager
@@ -57,8 +57,9 @@ class HanimeApplication : Application(), Application.ActivityLifecycleCallbacks 
         registerActivityLifecycleCallbacks(this)
         ProxySelector.setDefault(HProxySelector())
         HProxySelector.rebuildNetwork()
-        // Cloudflare 拦截器已下沉 shared androidMain，验证动作经此回调回到 :app 的 Coordinator
-        CloudflareVerifier.launcher = { ctx, url -> CloudflareVerificationCoordinator.verify(ctx, url) }
+        // M2：CF 验证的协调器与验证页都已下沉 shared/androidMain，:app 只交出
+        // 「哪个 Activity 承载验证页」这一点壳信息（决策 #9 划给壳的 Activity 能力）。
+        CloudflareVerificationCoordinator.verificationActivityClass = MainActivity::class.java
         initNotificationChannel()
         MPVLib.create(applicationContext)
         MPVLib.init()

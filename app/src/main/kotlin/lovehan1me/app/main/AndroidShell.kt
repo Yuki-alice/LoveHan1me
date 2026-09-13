@@ -43,12 +43,9 @@ import lovehan1me.ui.activity.MainActivity
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.app.navigation.main.AvatarCropRoute
 import lovehan1me.app.navigation.main.CloudflareRoute
-import lovehan1me.app.navigation.main.LoginRoute
-import lovehan1me.app.navigation.main.ManualCookiesRoute
 import lovehan1me.app.navigation.main.PlatformScreens
-import lovehan1me.app.navigation.main.CloudflareRouteScreen
+import lovehan1me.app.web.CloudflareRouteScreen
 import lovehan1me.app.navigation.main.DownloadRouteScreen
-import lovehan1me.app.navigation.main.LoginRouteScreen
 import lovehan1me.app.navigation.main.VideoRoute
 import lovehan1me.app.navigation.main.handleMainIntent
 import lovehan1me.app.navigation.settings.DownloadSettingsRouteScreen
@@ -170,21 +167,14 @@ private fun platformScreens(activity: MainActivity): PlatformScreens = PlatformS
             onLogout = { activity.showLogoutConfirmDialog(closeCurrentPageOnConfirm = true) },
         )
     },
-    login = {
-        LoginRouteScreen(
-            activity = activity,
-            onBack = onBack,
-            onOpenManualCookies = { backStack.add(ManualCookiesRoute) },
-            onLoginSucceeded = {
-                backStack.popTo(LoginRoute, inclusive = true)
-                homeViewModel.getHomePage()
-            },
-        )
-    },
+    // M2（决策 #8）：不再注入 login —— 登录页统一走 shared 的 FormLoginScreen
+    // （SharedTopNavigation 的 entry<LoginRoute> 在 platformScreens.login == null 时
+    // 自动回退到它）。:app 的 WebView 登录屏与其 createLoginWebView 已删除。
+    // M2（决策 #8）：CF 验证页已下沉 shared/androidMain，这里只做一行委托
     cloudflare = { route: CloudflareRoute ->
         CloudflareRouteScreen(
-            activity = activity,
-            route = route,
+            host = route.host,
+            url = route.url,
             onBack = onBack,
         )
     },

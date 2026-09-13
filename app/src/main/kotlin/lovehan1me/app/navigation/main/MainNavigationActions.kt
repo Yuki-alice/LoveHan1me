@@ -2,14 +2,18 @@ package lovehan1me.app.navigation.main
 
 import android.content.Intent
 import kotlinx.serialization.json.Json
+import lovehan1me.data.network.ACTION_OPEN_CLOUDFLARE_VERIFICATION
+import lovehan1me.data.network.EXTRA_CLOUDFLARE_HOST
+import lovehan1me.data.network.EXTRA_CLOUDFLARE_URL
 
 // M2：navigateDrawerDestination 已下沉 shared（同名，此处删除；handleMainIntent 留守）。
-
-const val EXTRA_OPEN_DAILY_CHECK_IN = "openDailyCheckIn"
-const val ACTION_OPEN_CLOUDFLARE_VERIFICATION =
-    "lovehan1me.action.OPEN_CLOUDFLARE_VERIFICATION"
-const val EXTRA_CLOUDFLARE_URL = "cloudflare_url"
-const val EXTRA_CLOUDFLARE_HOST = "cloudflare_host"
+// M2：CF 验证的三个 Intent 常量已随协调器一起下沉 shared（lovehan1me.data.network），
+//     发起方（协调器）与接收方（本文件）共用同一份定义，避免字符串两边各写一遍。
+//
+// 死代码清理（2026-09-13 审阅发现）：原来这里还处理 `EXTRA_OPEN_DAILY_CHECK_IN`
+// 跳签到底。但全仓（含 manifest / res/xml / 各模块）**只有读、没有任何地方写这个 extra**
+// → 该分支不可达。签到页本身仍可达（设置/我的页正常入口），走的是别的路由，
+// 所以连同常量一起删除，不是"删功能"。
 
 fun TopLevelBackStack<HanimeScreen>.handleMainIntent(intent: Intent) {
     if (intent.action == ACTION_OPEN_CLOUDFLARE_VERIFICATION) {
@@ -39,12 +43,6 @@ fun TopLevelBackStack<HanimeScreen>.handleMainIntent(intent: Intent) {
                 return
             }
         }
-    }
-
-    if (intent.getBooleanExtra(EXTRA_OPEN_DAILY_CHECK_IN, false)) {
-        intent.removeExtra(EXTRA_OPEN_DAILY_CHECK_IN)
-        add(DailyCheckInRoute, launchSingleTop = true)
-        return
     }
 
     intent.getStringExtra("startSearchFromTag")?.let { tag ->
