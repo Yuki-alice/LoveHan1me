@@ -29,6 +29,17 @@ compose.desktop {
     application {
         mainClass = "lovehan1me.desktop.MainKt"
 
+        jvmArgs(
+            // 桌面"系统代理"模式（ProxyType.System，也是设置里的默认值）依赖 JVM 去查 Windows 系统代理，
+            // 但 **JVM 默认不查**：sun.net.spi.DefaultProxySelector 只认 -Dhttp.proxyHost 这类系统属性，
+            // 于是 TYPE_SYSTEM 实际落到 DIRECT。后果不是"慢"，而是**完全连不上站点** ——
+            // 请求超时 → 连 CF 挑战页都拿不到 → 用户看到"根本不弹 Cloudflare 验证窗口"（2026-09-13 实测）。
+            // 置 true 后 DefaultProxySelector 才去读系统设置，与用户浏览器同出口
+            // （cf_clearance 绑定出口 IP，两边不同出口则验证必然无效）。
+            // Main.kt 里还有一次 System.setProperty 兜底；两处都要在 DefaultProxySelector 类加载前生效。
+            "-Djava.net.useSystemProxies=true",
+        )
+
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)
             packageName = "LoveHan1me"
