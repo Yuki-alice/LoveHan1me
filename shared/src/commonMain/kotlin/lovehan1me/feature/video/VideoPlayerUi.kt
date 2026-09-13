@@ -75,6 +75,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import lovehan1me.Res
 import lovehan1me.video_loading_failed
+import lovehan1me.gif_capture
 import lovehan1me.sure_to_delete
 import lovehan1me.super_resolution_quality
 import lovehan1me.super_resolution_performance
@@ -171,6 +172,13 @@ fun VideoPlayerUi(
     superResolutionOptions: List<String> = emptyList(),
     selectedSuperResolutionIndex: Int = 0,
     onSuperResolutionSelected: (Int) -> Unit = {},
+    /**
+     * M3-b：是否显示「录 GIF」入口。由调用方传 `controller.supportsFrameCapture`
+     * —— 用**能力**判断而不是内核名（与超分同理）。
+     */
+    gifCaptureEnabled: Boolean = false,
+    /** M3-b：点「录 GIF」的回调。默认 null → 不显示入口（未接线时行为零变化）。 */
+    onOpenGifCapture: (() -> Unit)? = null,
     onLongPressStart: () -> Unit = {},
     onLongPressEnd: () -> Unit = {},
     onVolumeChange: (Float) -> Unit = {},
@@ -649,6 +657,15 @@ fun VideoPlayerUi(
                             )
 
 
+                        }
+
+                        if (gifCaptureEnabled && onOpenGifCapture != null) {
+                            Spacer(modifier = Modifier.width(6.dp))
+
+                            PlayerMenuChip(
+                                label = stringResource(Res.string.gif_capture),
+                                onClick = onOpenGifCapture,
+                            )
                         }
 
                         Spacer(modifier = Modifier.width(10.dp))

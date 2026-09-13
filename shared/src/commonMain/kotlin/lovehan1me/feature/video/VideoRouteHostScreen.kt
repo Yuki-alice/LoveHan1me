@@ -194,6 +194,8 @@ fun VideoRouteHostScreen(
         mutableStateOf(false)
     }
     var superResolutionIndex by remember { mutableStateOf(0) }
+    // M3-b：录 GIF 对话框的开关。入口是否显示由 controller.supportsFrameCapture 决定
+    var showGifCapture by remember { mutableStateOf(false) }
     var pendingUnsubscribeArtist by remember { mutableStateOf<HanimeVideo.Artist?>(null) }
     var pendingLocalListAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
@@ -570,6 +572,9 @@ fun VideoRouteHostScreen(
             superResolutionIndex = index
             playbackEngine.setSuperResolution(index)
         },
+        // M3-b：能力判断（不用内核名）—— 引擎不支持抓帧时入口自动不显示
+        gifCaptureEnabled = playbackController.supportsFrameCapture,
+        onOpenGifCapture = { showGifCapture = true },
         onLongPressStart = {
             if (playbackState.engine.isPlaying) {
                 val currentSpeed = playbackState.engine.playbackSpeed
@@ -689,6 +694,19 @@ fun VideoRouteHostScreen(
                 pendingUnsubscribeArtist = null
             },
             onDismiss = { pendingUnsubscribeArtist = null },
+        )
+    }
+
+    // M3-b：录 GIF。抓帧回调直连 controller（同包，无需 import）
+    if (showGifCapture) {
+        GifCaptureDialog(
+            sourceWidth = playbackState.engine.videoWidth,
+            sourceHeight = playbackState.engine.videoHeight,
+            startPositionMs = playbackState.engine.positionMs,
+            onDismiss = { showGifCapture = false },
+            captureFrameAt = { positionMs, width, height ->
+                playbackController.grabFrameArgb(positionMs, width, height)
+            },
         )
     }
 

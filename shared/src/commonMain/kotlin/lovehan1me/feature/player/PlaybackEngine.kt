@@ -89,4 +89,30 @@ interface PlaybackEngine {
      * 按名字判断会让桌面端永远看不到超分入口。
      */
     fun supportsSuperResolution(): Boolean = false
+
+    /**
+     * M3-b：本引擎是否支持抓取渲染帧（GIF 录制 / 截图分享）。
+     *
+     * 与 [supportsSuperResolution] 同样的理由：**按能力判断，不要按内核名字判断** ——
+     * 用户设置里的 `switchPlayerKernel` 与运行时真正在用的引擎可能不一致，
+     * 按名字判断会让某个平台永远看不到对应入口。
+     */
+    fun supportsFrameCapture(): Boolean = false
+
+    /**
+     * M3-b：抓取 [positionMs] 处的画面为 ARGB 像素（0xAARRGGBB，长度 = 宽*高）。
+     *
+     * 实现方**应当在解码侧直接产出 [targetWidth] × [targetHeight]** ——
+     * 桌面端 mediamp 的 `FramePreview.getPreviewFrame(pos, w, h)` 就支持，
+     * 这样能省掉一帧全尺寸位图的分配（1080p 一帧就是 8 MB）。
+     * 若实现只能给源尺寸，返回源尺寸即可，`GifRecorder` 会补做缩放。
+     *
+     * @return null 表示不支持或抓取失败。**实现方不要抛异常**：
+     *         录制 UI 需要把"失败"呈现为提示，而不是崩掉。
+     */
+    suspend fun grabFrameArgb(
+        positionMs: Long,
+        targetWidth: Int,
+        targetHeight: Int,
+    ): IntArray? = null
 }
