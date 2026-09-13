@@ -12,8 +12,10 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.openani.mediamp.MediaStatus
 import org.openani.mediamp.features.AudioLevelController
+import org.openani.mediamp.features.FramePreview
 import org.openani.mediamp.features.PlaybackSpeed
 import org.openani.mediamp.mpv.MpvMediampPlayer
 import org.openani.mediamp.mpv.MPVHandle
@@ -192,6 +194,41 @@ class DesktopMpvPlaybackEngine : PlaybackEngine {
     }
 
     override fun supportsSuperResolution(): Boolean = true
+
+    /**
+     * M3-b：桌面端支持抓帧 —— 走 mediamp 的 `FramePreview` feature
+     * （`MpvFramePreview` 编译在 mediamp-mpv-desktop 里）。
+     *
+     * ⚠️ **这里必须返回常量，不能去查 `mediampPlayer.features`**：
+     * [mediampPlayer] 是 lazy，首次访问会触发 mpv 原生初始化（几百毫秒），
+     * 而本方法是**非挂起**的、会被组合期调用（见 [awaitPlayer] 的 KDoc 警告）。
+     * 真正的能力在 [grabFrameArgb] 里按 feature 查询，拿不到就返回 null ——
+     * 于是"声明支持"与"实际可用"解耦，既不会卡组合，也不会假装成功。
+     */
+    override fun supportsFrameCapture(): Boolean = true
+
+    /**
+     * M3-b：抓取 [positionMs] 处的画面。
+     *
+     * 两个实现要点：
+     * 1. **必须发在 main dispatcher**：mediamp 要求播放器操作走构造时传入的
+     *    主线程（桌面 = Swing EDT），与 load/play/seek 同一约束。
+     * 2. **尺寸由解码侧产出**：`getPreviewFrame(pos, w, h)` 直接给目标尺寸，
+     *    省掉一帧 1080p（8 MB）的中间位图 —— 这是选它而不是"抓全尺寸再自己缩"的原因。
+     */
+    override suspend fun grabFrameArgb(
+        positionMs: Long,
+        targetWidth: Int,
+        targetHeight: Int,
+    ): IntArray? {
+        if (targetWidth <= 0 || targetHeight <= 0 || positionMs < 0L) return null
+        return runCatching {
+            withContext(Dispatchers.Main) {
+                val preview = mediampPlayer.features[FramePreview.Key] ?: return@withContext null
+                preview.getPreviewFrame(positionMs, targetWidth, targetHeight)?.pixels
+            }
+        }.getOrNull()
+    }
 
     /** @return 是否成功应用。shader 落盘失败或 mpv 命令失败都返回 false。 */
     private suspend fun applySuperResolution(level: Int): Boolean {

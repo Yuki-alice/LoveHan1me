@@ -5,6 +5,7 @@ import android.net.Uri
 import android.os.ParcelFileDescriptor
 import androidx.core.net.toUri
 import lovehan1me.core.constant.USER_AGENT
+import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.HProxySelector
 import lovehan1me.core.util.AnimeShaders.getCert
@@ -21,11 +22,14 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import kotlin.time.Duration.Companion.milliseconds
+
+private const val TAG = "MpvPlaybackEngine"
 
 class MpvPlaybackEngine(
     private val context: Context,
-) : PlaybackEngine {
+) : PlaybackEngine, AndroidSurfaceSizeAware {
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val mutableState = MutableStateFlow(PlaybackEngineState())
     private var currentSurface: VideoSurface? = null
@@ -183,7 +187,7 @@ class MpvPlaybackEngine(
         }
     }
 
-    fun updateSurfaceSize(width: Int, height: Int) {
+    override fun updateSurfaceSize(width: Int, height: Int) {
         if (released || width <= 0 || height <= 0) return
         surfaceWidth = width
         surfaceHeight = height
@@ -191,6 +195,64 @@ class MpvPlaybackEngine(
     }
 
     override fun supportsSuperResolution(): Boolean = true
+
+    // ── M3-b：抓帧（GIF 录制；M3-c 截图可复用）──────────────
+
+    /** mpv 侧有 mpv-android 自带的取帧 API，恒支持（见 [grabFrameArgb] 的说明）。 */
+    override fun supportsFrameCapture(): Boolean = true
+
+    /**
+     * 抓 [positionMs] 处的画面。
+     *
+     * ## 走的什么 API
+     * `MPVLib.grabThumbnail(dim)`。它的语义**不是**文档里能查到的，是从 mpv-android 的
+     * JNI 胶水层（`libplayer.so`，仅 23KB）反查出来的 —— 字符串表里有：
+     * `screenshot-raw`、`screenshot w:%d h:%d stride:%d`、`libswscale.so`、`grabbing thumbnail`。
+     * 即：发 mpv 的 **`screenshot-raw`** 抓**当前显示帧**，再用 libswscale 缩到指定尺寸返回 Bitmap。
+     *
+     * ## 因此必须先"等帧"
+     * `screenshot-raw` 读的是**显示侧**缓冲，`seek` 命令返回时画面往往还是旧帧。
+     * 所以这里 seek 后交给 [FrameReadyWaiter] 等位置追平，再抓；超时则返回 null
+     * （让 `GifRecorder` 如实报失败，**绝不退化成抓旧帧**）。
+     *
+     * ## 录制期间暂停
+     * 抓帧是"定位—抓—定位—抓"，播放继续往前跑只会让画面与目标错开，故先暂停。
+     */
+    override suspend fun grabFrameArgb(
+        positionMs: Long,
+        targetWidth: Int,
+        targetHeight: Int,
+    ): IntArray? {
+        if (released || !initialized || currentSurface == null) return null
+        if (targetWidth <= 0 || targetHeight <= 0 || positionMs < 0L) return null
+
+        MPVLib.setPropertyBoolean("pause", true)
+        seekTo(positionMs)
+
+        val ready = FrameReadyWaiter(
+            nowMs = { currentEpochMillis() },
+            delayMs = { delay(it) },
+        ).await(
+            targetMs = positionMs,
+            positionProvider = { lastKnownPositionMs },
+            seekingProvider = { MPVLib.getPropertyBoolean("seeking") == true },
+        )
+        if (!ready) {
+            LogUtil.w(TAG, "抓帧超时：目标 ${positionMs}ms，位置停在 ${lastKnownPositionMs}ms")
+            return null
+        }
+
+        // 长边给 mpv，让它在解码/缩放侧直接产出小图（省掉一帧全尺寸 Bitmap 的分配）
+        val dimension = maxOf(targetWidth, targetHeight)
+        val bitmap = withContext(Dispatchers.Main) {
+            runCatching { MPVLib.grabThumbnail(dimension) }.getOrNull()
+        } ?: return null
+        return try {
+            bitmap.toArgbPixels(dimension)
+        } finally {
+            bitmap.recycle()
+        }
+    }
 
     override fun setSuperResolution(index: Int) {
         // 阶段一②：shader 统一走 composeResources/files（三端一份），落盘在 IO 线程。

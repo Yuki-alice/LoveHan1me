@@ -7,7 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 
 // Android：VideoPlayerUi 原 SurfaceView 代码原样搬入（含 SurfaceHolder 生命周期回调逻辑）。
-// surfaceChanged 里的 Mpv updateSurfaceSize 特判一并内聚于此（同包同源集，直接引用）。
+// surfaceChanged 的渲染面尺寸转交已提升为 AndroidSurfaceSizeAware 能力接口
+// （此前硬编码 `engine is MpvPlaybackEngine`；Exo 的 PixelCopy 也需要等大 Bitmap 的尺寸）。
 @Composable
 actual fun PlatformVideoSurface(
     engine: PlaybackEngine,
@@ -30,9 +31,9 @@ actual fun PlatformVideoSurface(
                         width: Int,
                         height: Int,
                     ) {
-                        if (engine is MpvPlaybackEngine) {
-                            engine.updateSurfaceSize(width, height)
-                        }
+                        // 渲染面尺寸对多个引擎都有用：Mpv 要对齐 vo 尺寸，
+                        // Exo 需要它给 PixelCopy 建"等大 Bitmap"（PixelCopy 不做缩放）。
+                        (engine as? AndroidSurfaceSizeAware)?.updateSurfaceSize(width, height)
                     }
 
                     override fun surfaceDestroyed(holder: SurfaceHolder) {
