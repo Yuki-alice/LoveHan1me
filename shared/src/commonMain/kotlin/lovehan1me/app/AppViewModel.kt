@@ -12,7 +12,7 @@ import lovehan1me.data.network.IHCsrfToken
 
 /**
  * @project LoveHan1me
- * @author Yenaly Liew
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2024/03/29 029 18:00
  */
 object AppViewModel : ViewModel(), IHCsrfToken {

@@ -9,7 +9,7 @@ import lovehan1me.feature.library.WatchLaterSubViewModel
 
 /**
  * @project LoveHan1me
- * @author Yenaly Liew
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/07/04 004 22:46
  */
 class MyListViewModel : ViewModel() {

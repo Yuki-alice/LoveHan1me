@@ -5,7 +5,7 @@ import lovehan1me.core.util.unsafeLazy
 
 /**
  * @project LoveHan1me
- * @author Yenaly Liew
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2024/03/22 022 21:33
  */
 @JvmDefaultWithoutCompatibility

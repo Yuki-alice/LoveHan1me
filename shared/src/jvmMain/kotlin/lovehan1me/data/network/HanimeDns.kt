@@ -11,8 +11,8 @@ import java.net.InetAddress
 import java.util.concurrent.TimeUnit
 
 /**
- * @project Han1meViewer
- * @author Yenaly Liew
+ * @project LoveHan1me
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2024/03/10 010 17:01
  */
 class HanimeDns : Dns {

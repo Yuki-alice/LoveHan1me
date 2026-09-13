@@ -15,7 +15,7 @@ typealias ResolutionLinkMap = LinkedHashMap<String, HanimeLink>
  * 如果你在其他地方看到了 Quality，那就是 Resolution，我混用了。
  *
  * @project LoveHan1me
- * @author Yenaly Liew
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/10/11 011 21:19
  */
 class HanimeResolution {

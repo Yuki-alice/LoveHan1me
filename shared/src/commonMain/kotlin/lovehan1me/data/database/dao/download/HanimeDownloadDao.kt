@@ -14,7 +14,7 @@ import kotlinx.coroutines.flow.Flow
 
 /**
  * @project LoveHan1me
- * @author Yenaly Liew
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2023/08/18 018 23:07
  */
 @Dao

@@ -13,8 +13,8 @@ import okhttp3.Protocol
 import java.util.concurrent.TimeUnit
 
 /**
- * @project Hanime1
- * @author Yenaly Liew
+ * @project LoveHan1me
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/06/08 008 22:35
  *
  * P3：自 :app 下沉 jvmMain（android + desktop 共享）。

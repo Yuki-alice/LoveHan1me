@@ -17,7 +17,7 @@ import lovehan1me.core.domain.state.DownloadState
 
 /**
  * @project LoveHan1me
- * @author Yenaly Liew
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/08/07 007 18:26
  *
  * P2b：下沉到 KMP 共享层，schema / 版本号 / 迁移语义保持不变。

@@ -2,7 +2,7 @@ package lovehan1me.core.domain.model
 
 /**
  * @project LoveHan1me
- * @author Yenaly Liew
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/07/05 005 15:30
  */
 data class MyListItems<I>(

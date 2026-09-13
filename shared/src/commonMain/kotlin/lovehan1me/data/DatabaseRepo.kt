@@ -7,8 +7,8 @@ import lovehan1me.data.database.entity.download.DownloadGroupEntity
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 
 /**
- * @project Hanime1
- * @author Yenaly Liew
+ * @project LoveHan1me
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/06/22 022 23:00
  */
 object DatabaseRepo {

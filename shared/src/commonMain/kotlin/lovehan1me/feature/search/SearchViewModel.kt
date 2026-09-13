@@ -28,8 +28,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 /**
- * @project Hanime1
- * @author Yenaly Liew
+ * @project LoveHan1me
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/06/13 013 22:29
  */
 // P6c：SavedStateHandle（androidx）不可下沉 commonMain；nav3 @Serializable 路由不依赖它做参数传递，

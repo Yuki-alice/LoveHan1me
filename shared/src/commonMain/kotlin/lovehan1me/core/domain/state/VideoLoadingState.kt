@@ -1,8 +1,8 @@
 package lovehan1me.core.domain.state
 
 /**
- * @project Hanime1
- * @author Yenaly Liew
+ * @project LoveHan1me
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/06/18 018 18:14
  */
 sealed class VideoLoadingState<out T> {

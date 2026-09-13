@@ -24,7 +24,7 @@ import io.ktor.http.encodeURLPathPart
  * Playlist 是指 自定义的播放列表
  *
  * @project LoveHan1me
- * @author Yenaly Liew
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2023/08/26 026 16:30
  *
  * P3：Retrofit interface → Ktor 实现。

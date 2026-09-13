@@ -27,7 +27,7 @@ import java.io.OutputStream
 
 /**
  * @project LoveHan1me
- * @author Yenaly Liew
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @since 2025/3/5 20:11
  */
 object HanimeCacheManager {

@@ -6,7 +6,7 @@ import kotlinx.serialization.Serializable
 /**
  * 下载任务状态
  * @project LoveHan1me
- * @author Yenaly Liew
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2025/3/3 21:11
  */
 @Serializable

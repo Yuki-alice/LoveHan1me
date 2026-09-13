@@ -14,8 +14,8 @@ import java.net.URI
  * 受 [EhViewer_CN_SXJ 中 EhProxySelector](https://github.com/xiaojieonly/Ehviewer_CN_SXJ/blob/BiLi_PC_Gamer/app/src/main/java/com/hippo/ehviewer/EhProxySelector.java)
  * 的启发，本项目的 [HanimeProxySelector] 也采用同样的思路实现代理功能。
  *
- * @project Han1meViewer
- * @author Yenaly Liew
+ * @project LoveHan1me
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2023/10/07 007 17:32
  */
 // #issue-15: 添加系统代理功能

@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
 
 /**
  * @project LoveHan1me
- * @author Yenaly Liew
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/06/28 028 14:18
  */
 class CommentViewModel : ViewModel() {

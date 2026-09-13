@@ -12,7 +12,7 @@ import io.ktor.http.encodeURLPathPart
 
 /**
  * @project LoveHan1me
- * @author Yenaly Liew
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/09/19 019 17:44
  *
  * P3：Retrofit interface → Ktor 实现，方法/参数名与 @Field/@Query 键名保持原样。

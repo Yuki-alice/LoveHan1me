@@ -14,8 +14,8 @@ import okhttp3.HttpUrl
  * #issue-71: 我竟然栽倒在 Cookie 管理上好幾年了！你去看我以前的管理方式，
  * 是完全錯誤的，竟然還能維持應用正常運行，太離譜了！怪不得切換簡體繁體一直不起作用！
  *
- * @project Han1meViewer
- * @author Yenaly Liew
+ * @project LoveHan1me
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2024/03/13 013 15:20
  */
 class HCookieJar : CookieJar {

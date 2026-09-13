@@ -2,13 +2,13 @@ package lovehan1me.core.domain.model
 
 /**
  * @project LoveHan1me
- * @author Yenaly Liew
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  */
 interface HanimeInfoType : MultiItemEntity
 
 /**
  * @project LoveHan1me
- * @author Yenaly Liew
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/06/08 008 22:56
  */
 data class HanimeInfo(

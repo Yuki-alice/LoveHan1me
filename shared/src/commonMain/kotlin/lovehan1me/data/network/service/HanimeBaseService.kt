@@ -11,8 +11,8 @@ import io.ktor.http.Parameters
 import io.ktor.http.encodeURLPathPart
 
 /**
- * @project Hanime1
- * @author Yenaly Liew
+ * @project LoveHan1me
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/06/08 008 22:10
  *
  * P3：Retrofit interface → Ktor 实现（包名/方法名/参数名不变，

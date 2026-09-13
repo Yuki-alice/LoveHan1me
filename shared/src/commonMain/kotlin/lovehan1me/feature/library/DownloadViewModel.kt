@@ -18,7 +18,7 @@ import kotlinx.coroutines.launch
 
 /**
  * @project LoveHan1me
- * @author Yenaly Liew - 创建 (2022/08/02)
+ * @author Yenaly Liew（上游原作者，见 NOTICE） - 创建 (2022/08/02)
  * 初始版本
  * @author Misaka10032w - 更新 (2025/11/27)
  * 实现分组展示和展开/折叠功能

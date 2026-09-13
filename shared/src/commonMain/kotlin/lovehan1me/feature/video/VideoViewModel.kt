@@ -50,8 +50,8 @@ import kotlin.math.abs
 import org.jetbrains.compose.resources.getString
 
 /**
- * @project Hanime1
- * @author Yenaly Liew
+ * @project LoveHan1me
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/06/17 017 19:01
  */
 class VideoViewModel(

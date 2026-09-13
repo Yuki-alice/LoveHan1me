@@ -79,7 +79,7 @@ import kotlin.random.Random
 
 /**
  * @project LoveHan1me
- * @author Yenaly Liew
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/08/06 006 11:42
  */
 class HanimeDownloadWorker(

@@ -7,8 +7,8 @@ import lovehan1me.data.network.service.HanimeMyListService
 import lovehan1me.data.network.service.HanimeSubscriptionService
 
 /**
- * @project Hanime1
- * @author Yenaly Liew
+ * @project LoveHan1me
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/06/08 008 22:35
  *
  * P3：自 :app 下沉 commonMain。原 `ServiceCreator.create<T>(baseUrl)`（Retrofit）改为

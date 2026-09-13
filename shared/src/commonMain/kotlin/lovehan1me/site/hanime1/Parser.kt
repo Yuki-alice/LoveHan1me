@@ -40,7 +40,7 @@ import com.fleeksoft.ksoup.select.Elements
 
 /**
  * @project LoveHan1me
- * @author Yenaly Liew
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2023/07/31 031 16:43
  */
 object Parser {

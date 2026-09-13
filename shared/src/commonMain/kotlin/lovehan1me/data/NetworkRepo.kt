@@ -47,8 +47,8 @@ import lovehan1me.core.platform.sslHandshakeException
 import lovehan1me.site.hanime1.Parser
 
 /**
- * @project Hanime1
- * @author Yenaly Liew
+ * @project LoveHan1me
+ * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/06/08 008 22:38
  *
  * P3：Ktor 化调用点适配（本体留在 :app）。service 返回类型由
