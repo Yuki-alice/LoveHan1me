@@ -868,4 +868,7 @@ Recommendations are as follows:\n
     <string name="gif_capture_generating">Generating GIF… %1$s/%2$s</string>
     <string name="gif_capture_saved">GIF saved: %1$s</string>
     <string name="gif_capture_failed">GIF failed: %1$s</string>
+    <string name="screenshot">Screenshot</string>
+    <string name="screenshot_saved">Screenshot saved: %1$s</string>
+    <string name="screenshot_failed">Screenshot failed: %1$s</string>
 </resources>

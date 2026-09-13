@@ -76,6 +76,7 @@ import androidx.compose.ui.unit.sp
 import lovehan1me.Res
 import lovehan1me.video_loading_failed
 import lovehan1me.gif_capture
+import lovehan1me.screenshot
 import lovehan1me.sure_to_delete
 import lovehan1me.super_resolution_quality
 import lovehan1me.super_resolution_performance
@@ -173,12 +174,17 @@ fun VideoPlayerUi(
     selectedSuperResolutionIndex: Int = 0,
     onSuperResolutionSelected: (Int) -> Unit = {},
     /**
-     * M3-b：是否显示「录 GIF」入口。由调用方传 `controller.supportsFrameCapture`
+     * M3-b/M3-c：是否显示「截图 / 录 GIF」入口。由调用方传 `controller.supportsFrameCapture`
      * —— 用**能力**判断而不是内核名（与超分同理）。
+     *
+     * 两个入口共用这一个开关，因为它本来就是**同一个能力**（能否抓到渲染帧）；
+     * 名字由 `gifCaptureEnabled` 改为 `frameCaptureEnabled` 正是为了不撒谎。
      */
-    gifCaptureEnabled: Boolean = false,
+    frameCaptureEnabled: Boolean = false,
     /** M3-b：点「录 GIF」的回调。默认 null → 不显示入口（未接线时行为零变化）。 */
     onOpenGifCapture: (() -> Unit)? = null,
+    /** M3-c：点「截图」的回调。默认 null → 不显示入口。 */
+    onCaptureScreenshot: (() -> Unit)? = null,
     onLongPressStart: () -> Unit = {},
     onLongPressEnd: () -> Unit = {},
     onVolumeChange: (Float) -> Unit = {},
@@ -659,7 +665,16 @@ fun VideoPlayerUi(
 
                         }
 
-                        if (gifCaptureEnabled && onOpenGifCapture != null) {
+                        if (frameCaptureEnabled && onCaptureScreenshot != null) {
+                            Spacer(modifier = Modifier.width(6.dp))
+
+                            PlayerMenuChip(
+                                label = stringResource(Res.string.screenshot),
+                                onClick = onCaptureScreenshot,
+                            )
+                        }
+
+                        if (frameCaptureEnabled && onOpenGifCapture != null) {
                             Spacer(modifier = Modifier.width(6.dp))
 
                             PlayerMenuChip(

@@ -837,4 +837,7 @@
     <string name="gif_capture_generating">正在產生 GIF… %1$s/%2$s</string>
     <string name="gif_capture_saved">GIF 已儲存：%1$s</string>
     <string name="gif_capture_failed">GIF 產生失敗：%1$s</string>
+    <string name="screenshot">截圖</string>
+    <string name="screenshot_saved">截圖已儲存：%1$s</string>
+    <string name="screenshot_failed">截圖失敗：%1$s</string>
 </resources>

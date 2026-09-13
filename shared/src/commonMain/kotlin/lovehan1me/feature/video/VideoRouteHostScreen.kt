@@ -41,6 +41,8 @@ import lovehan1me.long_press_share_to_copy
 import lovehan1me.mobile_data_playback_warning
 import lovehan1me.no
 import lovehan1me.play_pause
+import lovehan1me.screenshot_failed
+import lovehan1me.screenshot_saved
 import lovehan1me.sure
 import lovehan1me.sure_to_unsubscribe
 import lovehan1me.unsubscribe_artist
@@ -62,6 +64,9 @@ import lovehan1me.core.domain.model.SearchOption
 import lovehan1me.core.domain.model.VideoLandscapeLayoutStyle
 import lovehan1me.core.domain.state.VideoLoadingState
 import lovehan1me.core.domain.state.WebsiteState
+import lovehan1me.core.platform.MediaExportOutcome
+import lovehan1me.core.platform.currentEpochMillis
+import lovehan1me.core.platform.exportMediaAndShare
 import lovehan1me.app.bridge.NoopVideoPageHost
 import lovehan1me.app.bridge.PipModeReporter
 import lovehan1me.app.bridge.VideoPageHost
@@ -80,6 +85,7 @@ import lovehan1me.feature.video.CommentViewModel
 import lovehan1me.feature.video.VideoViewModel
 import lovehan1me.app.sharedViewModel
 import lovehan1me.core.util.decodeComposeAsset
+import lovehan1me.core.util.image.ScreenshotCapturer
 import lovehan1me.core.util.SonnerToast
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.core.util.rememberShareText
@@ -196,6 +202,73 @@ fun VideoRouteHostScreen(
     var superResolutionIndex by remember { mutableStateOf(0) }
     // M3-b：录 GIF 对话框的开关。入口是否显示由 controller.supportsFrameCapture 决定
     var showGifCapture by remember { mutableStateOf(false) }
+    // M3-c：截图没有对话框（一次手势走完），只用这个标志防连点重入
+    var screenshotInFlight by remember { mutableStateOf(false) }
+
+    /**
+     * M3-c：抓当前帧 → PNG → 保存并唤起系统分享。
+     *
+     * 三个刻意的选择：
+     * 1. **现场读 `playbackController.state.value`**，而不是用组合期捕获的 `playbackState`：
+     *    后者是"上一次重组那一刻"的快照，而播放位置每几百毫秒就变一次 ——
+     *    点截图却截到半秒前的画面，用户只会觉得"截偏了"。
+     * 2. **原本在播就接着播**：抓帧实现会 pause 播放器（mpv 要先 pause 才取到稳定帧，
+     *    Exo 与 iOS 同理），截图不该顺手把播放停掉。
+     * 3. **失败全部走 SonnerToast**：没有对话框可以承载错误文案，
+     *    而 `ScreenshotCapturer` 已把失败收敛成结果类型（含"抓不到帧"与"编码失败"的区分）。
+     */
+    fun captureScreenshot() {
+        if (screenshotInFlight) return
+        screenshotInFlight = true
+
+        val engine = playbackController.state.value.engine
+        val resumeAfterCapture = engine.isPlaying
+        scope.launch {
+            try {
+                val outcome = ScreenshotCapturer.capture(
+                    sourceWidth = engine.videoWidth,
+                    sourceHeight = engine.videoHeight,
+                    positionMs = engine.positionMs,
+                    captureFrameArgb = { positionMs, width, height ->
+                        playbackController.grabFrameArgb(positionMs, width, height)
+                    },
+                )
+                when (outcome) {
+                    is ScreenshotCapturer.Outcome.Success -> when (
+                        val export = exportMediaAndShare(
+                            bytes = outcome.bytes,
+                            fileName = "LoveHan1me_${currentEpochMillis()}.png",
+                            mimeType = PNG_MIME,
+                        )
+                    ) {
+                        // Shared 与 SavedOnly 对用户都是"存好了"，区别只在有没有弹分享面板
+                        is MediaExportOutcome.Shared -> SonnerToast.success(
+                            getString(Res.string.screenshot_saved, export.location),
+                        )
+
+                        is MediaExportOutcome.SavedOnly -> SonnerToast.success(
+                            getString(Res.string.screenshot_saved, export.location),
+                        )
+
+                        is MediaExportOutcome.Failed -> SonnerToast.error(
+                            getString(Res.string.screenshot_failed, export.message),
+                        )
+                    }
+
+                    is ScreenshotCapturer.Outcome.NoFrame -> SonnerToast.error(
+                        getString(Res.string.screenshot_failed, outcome.detail),
+                    )
+
+                    is ScreenshotCapturer.Outcome.EncodeFailed -> SonnerToast.error(
+                        getString(Res.string.screenshot_failed, outcome.message),
+                    )
+                }
+            } finally {
+                screenshotInFlight = false
+                if (resumeAfterCapture) playbackController.play()
+            }
+        }
+    }
     var pendingUnsubscribeArtist by remember { mutableStateOf<HanimeVideo.Artist?>(null) }
     var pendingLocalListAction by remember { mutableStateOf<(() -> Unit)?>(null) }
 
@@ -572,9 +645,10 @@ fun VideoRouteHostScreen(
             superResolutionIndex = index
             playbackEngine.setSuperResolution(index)
         },
-        // M3-b：能力判断（不用内核名）—— 引擎不支持抓帧时入口自动不显示
-        gifCaptureEnabled = playbackController.supportsFrameCapture,
+        // M3-b/M3-c：能力判断（不用内核名）—— 引擎不支持抓帧时两个入口都自动不显示
+        frameCaptureEnabled = playbackController.supportsFrameCapture,
         onOpenGifCapture = { showGifCapture = true },
+        onCaptureScreenshot = ::captureScreenshot,
         onLongPressStart = {
             if (playbackState.engine.isPlaying) {
                 val currentSpeed = playbackState.engine.playbackSpeed
@@ -756,6 +830,9 @@ fun VideoRouteHostScreen(
         onDismiss = { pendingPlayback = null },
     )
 }
+
+/** 截图的 MIME：`MediaExport` 按它决定落点（非 GIF 一律进 screenshots 目录）。 */
+private const val PNG_MIME = "image/png"
 
 private fun playbackProgress(positionMs: Long, durationMs: Long): Float =
     if (durationMs <= 0L) 0f else (positionMs.toFloat() / durationMs).coerceIn(0f, 1f)

@@ -101,10 +101,12 @@ fun VideoShellContent(
     superResolutionOptions: List<String>,
     selectedSuperResolutionIndex: Int,
     onSuperResolutionSelected: (Int) -> Unit,
-    /** M3-b：是否显示「录 GIF」入口（= controller.supportsFrameCapture）。 */
-    gifCaptureEnabled: Boolean,
+    /** M3-b/M3-c：是否显示「截图 / 录 GIF」入口（= controller.supportsFrameCapture）。 */
+    frameCaptureEnabled: Boolean,
     /** M3-b：点「录 GIF」的回调。 */
     onOpenGifCapture: () -> Unit,
+    /** M3-c：点「截图」的回调。 */
+    onCaptureScreenshot: () -> Unit,
     onLongPressStart: () -> Unit,
     onLongPressEnd: () -> Unit,
     onVolumeChange: (Float) -> Unit,
@@ -202,8 +204,9 @@ fun VideoShellContent(
                     superResolutionOptions = superResolutionOptions,
                     selectedSuperResolutionIndex = selectedSuperResolutionIndex,
                     onSuperResolutionSelected = onSuperResolutionSelected,
-                    gifCaptureEnabled = gifCaptureEnabled,
+                    frameCaptureEnabled = frameCaptureEnabled,
                     onOpenGifCapture = onOpenGifCapture,
+                    onCaptureScreenshot = onCaptureScreenshot,
                     onLongPressStart = onLongPressStart,
                     onLongPressEnd = onLongPressEnd,
                     onVolumeChange = onVolumeChange,
@@ -282,8 +285,9 @@ fun VideoShellContent(
                     superResolutionOptions = superResolutionOptions,
                     selectedSuperResolutionIndex = selectedSuperResolutionIndex,
                     onSuperResolutionSelected = onSuperResolutionSelected,
-                    gifCaptureEnabled = gifCaptureEnabled,
+                    frameCaptureEnabled = frameCaptureEnabled,
                     onOpenGifCapture = onOpenGifCapture,
+                    onCaptureScreenshot = onCaptureScreenshot,
                     onLongPressStart = onLongPressStart,
                     onLongPressEnd = onLongPressEnd,
                     onVolumeChange = onVolumeChange,
