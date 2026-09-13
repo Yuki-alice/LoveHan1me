@@ -63,6 +63,14 @@ class DesktopMpvPlaybackEngine(
 
     private var released = false
 
+    /**
+     * 是否已经渲染过首帧（**锁存**，只置真不置假）。
+     *
+     * 原来用 `positionMs > 0` 近似，切画质时位置会短暂回到 0 → 海报闪回；
+     * 锁存后只受"重新 load 新片子"影响。
+     */
+    private var hasRenderedFrame = false
+
     /** mpv 缩放相关属性的原始值（首次切档时记录，OFF 时还原）。 */
     private var originalScaling: Map<String, String>? = null
 
@@ -96,6 +104,7 @@ class DesktopMpvPlaybackEngine(
                     else -> PlaybackPhase.Idle
                 }
                 val durationMs = props?.durationMillis ?: 0L
+                if (positionMs > 0L || (props?.videoWidth ?: 0) > 0) hasRenderedFrame = true
                 PlaybackEngineState(
                     phase = phase,
                     isPlaying = playerState.isPlaying,
@@ -108,7 +117,7 @@ class DesktopMpvPlaybackEngine(
                     }.getOrNull() ?: PlayerDefaults.DEFAULT_SPEED,
                     videoWidth = props?.videoWidth ?: 0,
                     videoHeight = props?.videoHeight ?: 0,
-                    hasRenderedFirstFrame = positionMs > 0L,
+                    hasRenderedFirstFrame = hasRenderedFrame,
                     errorMessage = if (phase == PlaybackPhase.Error) {
                         "mpv playback error"
                     } else {

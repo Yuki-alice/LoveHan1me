@@ -63,6 +63,9 @@ class IosAVPlaybackEngine : PlaybackEngine {
 
     /** 请求的倍速（AVPlayer 的 `rate` 会被暂停清零，不能当作倍速状态；见 setPlaybackSpeed）。 */
     private var requestedSpeed = PlayerDefaults.DEFAULT_SPEED
+
+    /** 是否已渲染过首帧（锁存：切画质时位置短暂归零也不让海报闪回）。 */
+    private var hasRenderedFrame = false
     private var released = false
 
     init {
@@ -195,6 +198,7 @@ class IosAVPlaybackEngine : PlaybackEngine {
         val (videoWidth, videoHeight) = readVideoSize()
         val positionMs = (CMTimeGetSeconds(avPlayer.currentTime()) * 1000).toLong()
             .coerceAtLeast(0L)
+        if (positionMs > 0L) hasRenderedFrame = true
         val durationSec = item?.let { CMTimeGetSeconds(it.duration) } ?: Double.NaN
         val durationMs = if (durationSec.isNaN() || durationSec.isInfinite()) {
             0L
@@ -224,7 +228,7 @@ class IosAVPlaybackEngine : PlaybackEngine {
             playbackSpeed = requestedSpeed,
             videoWidth = videoWidth,
             videoHeight = videoHeight,
-            hasRenderedFirstFrame = positionMs > 0L,
+            hasRenderedFirstFrame = hasRenderedFrame,
             errorMessage = if (failed) {
                 itemError?.localizedDescription ?: "AVPlayer error"
             } else {

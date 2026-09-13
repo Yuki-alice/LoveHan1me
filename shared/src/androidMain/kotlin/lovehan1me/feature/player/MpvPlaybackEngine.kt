@@ -113,11 +113,18 @@ class MpvPlaybackEngine(
         check(!released) { "Playback engine has already been released" }
         initializeIfNeeded()
         pendingRequest = request
-        lastVideoWidth = 0
-        lastVideoHeight = 0
-        hasRenderedFrame = false
+        // 切画质：**保留画面与尺寸，也不先 `loadfile ""` 卸载旧文件** ——
+        // 那一步保证旧画面先消失，正是"切档必黑一下"的直接原因。
+        // 用 `loadfile <新> replace` 直接替换即可（replace 语义本就是替换当前文件）。
+        if (!request.isQualitySwitch) {
+            lastVideoWidth = 0
+            lastVideoHeight = 0
+            hasRenderedFrame = false
+        }
         MPVLib.setPropertyBoolean("pause", true)
-        MPVLib.command(arrayOf("loadfile", "", "replace"))
+        if (!request.isQualitySwitch) {
+            MPVLib.command(arrayOf("loadfile", "", "replace"))
+        }
         val path = prepareUri(request.uri.toUri())
         if (path == null) {
             mutableState.value = mutableState.value.copy(
@@ -136,9 +143,9 @@ class MpvPlaybackEngine(
             phase = PlaybackPhase.Preparing,
             isBuffering = true,
             errorMessage = null,
-            videoWidth = 0,
-            videoHeight = 0,
-            hasRenderedFirstFrame = false,
+            videoWidth = if (request.isQualitySwitch) lastVideoWidth else 0,
+            videoHeight = if (request.isQualitySwitch) lastVideoHeight else 0,
+            hasRenderedFirstFrame = request.isQualitySwitch && hasRenderedFrame,
         )
     }
 

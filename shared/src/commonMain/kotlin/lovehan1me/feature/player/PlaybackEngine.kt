@@ -58,6 +58,16 @@ data class PlaybackRequest(
     val startPositionMs: Long = 0L,
     val playWhenReady: Boolean = true,
     val looping: Boolean = false,
+
+    /**
+     * 本次 load 是**切换画质**（而非开始播放一个新片子）。
+     *
+     * 引擎据此做"保面"处理：**不重置首帧标记与视频尺寸、不卸载旧文件**。
+     * 这正是"切档先黑一下再回到海报"的来源 —— 站点片源是各自独立的 MP4
+     * （不是 HLS/DASH 的多 rendition manifest），没有轨道级切换可用，
+     * 能做到最接近无缝的就是"保留上一帧 + 精确保留位置"。
+     */
+    val isQualitySwitch: Boolean = false,
 )
 
 interface PlaybackEngine {

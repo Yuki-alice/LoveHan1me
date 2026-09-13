@@ -29,6 +29,14 @@ data class ComposePlaybackState(
      * 只有它才能覆盖"画面定住但状态看着正常"这种情况。
      */
     val isStalled: Boolean = false,
+
+    /**
+     * 正在**切换画质**（重载同一部片子的另一档）。
+     *
+     * UI 据此不显示全屏转圈/海报：切档期间画面保留上一帧，看起来才像"无缝换档"；
+     * 引擎到达 Ready 或 Error 时自动撤销。
+     */
+    val isSwitchingQuality: Boolean = false,
 )
 
 /**
@@ -51,6 +59,10 @@ class ComposePlaybackController(
                         isPlaying = engineState.isPlaying,
                         isBuffering = engineState.isBuffering,
                     ),
+                    // 到达 Ready（换档成功）或 Error（换档失败）即撤销"切换中"
+                    isSwitchingQuality = it.isSwitchingQuality &&
+                        engineState.phase != PlaybackPhase.Ready &&
+                        engineState.phase != PlaybackPhase.Error,
                 )
             }
         }
@@ -86,7 +98,14 @@ class ComposePlaybackController(
             return
         }
         val engineState = mutableState.value.engine
-        loadQuality(index, engineState.positionMs, engineState.isPlaying)
+        // 标记"切换中"：引擎重载期间不显示全屏转圈/海报（保面切换）
+        mutableState.update { it.copy(isSwitchingQuality = true) }
+        loadQuality(
+            index = index,
+            positionMs = engineState.positionMs,
+            playWhenReady = engineState.isPlaying,
+            isQualitySwitch = true,
+        )
     }
 
     fun play() = playbackEngine.play()
@@ -155,9 +174,16 @@ class ComposePlaybackController(
         positionMs: Long,
         playWhenReady: Boolean,
         artworkUri: String? = mutableState.value.artworkUri,
+        isQualitySwitch: Boolean = false,
     ) {
         val quality = mutableState.value.qualities[index]
-        mutableState.update { it.copy(selectedQualityIndex = index) }
+        mutableState.update {
+            it.copy(
+                selectedQualityIndex = index,
+                // 全新加载（换片子/重试）不是"切换"，要正常显示海报与转圈
+                isSwitchingQuality = isQualitySwitch,
+            )
+        }
         playbackEngine.load(
             PlaybackRequest(
                 uri = quality.uri,
@@ -167,6 +193,7 @@ class ComposePlaybackController(
                 mimeType = quality.mimeType,
                 startPositionMs = positionMs,
                 playWhenReady = playWhenReady,
+                isQualitySwitch = isQualitySwitch,
             )
         )
         playbackEngine.setPlaybackSpeed(requestedPlaybackSpeed)

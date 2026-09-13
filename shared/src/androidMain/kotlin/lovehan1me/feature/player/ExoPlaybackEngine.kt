@@ -70,9 +70,12 @@ class ExoPlaybackEngine(
             phase = PlaybackPhase.Preparing,
             isBuffering = true,
             errorMessage = null,
-            videoWidth = 0,
-            videoHeight = 0,
-            hasRenderedFirstFrame = false,
+            // 切画质时**保留**尺寸与首帧标记：一旦清零，UI 立刻盖回海报 + 全屏转圈，
+            // 那正是"切个画质像重新打开一样"的观感来源。
+            videoWidth = if (request.isQualitySwitch) mutableState.value.videoWidth else 0,
+            videoHeight = if (request.isQualitySwitch) mutableState.value.videoHeight else 0,
+            hasRenderedFirstFrame =
+                request.isQualitySwitch && mutableState.value.hasRenderedFirstFrame,
         )
         preparePlayer(request)
         startProgressUpdates()
@@ -313,7 +316,13 @@ class ExoPlaybackEngine(
     private fun preparePlayer(request: PlaybackRequest) {
         applyVideoEffects()
         player.repeatMode = if (request.looping) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
-        player.setMediaSource(createMediaSource(request))
+        // 切档时 resetPosition=false：保留当前播放位置，随后由下面的 seekTo 精确定位。
+        // （默认的 setMediaSource(source) 会把位置重置到 0，多一次定位、也多一次可见跳变。）
+        if (request.isQualitySwitch) {
+            player.setMediaSource(createMediaSource(request), false)
+        } else {
+            player.setMediaSource(createMediaSource(request))
+        }
         player.prepare()
         if (request.startPositionMs > 0L) {
             player.seekTo(request.startPositionMs)

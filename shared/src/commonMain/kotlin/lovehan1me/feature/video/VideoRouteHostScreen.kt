@@ -628,11 +628,14 @@ fun VideoRouteHostScreen(
         isLocked = isPlayerLocked,
         showPoster = !playbackState.engine.hasRenderedFirstFrame,
         showLoading =
-            videoState is VideoLoadingState.Loading ||
+            (videoState is VideoLoadingState.Loading ||
                     playbackState.engine.phase == PlaybackPhase.Preparing ||
                     // 卡顿看门狗（M5-3）：位置停滞时也转圈 —— 引擎侧的 isBuffering
                     // 三端语义不一致，只有 Exo 是真信号，mpv/iOS 中途卡住根本不置位。
-                    playbackState.isStalled,
+                    playbackState.isStalled) &&
+                    // 切画质期间不显示全屏转圈：画面保留上一帧才像"无缝换档"，
+                    // 转圈+海报反而是"重新打开了一遍"的观感。
+                    !playbackState.isSwitchingQuality,
         showRetry = playbackState.engine.phase == PlaybackPhase.Error,
         errorMessage = playbackState.engine.errorMessage,
         brightnessGestureEnabled = platformHost.supportsBrightness(),
