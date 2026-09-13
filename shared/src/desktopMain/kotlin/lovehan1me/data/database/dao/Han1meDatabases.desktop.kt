@@ -13,9 +13,6 @@ actual object Han1meDatabases {
         return File(dir, fileName).absolutePath
     }
 
-    actual val miscellany: MiscellanyDatabase by lazy {
-        createMiscellanyDatabase(dbPath("miscellany.db"))
-    }
     actual val history: HistoryDatabase by lazy {
         createHistoryDatabase(dbPath("history.db"))
     }

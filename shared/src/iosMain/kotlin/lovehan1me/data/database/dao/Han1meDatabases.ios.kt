@@ -22,9 +22,6 @@ actual object Han1meDatabases {
         return "$dir/$fileName"
     }
 
-    actual val miscellany: MiscellanyDatabase by lazy {
-        createMiscellanyDatabase(dbPath("miscellany.db"))
-    }
     actual val history: HistoryDatabase by lazy {
         createHistoryDatabase(dbPath("history.db"))
     }

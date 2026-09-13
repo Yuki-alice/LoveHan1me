@@ -11,9 +11,6 @@ actual object Han1meDatabases {
     private fun dbPath(fileName: String): String =
         appContext.getDatabasePath(fileName).absolutePath
 
-    actual val miscellany: MiscellanyDatabase by lazy {
-        createMiscellanyDatabase(dbPath("miscellany.db"))
-    }
     actual val history: HistoryDatabase by lazy {
         createHistoryDatabase(dbPath("history.db"))
     }
