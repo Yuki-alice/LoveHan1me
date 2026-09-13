@@ -1,6 +1,11 @@
 package lovehan1me.feature.player
 
 import lovehan1me.core.util.MpvShaders
+import lovehan1me.data.network.HanimeProxySelector
+import lovehan1me.data.network.currentHttpUserAgent
+import java.net.InetSocketAddress
+import java.net.ProxySelector
+import java.net.URI
 import lovehan1me.core.util.materializeMpvShaders
 import lovehan1me.core.util.LogUtil
 import kotlinx.coroutines.CoroutineScope
@@ -31,7 +36,12 @@ import org.openani.mediamp.source.UriMediaData
  *   `PlatformVideoSurface.desktop` 的 Skia 面直接持有本引擎的 `mediampPlayer`；
  * - mpv 选项（user-agent/hwdec）暂用默认 + 请求头透传，调优随 M-后续。
  */
-class DesktopMpvPlaybackEngine : PlaybackEngine {
+class DesktopMpvPlaybackEngine(
+    /**
+     * mpv 用的 HTTP 代理（null = 直连）。默认按应用设置解析，可注入以便真实网络冒烟。
+     */
+    private val mediaProxyUrl: () -> String? = ::resolveMediaProxyUrl,
+) : PlaybackEngine {
 
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -115,6 +125,10 @@ class DesktopMpvPlaybackEngine : PlaybackEngine {
         LogUtil.d(TAG, "load: ${request.uri} (headers=${request.headers.keys})")
         mainScope.launch {
             runCatching {
+                // ⚠️ 必须在 setMediaData **之前**：mpv 的网络选项在"打开流"那一刻生效。
+                // 不做这一步，mpv 会用**直连**去拉流（它不继承 OkHttp 的代理），
+                // 在受限网络下表现为 mpv_error=-13（LOADING_FAILED）——页面能开、视频永远转圈。
+                mpvHandle()?.let { applyNetworkOptions(it) }
                 mediampPlayer.setMediaData(
                     UriMediaData(request.uri, request.headers),
                     request.playWhenReady,
@@ -255,6 +269,31 @@ class DesktopMpvPlaybackEngine : PlaybackEngine {
     }
 
     /**
+     * 把应用的网络配置（代理 + UA）透传给 mpv。
+     *
+     * ## 为什么必须做：**mpv 是独立的原生网络栈，不继承 OkHttp 的代理设置**
+     * 实测（2026-09-13，同一流地址、同一台机器）：
+     * - 直连 → `curl: (35) Recv failure: Connection was reset`（15 秒、0 字节）
+     * - 经 `127.0.0.1:7897` → **206**（0.3 秒、200 KB）
+     * 于是症状是"CF 验证过了、页面也出来了，视频就是打不开"（`mpv_error=-13`）。
+     *
+     * mpv 的代理选项是 `http-proxy`，透传给 ffmpeg 的 `http_proxy`；
+     * 用 [MPVHandle.setPropertyString] 设置并把返回值记进日志 ——
+     * 若某天 mpv 把它标成不可运行时修改，日志里会直接看到 `set=false`，不必猜。
+     */
+    private fun applyNetworkOptions(handle: MPVHandle) {
+        mediaProxyUrl()?.let { proxy ->
+            val ok = handle.setPropertyString("http-proxy", proxy)
+            LogUtil.d(TAG, "mpv http-proxy=$proxy set=$ok")
+            if (!ok) LogUtil.w(TAG, "mpv 不接受运行时设置 http-proxy，视频可能仍走直连")
+        }
+        // UA 与应用 HTTP 层保持一致（站点/CDN 可能按 UA 判定）
+        val userAgent = currentHttpUserAgent()
+        val uaOk = runCatching { handle.setPropertyString("user-agent", userAgent) }.getOrDefault(false)
+        LogUtil.d(TAG, "mpv user-agent set=$uaOk")
+    }
+
+    /**
      * mediamp 把 mpv 句柄的 getter 标成 internal，JVM 名字被 mangled 成
      * `getHandle$mediamp_mpv`——Kotlin 源码里既不能直呼其名、也没法用反引号
      * 转义（`$` 不允许出现在标识符里），所以走反射。
@@ -296,5 +335,35 @@ class DesktopMpvPlaybackEngine : PlaybackEngine {
 
         /** mediamp 里 mpv 句柄 getter 的 JVM 名字（internal 成员被 mangled）。 */
         private const val MPV_HANDLE_GETTER = "getHandle\$mediamp_mpv"
+    }
+}
+
+/**
+ * 解析 mpv 该用的 HTTP 代理 URL（null = 直连）。
+ *
+ * 复用应用自己的 [HanimeProxySelector]：Direct/System/Http/Socks 四种模式与 HTTP 层
+ * **同一个判定**（System 模式依赖 JVM 的 `java.net.useSystemProxies`，见 desktopApp 的 jvmArgs）。
+ *
+ * SOCKS 返回 null 并打日志：FFmpeg 的 `http_proxy` 只支持 HTTP 代理（CONNECT 语义），
+ * 把 `socks5://…` 塞进去只会让流更打不开 —— 宁可不设，也不要设错。
+ *
+ * 设置未就绪（极早的调用/单测）时退回 JVM 默认选择器，再不行就直连。
+ */
+internal fun resolveMediaProxyUrl(): String? {
+    val uri = runCatching { URI("https://hanime1.me/") }.getOrNull() ?: return null
+    val selected = runCatching { HanimeProxySelector().select(uri) }
+        .recoverCatching { ProxySelector.getDefault()?.select(uri) ?: emptyList() }
+        .getOrNull()
+    val proxy = selected?.firstOrNull() ?: return null
+    return when (proxy.type()) {
+        java.net.Proxy.Type.HTTP -> (proxy.address() as? InetSocketAddress)
+            ?.let { "http://${it.hostString}:${it.port}" }
+
+        java.net.Proxy.Type.SOCKS -> {
+            LogUtil.w("DesktopMpv", "当前是 SOCKS 代理：mpv/ffmpeg 无法透传（只支持 HTTP 代理）")
+            null
+        }
+
+        else -> null
     }
 }
