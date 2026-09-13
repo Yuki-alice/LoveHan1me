@@ -1,0 +1,158 @@
+@file:OptIn(ExperimentalForeignApi::class)
+
+package lovehan1me.feature.player
+
+import kotlinx.cinterop.ExperimentalForeignApi
+import kotlinx.cinterop.UByteVar
+import kotlinx.cinterop.reinterpret
+import kotlinx.coroutines.delay
+import lovehan1me.core.platform.currentEpochMillis
+import lovehan1me.core.util.LogUtil
+import lovehan1me.core.util.gif.FrameScaler
+import platform.AVFoundation.AVPlayer
+import platform.AVFoundation.AVPlayerItemVideoOutput
+import platform.AVFoundation.addOutput
+import platform.AVFoundation.copyPixelBufferForItemTime
+import platform.AVFoundation.currentItem
+import platform.AVFoundation.currentTime
+import platform.AVFoundation.hasNewPixelBufferForItemTime
+import platform.AVFoundation.pause
+import platform.AVFoundation.removeOutput
+import platform.AVFoundation.seekToTime
+import platform.CoreMedia.CMTimeMakeWithSeconds
+import platform.CoreVideo.CVPixelBufferGetBaseAddress
+import platform.CoreVideo.CVPixelBufferGetBytesPerRow
+import platform.CoreVideo.CVPixelBufferGetHeight
+import platform.CoreVideo.CVPixelBufferGetWidth
+import platform.CoreVideo.CVPixelBufferLockBaseAddress
+import platform.CoreVideo.CVPixelBufferRef
+import platform.CoreVideo.CVPixelBufferUnlockBaseAddress
+import platform.CoreVideo.kCVPixelBufferLock_ReadOnly
+import platform.CoreVideo.kCVPixelBufferPixelFormatTypeKey
+import platform.CoreVideo.kCVPixelFormatType_32BGRA
+import platform.Foundation.NSNumber
+
+private const val TAG = "IosFrameCapture"
+
+/** 等 `AVPlayerItemVideoOutput` 产出该时刻解码帧的上限。 */
+private const val OUTPUT_READY_TIMEOUT_MS = 2_000L
+private const val POLL_MS = 40L
+
+/**
+ * iOS 取帧（M3-b）。
+ *
+ * ## 走的什么 API
+ * `AVPlayerItemVideoOutput` —— iOS 上"从**正在播放的** AVPlayer 取一帧"的正规做法，
+ * 与另两端的取向一致（桌面 mediamp `FramePreview`、Android mpv `screenshot-raw` / Exo `PixelCopy`
+ * 也都是抓"当前已经渲染/解码出来的那一帧"，而不是重新打开媒体源）。
+ *
+ * 刻意**不用 `AVAssetImageGenerator`**：它按 asset 重新解码，会绕开播放器当前的解码会话，
+ * 与我们"抓播放器此刻这一帧"的语义不符（也与另两端的实现方式不一致）。
+ *
+ * ## 为什么是"先 seek，再等 output 有新缓冲"
+ * `seekToTime` 返回时目标帧往往还没解码出来，直接取会拿到旧帧。
+ * `hasNewPixelBufferForItemTime` 是**真正可靠的就绪信号**（比轮询播放位置准），
+ * 所以这里的等待以它为准，配合超时。公共层的 [FrameReadyWaiter] 用于桌面/Android 的
+ * 位置/seek 判定，iOS 侧由本函数自带的 output 轮询承担同一职责。
+ *
+ * ## 就地缩放到目标尺寸（刻意为之）
+ * 像素缓冲的真实宽高在本函数里**是确切已知的**，所以直接在这里用公共层的
+ * [FrameScaler] 缩到目标尺寸再返回。
+ *
+ * 这样做的关键理由：公共层的 `GifRecorder.scaleToPlan` 只能靠**引擎上报的**
+ * `videoWidth/videoHeight` 判断"要不要缩"。而 iOS 的 `readVideoSize()` 走的是
+ * `AVAssetTrack.naturalSize` + `preferredTransform`，**旋转视频下可能与像素缓冲的宽高互换**
+ * → 缩放被静默跳过 → 最终由编码器的尺寸校验报错（安全但功能不可用）。
+ * 在这里就地缩，整条链路就不再依赖那个可能存在偏差的上报值。
+ *
+ * ## ⚠️ 未在 macOS 上编译验证过
+ * Windows 构建不了 Kotlin/Native，本文件只能由 CI 的 macOS runner
+ * （`.github/workflows/ci.yml` 的 ios-compile job）编译把关。下面几处是**首次编译最可能报错的地方**，
+ * 已在代码里逐条标注，便于一轮修完。
+ */
+internal suspend fun grabIosFrameArgb(
+    player: AVPlayer,
+    positionMs: Long,
+    targetWidth: Int,
+    targetHeight: Int,
+): IntArray? {
+    val item = player.currentItem ?: return null
+    val time = CMTimeMakeWithSeconds(positionMs / 1000.0, 600)
+
+    // ⚠️ 风险点 1：`pixelBufferAttributes` 的桥接。
+    // kCVPixelBufferPixelFormatTypeKey 是 CoreVideo 的 CFString 常量，
+    // 靠 CFString↔NSString 的 toll-free bridging 作为字典 key（KMP 社区通行写法）。
+    // 若 Kotlin/Native 把它暴露成裸 CFStringRef 而无法进 Map，改法是直接用字面量
+    // key "PixelFormatType"（该常量的实际取值）。
+    val output = AVPlayerItemVideoOutput(
+        pixelBufferAttributes = mapOf<Any?, Any?>(
+            // ⚠️ 风险点 2：用 int 重载而非 unsignedInt，避开 OSType(UInt32) 的签名差异
+            kCVPixelBufferPixelFormatTypeKey to NSNumber(int = kCVPixelFormatType_32BGRA.toInt()),
+        ),
+    )
+    item.addOutput(output)
+    try {
+        player.pause()
+        player.seekToTime(time)
+
+        val deadline = currentEpochMillis() + OUTPUT_READY_TIMEOUT_MS
+        while (!output.hasNewPixelBufferForItemTime(time)) {
+            if (currentEpochMillis() >= deadline) {
+                LogUtil.w(TAG, "抓帧超时：${positionMs}ms 处始终没有新的像素缓冲")
+                return null
+            }
+            delay(POLL_MS)
+        }
+
+        // ⚠️ 风险点 3：第二个参数（itemTimeForDisplay）传 null 的绑定形态
+        val pixelBuffer = output.copyPixelBufferForItemTime(time, null) ?: return null
+        return pixelBuffer.toArgbPixelsScaled(targetWidth, targetHeight)
+    } finally {
+        item.removeOutput(output)
+    }
+}
+
+/**
+ * `CVPixelBuffer`(32BGRA) → ARGB `IntArray`（0xAARRGGBB），并缩到 [targetWidth] × [targetHeight]。
+ *
+ * `kCVPixelFormatType_32BGRA` 在内存里的字节序是 **B,G,R,A**，
+ * 小端机上打包成 32 位整数正好就是 `0xAARRGGBB`，与 `PlaybackEngine.grabFrameArgb` 的契约一致。
+ *
+ * 缩放复用公共层的 [FrameScaler]（面积平均）—— 这里能拿到**确切的**源宽高，
+ * 所以缩放在此发生是精确的，也避免公共层去猜。
+ *
+ * ⚠️ 风险点 4：`CVPixelBufferLockBaseAddress` 的返回码比较。
+ * 这里刻意写 `!= 0` 而不是 `!= kCVReturnSuccess` —— 少依赖一个常量的暴露形态（两者等价，0 即成功）。
+ * ⚠️ 风险点 5：`reinterpret<UByteVar>()` 用于把 `COpaquePointer` 当字节数组读。
+ */
+private fun CVPixelBufferRef.toArgbPixelsScaled(targetWidth: Int, targetHeight: Int): IntArray? {
+    if (CVPixelBufferLockBaseAddress(this, kCVPixelBufferLock_ReadOnly) != 0) {
+        LogUtil.w(TAG, "CVPixelBufferLockBaseAddress 失败")
+        return null
+    }
+    try {
+        val width = CVPixelBufferGetWidth(this).toInt()
+        val height = CVPixelBufferGetHeight(this).toInt()
+        val stride = CVPixelBufferGetBytesPerRow(this).toInt()
+        if (width <= 0 || height <= 0 || stride <= 0) return null
+        val base = CVPixelBufferGetBaseAddress(this) ?: return null
+        val bytes = base.reinterpret<UByteVar>()
+
+        val source = IntArray(width * height)
+        for (y in 0 until height) {
+            val rowOffset = y * stride
+            for (x in 0 until width) {
+                val o = rowOffset + x * 4
+                val b = bytes[o].toInt()
+                val g = bytes[o + 1].toInt()
+                val r = bytes[o + 2].toInt()
+                val a = bytes[o + 3].toInt()
+                source[y * width + x] = (a shl 24) or (r shl 16) or (g shl 8) or b
+            }
+        }
+        if (width == targetWidth && height == targetHeight) return source
+        return FrameScaler.scale(source, width, height, targetWidth, targetHeight)
+    } finally {
+        CVPixelBufferUnlockBaseAddress(this, kCVPixelBufferLock_ReadOnly)
+    }
+}

@@ -129,6 +129,27 @@ class IosAVPlaybackEngine : PlaybackEngine {
     override fun attachSurface(surface: VideoSurface) {}
     override fun detachSurface(surface: VideoSurface) {}
 
+    // ── M3-b：抓帧（实现见 IosFrameCapture.kt）──────────────
+
+    override fun supportsFrameCapture(): Boolean = true
+
+    /**
+     * 抓 [positionMs] 处的画面。
+     *
+     * 返回的已是**目标尺寸**像素：iOS 侧能拿到像素缓冲的确切宽高，故在那边就地用
+     * `FrameScaler` 缩放（见 [grabIosFrameArgb] 的说明）——
+     * 这样整条链路不依赖引擎上报的 `videoWidth/videoHeight`，旋转视频也不会失配。
+     */
+    override suspend fun grabFrameArgb(
+        positionMs: Long,
+        targetWidth: Int,
+        targetHeight: Int,
+    ): IntArray? {
+        if (released || positionMs < 0L) return null
+        if (targetWidth <= 0 || targetHeight <= 0) return null
+        return grabIosFrameArgb(avPlayer, positionMs, targetWidth, targetHeight)
+    }
+
     override fun release() {
         if (released) return
         released = true
