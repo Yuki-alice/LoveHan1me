@@ -46,7 +46,6 @@ import androidx.compose.ui.unit.dp
 import lovehan1me.Res
 import lovehan1me.ic_chevron_left
 import lovehan1me.ic_chevron_right
-import lovehan1me.data.database.entity.HKeyframeEntity
 import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.feature.player.PlaybackEngine
 import lovehan1me.feature.player.PlaybackQuality
@@ -102,22 +101,12 @@ fun VideoShellContent(
     superResolutionOptions: List<String>,
     selectedSuperResolutionIndex: Int,
     onSuperResolutionSelected: (Int) -> Unit,
-    hKeyframeLabel: String,
-    isHKeyframesEnabled: Boolean,
-    hKeyframeOptions: List<String>,
-    hKeyframes: List<HKeyframeEntity.Keyframe>,
-    isHKeyframeLocal: Boolean,
-    onHKeyframeSelected: (Int) -> Unit,
-    onHKeyframeUpdated: (HKeyframeEntity.Keyframe, HKeyframeEntity.Keyframe) -> Unit,
-    onHKeyframeDeleted: (HKeyframeEntity.Keyframe) -> Unit,
-    onHKeyframeLongPress: () -> Unit,
     onLongPressStart: () -> Unit,
     onLongPressEnd: () -> Unit,
     onVolumeChange: (Float) -> Unit,
     onBrightnessChange: (Float) -> Unit,
     onProgressGesture: (Float) -> Unit,
     progressGestureSensitivity: Float,
-    countdownLabel: String?,
     videoAspectRatio: Float,
     onPlayerBoundsChanged: (Rect) -> Unit,
     tabsContent: @Composable () -> Unit,
@@ -209,22 +198,12 @@ fun VideoShellContent(
                     superResolutionOptions = superResolutionOptions,
                     selectedSuperResolutionIndex = selectedSuperResolutionIndex,
                     onSuperResolutionSelected = onSuperResolutionSelected,
-                    hKeyframeLabel = hKeyframeLabel,
-                    isHKeyframesEnabled = isHKeyframesEnabled,
-                    hKeyframeOptions = hKeyframeOptions,
-                    hKeyframes = hKeyframes,
-                    isHKeyframeLocal = isHKeyframeLocal,
-                    onHKeyframeSelected = onHKeyframeSelected,
-                    onHKeyframeUpdated = onHKeyframeUpdated,
-                    onHKeyframeDeleted = onHKeyframeDeleted,
-                    onHKeyframeLongPress = onHKeyframeLongPress,
                     onLongPressStart = onLongPressStart,
                     onLongPressEnd = onLongPressEnd,
                     onVolumeChange = onVolumeChange,
                     onBrightnessChange = onBrightnessChange,
                     onProgressGesture = onProgressGesture,
                     progressGestureSensitivity = progressGestureSensitivity,
-                    countdownLabel = countdownLabel,
                     videoAspectRatio = videoAspectRatio,
                 )
             }
@@ -297,22 +276,12 @@ fun VideoShellContent(
                     superResolutionOptions = superResolutionOptions,
                     selectedSuperResolutionIndex = selectedSuperResolutionIndex,
                     onSuperResolutionSelected = onSuperResolutionSelected,
-                    hKeyframeLabel = hKeyframeLabel,
-                    isHKeyframesEnabled = isHKeyframesEnabled,
-                    hKeyframeOptions = hKeyframeOptions,
-                    hKeyframes = hKeyframes,
-                    isHKeyframeLocal = isHKeyframeLocal,
-                    onHKeyframeSelected = onHKeyframeSelected,
-                    onHKeyframeUpdated = onHKeyframeUpdated,
-                    onHKeyframeDeleted = onHKeyframeDeleted,
-                    onHKeyframeLongPress = onHKeyframeLongPress,
                     onLongPressStart = onLongPressStart,
                     onLongPressEnd = onLongPressEnd,
                     onVolumeChange = onVolumeChange,
                     onBrightnessChange = onBrightnessChange,
                     onProgressGesture = onProgressGesture,
                     progressGestureSensitivity = progressGestureSensitivity,
-                    countdownLabel = countdownLabel,
                     videoAspectRatio = videoAspectRatio,
                 )
                 if (!isInPipMode && !isFullscreen) {

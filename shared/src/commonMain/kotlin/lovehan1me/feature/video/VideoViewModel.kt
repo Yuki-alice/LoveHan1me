@@ -19,7 +19,6 @@ import lovehan1me.data.NetworkRepo
 import lovehan1me.data.SettingsRepository
 import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.modify_success
-import lovehan1me.data.database.entity.HKeyframeEntity
 import lovehan1me.data.database.entity.WatchHistoryEntity
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import lovehan1me.core.domain.model.HanimeInfo
@@ -82,12 +81,6 @@ class VideoViewModel(
         val selectedTabIndex: Int = 0,
     )
 
-    companion object {
-        /**
-         * 最小的 HKeyframe 保存間隔，暫定 5s
-         */
-        const val MIN_H_KEYFRAME_SAVE_INTERVAL = 5_000 // ms
-    }
     private val videoIntroUiStateMap = mutableMapOf<String, VideoIntroUiState>()
     private val _videoCodeFlow = MutableStateFlow(EMPTY_STRING)
     var videoCode: String = EMPTY_STRING
@@ -100,7 +93,6 @@ class VideoViewModel(
 
     // 平板横屏模式下，左栏不显示相关视频（右栏已显示）
     var hideRelatedInIntro by mutableStateOf(false)
-    var hKeyframes: HKeyframeEntity? = null
     // P4b（E 专项）：LiveData -> StateFlow（无 UI observe 消费点，转换安全，便于 P6 下沉 commonMain）
     private val _videoList = MutableStateFlow<List<HanimeInfo>>(emptyList())
     val videoList: StateFlow<List<HanimeInfo>> = _videoList.asStateFlow()
@@ -524,66 +516,4 @@ class VideoViewModel(
         }
     }
 
-    // boolean: 成功 or 失敗，String: 提示信息（P6c：原 messageResId=R.int，改携带已本地化文本）
-    data class HKeyframeResult(
-        val succeeded: Boolean,
-        val message: String,
-    )
-
-    private val _modifyHKeyframeFlow = MutableSharedFlow<HKeyframeResult>()
-    val modifyHKeyframeFlow = _modifyHKeyframeFlow.asSharedFlow()
-    private val _forceRefresh = MutableSharedFlow<Unit>(replay = 1)
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun observeKeyframe(videoCode: String): Flow<HKeyframeEntity?> {
-        return _forceRefresh
-            .onStart { emit(Unit) }
-            .flatMapLatest {
-                DatabaseRepo.HKeyframe.observe(videoCode).flowOn(ioDispatcher)
-            }
-    }
-    fun appendHKeyframe(videoCode: String, title: String, hKeyframe: HKeyframeEntity.Keyframe) {
-        viewModelScope.launch(ioDispatcher) {
-            run {
-                this@VideoViewModel.hKeyframes?.keyframes?.forEach { keyframeInDb ->
-                    if (abs(keyframeInDb.position - hKeyframe.position) < MIN_H_KEYFRAME_SAVE_INTERVAL) {
-                        LogUtil.d("HKeyframe", "append_hkeyframe:time conflict: $keyframeInDb")
-                        _modifyHKeyframeFlow.emit(
-                            HKeyframeResult(
-                                succeeded = false,
-                                message = getString(
-                                    Res.string.interval_must_greater_than_d,
-                                    MIN_H_KEYFRAME_SAVE_INTERVAL / 1_000L,
-                                ),
-                            )
-                        )
-                        return@run
-                    }
-                }
-                DatabaseRepo.HKeyframe.appendKeyframe(videoCode, title, hKeyframe)
-                LogUtil.d("HKeyframe", "append_hkeyframe:$hKeyframe DONE!")
-                _modifyHKeyframeFlow.emit(HKeyframeResult(true, getString(Res.string.add_success)))
-                _forceRefresh.emit(Unit)
-            }
-        }
-    }
-
-    fun modifyHKeyframe(
-        videoCode: String,
-        oldKeyframe: HKeyframeEntity.Keyframe,
-        newKeyframe: HKeyframeEntity.Keyframe,
-    ) {
-        viewModelScope.launch(ioDispatcher) {
-            DatabaseRepo.HKeyframe.modifyKeyframe(videoCode, oldKeyframe, newKeyframe)
-            _modifyHKeyframeFlow.emit(HKeyframeResult(true, getString(Res.string.modify_success)))
-            _forceRefresh.emit(Unit)
-        }
-    }
-
-    fun removeHKeyframe(videoCode: String, hKeyframe: HKeyframeEntity.Keyframe) {
-        viewModelScope.launch(ioDispatcher) {
-            DatabaseRepo.HKeyframe.removeKeyframe(videoCode, hKeyframe)
-            _modifyHKeyframeFlow.emit(HKeyframeResult(true, getString(Res.string.delete_success)))
-            _forceRefresh.emit(Unit)
-        }
-    }
 }

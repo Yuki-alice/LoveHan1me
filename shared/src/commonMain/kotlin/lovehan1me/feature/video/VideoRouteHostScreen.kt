@@ -62,7 +62,6 @@ import lovehan1me.do_not_show_again
 import lovehan1me.continues
 import lovehan1me.data.getHanimeVideoLink
 import lovehan1me.data.DatabaseRepo
-import lovehan1me.data.database.entity.HKeyframeEntity
 import lovehan1me.data.database.entity.WatchHistoryEntity
 import lovehan1me.core.domain.exception.ParseException
 import lovehan1me.core.domain.model.HanimeVideo
@@ -167,7 +166,6 @@ fun VideoRouteHostScreen(
     }
     val stringLongPressShare = stringResource(Res.string.long_press_share_to_copy)
     val pipPlayPauseText = stringResource(Res.string.play_pause)
-    val untitledVideoText = stringResource(Res.string.player_untitled_video)
     // 词典 JSON 移出组合：磁盘 IO 不许卡首帧，进场后异步装，到了重组 actions 即可。
     var genres by remember(SettingsRepository.baseUrl) { mutableStateOf(emptyList<SearchOption>()) }
     LaunchedEffect(SettingsRepository.baseUrl) {
@@ -202,8 +200,6 @@ fun VideoRouteHostScreen(
     var mobilePlaybackConfirmed by remember(route.videoCode, route.localUri) {
         mutableStateOf(false)
     }
-    var showAddHKeyframeDialog by remember { mutableStateOf<Pair<Long, String>?>(null) }
-    var hKeyframes by remember { mutableStateOf<HKeyframeEntity?>(null) }
     var superResolutionIndex by remember { mutableStateOf(0) }
     var pendingUnsubscribeArtist by remember { mutableStateOf<HanimeVideo.Artist?>(null) }
     var pendingLocalListAction by remember { mutableStateOf<(() -> Unit)?>(null) }
@@ -442,15 +438,6 @@ fun VideoRouteHostScreen(
         }
     }
 
-    LaunchedEffect(route.videoCode) {
-        lifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
-            viewModel.observeKeyframe(route.videoCode).collect {
-                hKeyframes = it
-                viewModel.hKeyframes = it
-            }
-        }
-    }
-
     LaunchedEffect(viewModel, lifecycleOwner) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.CREATED) {
             launch {
@@ -488,32 +475,6 @@ fun VideoRouteHostScreen(
         if (showResumeButton) {
             kotlinx.coroutines.delay(5_000L.milliseconds)
             showResumeButton = false
-        }
-    }
-
-    val countdownLabel = remember(playbackState.engine.positionMs, hKeyframes, isFullscreen) {
-        if (!isFullscreen || !SettingsRepository.hKeyframesEnable) {
-            null
-        } else {
-            hKeyframes?.keyframes.orEmpty().mapIndexedNotNull { index, keyframe ->
-                val remaining = keyframe.position - playbackState.engine.positionMs
-                if (remaining in 0L until SettingsRepository.whenCountdownRemind) {
-                    val time = if (remaining >= 1000L) {
-                        ((remaining / 1000L) + 1L).toString()
-                    } else {
-                        // M3：原 "%.1f".format（JVM-only）；整数拼一位小数。
-                        val tenths = remaining / 100L
-                        "${tenths / 10L}.${tenths % 10L}"
-                    }
-                    if (SettingsRepository.showCommentWhenCountdown && !keyframe.prompt.isNullOrBlank()) {
-                        "#${index + 1} ${keyframe.prompt}\n$time"
-                    } else {
-                        time
-                    }
-                } else {
-                    null
-                }
-            }.firstOrNull()
         }
     }
 
@@ -616,34 +577,6 @@ fun VideoRouteHostScreen(
             superResolutionIndex = index
             playbackEngine.setSuperResolution(index)
         },
-        hKeyframeLabel = stringResource(Res.string.player_h_keyframe),
-        isHKeyframesEnabled = SettingsRepository.hKeyframesEnable,
-        hKeyframeOptions = hKeyframes?.keyframes.orEmpty().mapIndexed { index, keyframe ->
-            stringResource(Res.string.player_keyframe_option,
-                index + 1,
-                formatPlaybackTime(keyframe.position),
-            )
-        },
-        hKeyframes = hKeyframes?.keyframes.orEmpty(),
-        isHKeyframeLocal = hKeyframes?.author == null,
-        onHKeyframeSelected = { index ->
-            hKeyframes?.keyframes?.getOrNull(index)?.position?.let(playbackController::seekTo)
-        },
-        onHKeyframeUpdated = { oldKeyframe, newKeyframe ->
-            viewModel.modifyHKeyframe(route.videoCode, oldKeyframe, newKeyframe)
-        },
-        onHKeyframeDeleted = { keyframe ->
-            viewModel.removeHKeyframe(route.videoCode, keyframe)
-        },
-        onHKeyframeLongPress = {
-            if (playbackState.engine.isPlaying) {
-                scope.launch { SonnerToast.info(getString(Res.string.pause_then_long_press)) }
-            } else {
-                showAddHKeyframeDialog = playbackState.engine.positionMs to videoTitle.ifBlank {
-                    untitledVideoText
-                }
-            }
-        },
         onLongPressStart = {
             if (playbackState.engine.isPlaying) {
                 val currentSpeed = playbackState.engine.playbackSpeed
@@ -673,7 +606,6 @@ fun VideoRouteHostScreen(
             if (duration > 0L) playbackController.seekTo((duration * value).toLong())
         },
         progressGestureSensitivity = realProgressSensitivity(SettingsRepository.slideSensitivity),
-        countdownLabel = countdownLabel,
         videoAspectRatio = if (
             playbackState.engine.videoWidth > 0 &&
             playbackState.engine.videoHeight > 0
@@ -751,28 +683,6 @@ fun VideoRouteHostScreen(
         },
         modifier = Modifier.fillMaxSize(),
     )
-
-    showAddHKeyframeDialog?.let { (currentPosition, title) ->
-        ConfirmDialog(
-            visible = true,
-            title = stringResource(Res.string.add_to_h_keyframe),
-            message = buildString {
-                appendLine(stringResource(Res.string.sure_to_add_to_h_keyframe))
-                append(stringResource(Res.string.current_position_d_ms, currentPosition))
-            },
-            confirmText = stringResource(Res.string.confirm),
-            dismissText = stringResource(Res.string.cancel),
-            onConfirm = {
-                viewModel.appendHKeyframe(
-                    route.videoCode,
-                    title,
-                    HKeyframeEntity.Keyframe(position = currentPosition, prompt = null),
-                )
-                showAddHKeyframeDialog = null
-            },
-            onDismiss = { showAddHKeyframeDialog = null },
-        )
-    }
 
     pendingUnsubscribeArtist?.let { artist ->
         ConfirmDialog(

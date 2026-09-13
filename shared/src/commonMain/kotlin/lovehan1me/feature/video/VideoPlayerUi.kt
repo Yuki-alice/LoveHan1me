@@ -34,8 +34,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ContainedLoadingIndicator
@@ -45,7 +43,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -72,7 +69,6 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -118,10 +114,7 @@ import lovehan1me.ic_home
 import lovehan1me.ic_fullscreen
 import lovehan1me.ic_fast_rewind
 import lovehan1me.ic_fast_forward
-import lovehan1me.ic_edit
-import lovehan1me.ic_delete
 import lovehan1me.ic_arrow_back_ios
-import lovehan1me.data.database.entity.HKeyframeEntity
 import lovehan1me.ui.component.FilledIconButton
 import lovehan1me.ui.component.FilledTonalButton
 import lovehan1me.ui.component.FilledTonalIconButton
@@ -185,22 +178,12 @@ fun VideoPlayerUi(
     superResolutionOptions: List<String> = emptyList(),
     selectedSuperResolutionIndex: Int = 0,
     onSuperResolutionSelected: (Int) -> Unit = {},
-    hKeyframeLabel: String,
-    isHKeyframesEnabled: Boolean = true,
-    hKeyframeOptions: List<String> = emptyList(),
-    hKeyframes: List<HKeyframeEntity.Keyframe> = emptyList(),
-    isHKeyframeLocal: Boolean = false,
-    onHKeyframeSelected: (Int) -> Unit = {},
-    onHKeyframeUpdated: (HKeyframeEntity.Keyframe, HKeyframeEntity.Keyframe) -> Unit = { _, _ -> },
-    onHKeyframeDeleted: (HKeyframeEntity.Keyframe) -> Unit = {},
-    onHKeyframeLongPress: () -> Unit = {},
     onLongPressStart: () -> Unit = {},
     onLongPressEnd: () -> Unit = {},
     onVolumeChange: (Float) -> Unit = {},
     onBrightnessChange: (Float) -> Unit = {},
     onProgressGesture: (Float) -> Unit = onProgressChange,
     progressGestureSensitivity: Float = PlayerDefaults.DEFAULT_PROGRESS_SLIDE_SENSITIVITY.toFloat(),
-    countdownLabel: String? = null,
     videoAspectRatio: Float = 16f / 9f,
 ) {
     var showControlsState by remember { mutableStateOf(true) }
@@ -216,8 +199,6 @@ fun VideoPlayerUi(
     var showUnlockButton by remember { mutableStateOf(false) }
     var unlockButtonTimeoutToken by remember { mutableIntStateOf(0) }
     val haptic = rememberHapticFeedback()
-    // P6d-3-C3：回调内固定串预解析
-    val hKeyframesDisabledText = stringResource(Res.string.h_keyframes_not_enabled)
     // M3：原 DateFormat.getTimeFormat(context)（Android-only）；改当前时分，
     // 24 小时制零填充（与系统 12/24 小时制差异可接受）。
     var deviceTime by remember { mutableStateOf(formatDeviceTime(currentEpochMillis())) }
@@ -666,24 +647,6 @@ fun VideoPlayerUi(
                     Spacer(modifier = Modifier.width(10.dp))
 
                     if (isFullscreen) {
-                        PlayerMenuChip(
-                            label = hKeyframeLabel,
-                            onClick = {
-                                if (isHKeyframesEnabled) {
-                                    activeSidePanel = PlayerSidePanel.HKeyframe
-                                } else {
-                                    SonnerToast.info(hKeyframesDisabledText)
-                                }
-                            },
-                            onLongClick = {
-                                if (isHKeyframesEnabled) {
-                                    onHKeyframeLongPress()
-                                } else {
-                                    SonnerToast.info(hKeyframesDisabledText)
-                                }
-                            },
-                        )
-
                         if (superResolutionOptions.isNotEmpty()) {
                             Spacer(modifier = Modifier.width(6.dp))
 
@@ -1059,36 +1022,6 @@ fun VideoPlayerUi(
             }
         }
 
-        /**
-         * Timer
-         */
-        AnimatedVisibility(
-            visible = countdownLabel != null && activeSidePanel == null,
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(
-                    top = 90.dp,
-                    start = 12.dp
-                ),
-            enter = fadeIn(),
-            exit = fadeOut(),
-        ) {
-            Surface(
-                shape = MaterialTheme.shapes.large,
-                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.18f)
-            ) {
-                Text(
-                    text = countdownLabel.orEmpty(),
-                    modifier = Modifier.padding(
-                        horizontal = 12.dp,
-                        vertical = 8.dp
-                    ),
-                    color = Color.White,
-                    fontSize = 22.sp
-                )
-            }
-        }
-
         AnimatedVisibility(
             visible = activeSidePanel != null,
             enter = fadeIn(),
@@ -1116,24 +1049,6 @@ fun VideoPlayerUi(
         ) {
             Box(modifier = Modifier.fillMaxSize()) {
                 when (displayedSidePanel) {
-                    PlayerSidePanel.HKeyframe -> {
-                        PlayerSidePanelSheet(
-                            options = hKeyframeOptions,
-                            selectedIndex = null,
-                            panelWidth = 216.dp,
-                            hKeyframes = hKeyframes,
-                            isHKeyframeLocal = isHKeyframeLocal,
-                            emptyText = stringResource(Res.string.here_is_empty) + "\n" +
-                                    stringResource(Res.string.long_press_to_add_h_keyframe),
-                            onSelected = { index ->
-                                activeSidePanel = null
-                                onHKeyframeSelected(index)
-                            },
-                            onHKeyframeUpdated = onHKeyframeUpdated,
-                            onHKeyframeDeleted = onHKeyframeDeleted,
-                        )
-                    }
-
                     PlayerSidePanel.Speed -> {
                         PlayerSidePanelSheet(
                             options = PlayerDefaults.speeds.map {
@@ -1217,7 +1132,6 @@ private fun PlayerMenuChip(
 }
 
 private enum class PlayerSidePanel {
-    HKeyframe,
     Speed,
     SuperResolution,
     Quality,
@@ -1228,16 +1142,8 @@ private fun BoxScope.PlayerSidePanelSheet(
     options: List<String>,
     selectedIndex: Int?,
     onSelected: (Int) -> Unit,
-    emptyText: String? = null,
     panelWidth: Dp = 156.dp,
-    hKeyframes: List<HKeyframeEntity.Keyframe> = emptyList(),
-    isHKeyframeLocal: Boolean = false,
-    onHKeyframeUpdated: (HKeyframeEntity.Keyframe, HKeyframeEntity.Keyframe) -> Unit = { _, _ -> },
-    onHKeyframeDeleted: (HKeyframeEntity.Keyframe) -> Unit = {},
 ) {
-    val isHKeyframePanel = hKeyframes.isNotEmpty() || isHKeyframeLocal || emptyText != null
-    var editingKeyframe by remember { mutableStateOf<HKeyframeEntity.Keyframe?>(null) }
-    var deletingKeyframe by remember { mutableStateOf<HKeyframeEntity.Keyframe?>(null) }
     Box(
         modifier = Modifier
             .align(Alignment.CenterEnd)
@@ -1256,205 +1162,39 @@ private fun BoxScope.PlayerSidePanelSheet(
                 .fillMaxSize()
                 .padding(horizontal = 6.dp, vertical = 6.dp),
         ) {
-            if (isHKeyframePanel && hKeyframes.isNotEmpty()) {
-                itemsIndexed(hKeyframes) { index, keyframe ->
-                    val label = options.getOrNull(index).orEmpty()
-                    val separatorIndex = label.indexOf(' ')
-                    val marker = if (separatorIndex >= 0) {
-                        label.substring(0, separatorIndex)
-                    } else {
-                        stringResource(Res.string.player_keyframe_index, index + 1)
-                    }
-                    val time =
-                        if (separatorIndex >= 0) label.substring(separatorIndex + 1) else label
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelected(index) }
-                            .padding(horizontal = 8.dp, vertical = 4.dp),
-                        verticalArrangement = Arrangement.spacedBy(1.dp),
-                    ) {
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                        ) {
-                            Text(
-                                text = marker,
-                                color = MaterialTheme.colorScheme.primary,
-                                style = MaterialTheme.typography.labelMedium,
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text(
-                                text = time,
-                                color = Color.White,
-                                style = MaterialTheme.typography.bodyMedium,
-                            )
-                            if (isHKeyframeLocal) {
-                                Spacer(modifier = Modifier.weight(1f))
-                                IconButton(
-                                    onClick = { editingKeyframe = keyframe },
-                                    modifier = Modifier.size(28.dp),
-                                    colors = IconButtonDefaults.iconButtonColors(
-                                        contentColor = Color.White.copy(alpha = 0.76f),
-                                    ),
-                                ) {
-                                    Icon(
-                                        painter = painterResource(Res.drawable.ic_edit),
-                                        contentDescription = stringResource(Res.string.edit),
-                                        modifier = Modifier.size(16.dp),
-                                    )
-                                }
-                                IconButton(
-                                    onClick = { deletingKeyframe = keyframe },
-                                    modifier = Modifier.size(28.dp),
-                                    colors = IconButtonDefaults.iconButtonColors(
-                                        contentColor = Color.White.copy(alpha = 0.76f),
-                                    ),
-                                ) {
-                                    Icon(
-                                        painter = painterResource(Res.drawable.ic_delete),
-                                        contentDescription = stringResource(Res.string.delete),
-                                        modifier = Modifier.size(16.dp),
-                                    )
-                                }
-                            }
-                        }
-                        keyframe.prompt?.takeIf(String::isNotBlank)?.let { prompt ->
-                            Text(
-                                text = prompt,
-                                color = Color.White.copy(alpha = 0.68f),
-                                style = MaterialTheme.typography.labelSmall,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis,
-                            )
-                        }
-                    }
-                }
-            } else if (options.isEmpty()) {
-                item {
-                    Text(
-                        text = emptyText.orEmpty(),
-                        color = Color.White,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 12.dp, vertical = 24.dp),
-                    )
-                }
-            } else {
-                itemsIndexed(options) { index, option ->
-                    val isSelected = index == selectedIndex
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onSelected(index) }
-                            .background(
-                                if (isSelected) {
-                                    MaterialTheme.colorScheme.secondaryContainer
-                                } else {
-                                    Color.Transparent
-                                }
-                            )
-                            .padding(vertical = 11.dp, horizontal = 10.dp),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            text = option,
-                            color = if (isSelected) {
-                                MaterialTheme.colorScheme.onSecondaryContainer
+            itemsIndexed(options) { index, option ->
+                val isSelected = index == selectedIndex
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onSelected(index) }
+                        .background(
+                            if (isSelected) {
+                                MaterialTheme.colorScheme.secondaryContainer
                             } else {
-                                Color.White
-                            },
-                            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                            style = MaterialTheme.typography.bodyLarge,
-                            modifier = Modifier.fillMaxWidth(),
+                                Color.Transparent
+                            }
                         )
-                    }
+                        .padding(vertical = 11.dp, horizontal = 10.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Text(
+                        text = option,
+                        color = if (isSelected) {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        } else {
+                            Color.White
+                        },
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+                        style = MaterialTheme.typography.bodyLarge,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
                 }
             }
         }
     }
-
-    editingKeyframe?.let { keyframe ->
-        var positionText by remember(keyframe) { mutableStateOf(keyframe.position.toString()) }
-        var promptText by remember(keyframe) { mutableStateOf(keyframe.prompt.orEmpty()) }
-        var isPositionError by remember(keyframe) { mutableStateOf(false) }
-        AlertDialog(
-            onDismissRequest = { editingKeyframe = null },
-            title = { Text(stringResource(Res.string.modify_h_keyframe)) },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    OutlinedTextField(
-                        value = positionText,
-                        onValueChange = {
-                            positionText = it
-                            isPositionError = false
-                        },
-                        label = { Text(stringResource(Res.string.position_ms)) },
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        isError = isPositionError,
-                        singleLine = true,
-                    )
-                    OutlinedTextField(
-                        value = promptText,
-                        onValueChange = { promptText = it },
-                        label = { Text(stringResource(Res.string.prompt)) },
-                        maxLines = 3,
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        val position = positionText.toLongOrNull()
-                        if (position == null || position < 0L) {
-                            isPositionError = true
-                        } else {
-                            onHKeyframeUpdated(
-                                keyframe,
-                                keyframe.copy(
-                                    position = position,
-                                    prompt = promptText.ifBlank { null },
-                                ),
-                            )
-                            editingKeyframe = null
-                        }
-                    }
-                ) {
-                    Text(stringResource(Res.string.confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { editingKeyframe = null }) {
-                    Text(stringResource(Res.string.cancel))
-                }
-            },
-        )
-    }
-
-    deletingKeyframe?.let { keyframe ->
-        AlertDialog(
-            onDismissRequest = { deletingKeyframe = null },
-            title = { Text(stringResource(Res.string.sure_to_delete)) },
-            text = { Text(keyframe.position.toString()) },
-            confirmButton = {
-                TextButton(
-                    onClick = {
-                        onHKeyframeDeleted(keyframe)
-                        deletingKeyframe = null
-                    }
-                ) {
-                    Text(stringResource(Res.string.confirm))
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { deletingKeyframe = null }) {
-                    Text(stringResource(Res.string.cancel))
-                }
-            },
-        )
-    }
 }
+
 
 @Composable
 fun PlayerSlider(
