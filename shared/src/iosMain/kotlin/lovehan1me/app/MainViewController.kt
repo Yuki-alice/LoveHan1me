@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.ComposeUIViewController
+import lovehan1me.core.platform.applyAppLanguage
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.datastore.DataStoreManager
 import lovehan1me.app.navigation.main.PlatformScreens
@@ -35,6 +36,9 @@ fun MainViewController(): UIViewController {
         runBlocking {
             DataStoreManager.initialize()
             SettingsRepository.install(DataStoreManager)
+            // M5-2：语言在启动时应用（对齐 Android 的 AppLanguageManager.applyStoredLanguage）。
+            // iOS 语义：写 AppleLanguages，**下次启动**才会被 Foundation 采纳 —— 见 actual 的 KDoc。
+            applyAppLanguage(SettingsRepository.current.appLanguage)
         }
     }
     return ComposeUIViewController {
