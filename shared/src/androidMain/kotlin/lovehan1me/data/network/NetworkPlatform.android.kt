@@ -1,5 +1,6 @@
 package lovehan1me.data.network
 
+import lovehan1me.core.constant.USER_AGENT
 import lovehan1me.data.database.dao.Han1meDatabaseContext
 import lovehan1me.data.network.interceptor.CloudflareInterceptor
 import okhttp3.Interceptor
@@ -15,3 +16,6 @@ actual fun httpCacheDirectory(): File =
 
 actual fun createCloudflareInterceptor(): Interceptor? =
     CloudflareInterceptor(Han1meDatabaseContext.appContext)
+
+/** Android 用移动 UA；验证页 WebView 的 `userAgentString` 也是它（见 CloudflareVerificationScreen）。 */
+actual fun currentHttpUserAgent(): String = USER_AGENT
