@@ -13,7 +13,6 @@ import lovehan1me.core.platform.performAccountLogout
 import lovehan1me.data.AppUpdateState
 import lovehan1me.data.DatabaseRepo
 import lovehan1me.data.NetworkRepo
-import lovehan1me.data.database.entity.HKeyframeEntity
 import lovehan1me.data.database.entity.WatchHistoryEntity
 import lovehan1me.core.domain.exception.LoginStateExpiredException
 import lovehan1me.core.domain.model.Announcement
@@ -162,33 +161,4 @@ class HomePageViewModel: ViewModel() {
         DatabaseRepo.WatchHistory.loadAll()
             .catch { e -> e.printStackTrace() }
             .flowOn(ioDispatcher)
-    private val _modifyHKeyframeFlow = MutableSharedFlow<Boolean>()
-    fun removeHKeyframe(videoCode: String, hKeyframe: HKeyframeEntity.Keyframe) {
-        viewModelScope.launch(ioDispatcher) {
-            DatabaseRepo.HKeyframe.removeKeyframe(videoCode, hKeyframe)
-            LogUtil.d("HKeyframe", "removeHKeyframe:$hKeyframe DONE!")
-            _modifyHKeyframeFlow.emit(true)
-        }
-    }
-    fun modifyHKeyframe(
-        videoCode: String,
-        oldKeyframe: HKeyframeEntity.Keyframe, keyframe: HKeyframeEntity.Keyframe,
-    ) {
-        viewModelScope.launch {
-            DatabaseRepo.HKeyframe.modifyKeyframe(videoCode, oldKeyframe, keyframe)
-            LogUtil.d("HKeyframe", "modifyHKeyframe:$keyframe DONE!")
-            _modifyHKeyframeFlow.emit(true)
-        }
-    }
-    fun deleteHKeyframes(entity: HKeyframeEntity) {
-        viewModelScope.launch(ioDispatcher) {
-            DatabaseRepo.HKeyframe.delete(entity)
-        }
-    }
-
-    fun updateHKeyframes(entity: HKeyframeEntity) {
-        viewModelScope.launch(ioDispatcher) {
-            DatabaseRepo.HKeyframe.update(entity)
-        }
-    }
 }

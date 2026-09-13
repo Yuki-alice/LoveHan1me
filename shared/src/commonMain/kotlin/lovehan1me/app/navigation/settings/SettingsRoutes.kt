@@ -4,8 +4,6 @@ import lovehan1me.Res
 import lovehan1me.about
 import lovehan1me.developer_options
 import lovehan1me.download_settings
-import lovehan1me.h_keyframe_manage
-import lovehan1me.h_keyframe_settings
 import lovehan1me.mpv_advanced_settings
 import lovehan1me.network_settings
 import lovehan1me.open_source_license
@@ -16,7 +14,6 @@ import lovehan1me.settings_data_privacy
 import lovehan1me.settings_interface_interaction
 import lovehan1me.settings_network_download
 import lovehan1me.settings_video_playback
-import lovehan1me.shared_h_keyframe_manage
 import lovehan1me.theme_audit
 import lovehan1me.app.navigation.main.HanimeScreen
 import kotlinx.serialization.Serializable
@@ -60,15 +57,6 @@ object DownloadSettingsRoute : HanimeScreen
 
 @Serializable
 object MpvPlayerSettingsRoute : HanimeScreen
-
-@Serializable
-object HKeyframesRoute : HanimeScreen
-
-@Serializable
-object SharedHKeyframesRoute : HanimeScreen
-
-@Serializable
-object HKeyframeSettingsRoute : HanimeScreen
 
 @Serializable
 object ThemeAuditRoute : HanimeScreen
@@ -116,15 +104,6 @@ enum class SettingsDestinationSpec(
     Mpv(
         titleRes = Res.string.mpv_advanced_settings,
     ),
-    HKeyframes(
-        titleRes = Res.string.h_keyframe_manage,
-    ),
-    SharedHKeyframes(
-        titleRes = Res.string.shared_h_keyframe_manage,
-    ),
-    HKeyframeSettings(
-        titleRes = Res.string.h_keyframe_settings,
-    ),
     ThemeAudit(
         titleRes = Res.string.theme_audit,
     );
@@ -144,9 +123,6 @@ enum class SettingsDestinationSpec(
             Network -> NetworkSettingsRoute
             Download -> DownloadSettingsRoute
             Mpv -> MpvPlayerSettingsRoute
-            HKeyframes -> HKeyframesRoute
-            SharedHKeyframes -> SharedHKeyframesRoute
-            HKeyframeSettings -> HKeyframeSettingsRoute
             ThemeAudit -> ThemeAuditRoute
         }
 }

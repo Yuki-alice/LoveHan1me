@@ -50,10 +50,6 @@ import lovehan1me.app.navigation.settings.AppearanceSettingsRoute
 import lovehan1me.app.navigation.settings.DataPrivacySettingsRoute
 import lovehan1me.app.navigation.settings.DeveloperOptionsSettingsRoute
 import lovehan1me.app.navigation.settings.DownloadSettingsRoute
-import lovehan1me.app.navigation.settings.HKeyframeSettingsRoute
-import lovehan1me.app.navigation.settings.HKeyframeSettingsRouteScreen
-import lovehan1me.app.navigation.settings.HKeyframesRoute
-import lovehan1me.app.navigation.settings.HKeyframesRouteScreen
 import lovehan1me.app.navigation.settings.HomeSettingsRoute
 import lovehan1me.app.navigation.settings.HomeSettingsRouteScreen
 import lovehan1me.app.navigation.settings.InterfaceInteractionSettingsRoute
@@ -68,8 +64,6 @@ import lovehan1me.app.navigation.settings.PlayerSettingsRouteScreen
 import lovehan1me.app.navigation.settings.SettingsDestinationSpec
 import lovehan1me.app.navigation.settings.SettingsHomeHost
 import lovehan1me.app.navigation.settings.SettingsScaffold
-import lovehan1me.app.navigation.settings.SharedHKeyframesRoute
-import lovehan1me.app.navigation.settings.SharedHKeyframesRouteScreen
 import lovehan1me.app.navigation.settings.ThemeAuditRoute
 import lovehan1me.app.navigation.settings.VideoPlaybackSettingsRoute
 import lovehan1me.feature.home.homepage.HomePageViewModel
@@ -101,7 +95,6 @@ import kotlinx.serialization.json.Json
  *   `DownloadSettingsRoute`（SAF/WorkManager P7）/ `PreviewCommentRoute`（评论 UI 随 M3）
  *   为占位（参数回显 + 返回，不崩）；
  * - `OpenSourceLicensesRoute` 去 `BackHandler`（Android-only；显式搜索按钮可关）；
- * - `HKeyframesRoute` 的 FAB 触感改跨平台 `rememberHapticFeedback()`；
  * - 设置页 `downloadSettingsContent` 槽位传空（桌面下载目录 P7）。
  */
 @OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3ExpressiveApi::class)
@@ -369,8 +362,6 @@ fun SharedTopNavigation(
                 onOpenDataPrivacy = { backStack.add(DataPrivacySettingsRoute) },
                 onOpenDeveloperOptions = { backStack.add(DeveloperOptionsSettingsRoute) },
                 onOpenAbout = { backStack.add(AboutSettingsRoute) },
-                onNavigateToHKeyframes = { backStack.add(HKeyframesRoute) },
-                onNavigateToSharedHKeyframes = { backStack.add(SharedHKeyframesRoute) },
                 onNavigateToOpenSourceLicenses = { backStack.add(OpenSourceLicensesRoute) },
                 onOpenThemeAudit = { backStack.add(ThemeAuditRoute) },
             )
@@ -383,8 +374,6 @@ fun SharedTopNavigation(
             ) {
                 HomeSettingsRouteScreen(
                     page = HomeSettingsPage.VideoPlayback,
-                    onNavigateToHKeyframes = { backStack.add(HKeyframesRoute) },
-                    onNavigateToSharedHKeyframes = { backStack.add(SharedHKeyframesRoute) },
                     downloadSettingsContent = {},
                 )
             }
@@ -544,60 +533,6 @@ fun SharedTopNavigation(
                 fallbackDestination = PlayerSettingsRoute,
             ) {
                 MpvPlayerSettingsRouteScreen()
-            }
-        }
-        entry<HKeyframesRoute>(metadata = pageTransition()) {
-            var showImportDialog by remember { mutableStateOf(false) }
-            val haptic = rememberHapticFeedback()
-            SettingsScaffold(
-                backStack = backStack,
-                destination = SettingsDestinationSpec.HKeyframes,
-                fallbackDestination = VideoPlaybackSettingsRoute,
-                floatingActionButton = {
-                    // tertiary 锚点：FAB 用第三强调容器（M3 codelab 同款），与主按钮拉开。
-                    FloatingActionButton(
-                        onClick = {
-                            haptic()
-                            showImportDialog = true
-                        },
-                        containerColor = MaterialTheme.colorScheme.tertiaryContainer,
-                        contentColor = MaterialTheme.colorScheme.onTertiaryContainer,
-                    ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_add),
-                            contentDescription = stringResource(Res.string.h_keyframes_import_shared),
-                        )
-                    }
-                },
-            ) {
-                HKeyframesRouteScreen(
-                    onOpenVideo = onNavigateToVideo,
-                    showImportDialog = showImportDialog,
-                    onImportDialogDismiss = { showImportDialog = false },
-                )
-            }
-        }
-        entry<SharedHKeyframesRoute>(metadata = pageTransition()) {
-            SettingsScaffold(
-                backStack = backStack,
-                destination = SettingsDestinationSpec.SharedHKeyframes,
-                fallbackDestination = VideoPlaybackSettingsRoute,
-            ) {
-                SharedHKeyframesRouteScreen(
-                    onOpenVideo = onNavigateToVideo,
-                )
-            }
-        }
-        entry<HKeyframeSettingsRoute>(metadata = pageTransition()) {
-            SettingsScaffold(
-                backStack = backStack,
-                destination = SettingsDestinationSpec.HKeyframeSettings,
-                fallbackDestination = VideoPlaybackSettingsRoute,
-            ) {
-                HKeyframeSettingsRouteScreen(
-                    onNavigateToHKeyframes = { backStack.add(HKeyframesRoute) },
-                    onNavigateToSharedHKeyframes = { backStack.add(SharedHKeyframesRoute) },
-                )
             }
         }
         entry<SearchRoute>(metadata = pageTransition()) { route ->

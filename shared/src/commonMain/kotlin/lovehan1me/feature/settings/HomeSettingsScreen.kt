@@ -217,7 +217,6 @@ fun HomeSettingsScreen(
     state: HomeSettingsUiState,
     isLoggedIn: Boolean,
     actions: HomeSettingsActions,
-    hKeyframeSettingsContent: @Composable () -> Unit,
     networkSettingsContent: @Composable () -> Unit,
     downloadSettingsContent: @Composable () -> Unit,
     onOpenThemeAudit: () -> Unit = {},
@@ -360,7 +359,7 @@ fun HomeSettingsScreen(
         verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.small),
     ) {
         when (page) {
-            HomeSettingsPage.VideoPlayback -> videoPlaybackSection(state, actions, openChoice = { activeDialog = it }, hKeyframeSettingsContent = hKeyframeSettingsContent)
+            HomeSettingsPage.VideoPlayback -> videoPlaybackSection(state, actions, openChoice = { activeDialog = it })
 
             HomeSettingsPage.NetworkDownload -> networkDownloadSection(state, actions, networkSettingsContent, downloadSettingsContent)
 
@@ -456,7 +455,6 @@ private fun AnimatedLazyListScope.videoPlaybackSection(
     state: HomeSettingsUiState,
     actions: HomeSettingsActions,
     openChoice: (HomeSettingsChoiceDialog) -> Unit,
-    hKeyframeSettingsContent: @Composable () -> Unit,
 ) {
     item {
         SettingsSection(stringResource(Res.string.video)) {
@@ -494,9 +492,6 @@ private fun AnimatedLazyListScope.videoPlaybackSection(
                 onCheckedChange = actions.showPlayedIndicatorChange,
             )
         }
-    }
-    item {
-        hKeyframeSettingsContent()
     }
 }
 

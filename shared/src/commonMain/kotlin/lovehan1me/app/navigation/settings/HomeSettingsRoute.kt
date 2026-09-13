@@ -116,8 +116,6 @@ import kotlinx.coroutines.withContext
 @Composable
 fun HomeSettingsRouteScreen(
     page: HomeSettingsPage,
-    onNavigateToHKeyframes: () -> Unit = {},
-    onNavigateToSharedHKeyframes: () -> Unit = {},
     onNavigateToOpenSourceLicenses: () -> Unit = {},
     onOpenThemeAudit: () -> Unit = {},
     // P6d-4E：下载设置页依赖 :app 的 SAF（SafFileManager/WorkManager），由 Android 壳注入；
@@ -402,13 +400,6 @@ fun HomeSettingsRouteScreen(
             submitBug = { uriHandler.openUri(HA1_GITHUB_ISSUE_URL) },
             openForum = { uriHandler.openUri(HA1_GITHUB_FORUM_URL) },
         ),
-        hKeyframeSettingsContent = {
-            HKeyframeSettingsRouteScreen(
-                onNavigateToHKeyframes = onNavigateToHKeyframes,
-                onNavigateToSharedHKeyframes = onNavigateToSharedHKeyframes,
-                embedded = true,
-            )
-        },
         networkSettingsContent = { NetworkSettingsRouteScreen(embedded = true) },
         downloadSettingsContent = downloadSettingsContent,
         onOpenThemeAudit = onOpenThemeAudit,

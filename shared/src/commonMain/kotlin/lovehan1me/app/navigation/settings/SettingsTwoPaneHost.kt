@@ -82,8 +82,6 @@ fun SettingsHomeHost(
     onOpenDataPrivacy: () -> Unit,
     onOpenDeveloperOptions: () -> Unit,
     onOpenAbout: () -> Unit,
-    onNavigateToHKeyframes: () -> Unit,
-    onNavigateToSharedHKeyframes: () -> Unit,
     onNavigateToOpenSourceLicenses: () -> Unit,
     onOpenThemeAudit: () -> Unit = {},
     downloadSettingsContent: @Composable () -> Unit = {},
@@ -143,8 +141,6 @@ fun SettingsHomeHost(
                 Box(modifier = Modifier.widthIn(max = rightMaxWidth)) {
                     HomeSettingsRouteScreen(
                         page = selected.page,
-                        onNavigateToHKeyframes = onNavigateToHKeyframes,
-                        onNavigateToSharedHKeyframes = onNavigateToSharedHKeyframes,
                         onNavigateToOpenSourceLicenses = onNavigateToOpenSourceLicenses,
                         onOpenThemeAudit = onOpenThemeAudit,
                         downloadSettingsContent = downloadSettingsContent,

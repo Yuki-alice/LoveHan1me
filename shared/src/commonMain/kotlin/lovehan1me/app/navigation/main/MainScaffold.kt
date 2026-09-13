@@ -51,8 +51,6 @@ import lovehan1me.app.navigation.settings.AppearanceSettingsRoute
 import lovehan1me.app.navigation.settings.DataPrivacySettingsRoute
 import lovehan1me.app.navigation.settings.DeveloperOptionsSettingsRoute
 import lovehan1me.app.navigation.settings.DownloadSettingsRoute
-import lovehan1me.app.navigation.settings.HKeyframeSettingsRoute
-import lovehan1me.app.navigation.settings.HKeyframesRoute
 import lovehan1me.app.navigation.settings.HomeSettingsRoute
 import lovehan1me.app.navigation.settings.ThemeAuditRoute
 import lovehan1me.app.navigation.settings.InterfaceInteractionSettingsRoute
@@ -61,7 +59,6 @@ import lovehan1me.app.navigation.settings.NetworkDownloadSettingsRoute
 import lovehan1me.app.navigation.settings.NetworkSettingsRoute
 import lovehan1me.app.navigation.settings.OpenSourceLicensesRoute
 import lovehan1me.app.navigation.settings.PlayerSettingsRoute
-import lovehan1me.app.navigation.settings.SharedHKeyframesRoute
 import lovehan1me.app.navigation.settings.VideoPlaybackSettingsRoute
 import lovehan1me.feature.home.homepage.HomePageViewModel
 import lovehan1me.ic_settings
@@ -411,9 +408,6 @@ private fun HanimeScreen.hidesNavigationChrome(): Boolean = when (this) {
     NetworkSettingsRoute,
     DownloadSettingsRoute,
     MpvPlayerSettingsRoute,
-    HKeyframesRoute,
-    SharedHKeyframesRoute,
-    HKeyframeSettingsRoute,
     ThemeAuditRoute,
     -> true
 
