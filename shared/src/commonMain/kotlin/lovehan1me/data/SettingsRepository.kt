@@ -43,6 +43,8 @@ object SettingsRepository : SettingsStore {
     val usageSourcePending get() = current.usageSourcePending
     val savedUserId get() = current.savedUserId
     val cloudFlareCookieHost get() = current.cloudFlareCookieHost.lowercase()
+    /** 桌面：CF 验证浏览器采集到的真实 UA（空 = 未采集）。 */
+    val desktopBrowserUserAgent get() = current.desktopBrowserUserAgent
     val switchPlayerKernel get() = current.playerKernel.value
     val showBottomProgress get() = current.showBottomProgress
     val playerSpeed get() = current.playerSpeed
@@ -108,6 +110,10 @@ object SettingsRepository : SettingsStore {
     suspend fun setLoginState(value: Boolean) = update { it.copy(isAlreadyLogin = value) }
     suspend fun dismissLocalListNotice() = update { it.copy(localListNoticeDismissed = true) }
     suspend fun setCloudFlareCookie(value: String, host: String = current.cloudFlareCookieHost) = update { it.copy(cloudFlareCookie = value, cloudFlareCookieHost = host.lowercase()) }
+
+    /** 落盘 CF 验证浏览器自报的真实 UA（供 HTTP 层对齐，见 currentHttpUserAgent 的 KDoc）。 */
+    suspend fun setDesktopBrowserUserAgent(value: String) =
+        update { it.copy(desktopBrowserUserAgent = value.trim()) }
     suspend fun setSavedUserId(value: String) = update { it.copy(savedUserId = value) }
     suspend fun setUsageNoticeAccepted(value: Boolean) = update { it.copy(usageNoticeAccepted = value) }
     suspend fun setUsageSourcePending(value: Boolean) = update { it.copy(usageSourcePending = value) }

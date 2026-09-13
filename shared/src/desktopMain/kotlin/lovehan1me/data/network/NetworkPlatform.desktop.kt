@@ -1,6 +1,7 @@
 package lovehan1me.data.network
 
 import lovehan1me.core.constant.DESKTOP_USER_AGENT
+import lovehan1me.data.SettingsRepository
 import okhttp3.Interceptor
 import java.io.File
 
@@ -19,10 +20,17 @@ actual fun httpCacheDirectory(): File {
 actual fun createCloudflareInterceptor(): Interceptor? = null
 
 /**
- * 桌面用**桌面** UA。
+ * 桌面 UA：**优先用验证浏览器采集到的真实 UA**，未采集时退回 [DESKTOP_USER_AGENT]。
  *
- * ⚠️ 这里返回的字符串必须与 `CloudflareCdp` 传给验证浏览器的 `--user-agent` 完全一致
- * （两者都取 [DESKTOP_USER_AGENT]），否则 cf_clearance 因 UA 不匹配而永久失效——
- * 详见 [currentHttpUserAgent] 的 KDoc。`CloudflareCdpTest` 有一条测试把这个不变量钉住。
+ * 为什么必须跟随浏览器：`cf_clearance` 绑定 UA；而浏览器 UA **不能伪造**
+ * （实测：把真实 Chrome 153 强制成常量里的 Chrome/149，CF 会永远停在挑战页），
+ * 所以唯一正确的组合是"浏览器用它自己的 UA，HTTP 层发同一个字符串"。
+ * 真实值由 `CloudflareCdp` 采集后经 `SettingsRepository.setDesktopBrowserUserAgent` 落盘。
+ *
+ * runCatching 兜底：极早的请求可能早于 DataStore 就绪，那时也还没有 clearance 要匹配。
  */
-actual fun currentHttpUserAgent(): String = DESKTOP_USER_AGENT
+actual fun currentHttpUserAgent(): String =
+    runCatching { SettingsRepository.desktopBrowserUserAgent }
+        .getOrNull()
+        ?.takeIf { it.isNotBlank() }
+        ?: DESKTOP_USER_AGENT

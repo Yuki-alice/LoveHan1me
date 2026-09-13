@@ -162,6 +162,14 @@ data class AppSettings(
     val proxyType: ProxyType = ProxyType.System,
     val proxyIp: String = "",
     val proxyPort: Int = -1,
+    /**
+     * 桌面专用：CF 验证浏览器**自报的真实 UA**（空 = 尚未采集）。
+     *
+     * 为什么不直接用常量：cf_clearance 绑定 UA，而浏览器 UA 又**不能伪造**
+     * （实测把真实 Chrome 153 伪装成 149 会永远卡在挑战页）。
+     * 于是改成采集真实值存这里，由 currentHttpUserAgent() 发给 HTTP 层。
+     */
+    val desktopBrowserUserAgent: String = "",
     val cachedUpdateJson: String? = null,
     val ignoredVersionCode: Int = -1,
     val downloadCountLimit: Int = 2,
