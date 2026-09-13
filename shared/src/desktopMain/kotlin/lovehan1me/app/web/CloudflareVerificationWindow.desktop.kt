@@ -91,7 +91,8 @@ fun CloudflareVerificationWindow(
             })) {
                 is CloudflareCdp.SolveResult.Solved -> {
                     // 写回成功才回调完成；写不进去还报成功，用户只会再撞一次 403
-                    if (CloudflareCdp.persistSolvedCookies(host, result.clearance)) {
+                    // UA 与 clearance 必须一起写回（cf_clearance 绑定 UA）
+                    if (CloudflareCdp.persistSolvedCookies(host, result.clearance, result.browserUserAgent)) {
                         open = false
                         onPassed()
                     } else {

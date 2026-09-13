@@ -6,7 +6,12 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import lovehan1me.core.constant.DESKTOP_USER_AGENT
 import lovehan1me.core.domain.model.ProxyType
 import lovehan1me.core.util.LogUtil
@@ -46,10 +51,14 @@ import kotlin.coroutines.coroutineContext
  *    **写回成功才算完成**（写不进去还报成功，用户只会再撞一次 403）。
  *
  * ## 两条绑定约束（`cf_clearance` 绑定 UA 与出口 IP）
- * - **UA**：浏览器 `--user-agent` 用 [DESKTOP_USER_AGENT]；桌面端 HTTP 层经
- *   `currentHttpUserAgent()` 发的也是同一个常量。**两头必须一致** ——
- *   此前桌面 HTTP 层发的是移动 UA（`USER_AGENT`），与浏览器不一致，
- *   导致收割回来的 clearance 永久失效，属独立于 headless 的结构性错误（已修）。
+ * - **UA：绝不改浏览器 UA，改成"读它、让 HTTP 层跟随"。**
+ *   2026-09-13 实测（同 profile、同代理、同一 Chrome 153）：
+ *   不覆盖 UA 时 **10 秒内直接进入真实站点**；把浏览器强制成
+ *   `--user-agent=…Chrome/149…` 后 **60 秒仍卡在"请稍候…"**。
+ *   原因：CF 会比对 UA 字符串与 `Sec-CH-UA` 客户端提示，**伪造 UA 本身就是自曝**。
+ *   而 `cf_clearance` 又确实绑定 UA，所以正确做法是用 [readUserAgent]
+ *   （`Runtime.evaluate` 读 `navigator.userAgent`）采集**真实** UA，
+ *   再由桌面 HTTP 层（`currentHttpUserAgent()`）发同一个字符串。
  * - **出口 IP**：代理按 [SettingsRepository] 的 proxy 配置透传 `--proxy-server`；
  *   System/Direct 不传参（Chrome 默认走系统代理）。
  *
@@ -67,8 +76,17 @@ object CloudflareCdp {
     private val cdpJson = Json { ignoreUnknownKeys = true }
 
     sealed interface SolveResult {
-        /** 已拿到可用的 clearance（只可能有一个）。写法回由调用方决定。 */
-        data class Solved(val clearance: CdpCookie) : SolveResult
+        /**
+         * 已拿到可用的 clearance（只可能有一个）。写法回由调用方决定。
+         *
+         * [browserUserAgent] 是浏览器自报的真实 UA：`cf_clearance` 绑定它，
+         * 调用方必须把它写回 HTTP 层（写不回去 clearance 依旧无效）。
+         * 采集失败时为 null，此时保持原有 UA 不变。
+         */
+        data class Solved(
+            val clearance: CdpCookie,
+            val browserUserAgent: String?,
+        ) : SolveResult
         data object NoBrowser : SolveResult
         data class Failed(val reason: String) : SolveResult
         data object Timeout : SolveResult
@@ -231,8 +249,10 @@ object CloudflareCdp {
     ): List<String> {
         val args = mutableListOf(
             browser,
-            // 必须与 HTTP 层同一个 UA：cf_clearance 绑定 (UA, 出口 IP)，见类 KDoc
-            "--user-agent=$DESKTOP_USER_AGENT",
+            // ⚠️ **刻意不传 --user-agent**：实测把真实 Chrome 153 强制成常量里的
+            // Chrome/149 会让 CF 一直卡在挑战页 —— 伪造 UA 与 Sec-CH-UA 不一致，
+            // 本身就是最明显的机器人特征。真实 UA 由 [readUserAgent] 采集，
+            // HTTP 层再来对齐（见类 KDoc）。
             "--remote-debugging-port=$port",
             // Chrome 111+ 起 WS 调试连接默认拒绝（无 Origin 即 500），自动化必须显式放行；
             // 只绑 127.0.0.1 临时端口 + 用完即杀进程，对外无暴露面。
@@ -309,6 +329,20 @@ object CloudflareCdp {
             }
             send("Page.enable")
             send("Network.enable")
+            // 浏览器自报 UA：必须在**不改 UA**的前提下拿到它（见类 KDoc）。
+            // 放在导航前读：about:blank 上 navigator.userAgent 已可用，不受页面加载影响。
+            val browserUserAgent = run {
+                val uaId = send(
+                    "Runtime.evaluate",
+                    """{"expression":"navigator.userAgent","returnByValue":true}""",
+                )
+                readUntil(socket) { extractUserAgentFrame(it, uaId) }
+            }
+            if (browserUserAgent == null) {
+                LogUtil.w(TAG, "未能读到浏览器 UA；HTTP 层将沿用原 UA")
+            } else {
+                LogUtil.d(TAG, "浏览器真实 UA = $browserUserAgent")
+            }
             send("Page.navigate", """{"url":${jsonString(challengeUrl)}}""")
             // 轮询收割：发一个 poll 包、收一个回包交替进行
             val endAt = System.currentTimeMillis() + SOLVE_TIMEOUT_MS
@@ -317,8 +351,15 @@ object CloudflareCdp {
                 val cookies = readCookiesUntil(socket, pollId) ?: continue
                 val clearance = findClearanceCookie(cookies, challengeHost)
                 if (clearance != null) {
-                    LogUtil.d(TAG, "拿到 cf_clearance（domain=${clearance.domain}）")
-                    return SolveResult.Solved(clearance)
+                    // ⚠️ 光有 cookie 不算通过：CF 在挑战流程**中途**就会下发 cf_clearance，
+                    // 那一刻的它拿去请求仍然 403（实测：应用抢早收割 → 重试仍 403 → 再弹窗，循环）。
+                    // 真正的判据是**页面已经离开挑战页**。
+                    val title = readPageTitle(socket, ::send)
+                    if (!isChallengeTitle(title)) {
+                        LogUtil.d(TAG, "已取得 clearance 且页面离开挑战（title=$title）")
+                        return SolveResult.Solved(clearance, browserUserAgent)
+                    }
+                    LogUtil.d(TAG, "已有 clearance 但仍在挑战页（title=$title），继续等")
                 }
                 delay(POLL_INTERVAL_MS)
             }
@@ -330,9 +371,56 @@ object CloudflareCdp {
 
     /** WS 文本帧按 id 取 getAllCookies 回包（事件帧/旧回包返回 null；单测入口）。 */
     internal fun extractCookiesFrame(text: String, pollId: Int): List<CdpCookie>? {
+        val result = extractResultObject(text, pollId) ?: return null
+        val cookies = result["cookies"] ?: return emptyList()
+        // 用显式 serializer：Json 的成员重载是 (deserializer, element)，reified 扩展在这里不占优
+        return runCatching {
+            cdpJson.decodeFromJsonElement(ListSerializer(CdpCookie.serializer()), cookies)
+        }.getOrNull()
+    }
+
+    /**
+     * WS 文本帧按 id 取 `Runtime.evaluate` 的**字符串**返回值（单测入口）。
+     * 读浏览器 UA、读 `document.title` 都走它 —— 两者回包形状相同。
+     *
+     * 回包形状：`{"id":n,"result":{"result":{"type":"string","value":"Mozilla/5.0 …"}}}`。
+     * 拿不到（id 不匹配 / 非字符串 / 坏帧）返回 null —— 调用方据此沿用原 UA，不阻断求解。
+     */
+    internal fun extractUserAgentFrame(text: String, pollId: Int): String? {
+        val result = extractResultObject(text, pollId) ?: return null
+        return result["result"]?.jsonObject?.get("value")?.jsonPrimitive?.contentOrNull
+            ?.takeIf { it.isNotBlank() }
+    }
+
+    /** 读当前页面标题（`Runtime.evaluate` 取 `document.title`）；读不到返回 null。 */
+    private fun readPageTitle(socket: CdpWebSocket, send: (String, String?) -> Int): String? {
+        val id = send(
+            "Runtime.evaluate",
+            """{"expression":"document.title","returnByValue":true}""",
+        )
+        return readUntil(socket) { extractUserAgentFrame(it, id) }
+    }
+
+    /**
+     * 页面是否仍停在 CF 挑战页（按标题判）。
+     *
+     * 为什么用标题：三端/多语言下挑战页标题是固定的几种写法
+     * （英文 `Just a moment...`、简中 `请稍候…`、拦截页 `Attention Required!`），
+     * 而站点真实页面标题是站点自己的。**空标题视为"还在挑战"**（保守：宁可多等一会）。
+     *
+     * 反例（本方法修的就是它）：只看 `cf_clearance` 存在就返回通过 ——
+     * CF 在挑战**中途**就会下发它，抢早收割的 cookie 拿去请求仍然是 403。
+     */
+    internal fun isChallengeTitle(title: String?): Boolean {
+        val value = title?.trim().orEmpty()
+        if (value.isEmpty()) return true
+        return CHALLENGE_TITLE_MARKERS.any { value.contains(it, ignoreCase = true) }
+    }
+
+    /** 按 id 取出回包的 result 对象（事件帧、旧回包、坏帧一律 null）。 */
+    private fun extractResultObject(text: String, id: Int): JsonObject? {
         val msg = runCatching { cdpJson.decodeFromString<CdpMessage>(text) }.getOrNull()
-        if (msg?.id == pollId) return msg.result?.cookies
-        return null
+        return if (msg?.id == id) msg.result else null
     }
 
     /** /json/new 回包取调试地址（单测入口）。 */
@@ -375,15 +463,24 @@ object CloudflareCdp {
         return domain == targetHost || targetHost.endsWith("." + domain)
     }
 
-    /** 读 WS 帧直到拿到指定 id 的 getAllCookies 回包（其它帧跳过；单测不覆盖，走真机）。 */
-    private fun readCookiesUntil(socket: CdpWebSocket, pollId: Int): List<CdpCookie>? {
+    /** 读 WS 帧直到拿到指定 id 的 getAllCookies 回包（其它帧跳过）。 */
+    private fun readCookiesUntil(socket: CdpWebSocket, pollId: Int): List<CdpCookie>? =
+        readUntil(socket) { extractCookiesFrame(it, pollId) }
+
+    /**
+     * 读 WS 帧直到 [extract] 从某一帧里解析出结果（其它帧跳过；单测不覆盖，走真机）。
+     *
+     * 收帧与解析解耦：getAllCookies 与 Runtime.evaluate 共用同一个循环，
+     * 差别只在 [extract]。
+     */
+    private fun <T> readUntil(socket: CdpWebSocket, extract: (String) -> T?): T? {
         val deadline = System.currentTimeMillis() + POLL_READ_TIMEOUT_MS
         while (System.currentTimeMillis() < deadline) {
             // pollText 内部按剩余时间阻塞收一帧；超时/关闭返回 null
             val remaining = (deadline - System.currentTimeMillis()).toInt().coerceAtLeast(0)
             if (remaining == 0) return null
             val text = socket.pollText(remaining) ?: continue
-            extractCookiesFrame(text, pollId)?.let { return it }
+            extract(text)?.let { return it }
         }
         return null
     }
@@ -460,7 +557,11 @@ object CloudflareCdp {
      * @return 是否写回成功。**调用方只有拿到 true 才能把验证标记为完成** ——
      *         写不进去还报成功，用户只会再撞一次 403，然后怀疑"验证根本没用"。
      */
-    suspend fun persistSolvedCookies(host: String, clearance: CdpCookie): Boolean {
+    suspend fun persistSolvedCookies(
+        host: String,
+        clearance: CdpCookie,
+        browserUserAgent: String? = null,
+    ): Boolean {
         val cookie = runCatching {
             okhttp3.Cookie.Builder()
                 .name(clearance.name)
@@ -476,6 +577,11 @@ object CloudflareCdp {
                 value = "${clearance.name}=${clearance.value}",
                 host = host,
             )
+            // UA 必须与 clearance 一起落盘：只写 cookie 不写 UA，下一个请求
+            // 就会用旧 UA 发出去，clearance 立刻失效（白验证一轮）。
+            browserUserAgent?.takeIf { it.isNotBlank() }?.let {
+                SettingsRepository.setDesktopBrowserUserAgent(it)
+            }
             true
         }.getOrDefault(false)
     }
@@ -490,12 +596,11 @@ object CloudflareCdp {
     @Serializable
     private data class CdpMessage(
         val id: Int? = null,
-        val result: CdpCookiesResult? = null,
-    )
-
-    @Serializable
-    private data class CdpCookiesResult(
-        val cookies: List<CdpCookie> = emptyList(),
+        /**
+         * CDP 回包的 `result`。形状随方法而异 —— `Network.getAllCookies` 给 `cookies`，
+         * `Runtime.evaluate` 给 `result.value` —— 故留成原始 JSON，按需在下面解。
+         */
+        val result: JsonObject? = null,
     )
 
     @Serializable
@@ -509,6 +614,17 @@ object CloudflareCdp {
      * 挑战进行中就下发，按前缀判定会"假通过"（见 [findClearanceCookie]）。
      */
     internal const val CLEARANCE_COOKIE_NAME = "cf_clearance"
+
+    /**
+     * 挑战页标题的固定写法（英文 / 简中 / CF 拦截页）。
+     * 标题命中它们 = 还在挑战中，不能算通过（见 [isChallengeTitle]）。
+     */
+    private val CHALLENGE_TITLE_MARKERS = listOf(
+        "just a moment",
+        "请稍候",
+        "attention required",
+        "checking your browser",
+    )
 
     private const val SOLVE_TIMEOUT_MS = 120_000L
     private const val POLL_INTERVAL_MS = 2_500L

@@ -1,6 +1,5 @@
 package lovehan1me.app.web
 
-import lovehan1me.data.network.currentHttpUserAgent
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -164,14 +163,55 @@ class CloudflareCdpTest {
     }
 
     @Test
-    fun `浏览器 UA 必须等于 HTTP 层的 UA`() {
+    fun `启动参数不得覆盖浏览器 UA`() {
         val args = CloudflareCdp.buildArgs("chrome.exe", 9333, File("/tmp/cf"), proxyArg = null)
-        // cf_clearance 绑定 (UA, 出口 IP)：浏览器与 HTTP 层必须是同一个字符串。
-        // 桌面 HTTP 层此前发的是移动 UA，收割回来的 clearance 永远无效 —— 这条钉住它。
-        assertTrue(
-            args.contains("--user-agent=${currentHttpUserAgent()}"),
-            "浏览器 UA 与 currentHttpUserAgent() 不一致：clearance 会因 UA 不匹配而失效",
+        // 实测（同 profile、同代理、同一 Chrome 153）：把浏览器强制成常量里的 Chrome/149
+        // → 60 秒仍卡在"请稍候…"；不覆盖 UA → 10 秒内直接进入真实站点。
+        // 伪造 UA 与 Sec-CH-UA 客户端提示不一致，本身就是最明显的机器人特征。
+        // UA 一致要靠"读真实 UA、让 HTTP 层跟随"（currentHttpUserAgent），不是靠伪造。
+        assertFalse(
+            args.any { it.startsWith("--user-agent") },
+            "不要给浏览器塞 --user-agent：CF 会一直挑战",
         )
+    }
+
+    @Test
+    fun `能从 Runtime_evaluate 回包取出真实 UA`() {
+        val ua = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/153.0.0.0 Safari/537.36"
+        val frame = """{"id":9,"result":{"result":{"type":"string","value":"$ua"}}}"""
+        assertEquals(ua, CloudflareCdp.extractUserAgentFrame(frame, 9))
+        // id 对不上的旧回包 / 事件帧 / 坏帧 / 非字符串结果一律 null
+        // （调用方据此沿用原 UA，不阻断求解）
+        assertNull(CloudflareCdp.extractUserAgentFrame(frame, 8))
+        assertNull(
+            CloudflareCdp.extractUserAgentFrame(
+                """{"method":"Runtime.executionContextCreated","params":{}}""",
+                9,
+            ),
+        )
+        assertNull(CloudflareCdp.extractUserAgentFrame("not json", 9))
+        assertNull(
+            CloudflareCdp.extractUserAgentFrame("""{"id":9,"result":{"result":{"type":"undefined"}}}""", 9),
+        )
+    }
+
+    // ── "挑战是不是真的过了"（本轮新增：只看 cookie 会抢早收割）──────
+
+    @Test
+    fun `挑战页标题一律判为未通过`() {
+        assertTrue(CloudflareCdp.isChallengeTitle("Just a moment..."))
+        assertTrue(CloudflareCdp.isChallengeTitle("请稍候…"))
+        assertTrue(CloudflareCdp.isChallengeTitle("Attention Required! | Cloudflare"))
+        // 空标题保守视为"还在挑战"：宁可多等一会，也不要抢早收割一个无效 clearance
+        // （实测：CF 在挑战**中途**就下发 cf_clearance，抢早拿到的那枚拿去请求仍然 403）
+        assertTrue(CloudflareCdp.isChallengeTitle(null))
+        assertTrue(CloudflareCdp.isChallengeTitle("   "))
+    }
+
+    @Test
+    fun `站点真实标题判为已通过`() {
+        assertFalse(CloudflareCdp.isChallengeTitle("Hanime1.me - H動漫/裏番/線上看"))
+        assertFalse(CloudflareCdp.isChallengeTitle("hanime1.me"))
     }
 
     @Test

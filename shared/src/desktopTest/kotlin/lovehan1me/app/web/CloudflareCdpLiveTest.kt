@@ -4,6 +4,7 @@ import kotlinx.coroutines.runBlocking
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertIs
+import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
@@ -55,5 +56,11 @@ class CloudflareCdpLiveTest {
         )
         assertEquals("cf_clearance", solved.clearance.name)
         assertTrue(solved.clearance.value.isNotBlank(), "clearance 值不应为空")
+        // 真实 UA 采集是"不伪造 UA"方案的另一半：拿不到它，HTTP 层就仍会发旧 UA
+        assertNotNull(
+            solved.browserUserAgent,
+            "未采集到浏览器真实 UA（HTTP 层将沿用常量，clearance 可能失效）",
+        )
+        assertTrue(solved.browserUserAgent.contains("Mozilla/"), "UA 形态异常")
     }
 }
