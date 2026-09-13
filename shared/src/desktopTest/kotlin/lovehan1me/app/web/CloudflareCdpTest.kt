@@ -1,5 +1,7 @@
 package lovehan1me.app.web
 
+import lovehan1me.data.network.currentHttpUserAgent
+import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -80,19 +82,113 @@ class CloudflareCdpTest {
         assertNull(CloudflareCdp.extractCookiesFrame("not json", 7))
     }
 
+    // ── clearance 判定：本轮由"cf_ 前缀"收紧为"精确 cf_clearance" ──────
+
     @Test
-    fun `cf_ 判定（与旧实现同语义）`() {
+    fun `精确命中 cf_clearance`() {
+        val found = CloudflareCdp.findClearanceCookie(
+            listOf(CloudflareCdp.CdpCookie("cf_clearance", "v", ".hanime1.me")),
+            "hanime1.me",
+        )
+        assertEquals("cf_clearance", found?.name)
+    }
+
+    @Test
+    fun `挑战进行中的 cf_ 系 cookie 不算通过`() {
+        // cf_bm / cf_chl_* 会在挑战**尚未通过**时就下发。旧实现按 cf_ 前缀判定，
+        // 于是"假通过"→ 写回一个没用的 cookie → 重试仍 403 → 反复弹窗。
+        assertNull(
+            CloudflareCdp.findClearanceCookie(
+                listOf(
+                    CloudflareCdp.CdpCookie("cf_bm", "x", ".hanime1.me"),
+                    CloudflareCdp.CdpCookie("cf_chl_2", "y", ".hanime1.me"),
+                ),
+                "hanime1.me",
+            )
+        )
+    }
+
+    @Test
+    fun `域不匹配的 clearance 不采用`() {
+        // cf_clearance 是 hostOnly 语义，兄弟站的 clearance 对本站无效
+        assertNull(
+            CloudflareCdp.findClearanceCookie(
+                listOf(CloudflareCdp.CdpCookie("cf_clearance", "v", ".javchu.com")),
+                "hanime1.me",
+            )
+        )
+    }
+
+    @Test
+    fun `父域与子域的域匹配`() {
+        // .hanime1.me 的 clearance 对 www.hanime1.me 有效（RFC 6265）
+        assertEquals(
+            "cf_clearance",
+            CloudflareCdp.findClearanceCookie(
+                listOf(CloudflareCdp.CdpCookie("cf_clearance", "v", ".hanime1.me")),
+                "www.hanime1.me",
+            )?.name,
+        )
+        // 空域一律拒绝：宁可继续等，也不写一个来路不明的 cookie
+        assertNull(
+            CloudflareCdp.findClearanceCookie(
+                listOf(CloudflareCdp.CdpCookie("cf_clearance", "v", "")),
+                "hanime1.me",
+            )
+        )
+    }
+
+    @Test
+    fun `值为空或含分隔符控制字符一律拒绝`() {
+        val host = "hanime1.me"
+        fun cookie(value: String) = listOf(CloudflareCdp.CdpCookie("cf_clearance", value, ".hanime1.me"))
+        assertNull(CloudflareCdp.findClearanceCookie(cookie(""), host))
+        // 它要被拼进 Cookie 请求头，含 ; 会破坏整个请求
+        assertNull(CloudflareCdp.findClearanceCookie(cookie("a;b"), host))
+        assertNull(CloudflareCdp.findClearanceCookie(cookie("a\nb"), host))
+    }
+
+    // ── 启动参数：可见窗口 + UA 一致（两条都是被实测推翻/定位过的设计）──
+
+    @Test
+    fun `启动参数不得含 headless 与自动化 flags`() {
+        val args = CloudflareCdp.buildArgs("chrome.exe", 9333, File("/tmp/cf"), proxyArg = null)
+        // 实测：无头 47 秒仍拿不到 cf_clearance，可见窗口能拿到（见类 KDoc）
+        assertFalse(args.any { it.startsWith("--headless") }, "无头过不了 CF，别再传回去")
+        assertFalse(args.contains("--no-sandbox"))
+        assertFalse(args.contains("--disable-gpu"))
+        assertFalse(args.contains("--enable-unsafe-swiftshader"))
+        assertFalse(args.contains("--disable-dev-shm-usage"))
+        // 可见窗口
+        assertTrue(args.contains("--new-window"))
+    }
+
+    @Test
+    fun `浏览器 UA 必须等于 HTTP 层的 UA`() {
+        val args = CloudflareCdp.buildArgs("chrome.exe", 9333, File("/tmp/cf"), proxyArg = null)
+        // cf_clearance 绑定 (UA, 出口 IP)：浏览器与 HTTP 层必须是同一个字符串。
+        // 桌面 HTTP 层此前发的是移动 UA，收割回来的 clearance 永远无效 —— 这条钉住它。
         assertTrue(
-            CloudflareCdp.hasClearanceCookies(
-                listOf(CloudflareCdp.CdpCookie("cf_clearance", "v", "x.me"))
-            )
+            args.contains("--user-agent=${currentHttpUserAgent()}"),
+            "浏览器 UA 与 currentHttpUserAgent() 不一致：clearance 会因 UA 不匹配而失效",
         )
-        assertFalse(
-            CloudflareCdp.hasClearanceCookies(
-                listOf(CloudflareCdp.CdpCookie("uid", "1", "x.me"))
-            )
-        )
-        assertFalse(CloudflareCdp.hasClearanceCookies(emptyList()))
+    }
+
+    @Test
+    fun `代理参数按配置透传`() {
+        val arg = "--proxy-server=http://127.0.0.1:7897"
+        val withProxy = CloudflareCdp.buildArgs("chrome.exe", 9333, File("/tmp/cf"), proxyArg = arg)
+        assertTrue(withProxy.contains(arg))
+        // Direct/System 不传参（Chrome 默认走系统代理）
+        val direct = CloudflareCdp.buildArgs("chrome.exe", 9333, File("/tmp/cf"), proxyArg = null)
+        assertFalse(direct.any { it.startsWith("--proxy-server") })
+    }
+
+    @Test
+    fun `user-data-dir 指向传入的 profile`() {
+        val dir = File(System.getProperty("user.home"), ".lovehan1me/cf-browser-profile")
+        val args = CloudflareCdp.buildArgs("chrome.exe", 9333, dir, proxyArg = null)
+        assertTrue(args.contains("--user-data-dir=${dir.absolutePath}"))
     }
 
     @Test
