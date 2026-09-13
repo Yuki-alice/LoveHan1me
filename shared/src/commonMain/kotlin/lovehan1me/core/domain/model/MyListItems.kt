@@ -1,7 +1,7 @@
 package lovehan1me.core.domain.model
 
 /**
- * @project Han1meViewer
+ * @project LoveHan1me
  * @author Yenaly Liew
  * @time 2022/07/05 005 15:30
  */

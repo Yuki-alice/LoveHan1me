@@ -39,7 +39,7 @@ import com.fleeksoft.ksoup.nodes.Element
 import com.fleeksoft.ksoup.select.Elements
 
 /**
- * @project Han1meViewer
+ * @project LoveHan1me
  * @author Yenaly Liew
  * @time 2023/07/31 031 16:43
  */

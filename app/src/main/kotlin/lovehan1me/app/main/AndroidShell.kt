@@ -26,7 +26,7 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.viewmodel.compose.viewModel
 import lovehan1me.app.App
-import lovehan1me.HCacheManager
+import lovehan1me.HanimeCacheManager
 import lovehan1me.Res
 import lovehan1me.confirm_switch_site
 import lovehan1me.detect_ha1_related_link_in_clipboard
@@ -205,7 +205,7 @@ private fun BoxScope.AndroidOverlays(
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val clipboard = LocalClipboard.current
-    val showStorageSwitchNotice by HCacheManager.storageSwitchNotice.collectAsStateWithLifecycle()
+    val showStorageSwitchNotice by HanimeCacheManager.storageSwitchNotice.collectAsStateWithLifecycle()
 
     LaunchedEffect(Unit) {
         val clipboardText = clipboard.getClipEntry()
@@ -262,7 +262,7 @@ private fun BoxScope.AndroidOverlays(
         message = stringResource(Res.string.save_failed_message),
         confirmText = stringResource(Res.string.understood),
         dismissText = null,
-        onConfirm = HCacheManager::dismissStorageSwitchNotice,
-        onDismiss = HCacheManager::dismissStorageSwitchNotice,
+        onConfirm = HanimeCacheManager::dismissStorageSwitchNotice,
+        onDismiss = HanimeCacheManager::dismissStorageSwitchNotice,
     )
 }

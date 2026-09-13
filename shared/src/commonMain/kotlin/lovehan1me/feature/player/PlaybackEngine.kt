@@ -9,8 +9,6 @@ object PlayerDefaults {
     const val DEFAULT_SPEED_INDEX = 2
     const val DEFAULT_PROGRESS_SLIDE_SENSITIVITY = 4
     const val DEFAULT_LONG_PRESS_SPEED_MULTIPLIER = 2.5f
-    const val DEFAULT_COUNTDOWN_SECONDS = 10
-
     val speeds = floatArrayOf(
         0.5f,
         0.75f,

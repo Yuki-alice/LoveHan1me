@@ -7,7 +7,7 @@ import androidx.core.net.toUri
 import lovehan1me.core.constant.USER_AGENT
 import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.data.SettingsRepository
-import lovehan1me.data.network.HProxySelector
+import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.core.util.AnimeShaders.getCert
 import lovehan1me.core.util.LogUtil
 import lovehan1me.core.util.materializeMpvShaders
@@ -390,7 +390,7 @@ class MpvPlaybackEngine(
         put("tls-verify", if (SettingsRepository.mpvTlsVerify) "no" else "yes")
         put("user-agent", USER_AGENT)
         SettingsRepository.proxyIp.takeIf { it.isNotBlank() && SettingsRepository.proxyPort != -1 }?.let { ip ->
-            if (SettingsRepository.proxyType == HProxySelector.TYPE_HTTP) {
+            if (SettingsRepository.proxyType == HanimeProxySelector.TYPE_HTTP) {
                 put("http-proxy", "http://$ip:${SettingsRepository.proxyPort}")
             }
         }

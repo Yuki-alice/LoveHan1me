@@ -16,7 +16,7 @@ import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import lovehan1me.core.domain.state.DownloadState
 
 /**
- * @project Han1meViewer
+ * @project LoveHan1me
  * @author Yenaly Liew
  * @time 2022/08/07 007 18:26
  *

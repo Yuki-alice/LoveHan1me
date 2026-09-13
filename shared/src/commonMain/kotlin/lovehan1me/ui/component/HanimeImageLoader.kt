@@ -12,7 +12,7 @@ import coil3.compose.AsyncImage
  * P6d-3-B：通用图片加载器（解锁 16 个 `AsyncImage` 文件）。
  *
  * 形状照抄 P6d-2 的 `rememberGetchuImageLoader`（commonMain expect + jvmMain 真实现 + iosMain 默认）：
- * jvmMain 复用 `createGetchuImageLoader` 的 OkHttp + HDns + 代理构造，只是去掉 getchu 域名特化。
+ * jvmMain 复用 `createGetchuImageLoader` 的 OkHttp + HanimeDns + 代理构造，只是去掉 getchu 域名特化。
  */
 @Composable
 expect fun rememberHanimeImageLoader(): ImageLoader

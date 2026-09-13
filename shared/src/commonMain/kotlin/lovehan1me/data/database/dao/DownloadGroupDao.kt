@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.Flow
 /**
  * 已下载分组的DAO
  *
- * @project Han1meViewer
+ * @project LoveHan1me
  *
  * @author Misaka10032w - 创建 (2025/11/27)
  * 初始版本

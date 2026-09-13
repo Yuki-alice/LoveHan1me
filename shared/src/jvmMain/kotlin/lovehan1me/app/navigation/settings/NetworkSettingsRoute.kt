@@ -52,8 +52,8 @@ import lovehan1me.cancel
 import lovehan1me.attention
 import lovehan1me.site.hanime1.Parser
 import lovehan1me.data.network.DohConfig
-import lovehan1me.data.network.HDns
-import lovehan1me.data.network.HProxySelector
+import lovehan1me.data.network.HanimeDns
+import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.data.network.HanimeNetwork
 import lovehan1me.data.network.ServiceCreator
 import lovehan1me.core.domain.state.WebsiteState
@@ -186,7 +186,7 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
         isDohTesting = true
         coroutineScope.launch(Dispatchers.IO) {
             val start = currentEpochMillis()
-            val result = runCatching { HDns().lookupByDoHOnly(host) }
+            val result = runCatching { HanimeDns().lookupByDoHOnly(host) }
             val delay = (currentEpochMillis() - start).toInt()
             dohTestResults.clear()
             result.onSuccess { list ->
@@ -310,7 +310,7 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             }
         },
         onSaveCustomHosts = { data ->
-            val errors = HDns.validateCustomHosts(data)
+            val errors = HanimeDns.validateCustomHosts(data)
             if (errors.isNotEmpty()) {
                 showCustomHostsValidationError = errors
                 return@NetworkSettingsScreen
@@ -344,7 +344,7 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             delayResults.clear()
             isDelayTesting = true
             coroutineScope.launch(Dispatchers.IO) {
-                val ipList = HDns().getCDNList(host)
+                val ipList = HanimeDns().getCDNList(host)
                 LogUtil.i("delayTest", ipList.toString())
                 delayResults.clear()
                 delayResults.addAll(ipList.map { DelayResultUi(it, -1) })
@@ -356,8 +356,8 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
         onDismissDohTest = { stopDohTest() },
         onApplyProxy = { type, ip, port ->
             val valid = when (type) {
-                HProxySelector.TYPE_DIRECT, HProxySelector.TYPE_SYSTEM -> true
-                HProxySelector.TYPE_HTTP, HProxySelector.TYPE_SOCKS -> HProxySelector.validateIp(ip) && HProxySelector.validatePort(
+                HanimeProxySelector.TYPE_DIRECT, HanimeProxySelector.TYPE_SYSTEM -> true
+                HanimeProxySelector.TYPE_HTTP, HanimeProxySelector.TYPE_SOCKS -> HanimeProxySelector.validateIp(ip) && HanimeProxySelector.validatePort(
                     port
                 )
 
@@ -368,12 +368,12 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
                 coroutineScope.launch { SonnerToast.warning(getString(Res.string.invalid_ip_or_port)) }
                 return@NetworkSettingsScreen
             }
-            if (type == HProxySelector.TYPE_SOCKS) {
+            if (type == HanimeProxySelector.TYPE_SOCKS) {
                 showSocksWarning = true
             }
             coroutineScope.launch {
                 SettingsRepository.update { it.copy(proxyType = lovehan1me.core.domain.model.ProxyType.fromId(type), proxyIp = ip, proxyPort = port) }
-                HProxySelector.rebuildNetwork()
+                HanimeProxySelector.rebuildNetwork()
                 HanimeNetwork.rebuildNetwork()
             }
         },
@@ -518,13 +518,13 @@ private fun buildNetworkSettingsUiState(
         domainDisplay = buildDomainOptions(domainDefault, domainAlternative).firstOrNull { it.second == SettingsRepository.baseUrl }?.first
             ?: SettingsRepository.baseUrl,
         proxySummary = when (SettingsRepository.proxyType) {
-            HProxySelector.TYPE_DIRECT -> direct
-            HProxySelector.TYPE_SYSTEM -> systemProxy
-            HProxySelector.TYPE_HTTP -> httpProxyTemplate
+            HanimeProxySelector.TYPE_DIRECT -> direct
+            HanimeProxySelector.TYPE_SYSTEM -> systemProxy
+            HanimeProxySelector.TYPE_HTTP -> httpProxyTemplate
                 .replace("%1\$s", SettingsRepository.proxyIp)
                 .replace("%2\$d", SettingsRepository.proxyPort.toString())
 
-            HProxySelector.TYPE_SOCKS -> socksProxyTemplate
+            HanimeProxySelector.TYPE_SOCKS -> socksProxyTemplate
                 .replace("%1\$s", SettingsRepository.proxyIp)
                 .replace("%2\$d", SettingsRepository.proxyPort.toString())
 

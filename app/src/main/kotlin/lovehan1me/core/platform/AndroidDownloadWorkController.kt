@@ -68,7 +68,7 @@ object AndroidDownloadWorkController : DownloadWorkController {
         // M8-1b：恢复迁移前 VideoRouteActions 的入队即写 info.json（本地播放读它）；
         // 写失败不阻塞入队（读侧有 DB 兜底）。
         runCatching {
-            lovehan1me.HCacheManager.saveHanimeVideoInfo(
+            lovehan1me.HanimeCacheManager.saveHanimeVideoInfo(
                 application, videoCode, video,
             )
         }.onFailure {

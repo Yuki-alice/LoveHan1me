@@ -4,7 +4,7 @@ import androidx.work.ListenableWorker
 import lovehan1me.core.util.unsafeLazy
 
 /**
- * @project Han1meViewer
+ * @project LoveHan1me
  * @author Yenaly Liew
  * @time 2024/03/22 022 21:33
  */

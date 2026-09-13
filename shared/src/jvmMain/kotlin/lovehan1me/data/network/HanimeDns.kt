@@ -15,7 +15,7 @@ import java.util.concurrent.TimeUnit
  * @author Yenaly Liew
  * @time 2024/03/10 010 17:01
  */
-class HDns : Dns {
+class HanimeDns : Dns {
 
     private data class DohRuntimeConfig(
         val url: String,

@@ -22,8 +22,8 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import lovehan1me.DOWNLOAD_NOTIFICATION_CHANNEL
 import lovehan1me.core.constant.EMPTY_STRING
-import lovehan1me.HFileManager
-import lovehan1me.HFileManager.createVideoName
+import lovehan1me.HanimeFileManager
+import lovehan1me.HanimeFileManager.createVideoName
 import lovehan1me.R
 import lovehan1me.Res
 import lovehan1me.download_error_cancelled
@@ -78,7 +78,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 /**
- * @project Han1meViewer
+ * @project LoveHan1me
  * @author Yenaly Liew
  * @time 2022/08/06 006 11:42
  */
@@ -180,7 +180,7 @@ class HanimeDownloadWorker(
 
     private val hanimeName by inputData(HANIME_NAME, EMPTY_STRING)
     private val downloadUrl by inputData(DOWNLOAD_URL, EMPTY_STRING)
-    private val videoType by inputData(VIDEO_TYPE, HFileManager.DEF_VIDEO_TYPE)
+    private val videoType by inputData(VIDEO_TYPE, HanimeFileManager.DEF_VIDEO_TYPE)
     private val quality by inputData(QUALITY, EMPTY_STRING)
     private val videoCode by inputData(VIDEO_CODE, EMPTY_STRING)
     private val coverUrl by inputData(COVER_URL, EMPTY_STRING)
@@ -251,7 +251,7 @@ class HanimeDownloadWorker(
                 e.printStackTrace()
                 if (file.exists() && file.length() == 0L) {
                     dbScope.launch {
-                        HFileManager.getDownloadVideoFolder(context, videoCode).deleteRecursively()
+                        HanimeFileManager.getDownloadVideoFolder(context, videoCode).deleteRecursively()
                     }
                 }
             } finally {
@@ -300,13 +300,13 @@ class HanimeDownloadWorker(
 
     private suspend fun download(): Result {
         return withContext(Dispatchers.IO) {
-            val file = HFileManager.getDownloadVideoFile(
+            val file = HanimeFileManager.getDownloadVideoFile(
                 context = context, title = hanimeName, quality = quality, suffix = videoType, videoCode = videoCode
             )
             val safUri = SafFileManager.getDownloadVideoFileUri(context, videoCode, createVideoName(hanimeName, quality, videoType))
             // 检查是否需要重下载
             if (shouldRedownload || shouldDelete) {
-                HFileManager.getDownloadVideoFolder(context, videoCode).deleteRecursively()
+                HanimeFileManager.getDownloadVideoFolder(context, videoCode).deleteRecursively()
                 DatabaseRepo.HanimeDownload.delete(videoCode)
                 if (shouldDelete) {
                     return@withContext Result.success()

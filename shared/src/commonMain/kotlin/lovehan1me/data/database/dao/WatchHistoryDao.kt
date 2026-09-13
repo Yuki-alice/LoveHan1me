@@ -5,7 +5,7 @@ import lovehan1me.data.database.entity.WatchHistoryEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
- * @project Han1meViewer
+ * @project LoveHan1me
  * @author Yenaly Liew
  * @time 2022/07/02 002 16:47
  */

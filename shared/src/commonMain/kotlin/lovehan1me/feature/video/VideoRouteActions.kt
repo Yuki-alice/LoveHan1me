@@ -35,7 +35,7 @@ import org.jetbrains.compose.resources.getString
  *   `Map<String, String>`，不再经 `HAdvancedSearch` + `Serializable` 中转）；
  * - `quickCheckIn` 改共享入口（`Han1meDatabases.checkInRecord` 入库）；
  *   Glance 打卡小组件已按阶段一决策⑫全端移除，不再有 `updateAll`。
- * - 下载落盘（`HCacheManager` + `HanimeDownloadManager/Worker`，P7）改经
+ * - 下载落盘（`HanimeCacheManager` + `HanimeDownloadManager/Worker`，P7）改经
  *   [onEnqueueDownload] 回调，见 [EnqueueDownloadRequest]。
  */
 data class EnqueueDownloadRequest(

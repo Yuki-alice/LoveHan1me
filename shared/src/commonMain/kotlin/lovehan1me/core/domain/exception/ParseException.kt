@@ -3,7 +3,7 @@ package lovehan1me.core.domain.exception
 /**
  * 解析錯誤
  *
- * @project Han1meViewer
+ * @project LoveHan1me
  * @author Yenaly Liew
  * @time 2023/08/05 005 16:20
  */

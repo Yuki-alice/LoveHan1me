@@ -23,7 +23,7 @@ import io.ktor.http.encodeURLPathPart
  *
  * Playlist 是指 自定义的播放列表
  *
- * @project Han1meViewer
+ * @project LoveHan1me
  * @author Yenaly Liew
  * @time 2023/08/26 026 16:30
  *

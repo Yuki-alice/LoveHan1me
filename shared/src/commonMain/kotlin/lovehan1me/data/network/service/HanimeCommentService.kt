@@ -11,7 +11,7 @@ import io.ktor.http.Parameters
 import io.ktor.http.encodeURLPathPart
 
 /**
- * @project Han1meViewer
+ * @project LoveHan1me
  * @author Yenaly Liew
  * @time 2022/09/19 019 17:44
  *

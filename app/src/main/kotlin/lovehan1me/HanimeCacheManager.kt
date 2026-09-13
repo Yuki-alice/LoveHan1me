@@ -26,11 +26,11 @@ import java.io.IOException
 import java.io.OutputStream
 
 /**
- * @project Han1meViewer
+ * @project LoveHan1me
  * @author Yenaly Liew
  * @since 2025/3/5 20:11
  */
-object HCacheManager {
+object HanimeCacheManager {
 
     private const val CACHE_INFO_FILE = "info.json"
     private val _storageSwitchNotice = MutableStateFlow(false)
@@ -42,7 +42,7 @@ object HCacheManager {
     @OptIn(ExperimentalSerializationApi::class)
     @WorkerThread
     suspend fun saveHanimeVideoInfo(context: Context, videoCode: String, info: HanimeVideo) {
-        val folder = HFileManager.getDownloadVideoFolder(context, videoCode) // 已封装 SAF/普通路径
+        val folder = HanimeFileManager.getDownloadVideoFolder(context, videoCode) // 已封装 SAF/普通路径
         val cacheFile = File(folder, CACHE_INFO_FILE)
         val cacheUri = SafFileManager.getDownloadVideoFileUri(context, videoCode, CACHE_INFO_FILE)
 
@@ -123,7 +123,7 @@ object HCacheManager {
         return flow {
             val entity = DatabaseRepo.HanimeDownload.find(videoCode)
             if (entity != null) {
-                val folder = HFileManager.getDownloadVideoFolder(context, videoCode)
+                val folder = HanimeFileManager.getDownloadVideoFolder(context, videoCode)
                 val cacheFile = File(folder, CACHE_INFO_FILE)
                 val cacheUri = SafFileManager.getDownloadVideoFileUri(context, videoCode, CACHE_INFO_FILE)
                 val info = kotlin.runCatching {
@@ -153,7 +153,7 @@ object HCacheManager {
                     base.copy(
                         videoUrls = linkedMapOf(
                             entity.quality to HanimeLink(
-                                entity.videoUri, HFileManager.DEF_VIDEO_TYPE
+                                entity.videoUri, HanimeFileManager.DEF_VIDEO_TYPE
                             )
                         ),
                         coverUrl = entity.coverUri ?: entity.coverUrl

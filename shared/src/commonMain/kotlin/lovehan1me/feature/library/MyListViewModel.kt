@@ -8,7 +8,7 @@ import lovehan1me.feature.library.LocalWatchLaterSubViewModel
 import lovehan1me.feature.library.WatchLaterSubViewModel
 
 /**
- * @project Han1meViewer
+ * @project LoveHan1me
  * @author Yenaly Liew
  * @time 2022/07/04 004 22:46
  */

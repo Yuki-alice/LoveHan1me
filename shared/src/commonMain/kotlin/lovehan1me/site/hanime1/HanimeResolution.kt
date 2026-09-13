@@ -6,15 +6,15 @@ import kotlinx.serialization.Serializable
  * P4：自 :app HanimeResolution.kt 下沉（包名不变）。
  * 两处 android 依赖已替换（语义等价）：
  *  - okhttp MediaType 解析 → 字符串按 '/' 切分（commonMain 不依赖 okhttp）；
- *  - HanimeLink.suffix 的 HFileManager.DEF_VIDEO_TYPE（:app，= "mp4"）→ 内联常量（同 P2b
- *    HanimeDownloadEntity 处理方式），待 HFileManager 下沉后回填。
+ *  - HanimeLink.suffix 的 HanimeFileManager.DEF_VIDEO_TYPE（:app，= "mp4"）→ 内联常量（同 P2b
+ *    HanimeDownloadEntity 处理方式），待 HanimeFileManager 下沉后回填。
  */
 typealias ResolutionLinkMap = LinkedHashMap<String, HanimeLink>
 
 /**
  * 如果你在其他地方看到了 Quality，那就是 Resolution，我混用了。
  *
- * @project Han1meViewer
+ * @project LoveHan1me
  * @author Yenaly Liew
  * @time 2022/10/11 011 21:19
  */
@@ -80,7 +80,7 @@ data class HanimeLink(
             "ogg" -> "ogv"
             "mp2t" -> "ts"
             "webm" -> "webm"
-            // TODO: HFileManager.DEF_VIDEO_TYPE 下沉后回填
+            // TODO: HanimeFileManager.DEF_VIDEO_TYPE 下沉后回填
             else -> "mp4"
         }
 }

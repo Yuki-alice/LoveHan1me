@@ -1,10 +1,10 @@
 package lovehan1me.data.network
 
 /**
- * P6d-4：代理类型常量上移 commonMain（原 :app 时代定义于 HProxySelector companion）。
+ * P6d-4：代理类型常量上移 commonMain（原 :app 时代定义于 HanimeProxySelector companion）。
  *
  * 值与存储语义不变——`SettingsRepository.proxyType` 存的就是这些 Int。
- * jvmMain 的 HProxySelector.companion 引用本对象保持调用点零改动；
+ * jvmMain 的 HanimeProxySelector.companion 引用本对象保持调用点零改动；
  * commonMain 侧 UI（NetworkSettingsScreen 的 ProxyType enum）直接引用本对象。
  */
 object HProxyTypes {

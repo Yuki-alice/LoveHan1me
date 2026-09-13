@@ -17,7 +17,7 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 /**
- * @project Han1meViewer
+ * @project LoveHan1me
  * @author Yenaly Liew - 创建 (2022/08/02)
  * 初始版本
  * @author Misaka10032w - 更新 (2025/11/27)

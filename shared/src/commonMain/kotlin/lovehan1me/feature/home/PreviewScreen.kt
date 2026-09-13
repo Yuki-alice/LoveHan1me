@@ -63,7 +63,7 @@ fun PreviewScreen(
     commentViewModel: CommentViewModel,
 ) {
     // M2：SingletonImageLoader（需 Activity Context）在桌面/iOS 无意义，
-    // 且旁路了 HDns/代理；改共享 rememberHanimeImageLoader。
+    // 且旁路了 HanimeDns/代理；改共享 rememberHanimeImageLoader。
     val platformContext = LocalPlatformContext.current
     val uriHandler = LocalUriHandler.current
     val imageLoader = rememberHanimeImageLoader()

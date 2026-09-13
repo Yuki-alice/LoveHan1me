@@ -15,7 +15,7 @@ import lovehan1me.core.platform.AndroidVideoCacheStore
 import lovehan1me.core.platform.setDownloadWorkControllerProvider
 import lovehan1me.core.platform.setVideoCacheStoreProvider
 import lovehan1me.data.network.CloudflareVerificationCoordinator
-import lovehan1me.data.network.HProxySelector
+import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.ui.activity.MainActivity
 import lovehan1me.app.crash.CrashHandler
 import lovehan1me.core.util.AnimeShaders
@@ -49,14 +49,14 @@ class HanimeApplication : Application(), Application.ActivityLifecycleCallbacks 
         super.onCreate()
         Thread.setDefaultUncaughtExceptionHandler(CrashHandler(applicationContext))
         DataStoreManager.initialize(this)
-        // P6a-F：平台件 provider 注册（实现依赖 :app 的 HCacheManager/WorkManager）
+        // P6a-F：平台件 provider 注册（实现依赖 :app 的 HanimeCacheManager/WorkManager）
         setVideoCacheStoreProvider { AndroidVideoCacheStore }
         setDownloadWorkControllerProvider { AndroidDownloadWorkController }
         SettingsRepository.install(DataStoreManager)
         AppLanguageManager.applyStoredLanguage(this)
         registerActivityLifecycleCallbacks(this)
-        ProxySelector.setDefault(HProxySelector())
-        HProxySelector.rebuildNetwork()
+        ProxySelector.setDefault(HanimeProxySelector())
+        HanimeProxySelector.rebuildNetwork()
         // M2：CF 验证的协调器与验证页都已下沉 shared/androidMain，:app 只交出
         // 「哪个 Activity 承载验证页」这一点壳信息（决策 #9 划给壳的 Activity 能力）。
         CloudflareVerificationCoordinator.verificationActivityClass = MainActivity::class.java

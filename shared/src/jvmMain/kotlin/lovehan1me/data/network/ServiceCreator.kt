@@ -34,7 +34,7 @@ object ServiceCreator {
         SpeedLimitInterceptor(maxSpeed = SettingsRepository.downloadSpeedLimit)
     }
 
-    private val dns = HDns()
+    private val dns = HanimeDns()
 
     /**
      * OkHttpClient
@@ -62,7 +62,7 @@ object ServiceCreator {
             .addInterceptor(UrlLoggingInterceptor())
             .addInterceptor(GetchuInterceptor())
             .cookieJar(CookieJar.NO_COOKIES)
-            .proxySelector(HProxySelector())
+            .proxySelector(HanimeProxySelector())
             .dns(dns)
             .build()
     }
@@ -87,7 +87,7 @@ object ServiceCreator {
             .addInterceptor(UrlLoggingInterceptor())
             .cache(cache)
             .cookieJar(HCookieJar())
-            .proxySelector(HProxySelector())
+            .proxySelector(HanimeProxySelector())
             .dns(dns)
         createCloudflareInterceptor()?.let { builder.addInterceptor(it) }
         return builder.build()

@@ -130,7 +130,6 @@
     <string name="system_proxy">系統代理</string>
     <string name="host_or_ipv4">Host 或 IPv4</string>
     <string name="manage">管理</string>
-    <string name="will_remind_before_d_seconds">將於 %1$d 秒前開始倒數提醒</string>
     <string name="shared">共享</string>
     <string name="forum">討論區</string>
     <string name="forum_summary">歡迎來吐槽，如果有重要資訊也會發布於此</string>

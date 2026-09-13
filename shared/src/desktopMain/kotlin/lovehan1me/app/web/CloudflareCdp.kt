@@ -208,7 +208,7 @@ object CloudflareCdp {
     }
 
     /**
-     * 代理透传（与 JVM 侧 HProxySelector 同语义）：
+     * 代理透传（与 JVM 侧 HanimeProxySelector 同语义）：
      * Http/Socks 且配了 ip:port → `--proxy-server`；System/Direct 不传参
      * （Chrome 默认走系统代理，与 JVM 侧一致，cf_clearance 才不会因出口 IP
      * 不一致而失效）。
@@ -220,7 +220,7 @@ object CloudflareCdp {
             val ip = SettingsRepository.proxyIp
             val port = SettingsRepository.proxyPort
             if (ip.isBlank() || port == -1) return@runCatching null
-            // SettingsRepository.proxyType 是 id（Int），对齐 HProxySelector 的用法
+            // SettingsRepository.proxyType 是 id（Int），对齐 HanimeProxySelector 的用法
             when (SettingsRepository.proxyType) {
                 ProxyType.Http.id -> "--proxy-server=http://$ip:$port"
                 ProxyType.Socks.id -> "--proxy-server=socks5://$ip:$port"

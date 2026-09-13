@@ -114,7 +114,6 @@
     <string name="system_proxy">System Proxy</string>
     <string name="host_or_ipv4">Host or IPv4</string>
     <string name="manage">Manage</string>
-    <string name="will_remind_before_d_seconds">Will remind %d seconds before countdown</string>
     <string name="shared">Shared</string>
     <string name="forum">Forum</string>
     <string name="forum_summary">Welcome to vent. Important information will also be posted here</string>

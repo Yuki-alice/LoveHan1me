@@ -25,7 +25,7 @@ import kotlinx.coroutines.runBlocking
  * M1 桌面入口：
  *  - 先初始化 DataStore 并把它装进 SettingsRepository（等价 :app HanimeApplication 的
  *    DataStoreManager.initialize + SettingsRepository.install 两步；漏装会 UninitializedPropertyAccessException）。
- *    拦截器链里的 HProxySelector/HDns 等都会在第一次网络请求时读它，顺序必须在此之前；
+ *    拦截器链里的 HanimeProxySelector/HanimeDns 等都会在第一次网络请求时读它，顺序必须在此之前；
  *  - Coil 桌面需注册单例 ImageLoader 并挂上 ktor3 网络取图器（否则图片不会加载）；
  *  - M2：使用须知/来源确认门控已进共享 App（与 Android 同语义），此处不再自动置位；
  *  - 受限网络下可用环境变量 HAN1ME_P3A_PROXY=host:port 给 JVM 设代理（否则直连）。

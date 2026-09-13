@@ -9,11 +9,11 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import lovehan1me.APP_NAME
-import lovehan1me.HFileManager.DEF_VIDEO_COVER_TYPE
-import lovehan1me.HFileManager.HANIME_DOWNLOAD_FOLDER
-import lovehan1me.HFileManager.createVideoCoverName
-import lovehan1me.HFileManager.getAppDownloadFolder
-import lovehan1me.HFileManager.getDownloadVideoCoverFile
+import lovehan1me.HanimeFileManager.DEF_VIDEO_COVER_TYPE
+import lovehan1me.HanimeFileManager.HANIME_DOWNLOAD_FOLDER
+import lovehan1me.HanimeFileManager.createVideoCoverName
+import lovehan1me.HanimeFileManager.getAppDownloadFolder
+import lovehan1me.HanimeFileManager.getDownloadVideoCoverFile
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.dao.download.HanimeDownloadDao
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity

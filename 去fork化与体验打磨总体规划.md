@@ -1,6 +1,6 @@
 # 去fork化与体验打磨总体规划
 
-> 制定：2026-09-12 ｜ 状态：**待评审，未开工** ｜ 前置：连续 4+1 轮需求拷打，全部决策已冻结
+> 制定：2026-09-12 ｜ 修订：2026-09-13 v2（拉取云端14提交后复盘，全量体检+5轮拷打增补） ｜ 状态：**已评审，M1-M3-a已闭环，M3-b/c待真机，M4待开工** ｜ 前置：连续 9 轮需求拷打，全部决策已冻结
 > 定位：LoveHan1me 从"能跑的 fork"变成"独立项目"的总路线图。只含决策与验收，不含实现细节。
 
 ---
@@ -24,16 +24,53 @@
 | 13 | H 帧功能 | **全删含数据**（代码+表+设置项+路由），改为 GIF + 截图分享（见 M3） |
 | 14 | GIF 形态 | **片段转 GIF，限制时长**（录制几秒转码，需技术 spike，见 §4） |
 | 15 | 截图分享 | **截图 + 系统分享面板**（不做编辑器，不做相册管理） |
-| 16 | infra H 前缀 | **改语义化**（HDns/HProxySelector/HCacheManager/HFileManager/HANIME 常量；HKeyframe 随功能删除自然消失） |
+| 16 | infra H 前缀 | **Hanime前缀语义化，仅改4类**：HDns→HanimeDns、HProxySelector→HanimeProxySelector、HCacheManager→HanimeCacheManager、HFileManager→HanimeFileManager（HANIME/HAN1常量不动以控改动面）；HKeyframe 随功能删除自然消失 |
 | 17 | Parser 重写 | **下阶段**（M6，换 MIT 的必经之路） |
 | 18 | 体验方向 | 6 个全要：播放 / 下载离线 / 搜索发现 / 订阅追番 / 账号多端 / 启动性能 |
 | 19 | 推进节奏 | **先出完整计划**（本文档），评审后再动 |
 
 ---
 
+## 进度快照（2026-09-13 git fetch 实测）
+
+| 里程碑 | 状态 | 证据 |
+|---|---|---|
+| M1 身份切换 | ✅ 已闭环 | 2a9d1cd，显示名/包名/更新通道/删4×alias/桌面落盘路径/文案全切；仅剩 LICENSE双行与28处文件头注释为本轮收尾（见 M1-R） |
+| M2 功能取舍 | ✅ 已闭环 | fe23fa6，登录/CF统一shared、mucute依赖清零（grep 0命中），:app 27kt但未至纯壳（见 M4） |
+| M3-a H帧删除 | ✅ 已闭环 | 6提交 95文件 -4112行，grep HKeyframe 源码0命中，assets/h_keyframes双源集已删，仅剩3处死代码与1处孤儿注释（见 M3-a-R） |
+| M3-b/c GIF+截图 | ⚠️ 代码完成，待真机 | 4提交 52+8测试，桌面/Android已通，iOS 1996235未在macOS编译验证，仅靠CI；验收"三端各录一段可播放GIF"未做 |
+| M4 结构收尾 | ⏳ 未开工 | 空壳目录2处、LICENSE/文件头、H前缀4类、:app瘦身、Settings契约抽离均待做 |
+| M5 体验6方向 | ⏳ 未开工 | 需子计划，顺序已定依赖序 |
+| M6 Parser | ⏳ 下阶段 | 契约先立，1180行实现后重写 |
+
+### 本轮拷打增补（2026-09-13，9轮）
+
+| 议题 | 增补决定 |
+|---|---|
+| LICENSE | 追加双行保留（GPL模板+LoveHan1me/Yuki-alice） |
+| 文件头28处 | 批量改为 @project LoveHan1me |
+| 空壳 | 现在删（M4收尾首项） |
+| infra命名 | Hanime前缀，仅4类，裸H不取 |
+| 架构违规 | 立规矩逐步治：抽 SettingsRepository契约到 core/domain，feature互引17处后续守规矩 |
+| 旧文档 | 归档到 docs/history，根目录只留4份真源 |
+| :app纯壳 | HCacheManager/HFileManager下沉shared后才真纯壳 |
+| GIF验收 | 三端真机硬门槛，iOS不过不算闭环；固定5s不可调；截图一键保存并分享；死代码现在清 |
+| Parser | 先立 SiteId/SiteConfig 契约，后重写实现 |
+| 体验/后端/弹幕 | 6方向按依赖序、仍做解析代理、弹幕只接外部源 |
+| 性能/发布 | 先埋点立基线再优化；不发版只推main |
+
+---
+
 ## M1 身份切换（E1）：从 Han1meViewer 变成 LoveHan1me
 
 **目标**：用户在任何地方看不到 Han1meViewer 和 daisukiKaffuChino（除 NOTICE/GPL 归属区）。
+
+**本轮收尾（M1-R，低风险扫尾，不计入M1是否闭环）**：
+
+| 项 | 内容 | 验收 |
+|---|---|---|
+| LICENSE双行 | 追加 LoveHan1me Copyright (C) 2026 Yuki-alice，与上游双行保留 | LICENSE含双持有人 |
+| 文件头28处 | @project Han1meViewer → @project LoveHan1me 批量替换 | grep 0命中 |
 
 | 项 | 内容 | 验收 |
 |---|---|---|
@@ -86,52 +123,66 @@
 
 ---
 
-## M4 结构收尾
+## M4 结构收尾（本轮待开工，含 M1-R/M3-a-R 扫尾）
 
 | 项 | 内容 | 验收 |
 |---|---|---|
-| 空壳删除 | 约20空目录 + dao 空壳 | `find -type d -empty`（除构建产物）清零 |
-| `:app` 瘦身 | 搬空可移植页（以 M2 为准），终态纯壳；顶层散件（Constants/HFileManager/HCacheManager）按层归位 | `:app` 无 `feature/` 实现，只剩壳 |
-| 包内整理 | data/network 拦截器链落点注释更新（jvmMain 约定保留）；`ui/screen` 等 E3 残留引用复查 | 静态检查 + 三端编译 |
-| reference | 保留不动 | — |
-| 模块拆分 | 本轮不做；若单模块编译突破痛点再议 | — |
+| 空壳删除 | 约30层空目录（app/src/main/java全树） + jvmMain dao空壳 `rm -rf` | `find -type d -empty`（除构建产物）清零，git status无空目录 |
+| LICENSE+文件头 | 见 M1-R | 同上 |
+| 死代码清理 | toPrettyCountdownRemindString / DEFAULT_COUNTDOWN_SECONDS / 6处 will_remind_before字符串 / build.gradle.kts:95孤儿注释 | grep 0命中 |
+| `:app` 瘦身 | HCacheManager/HFileManager（167+96行）下沉shared；DownloadSettingsRoute等可移植页下沉；终态只留Activity/Shell/Worker/Application/系统能力 | :app 无 feature/data可下沉逻辑，27→约20文件 |
+| infra更名 | HDns→HanimeDns、HProxySelector→HanimeProxySelector、HCacheManager→HanimeCacheManager、HFileManager→HanimeFileManager（仅4类，HANIME常量不动） | 旧名前缀grep 0命中（除NOTICE归因） |
+| 包内整理+架构立规 | 抽 SettingsRepository契约到 core/domain（解 core→data/ui→data/site→data反向），feature互引17处后续守规矩；data/network拦截器链注释更新 | 静态 import 校验待人工0 + 四目标编译；新约束写入 ARCHITECTURE.md |
+| 旧文档归档 | KMP_MIGRATION_PLAN等6份→docs/history，根目录只留README/目标架构/去fork化规划/Windows搭建 | 根目录md 4份 |
+| reference | 保留不动（已gitignored） | — |
+| 模块拆分 | 本轮不做；阈值维持>100文件且零依赖才拆 | — |
 
 ---
 
-## M5 体验打磨（6 方向，顺序建议如下，理由见备注）
+## M5 体验打磨（6 方向，顺序为依赖序，一次一方向，不发版只推main）
 
-> 顺序不是优先级（6 个全要），是**依赖顺序**：账号同步是订阅/多端的基础，启动性能越早量越好。
-
-| 序 | 方向 | 首批目标（细化开子计划） | 备注 |
+| 序 | 方向 | 首批目标（细化开子计划前置） | 备注 |
 |---|---|---|---|
 | 1 | 账号多端 | 登录态统一、备份恢复可靠、登出/多设备一致 | 地基，其他方向依赖它 |
-| 2 | 启动性能 | 冷启动耗时量化→压首屏；DataStore/Coil/引擎初始化错峰 | 先立基线（现在没数据） |
+| 2 | 启动性能 | **先埋点立基线再优化**：冷启动耗时（Application→首帧）量化→压首屏；DataStore/Coil/引擎初始化错峰 | 先立基线（现在无数据），两步走 |
 | 3 | 播放体验 | 手势/倍速记忆/跳过片头尾/错误换源/超分开关可达性 | 主战场 |
 | 4 | 搜索发现 | 沿用已落地的筛选栏；补排序语义、空态、历史管理 | 站在已交付上继续 |
 | 5 | 订阅追番 | 更新检测、提醒、新集标出 | 依赖账号 |
 | 6 | 下载离线 | 队列可靠、断点续传、存储管理、本地与在线一致 | 涉及系统能力最多，放最后 |
 
+补充冻结：
+
+- **后端**：仍做 Kotlin+Ktor 解析代理服务（D4/D5保留），站点改版无需发版；M6契约即为其前置
+- **弹幕**：不做通用弹幕引擎，仅接外部源（轻量）；废案 Dandanplay 仅作接口参考
+- **模块拆分**：阈值维持>100文件且零依赖才拆，本轮不拆
+- **发布**：每M完成只推main，不发Pre-release，攒到M6再议
+
 每个方向开工前单独出子计划（目标+验收+不碰清单），不在本文档展开。
 
 ---
 
-## M6 Parser 重写 + MIT 评估（下阶段）
+## M6 Parser 重写 + MIT 评估（下阶段，先立契约）
 
-- 范围：`site/hanime1/Parser.kt`（1194 行）+ `site/getchu` 按"站点解析隔离"契约重写（见《目标架构设计.md》§3.1），输出可测的纯函数解析器 + 单测
+- Step 0（M4同步）：立 `site/SiteId.kt` `SiteConfig.kt` 不透明契约（学废案§3.1），`site/hanime1/SiteCatalog.kt`落地，不碰Parser实现；让site/commonMain禁java/okhttp约束有落点，Parser重写时即插即用
+- Step 1：`site/hanime1/Parser.kt`（1194→目标拆分为 Parser/HtmlExtract/JsonExtract 三文件）+ `site/getchu` 按契约重写为纯函数解析器 + 单测（覆盖首页/搜索/详情三场景）
 - 完成后做法务复核：重写比例是否足以换 MIT/Apache；未达标则继续保持 GPLv3
 - 在此之前：**对外口径一律 GPLv3**，关于页/仓库 LICENSE 不动
 
 ---
 
-## 风险与阻塞
+## 风险与阻塞（2026-09-13 刷新）
 
 | 风险 | 等级 | 对策 |
 |---|---|---|
-| 新仓库 URL 未定 | ✅ 已解决（`Yuki-alice/LoveHan1me`） |
-| GIF 转码三端取帧/编码能力不明 | 高 | M3-b 先 spike（Android/iOS/桌面各半天），spike 失败则降级为"连拍合成"并重新评审 |
-| H 帧删除牵连播放器/备份/数据库版本 | 中 | 按 M3-a 清单逐项删，每项编译验证；数据库版本+1 |
-| 体验 6 方向一次铺开导致战线过长 | 中 | 按 M5 顺序一次只开一个方向，子计划评审后再动 |
-| MIT 评估标准主观 | 低 | 以"parser/site 是否实质重写 + 单测覆盖"为硬标准，不過就继续 GPL |
+| 新仓库 URL | ✅ 已解决（`Yuki-alice/LoveHan1me`），远端 HEAD已切回main，__probe已删 | — |
+| M1-R/M3-a-R扫尾 | 低 | 低风险批处理，每项静态校验+编译 |
+| M4空壳/H前缀 | 低 | rm -rf + 改名脚本，按E3事故教训验路径与D/??对账 |
+| 架构立规（Settings契约） | 中 | 影响面广（site/core/ui均依赖data），分2步：先抽契约后迁引用，每步编译 |
+| M3-b/c iOS真机 | 高 | 硬门槛：三端各录一段可播放GIF才算闭环；iOS需macOS runner或真机，CI的ios-compile仅保编译；spike已过，风险在AVPlayerItemVideoOutput 5处符号形态 |
+| GIF上限固定5s | 低 | 不可调，UI不提供档位，防OOM已由48MiB硬闸保证 |
+| M4:app瘦身下沉 | 中 | HCacheManager下沉牵连SAF/WorkManager，需保证桌面/iOS无回归 |
+| 体验6方向战线 | 中 | 按M5依赖序一次一方向，子计划评审后再动；性能先埋点 |
+| MIT评估 | 低 | 以parser/site实质重写+单测为硬标准，不過续GPL |
 
 ---
 

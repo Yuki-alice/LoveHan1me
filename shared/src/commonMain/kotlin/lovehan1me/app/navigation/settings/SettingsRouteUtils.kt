@@ -5,7 +5,6 @@ import lovehan1me.cache_usage_summary
 import lovehan1me.core.constant.HanimeConstants.HANIME_HOSTNAME
 import lovehan1me.core.constant.HanimeConstants.HANIME_URL
 import lovehan1me.Res
-import lovehan1me.feature.player.PlayerDefaults
 import lovehan1me.core.util.formatBytesPerSecond
 import lovehan1me.core.util.formatFileSize
 import org.jetbrains.compose.resources.getString
@@ -38,20 +37,6 @@ fun toPrettySensitivityString(
     val pretty = levelNames.getOrNull(value - 1) ?: error("Invalid sensitivity value: $value")
     // 模板 "Current Sensitivity: %s"，commonMain 外可用 replace（:app 侧）
     return currentTemplate.replace("%s", pretty)
-}
-
-fun toPrettyCountdownRemindString(
-    @IntRange(from = 5, to = 30) value: Int,
-    remindTemplate: String,
-    defaultLabel: String,
-): String {
-    return buildString {
-        // 模板 "Will remind %d seconds before countdown"
-        append(remindTemplate.replace("%d", value.toString()))
-        if (value == PlayerDefaults.DEFAULT_COUNTDOWN_SECONDS) {
-            append(" ($defaultLabel)")
-        }
-    }
 }
 
 fun Long.toDownloadSpeedPrettyString(noLimitText: String): String {

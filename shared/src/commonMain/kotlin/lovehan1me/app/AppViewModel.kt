@@ -11,7 +11,7 @@ import lovehan1me.data.network.CsrfTokenProvider
 import lovehan1me.data.network.IHCsrfToken
 
 /**
- * @project Han1meViewer
+ * @project LoveHan1me
  * @author Yenaly Liew
  * @time 2024/03/29 029 18:00
  */

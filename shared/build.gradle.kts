@@ -91,8 +91,8 @@ kotlin {
             // 设置存储：DataStore Preferences 的多平台 core（P2b：DataStoreManager 已下沉）
             implementation(libs.datastore.preferences.core)
 
-            // 数据库：Room 多平台（P2：MiscellanyDatabase spike 已接线 KSP 代码生成）
-            // api 导出：:app 消费 MiscellanyDatabase/HKeyframeDao 需 RoomDatabase 等类型在编译 classpath
+            // 数据库：Room 多平台
+            // api 导出：:app 侧历史曾消费 RoomDatabase 类型在编译 classpath，保留 api 导出
             api(libs.room.runtime.kmp)
             api(libs.sqlite.bundled)
 

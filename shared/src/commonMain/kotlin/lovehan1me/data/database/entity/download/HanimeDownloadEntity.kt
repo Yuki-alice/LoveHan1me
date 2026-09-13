@@ -11,7 +11,7 @@ import lovehan1me.core.domain.state.DownloadState
 import kotlinx.serialization.Serializable
 
 /**
- * @project Han1meViewer
+ * @project LoveHan1me
  * @author Yenaly Liew
  * @time 2023/08/18 018 21:50
  */
@@ -96,8 +96,8 @@ data class HanimeDownloadEntity(
 
     val isDownloading get() = state == DownloadState.Downloading
 
-    // 原为 HFileManager.DEF_VIDEO_TYPE；HFileManager 依赖 Context/Environment/java.io.File，
-    // 仍留在 :app，故此处内联同值常量（"mp4"），待 HFileManager 下沉后回填引用。
+    // 原为 HanimeFileManager.DEF_VIDEO_TYPE；HanimeFileManager 依赖 Context/Environment/java.io.File，
+    // 仍留在 :app，故此处内联同值常量（"mp4"），待 HanimeFileManager 下沉后回填引用。
     val suffix get() = videoUri.substringAfterLast(".", "mp4")
 
     /**

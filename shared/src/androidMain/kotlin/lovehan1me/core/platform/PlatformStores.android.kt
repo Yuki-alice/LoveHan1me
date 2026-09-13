@@ -1,6 +1,6 @@
 package lovehan1me.core.platform
 
-// Android：实现仍留在 :app（依赖 HCacheManager/WorkManager worker），
+// Android：实现仍留在 :app（依赖 HanimeCacheManager/WorkManager worker），
 // 启动时由 :app 注册 provider（见 HanimeApplication.onCreate）。
 @Volatile private var videoCacheStoreProvider: (() -> VideoCacheStore)? = null
 @Volatile private var downloadWorkControllerProvider: (() -> DownloadWorkController)? = null

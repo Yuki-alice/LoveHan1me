@@ -7,13 +7,13 @@ import coil3.ImageLoader
 import coil3.compose.LocalPlatformContext
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import lovehan1me.core.constant.DESKTOP_USER_AGENT
-import lovehan1me.data.network.HDns
-import lovehan1me.data.network.HProxySelector
+import lovehan1me.data.network.HanimeDns
+import lovehan1me.data.network.HanimeProxySelector
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
 // P6d-2：jvmMain 真实现（:app 原 rememberGetchuImageLoader + createGetchuImageLoader 照搬）。
-// HDns/HProxySelector/拦截器链全在 jvmMain 可用；LocalInspectionMode 分支保留。
+// HanimeDns/HanimeProxySelector/拦截器链全在 jvmMain 可用；LocalInspectionMode 分支保留。
 
 @Composable
 actual fun rememberGetchuImageLoader(): ImageLoader {
@@ -31,8 +31,8 @@ actual fun rememberGetchuImageLoader(): ImageLoader {
 fun createGetchuImageLoader(context: coil3.PlatformContext): ImageLoader {
     val imageClient = OkHttpClient.Builder()
         .connectTimeout(15, TimeUnit.SECONDS)
-        .dns(HDns())
-        .proxySelector(HProxySelector())
+        .dns(HanimeDns())
+        .proxySelector(HanimeProxySelector())
         .addInterceptor { chain ->
             val request = chain.request()
             val url = request.url

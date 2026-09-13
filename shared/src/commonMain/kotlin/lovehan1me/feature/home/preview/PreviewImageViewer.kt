@@ -68,7 +68,7 @@ fun PreviewImageViewerDialog(
         pageCount = { imageUrls.size.coerceAtLeast(1) })
     var isCurrentImageZoomed by remember { mutableStateOf(false) }
     // M2：SingletonImageLoader（需 Activity Context）在桌面/iOS 无意义，
-    // 且旁路了 HDns/代理；改共享 rememberHanimeImageLoader（调用方仍可覆盖）。
+    // 且旁路了 HanimeDns/代理；改共享 rememberHanimeImageLoader（调用方仍可覆盖）。
     val defaultImageLoader = rememberHanimeImageLoader()
     val resolvedImageLoader = imageLoader ?: defaultImageLoader
     Dialog(
