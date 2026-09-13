@@ -24,6 +24,11 @@ data class ComposePlaybackState(
     val qualities: List<PlaybackQuality> = emptyList(),
     val selectedQualityIndex: Int = -1,
     val engine: PlaybackEngineState = PlaybackEngineState(),
+    /**
+     * 位置停滞（看门狗判定）。UI 据此显示缓冲反馈 —— 引擎的 isBuffering 三端语义不一致，
+     * 只有它才能覆盖"画面定住但状态看着正常"这种情况。
+     */
+    val isStalled: Boolean = false,
 )
 
 /**
@@ -35,9 +40,19 @@ class ComposePlaybackController(
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
 ) {
     private val mutableState = MutableStateFlow(ComposePlaybackState())
+    private val stallDetector = PlaybackStallDetector()
     private var engineCollectionJob: Job = scope.launch {
         playbackEngine.state.collect { engineState ->
-            mutableState.update { it.copy(engine = engineState) }
+            mutableState.update {
+                it.copy(
+                    engine = engineState,
+                    isStalled = stallDetector.update(
+                        positionMs = engineState.positionMs,
+                        isPlaying = engineState.isPlaying,
+                        isBuffering = engineState.isBuffering,
+                    ),
+                )
+            }
         }
     }
     private var requestedPlaybackSpeed = PlayerDefaults.DEFAULT_SPEED

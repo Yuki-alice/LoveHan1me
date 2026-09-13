@@ -263,7 +263,9 @@ class ExoPlaybackEngine(
             phase = PlaybackPhase.Error,
             isPlaying = false,
             isBuffering = false,
-            errorMessage = error.localizedMessage,
+            // 带上 errorCode：media3 用它区分 403/404/超时/解码失败，而 localizedMessage
+            // 常常只是 "Source error"，用户与开发者都无从判断。
+            errorMessage = "code=${error.errorCode} ${error.localizedMessage ?: error.errorCodeName}",
         )
     }
 
@@ -295,7 +297,9 @@ class ExoPlaybackEngine(
             playbackSpeed = player.playbackParameters.speed,
             videoWidth = (videoSize.width * videoSize.pixelWidthHeightRatio).toInt(),
             videoHeight = videoSize.height,
-            errorMessage = null,
+            // ⚠️ 这里**不要**写 errorMessage = null：publishState 被 play/pause/seek
+            // 以及每次播放器回调触发，一旦无条件清空，真实错误会被下一次采样悄悄抹掉
+            // （表现为"错误卡闪一下就没了"）。错误只在 load() 重试时清除。
         )
     }
 

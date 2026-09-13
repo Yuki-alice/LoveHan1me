@@ -319,6 +319,9 @@ class DesktopMpvPlaybackEngine(
         released = true
         mainScope.launch {
             runCatching { mediampPlayer.close() }
+            // 状态归位：三个 Android 引擎都会重置，桌面此前不重置 —— UI 复用同一个 controller 时
+            // 会读到上一部片子的时长/位置（例如"退出播放页后进度条还停在半途"）。
+            _state.value = PlaybackEngineState()
             mainScope.cancel()
             scope.cancel()
         }

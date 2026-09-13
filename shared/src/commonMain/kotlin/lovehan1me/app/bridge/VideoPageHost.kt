@@ -32,6 +32,14 @@ interface VideoPageHost {
     /** 全屏切换（含横竖屏与系统栏），UI 侧 isFullscreen 状态由调用方维护。 */
     fun applyFullscreen(fullscreen: Boolean, forceLandscape: Boolean = false) {}
 
+    /**
+     * 本平台是否能**真正**调节屏幕亮度。
+     *
+     * 桌面与 iOS 都未实现亮度 API，但播放器的左半屏竖滑手势此前照样弹 HUD 显示百分比、
+     * 实际什么都不发生（"假动作"）。UI 用这个能力查询决定是否接管该手势。
+     */
+    fun supportsBrightness(): Boolean = false
+
     /** 当前屏幕亮度（0.01~1），不支持读取的平台返回 0.5f。 */
     fun currentBrightness(): Float = 0.5f
 

@@ -60,6 +60,9 @@ class IosAVPlaybackEngine : PlaybackEngine {
     override val state: StateFlow<PlaybackEngineState> = _state.asStateFlow()
 
     private var playWhenReady = true
+
+    /** 请求的倍速（AVPlayer 的 `rate` 会被暂停清零，不能当作倍速状态；见 setPlaybackSpeed）。 */
+    private var requestedSpeed = PlayerDefaults.DEFAULT_SPEED
     private var released = false
 
     init {
@@ -99,6 +102,8 @@ class IosAVPlaybackEngine : PlaybackEngine {
         if (released) return
         playWhenReady = true
         avPlayer.play()
+        // 恢复播放时补上暂停期间设置的倍速（见 setPlaybackSpeed 的说明）
+        if (requestedSpeed != PlayerDefaults.DEFAULT_SPEED) avPlayer.rate = requestedSpeed
         scope.launch { publishState() }
     }
 
@@ -117,7 +122,10 @@ class IosAVPlaybackEngine : PlaybackEngine {
 
     override fun setPlaybackSpeed(speed: Float) {
         if (released) return
-        avPlayer.rate = speed
+        requestedSpeed = speed
+        // ⚠️ AVPlayer 把 `rate` 同时当"倍速"和"播放开关"：暂停时写 rate 会把视频**直接播起来**。
+        // 所以只在正在播放时写；暂停期间只记录请求值，等 play() 时带上。
+        if (avPlayer.rate != 0f) avPlayer.rate = speed
         _state.value = _state.value.copy(playbackSpeed = speed)
     }
 
@@ -208,8 +216,12 @@ class IosAVPlaybackEngine : PlaybackEngine {
             isBuffering = phase == PlaybackPhase.Preparing && playWhenReady,
             positionMs = positionMs,
             durationMs = durationMs,
+            // 桌面/iOS 拿不到"已缓冲到哪"，如实给 positionMs（UI 的缓冲条与已播层重合，不显示假进度）；
+            // 真正的"卡住"由 PlaybackStallDetector 判定。
             bufferedPositionMs = positionMs,
-            playbackSpeed = avPlayer.rate,
+            // 上报**请求的**倍速而不是 avPlayer.rate：暂停时 rate 恒为 0，
+            // 会让 UI 显示 "0.0x"（此前就是这个表现）。
+            playbackSpeed = requestedSpeed,
             videoWidth = videoWidth,
             videoHeight = videoHeight,
             hasRenderedFirstFrame = positionMs > 0L,

@@ -187,6 +187,9 @@ class AndroidVideoPageHost(
         }
     }
 
+    /** Android 侧亮度是真实现的（window.screenBrightness 覆盖），故声明支持。 */
+    override fun supportsBrightness(): Boolean = true
+
     override fun currentBrightness(): Float {
         val overrideBrightness = activity.window.attributes.screenBrightness
         if (overrideBrightness in 0f..1f) return overrideBrightness

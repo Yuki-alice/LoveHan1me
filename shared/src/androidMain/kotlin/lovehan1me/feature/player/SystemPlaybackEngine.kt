@@ -103,9 +103,9 @@ class SystemPlaybackEngine(
 
     override fun detachSurface(surface: VideoSurface) {
         if (currentSurface == surface) currentSurface = null
-        if (mediaPlayer != null && mediaPlayer?.isPlaying == true) {
-            mediaPlayer?.setSurface(null)
-        }
+        // 无条件解绑：原来只在 isPlaying 时清 surface，暂停态下 detach 会继续持有
+        // 一个即将（或已被）销毁的 Surface。
+        mediaPlayer?.setSurface(null)
     }
 
     override fun release() {
