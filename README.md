@@ -49,7 +49,7 @@ LoveHan1me 想做的是**把"能看"变成"看得爽"**：
 ### 环境要求
 
 - JDK 21
-- Android SDK（`compileSdk 37`）
+- Android SDK（`:app` compileSdk 37 / `:shared` compileSdk 36 —— 两个平台都要装）
 - Gradle 由 wrapper 提供，无需单独安装
 
 ### 命令

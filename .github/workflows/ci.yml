@@ -26,12 +26,39 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      - name: Install Android platform 36
+      # :app 硬编码 compileSdk 37（其 targetSdk=37，而 compileSdk 必须 ≥ targetSdk）；
+      # :shared 走约定插件读 gradle.properties 的 han1me.android.compileSdk=36
+      # （两台开发机当时只装了 36）→ **两个平台都得装**，缺任一个就会在
+      # :app:compileDebugKotlin / :shared:compileAndroidMain 阶段报错。
+      #
+      # ⚠️ 这里刻意不再用 `|| true` 吞掉失败：原先装了 36 却没有 37，
+      #    失败被静默忽略，最终表现为下游莫名其妙的编译错误。
+      # API 37 起平台带 minor 版本（本机目录名是 android-37.0），
+      # 包名可能是 android-37 也可能是 android-37.0 → 两个都试。
+      - name: Install Android platforms (36 for :shared, 37 for :app)
         shell: bash
         run: |
-          yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" \
-            "platforms;android-36" "build-tools;36.0.0" >/dev/null || true
-          sdkmanager --list_installed 2>/dev/null | head -20 || true
+          SM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          for pkg in "platforms;android-36" "build-tools;36.0.0" \
+                     "platforms;android-37" "platforms;android-37.0" \
+                     "build-tools;37.0.0"; do
+            if yes | "$SM" "$pkg" >/dev/null 2>&1; then
+              echo "ok    $pkg"
+            else
+              echo "note  $pkg 不可用或已安装"
+            fi
+          done
+
+      # 装完断言：失败在"平台缺失"这一步说清楚，而不是留到编译期。
+      - name: Assert required SDK platforms are present
+        shell: bash
+        run: |
+          echo "installed platforms:"; ls "$ANDROID_HOME/platforms"
+          test -d "$ANDROID_HOME/platforms/android-36" || {
+            echo "::error::缺少 android-36（:shared 的 compileSdk 需要）"; exit 1; }
+          ls "$ANDROID_HOME/platforms" | grep -q '^android-37' || {
+            echo "::error::缺少 android-37(.x)（:app 的 compileSdk=37 需要）"; exit 1; }
+          echo "platforms OK"
 
       - name: Compile Android + Desktop
         run: ./gradlew :shared:compileAndroidMain :shared:compileKotlinDesktop :app:compileDebugKotlin :desktopApp:compileKotlin --console=plain
