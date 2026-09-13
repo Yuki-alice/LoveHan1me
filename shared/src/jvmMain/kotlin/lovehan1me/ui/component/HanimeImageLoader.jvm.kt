@@ -6,6 +6,7 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import coil3.ImageLoader
 import coil3.compose.LocalPlatformContext
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
+import lovehan1me.core.util.StartupTrace
 import lovehan1me.data.network.HanimeDns
 import lovehan1me.data.network.HanimeProxySelector
 import okhttp3.OkHttpClient
@@ -31,6 +32,10 @@ actual fun rememberHanimeImageLoader(): ImageLoader {
                     add(OkHttpNetworkFetcherFactory(callFactory = { imageClient }))
                 }
                 .build()
+                // M5-2：图片管线真正就绪的时刻（Coil 是懒加载，这一步通常在首帧之后，属预期）。
+                // 放在这里而不是各端入口：Android 没在 Application 里预建 ImageLoader，
+                // 桌面虽有单例注册（coil-register），但真正用来取图的仍是这个。
+                .also { StartupTrace.mark("coil") }
         }
     }
 }

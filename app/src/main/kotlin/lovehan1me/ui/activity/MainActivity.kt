@@ -10,7 +10,9 @@ import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
+import android.view.ViewTreeObserver
 import lovehan1me.core.util.LogUtil
+import lovehan1me.core.util.StartupTrace
 import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -83,6 +85,18 @@ class MainActivity : BaseActivity() {
                 onConfirmLogout = ::confirmLogout,
             )
         }
+        // M5-2：首帧打点 —— onPreDraw 在内容被画到屏幕之前触发，是"用户即将看到画面"的信号，
+        // 比 onResume/onCreate 都更贴近"启动完成"的体感。
+        // mark 返回 false 表示已记过（Activity 重建/旋转），此时不再重复打汇总。
+        window.decorView.viewTreeObserver.addOnPreDrawListener(
+            object : ViewTreeObserver.OnPreDrawListener {
+                override fun onPreDraw(): Boolean {
+                    window.decorView.viewTreeObserver.removeOnPreDrawListener(this)
+                    if (StartupTrace.mark("first-frame")) StartupTrace.summary()
+                    return true
+                }
+            },
+        )
     }
 
     override fun beforeSuperOnCreate(savedInstanceState: Bundle?) {

@@ -22,6 +22,7 @@ import lovehan1me.core.util.AnimeShaders
 import lovehan1me.core.util.AppLanguageManager
 import lovehan1me.core.util.ActivityManager
 import lovehan1me.core.util.LogUtil
+import lovehan1me.core.util.StartupTrace
 import lovehan1me.core.util.applicationContext as globalApplicationContext
 import `is`.xyz.mpv.MPVLib
 import java.lang.ref.WeakReference
@@ -47,13 +48,27 @@ class HanimeApplication : Application(), Application.ActivityLifecycleCallbacks 
 
     override fun onCreate() {
         super.onCreate()
+        // M5-2：冷启动埋点起点。放在**最前面** —— 下面每一步（DataStore/设置/语言/通知渠道/
+        // MPV 初始化）都算启动耗时，而那正是用户感受到的部分。
+        StartupTrace.begin("android:Application")
+        // 与上面互补的一条对照：**进程起点 → onCreate** 的耗时（类加载、ContentProvider
+        // 初始化都在这一段里，它发生在 begin 之前，故单独打一条而不是塞进段落表）。
+        runCatching {
+            StartupTrace.logExternal(
+                "进程启动→onCreate",
+                android.os.SystemClock.uptimeMillis() - android.os.Process.getStartUptimeMillis(),
+            )
+        }
         Thread.setDefaultUncaughtExceptionHandler(CrashHandler(applicationContext))
         DataStoreManager.initialize(this)
+        StartupTrace.mark("datastore")
         // P6a-F：平台件 provider 注册（实现依赖 :app 的 HanimeCacheManager/WorkManager）
         setVideoCacheStoreProvider { AndroidVideoCacheStore }
         setDownloadWorkControllerProvider { AndroidDownloadWorkController }
         SettingsRepository.install(DataStoreManager)
+        StartupTrace.mark("settings")
         AppLanguageManager.applyStoredLanguage(this)
+        StartupTrace.mark("language")
         registerActivityLifecycleCallbacks(this)
         ProxySelector.setDefault(HanimeProxySelector())
         HanimeProxySelector.rebuildNetwork()
@@ -63,6 +78,7 @@ class HanimeApplication : Application(), Application.ActivityLifecycleCallbacks 
         initNotificationChannel()
         MPVLib.create(applicationContext)
         MPVLib.init()
+        StartupTrace.mark("mpv")
 
         if (AnimeShaders.copyCertAssets(applicationContext) <= 0) {
             LogUtil.w(TAG, "cert 复制失败")
