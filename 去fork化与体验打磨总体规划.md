@@ -1,6 +1,6 @@
 # 去fork化与体验打磨总体规划
 
-> 制定：2026-09-12 ｜ 修订：2026-09-13 v3 ｜ 状态：**已评审；M1–M3-a 已闭环；M3-b/c 代码完成（iOS 验证暂缓）；M4 部分开工**
+> 制定：2026-09-12 ｜ 修订：2026-09-13 v4 ｜ 状态：**已评审；M1–M3-a 已闭环；M3-b/c 代码完成（iOS 验证暂缓）；M4 部分开工**
 > 定位：LoveHan1me 从"能跑的 fork"变成"独立项目"的总路线图。只含决策与验收，不含实现细节。
 
 ---
@@ -12,6 +12,7 @@
 | 2026-09-13 | GIF 时长**固定 5s 不可调** | **恢复三选 2s/3s/5s + 各自估算体积**（已否决固定档） | 固定档丢掉了"按内容长短取舍体积"的能力；超预算档位本就由 `GifCapturePolicy` 提前过滤（用户点不到必然失败的按钮），固定档并不额外换来安全性 |
 | 2026-09-13 | M3-b/c 以"三端各录一段可播放 GIF"为**闭环硬门槛** | **门禁放宽**：iOS 编译/真机验证列为后续项，不阻塞闭环 | 当前 macOS 设备不可用；iOS 代码已实现并标注了 5 处待验符号形态，风险可控（失败会返回 null 并被如实报"抓帧失败"，不会产出错帧） |
 | 2026-09-13 | 文件头 28 处"`@project` 批量改 LoveHan1me"（验收 grep 0 命中） | **追加修正归属**：`@project` 全仓统一为 LoveHan1me（51 处），并把裸 `@author Yenaly Liew` 标为「上游原作者，见 NOTICE」 | 原批量替换只改了 `@project` 没改 `@author` → 形成"文件属于 LoveHan1me 却署名原作者"的自相矛盾；且 `Hanime1`/`Han1meViewer` 两旧名残留，三个项目名并存 |
+| 2026-09-13 | M3-c 能力矩阵写"Android FileProvider 分享 / iOS `UIActivityViewController`" | **继承 M3-b 已落地的 `MediaExport` 取舍**：Android 走 **MediaStore**（省掉 FileProvider 覆盖目录与 `file_paths.xml`）、桌面"落盘 + 打开所在文件夹"、iOS 仍降级为"存 `Documents` + 提示位置"（`SavedOnly`，无分享面板） | 截图与 GIF 是**同一个"保存并分享"手势**（M3-b 已合并为一个平台动作），共用一处实现才不会两边漂移；iOS 的 `UIActivityViewController` 接入属独立议题（既有先例 `rememberShareText` 同样是降级实现），与"iOS 门禁放宽"同批处置 |
 
 ---
 
@@ -48,7 +49,7 @@
 | M1 身份切换 | ✅ 已闭环 | 2a9d1cd，显示名/包名/更新通道/删4×alias/桌面落盘路径/文案全切；仅剩 LICENSE双行与28处文件头注释为本轮收尾（见 M1-R） |
 | M2 功能取舍 | ✅ 已闭环 | fe23fa6，登录/CF统一shared、mucute依赖清零（grep 0命中），:app 27kt但未至纯壳（见 M4） |
 | M3-a H帧删除 | ✅ 已闭环 | 6提交 95文件 -4112行，grep HKeyframe 源码0命中，assets/h_keyframes双源集已删，仅剩3处死代码与1处孤儿注释（见 M3-a-R） |
-| M3-b/c GIF+截图 | ⚠️ 代码完成，iOS 验证暂缓 | 4 提交 + 52/8 测试；桌面与 Android 取帧已实现，iOS `1996235` 未在 macOS 编译验证（**门禁已放宽，不阻塞**）；M3-c 截图未开工 |
+| M3-b/c GIF+截图 | ✅ 代码完成（iOS 验证暂缓） | M3-b：4 提交 + 52/8 测试。M3-c：三端 PNG 编码（`encodePngArgb`）+ `ScreenshotCapturer` 取帧管线 + 播放器入口 + 三语文案，**+20 测试（113/113）**；APK 级验收 `.workbuddy/m3c_verify_apk.py` 通过。iOS `1996235` 与 M3-c 的 `PngEncoding.ios.kt` 未在 macOS 编译验证（**门禁已放宽，不阻塞**） |
 | M4 结构收尾 | 🔶 部分开工 | **已完成**：H 前缀 4 类更名（旧类名 grep 0 命中）、LICENSE 双行、文件头归属、死代码清零、旧文档归档 6 份、空壳目录清零。**待做**：`:app` 下沉（HanimeCacheManager/HanimeFileManager 仍在 :app）、根目录 md 收敛、SettingsRepository 契约抽离 |
 | M5 体验6方向 | ⏳ 未开工 | 需子计划，顺序已定依赖序 |
 | M6 Parser | ⏳ 下阶段 | 契约先立，1180行实现后重写 |
