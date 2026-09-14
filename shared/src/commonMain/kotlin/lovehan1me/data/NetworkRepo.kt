@@ -15,6 +15,7 @@ import lovehan1me.core.domain.model.OnlineWatchHistorySort
 import lovehan1me.core.domain.model.VideoCommentArgs
 import lovehan1me.core.domain.model.VideoComments
 import lovehan1me.data.network.CloudflareChallenges
+import lovehan1me.feature.video.PlayerTrace
 import lovehan1me.data.network.HanimeNetwork
 import lovehan1me.core.domain.state.PageLoadingState
 import lovehan1me.core.domain.state.VideoLoadingState
@@ -609,9 +610,14 @@ object NetworkRepo {
         request: suspend () -> HttpResponse,
         action: (String) -> VideoLoadingState<T>,
     ) = flow {
+        PlayerTrace.mark("video-request-start")
         val requestResult = request.invoke()
+        PlayerTrace.mark("video-request-end")
         if (requestResult.status.isSuccess()) {
-            emit(action.invoke(requestResult.bodyAsText()))
+            PlayerTrace.mark("video-parse-start")
+            val parsed = action.invoke(requestResult.bodyAsText())
+            PlayerTrace.mark("video-parse-end")
+            emit(parsed)
         } else {
             requestResult.throwRequestException()
         }

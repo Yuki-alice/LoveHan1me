@@ -274,6 +274,7 @@ class VideoViewModel(
         PlayerTrace.mark("vm-getHanimeVideo-called")
         PlayerTrace.mark("fetch-start")
         viewModelScope.launch {
+            PlayerTrace.mark("fetch-coroutine-start")
             val flow = if (fromDownload) {
                 cacheStore.load(videoCode).map { hv ->
                     if (hv == null) {
