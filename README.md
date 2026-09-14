@@ -4,6 +4,8 @@
 > 基于 **Kotlin Multiplatform** + **Compose Multiplatform**，一套代码三端运行
 
 > ⚠️ **开发中**：项目正在积极重构，尚未发布可用版本。
+>
+> 项目定位见 [`定位.md`](定位.md)。
 
 ---
 
