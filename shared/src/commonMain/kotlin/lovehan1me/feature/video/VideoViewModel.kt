@@ -270,6 +270,8 @@ class VideoViewModel(
         }
         if (videoIntroUiStateMap[videoCode]?.introRestored == true) return
         // A-1：watch 请求 + 解析的起止（此前盲区：PlayerTrace 从简介到货才起算）。
+        // fetch-start 卡在 LaunchedEffect 调度后，新增一个同步点标记动画帧就绪
+        PlayerTrace.mark("vm-getHanimeVideo-called")
         PlayerTrace.mark("fetch-start")
         viewModelScope.launch {
             val flow = if (fromDownload) {

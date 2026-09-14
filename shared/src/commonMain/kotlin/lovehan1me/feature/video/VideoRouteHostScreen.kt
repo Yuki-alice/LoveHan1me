@@ -141,6 +141,8 @@ fun VideoRouteHostScreen(
     // LaunchedEffect，发生在组合之后，组合内 mark 全被 clear 丢弃）。
     val sessionKey = remember(route.videoCode, route.localUri) { "video:" + route.videoCode }
     remember(sessionKey) { PlayerTrace.begin(sessionKey); sessionKey }
+    // A-1b：进页到 fetch-start 之间 13s 空白的切分——组合完成与 effect 调度两段
+    androidx.compose.runtime.SideEffect { PlayerTrace.mark("compose-done") }
     val kernel = remember { PlayerKernel.fromPreference(SettingsRepository.switchPlayerKernel) }
     val playbackEngine: PlaybackEngine = remember(route.videoCode, route.localUri, kernel) {
         PlayerTrace.mark("engine-create-start")
@@ -463,6 +465,7 @@ fun VideoRouteHostScreen(
     }
 
     LaunchedEffect(route.videoCode, route.localUri) {
+        PlayerTrace.mark("effect-fetch-start")
         checkedQuality = null
         pendingDownloadPrompt = null
         videoTitle = ""
@@ -531,6 +534,9 @@ fun VideoRouteHostScreen(
                             } else {
                                 // A-1：直链到手 → 引擎 load，load→首帧的间隔从这里起算。
                                 PlayerTrace.mark("load-called")
+                                // 播放器侧缓冲已在 LaunchedEffect(showLoading) 记 span，
+                                // 这里额外记一个进入 preparing 时刻，方便算 load→首帧
+                                PlayerTrace.event("player-phase", playbackState.engine.phase.name)
                                 playbackController.load(
                                     title = request.title,
                                     qualities = request.qualities,
