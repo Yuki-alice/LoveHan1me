@@ -79,10 +79,16 @@ object ServiceCreator {
 
     /**
      * Build OkHttpClient
+     *
+     * A-2：补 read/call 超时（此前只有 connect 15s）。API 侧全是 HTML 小响应，
+     * 读停滞 30s / 整呼叫 60s 还没完就是死了——fast-fail 报错，不要转圈到分钟级。
+     * 下载与 getchu 客户端不动：前者长连接传文件不能掐，后者是别的业务。
      */
     private fun buildHClient(): OkHttpClient {
         val builder = OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
+            .readTimeout(30, TimeUnit.SECONDS)
+            .callTimeout(60, TimeUnit.SECONDS)
             .addInterceptor(UserAgentInterceptor)
             .addInterceptor(UrlLoggingInterceptor())
             .cache(cache)
