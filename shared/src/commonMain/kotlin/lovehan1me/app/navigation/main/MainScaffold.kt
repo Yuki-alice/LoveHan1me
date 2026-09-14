@@ -351,7 +351,10 @@ private fun MainNavigationRail(
                 .fillMaxHeight(),
             verticalArrangement = Arrangement.SpaceBetween,
         ) {
-            Column {
+            Column(
+                // 顶部三个一级入口：默认紧贴，适当拉开（large=12dp）。
+                verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.large),
+            ) {
                 MainTab.entries.forEach { tab ->
                     WideNavigationRailItem(
                         selected = tab == selectedTab,
