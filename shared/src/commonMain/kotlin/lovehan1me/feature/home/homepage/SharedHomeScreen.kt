@@ -82,7 +82,7 @@ fun SharedHomeScreen(
 
     // 门控改用 settings 驱动而非 Unit：桌面/iOS 的 DataStore 初始化时机与 composition
     // 存在竞态（iOS 还是后台线程初始化），VM 内部有 initializationJob 去重守卫，可重复调用。
-    LaunchedEffect(settings.usageNoticeAccepted, settings.usageSourceVerified) {
+    LaunchedEffect(settings.usageNoticeAccepted) {
         viewModel.initializeHomePage()
     }
 

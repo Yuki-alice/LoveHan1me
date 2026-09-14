@@ -2,27 +2,21 @@ package lovehan1me.app
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import lovehan1me.data.SettingsRepository
-import lovehan1me.ui.component.UsageNoticeDialog
-import lovehan1me.ui.component.HapticTextButton as TextButton
+import lovehan1me.feature.onboarding.OnboardingWizard
 import lovehan1me.app.navigation.main.CloudflareRoute
 import lovehan1me.app.navigation.main.MainScaffold
 import lovehan1me.data.network.CloudflareChallenges
@@ -33,7 +27,6 @@ import lovehan1me.app.crash.takePendingCrashReport
 import lovehan1me.app.crash.CrashScreen
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.feature.home.homepage.HomePageViewModel
-import lovehan1me.app.main.AppSourceDialog
 import lovehan1me.ui.theme.HanimeTheme
 import lovehan1me.app.sharedViewModel
 import lovehan1me.core.util.SonnerToast
@@ -41,18 +34,13 @@ import kotlinx.coroutines.launch
 import lovehan1me.Res
 import lovehan1me.loading
 import lovehan1me.ui.component.content.LoadingContent
-import lovehan1me.app_source_illegal_message
-import lovehan1me.app_source_illegal_title
-import lovehan1me.app_source_repository_link
-import lovehan1me.app_source_verify
 
 /**
- * M2：三端共享的真入口（M1 骨架 + 首页 → 全导航）。
+ * 三端共享的真入口。
  *
- * - 门控：使用须知 → 来源确认 → 非法来源警告（三段与 `:app` `MainActivityContent`
- *   同语义；此前桌面/iOS 的自动置位已移除）；
- * - 导航：`TopLevelBackStack<HanimeScreen>` + `SharedTopNavigation`（35 个 entry，
- *   与 `:app` `TopNavigation` 同构）；
+ * - 门控：首次启动向导（欢迎 → 使用须知 → 基础设置），完成后才进导航；
+ *   老用户（已接受须知）直接进；
+ * - 导航：`TopLevelBackStack<HanimeScreen>` + `SharedTopNavigation`；
  * - 外壳：**P2 起为 [MainScaffold]**（Compact 贴底 NavigationBar / Medium+ WideNavigationRail）。
  *   旧的 `PermanentNavigationDrawer` / `ModalNavigationDrawer` 双分支与
  *   `drawerContent` 平台注入槽位一并退役 —— 汉堡与抽屉不再是导航形态的一部分。
@@ -128,24 +116,9 @@ fun App(
             }
         }
 
-        var showUsageNotice by remember { mutableStateOf(!SettingsRepository.usageNoticeAccepted) }
-        var showSourceDialog by remember {
-            mutableStateOf(
-                SettingsRepository.usageNoticeAccepted &&
-                    !SettingsRepository.usageSourceVerified &&
-                    !SettingsRepository.usageSourcePending,
-            )
-        }
-        var showSourceWarning by rememberSaveable {
-            mutableStateOf(
-                SettingsRepository.usageNoticeAccepted &&
-                    !SettingsRepository.usageSourceVerified &&
-                    SettingsRepository.usageSourcePending,
-            )
-        }
-        var sourceLink by rememberSaveable { mutableStateOf("") }
+        var showOnboarding by remember { mutableStateOf(!SettingsRepository.usageNoticeAccepted) }
         var appAccessGranted by remember {
-            mutableStateOf(SettingsRepository.usageNoticeAccepted && SettingsRepository.usageSourceVerified)
+            mutableStateOf(SettingsRepository.usageNoticeAccepted)
         }
 
         if (appAccessGranted) {
@@ -157,90 +130,23 @@ fun App(
                 platformScreens = platformScreens,
             )
         } else {
-            // 三段门控（使用须知 → 来源确认 → 非法来源警告）未过时，下面还会叠加对话框。
+            // 首次启动向导未完成时，下面叠加向导页。
             // 此前这里**什么都不画** —— 用户看到的是"白窗 + 弹窗浮在半空"，
             // 分不清"应用在启动"还是"界面挂了"。给一层主题化底衬（不改门控语义）。
             StartupGateBackdrop()
         }
 
-        UsageNoticeDialog(
-            visible = showUsageNotice,
-            onAccepted = {
-                scope.launch {
-                    SettingsRepository.setUsageNoticeAccepted(true)
-                    showUsageNotice = false
-                    if (SettingsRepository.usageSourceVerified) {
-                        appAccessGranted = true
-                        homeViewModel.initializeHomePage()
-                    } else if (SettingsRepository.usageSourcePending) {
-                        showSourceWarning = true
-                    } else {
-                        showSourceDialog = true
-                    }
-                }
-            },
-            onDeclined = { onExit() },
-        )
-        AppSourceDialog(
-            visible = showSourceDialog,
-            onSelect = { source ->
-                if (source.equals("github", ignoreCase = true)) {
+        if (showOnboarding) {
+            OnboardingWizard(
+                onFinished = {
                     scope.launch {
-                        SettingsRepository.update {
-                            it.copy(
-                                usageSourceVerified = true,
-                                usageSourcePending = false
-                            )
-                        }
-                        showSourceDialog = false
+                        SettingsRepository.setUsageNoticeAccepted(true)
+                        showOnboarding = false
                         appAccessGranted = true
                         homeViewModel.initializeHomePage()
                     }
-                } else {
-                    scope.launch {
-                        SettingsRepository.setUsageSourcePending(true)
-                        showSourceDialog = false
-                        sourceLink = ""
-                        showSourceWarning = true
-                    }
-                }
-            },
-        )
-        if (showSourceWarning) {
-            val expectedRepository = "https://github.com/Yuki-alice/LoveHan1me"
-            val linkValid = sourceLink.trim().equals(expectedRepository, ignoreCase = true)
-            AlertDialog(
-                onDismissRequest = {},
-                title = { Text(stringResource(Res.string.app_source_illegal_title)) },
-                text = {
-                    Column {
-                        Text(stringResource(Res.string.app_source_illegal_message))
-                        OutlinedTextField(
-                            value = sourceLink,
-                            onValueChange = { sourceLink = it },
-                            label = { Text(stringResource(Res.string.app_source_repository_link)) },
-                            singleLine = true,
-                        )
-                    }
                 },
-                confirmButton = {
-                    TextButton(
-                        enabled = linkValid,
-                        onClick = {
-                            scope.launch {
-                                SettingsRepository.update {
-                                    it.copy(
-                                        usageSourceVerified = true,
-                                        usageSourcePending = false
-                                    )
-                                }
-                                showSourceWarning = false
-                                appAccessGranted = true
-                                homeViewModel.initializeHomePage()
-                            }
-                        },
-                    ) { Text(stringResource(Res.string.app_source_verify)) }
-                },
+                onExit = onExit,
             )
         }
     }

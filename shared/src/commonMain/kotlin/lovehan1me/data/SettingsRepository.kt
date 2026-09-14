@@ -39,8 +39,6 @@ object SettingsRepository : SettingsStore {
     val isAlreadyLogin get() = current.isAlreadyLogin
     val localListNoticeDismissed get() = current.localListNoticeDismissed
     val usageNoticeAccepted get() = current.usageNoticeAccepted
-    val usageSourceVerified get() = current.usageSourceVerified
-    val usageSourcePending get() = current.usageSourcePending
     val savedUserId get() = current.savedUserId
     val cloudFlareCookieHost get() = current.cloudFlareCookieHost.lowercase()
     /** 桌面：CF 验证浏览器采集到的真实 UA（空 = 未采集）。 */
@@ -121,7 +119,6 @@ object SettingsRepository : SettingsStore {
         update { it.copy(desktopBrowserUserAgent = value.trim()) }
     suspend fun setSavedUserId(value: String) = update { it.copy(savedUserId = value) }
     suspend fun setUsageNoticeAccepted(value: Boolean) = update { it.copy(usageNoticeAccepted = value) }
-    suspend fun setUsageSourcePending(value: Boolean) = update { it.copy(usageSourcePending = value) }
     suspend fun setLanguage(value: AppLanguage) = update { it.copy(appLanguage = value) }
     suspend fun setThemeMode(value: ThemeMode) = update { it.copy(themeMode = value) }
     suspend fun setThemeId(value: String) = update { it.copy(themeId = value) }
