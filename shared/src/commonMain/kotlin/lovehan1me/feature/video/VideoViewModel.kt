@@ -269,6 +269,8 @@ class VideoViewModel(
             return
         }
         if (videoIntroUiStateMap[videoCode]?.introRestored == true) return
+        // A-1：watch 请求 + 解析的起止（此前盲区：PlayerTrace 从简介到货才起算）。
+        PlayerTrace.mark("fetch-start")
         viewModelScope.launch {
             val flow = if (fromDownload) {
                 cacheStore.load(videoCode).map { hv ->
@@ -304,6 +306,7 @@ class VideoViewModel(
                 }
                 _hanimeVideoStateFlow.value = emitState
                 if (emitState is VideoLoadingState.Success) {
+                    PlayerTrace.mark("fetch-end")
                     _hanimeVideoFlow.update { emitState.info }
                     csrfToken = emitState.info.csrfToken
                     // 成功即记内存简介缓存：下次点进来先秒画旧简介再刷新。

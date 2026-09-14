@@ -138,7 +138,11 @@ fun VideoRouteHostScreen(
     val commentViewModel: CommentViewModel = sharedViewModel(::CommentViewModel)
     val kernel = remember { PlayerKernel.fromPreference(SettingsRepository.switchPlayerKernel) }
     val playbackEngine: PlaybackEngine = remember(route.videoCode, route.localUri, kernel) {
-        createPlaybackEngine(kernel = kernel)
+        // A-1：引擎同步构造（含 Exo build / mpv 选项与原生加载）在组合线程，计时看它堵不堵首帧。
+        PlayerTrace.mark("engine-create-start")
+        createPlaybackEngine(kernel = kernel).also {
+            PlayerTrace.mark("engine-create-end")
+        }
     }
     val playbackController = remember(playbackEngine) { ComposePlaybackController(playbackEngine) }
     val playbackState by playbackController.state.collectAsStateWithLifecycle()
@@ -458,6 +462,9 @@ fun VideoRouteHostScreen(
         checkedQuality = null
         pendingDownloadPrompt = null
         videoTitle = ""
+        // A-1：会话起点前移到进页（此前从标题到货起算，watch 请求等待全程盲区）。
+        // key 用 videoCode：换片即换 key 照常重置，与原来按标题重置等价。
+        PlayerTrace.begin("video:" + route.videoCode)
         viewModel.videoCode = route.videoCode
         viewModel.fromDownload = route.videoCode == "-1" || route.localUri != null
         // 有内存简介缓存先秒画（二次点进），再强制刷新；清标记保证下面一定拉新。
@@ -521,6 +528,8 @@ fun VideoRouteHostScreen(
                             ) {
                                 pendingPlayback = request
                             } else {
+                                // A-1：直链到手 → 引擎 load，load→首帧的间隔从这里起算。
+                                PlayerTrace.mark("load-called")
                                 playbackController.load(
                                     title = request.title,
                                     qualities = request.qualities,
@@ -628,7 +637,8 @@ fun VideoRouteHostScreen(
     }
 
     // ── M5 埋点：一次播放会话（换片才重置，同片重组不重置）──────────────
-    LaunchedEffect(videoTitle) { PlayerTrace.begin(videoTitle) }
+    // A-1：begin 已前移到进页（videoCode），这里只记"简介到货"（原来 begin 的位置）。
+    LaunchedEffect(videoTitle) { PlayerTrace.mark("video-info-ready") }
     DisposableEffect(videoTitle) { onDispose { PlayerTrace.summary() } }
 
     // 首帧：量"起播 → 出画"，三端可比

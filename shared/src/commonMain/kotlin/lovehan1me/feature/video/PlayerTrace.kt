@@ -16,6 +16,12 @@ import lovehan1me.core.util.LogUtil
  * - `first-frame`：会话起点 → 首帧渲染（`hasRenderedFirstFrame` 置位），可跨端比"起播快慢"
  * - `buffering`：转圈起止（卡顿看门狗也算），**重复发生**，所以走 [spanStart]/[spanEnd] 而不是 [mark]
  *
+ * ## 起播链路 marks（A-1：此前会话从简介到货起算，watch 等待全程盲区）
+ * 会话起点 = 进详情页（`begin("video:"+code)`）；之后按发生顺序：
+ * `engine-create-start/end`（引擎同步构造）→ `fetch-start/end`（watch 请求 + 解析）
+ * → `video-info-ready`（简介到货）→ `load-called`（直链到手调引擎）→ `first-frame`。
+ * summary 里缺了哪一段，哪一段就是卡点——先看这个再动刀。
+ *
  * ## 事件（只关心发生过，带细节）
  * `play-click` / `error` / `retry` / `seek` / `seek-by` / `gesture` / `panel`
  *
