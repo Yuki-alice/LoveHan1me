@@ -173,8 +173,9 @@ object HanimeDefaults {
         val centerButton = 72.dp
         /** 中央大键里的图标。 */
         val centerIcon = 42.dp
-        /** 右中锁定按钮。 */
-        val lockButton = 42.dp
+        /** 右中锁定按钮。42 → 48：可见填充圆钮**就是**点击面（FilledIconButton 的 clickable
+         *  边界 = 容器尺寸），42 不是任何官方档位、也达不到 M3 触控目标，直接归一到 48。 */
+        val lockButton = 48.dp
         /** 左右两侧的次级图标（顶栏/底栏）。 */
         val iconLarge = 20.dp
         /** 底栏小图标。 */
