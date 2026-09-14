@@ -60,6 +60,11 @@ import lovehan1me.my_account
 import lovehan1me.modify_success
 import lovehan1me.modify_failed
 import lovehan1me.logout
+import lovehan1me.login
+import lovehan1me.login_first
+import lovehan1me.confirm
+import lovehan1me.cancel
+import lovehan1me.sure_to_logout
 import lovehan1me.load_failed_retry
 import lovehan1me.forgot_password
 import lovehan1me.email
@@ -79,6 +84,9 @@ import lovehan1me.ic_exit_to_app
 import lovehan1me.ic_edit
 import lovehan1me.h_chan_default_avatar
 import lovehan1me.core.domain.model.UserAccount
+import lovehan1me.core.domain.exception.NotLoggedInException
+import lovehan1me.core.domain.exception.LoginStateExpiredException
+import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.core.domain.model.UserAccountAction
 import lovehan1me.core.domain.model.UserAccountSubmittingState
 import lovehan1me.core.domain.state.WebsiteState
@@ -106,6 +114,10 @@ fun AccountScreen(
     onAvatarCropResultConsumed: () -> Unit,
     onRefreshHome: () -> Unit,
     onLogout: () -> Unit,
+    /** 未登录/过期时的直达登录入口；null 则只显示重试。 */
+    onNavigateToLogin: (() -> Unit)? = null,
+    /** true 表示调用方（如 Android Activity 弹窗）已做登出确认，内部不再二次确认。 */
+    isLogoutConfirmedByCaller: Boolean = false,
 ) {
     val uriHandler = LocalUriHandler.current
     val state by viewModel.accountState.collectAsStateWithLifecycle()
@@ -146,7 +158,7 @@ fun AccountScreen(
                         UserAccountAction.PasswordUpdated -> modifySuccess
                         UserAccountAction.AvatarUpdated -> modifySuccess
                     }
-                    SonnerToast.error(message)
+                    SonnerToast.success(message)
                 }
 
                 WebsiteState.Loading -> Unit
@@ -172,10 +184,23 @@ fun AccountScreen(
                         .padding(paddingValues),
                     contentAlignment = Alignment.Center,
                 ) {
-                    ErrorContent(
-                        title = stringResource(Res.string.load_failed_retry),
-                        onRetry = { viewModel.loadAccount(forceReload = true) },
-                    )
+                    val throwable = (state as? WebsiteState.Error)?.throwable
+                    val needsLogin = throwable is NotLoggedInException ||
+                        throwable is LoginStateExpiredException
+                    if (needsLogin && onNavigateToLogin != null) {
+                        ErrorContent(
+                            title = stringResource(Res.string.login_first),
+                            message = throwable?.message,
+                            onRetry = onNavigateToLogin,
+                            retryText = stringResource(Res.string.login),
+                        )
+                    } else {
+                        ErrorContent(
+                            title = stringResource(Res.string.load_failed_retry),
+                            message = throwable?.message,
+                            onRetry = { viewModel.loadAccount(forceReload = true) },
+                        )
+                    }
                 }
             },
         ) {
@@ -188,6 +213,7 @@ fun AccountScreen(
                 onUpdatePassword = viewModel::updatePassword,
                 onPickAvatar = { onPickAvatarImage?.invoke() },
                 onLogout = onLogout,
+                isLogoutConfirmedByCaller = isLogoutConfirmedByCaller,
                 onOpenPasswordReset = {
                     uriHandler.openUri("${lovehan1me.core.constant.HANIME_BASE_URL}password/reset")
                 },
@@ -207,6 +233,7 @@ private fun AccountContent(
     onPickAvatar: () -> Unit,
     onLogout: () -> Unit,
     onOpenPasswordReset: () -> Unit,
+    isLogoutConfirmedByCaller: Boolean = false,
 ) {
     val hapticFeedback = rememberHapticFeedback()
     val scrollState = rememberScrollState()
@@ -455,7 +482,7 @@ private fun AccountContent(
                     trailingIcon = {
                         IconButton(onClick = { newPasswordVisible = !newPasswordVisible }) {
                             Icon(
-                                painter = if (oldPasswordVisible) painterResource(Res.drawable.ic_visibility) else painterResource(
+                                painter = if (newPasswordVisible) painterResource(Res.drawable.ic_visibility) else painterResource(
                                     Res.drawable.ic_visibility_off
                                 ),
                                 contentDescription = null
@@ -481,7 +508,7 @@ private fun AccountContent(
                     trailingIcon = {
                         IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                             Icon(
-                                painter = if (oldPasswordVisible) painterResource(Res.drawable.ic_visibility) else painterResource(
+                                painter = if (confirmPasswordVisible) painterResource(Res.drawable.ic_visibility) else painterResource(
                                     Res.drawable.ic_visibility_off
                                 ),
                                 contentDescription = null
@@ -539,8 +566,18 @@ private fun AccountContent(
             }
         }
 
+        var showLogoutConfirm by rememberSaveable { mutableStateOf(false) }
+        ConfirmDialog(
+            visible = showLogoutConfirm,
+            title = stringResource(Res.string.logout),
+            message = stringResource(Res.string.sure_to_logout),
+            confirmText = stringResource(Res.string.confirm),
+            dismissText = stringResource(Res.string.cancel),
+            onConfirm = { showLogoutConfirm = false; onLogout() },
+            onDismiss = { showLogoutConfirm = false },
+        )
         OutlinedButton(
-            onClick = onLogout,
+            onClick = { if (isLogoutConfirmedByCaller) onLogout() else showLogoutConfirm = true },
             modifier = Modifier.fillMaxWidth(),
             colors = ButtonDefaults.outlinedButtonColors(
                 contentColor = MaterialTheme.colorScheme.error

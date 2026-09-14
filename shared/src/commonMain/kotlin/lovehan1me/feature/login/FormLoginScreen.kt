@@ -78,10 +78,12 @@ fun FormLoginScreen(
     val scope = rememberCoroutineScope()
 
     fun submit() {
-        if (isLoggingIn || email.isBlank() || password.isBlank()) return
+        val cleanEmail = email.trim()
+        if (isLoggingIn || cleanEmail.isBlank() || password.isBlank()) return
+        if (!isEmailValid(cleanEmail) || password.length < MIN_PASSWORD_LENGTH) return
         isLoggingIn = true
         scope.launch {
-            NetworkRepo.login(email.trim(), password).collect { state ->
+            NetworkRepo.login(cleanEmail, password).collect { state ->
                 when (state) {
                     is WebsiteState.Error -> {
                         isLoggingIn = false
@@ -147,6 +149,7 @@ fun FormLoginScreen(
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
                     enabled = !isLoggingIn,
+                    isError = email.isNotBlank() && !isEmailValid(email.trim()),
                     modifier = Modifier.fillMaxWidth(),
                 )
                 OutlinedTextField(
@@ -177,7 +180,8 @@ fun FormLoginScreen(
                 )
                 Button(
                     onClick = ::submit,
-                    enabled = !isLoggingIn && email.isNotBlank() && password.isNotBlank(),
+                    enabled = !isLoggingIn && isEmailValid(email.trim()) &&
+                        password.length >= MIN_PASSWORD_LENGTH,
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     if (isLoggingIn) {
@@ -197,4 +201,14 @@ fun FormLoginScreen(
             }
         }
     }
+}
+
+private const val MIN_PASSWORD_LENGTH = 6
+
+private fun isEmailValid(email: String): Boolean {
+    if (email.isBlank()) return false
+    val at = email.indexOf('@')
+    if (at <= 0 || at == email.length - 1) return false
+    val dotAfterAt = email.indexOf('.', at)
+    return dotAfterAt > at + 1 && dotAfterAt < email.length - 1
 }

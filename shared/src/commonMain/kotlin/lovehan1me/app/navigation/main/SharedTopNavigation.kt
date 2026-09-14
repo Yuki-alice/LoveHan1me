@@ -277,6 +277,8 @@ fun SharedTopNavigation(
                     pendingAvatarCropResult = pendingAvatarCropResult,
                     onAvatarCropResultConsumed = { pendingAvatarCropResult = null },
                     onRefreshHome = { homeViewModel.getHomePage() },
+                    onNavigateToLogin = { backStack.add(LoginRoute) },
+                    isLogoutConfirmedByCaller = false,
                     onLogout = {
                         scope.launch {
                             logout()

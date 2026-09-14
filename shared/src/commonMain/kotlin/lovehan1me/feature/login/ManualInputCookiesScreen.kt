@@ -61,6 +61,9 @@ private fun ScanCookieContent(
 ) {
     val scannedText = remember { mutableStateOf("") }
     var showGuide by remember { mutableStateOf(true) }
+    // 历史阈值 100 为经验值：短串必为截断/粘贴不全；另要求含 '='，过滤纯文字误粘贴。
+    val cookieText = scannedText.value.trim()
+    val isCookiePlausible = cookieText.length >= MIN_COOKIE_LENGTH && cookieText.contains('=')
 
     Box(
         modifier = Modifier
@@ -84,10 +87,10 @@ private fun ScanCookieContent(
             )
             Spacer(modifier = Modifier.height(8.dp))
             Button(
-                enabled = scannedText.value.length > 100,
+                enabled = isCookiePlausible,
                 onClick = {
-                    if (scannedText.value.isEmpty() || scannedText.value.length < 100) return@Button
-                    onCookieScanned(scannedText.value)
+                    if (!isCookiePlausible) return@Button
+                    onCookieScanned(cookieText)
                 },
                 modifier = Modifier.align(Alignment.End),
             ) {
@@ -100,6 +103,7 @@ private fun ScanCookieContent(
 // M2：自 `:app` 下沉。唯一改动：R.raw.cookies_intro（app res/raw PNG）→
 // 拷贝进 shared composeResources/drawable，用 CMP painterResource(Res.drawable.*)；
 // 顺带去掉 Android-only 的 ui.res.painterResource 与 @SuppressLint("ResourceType")。
+private const val MIN_COOKIE_LENGTH = 100
 @Composable
 private fun CookieGuideDialog(onDismiss: () -> Unit) {
     AlertDialog(

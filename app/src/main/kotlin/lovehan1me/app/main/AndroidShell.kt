@@ -164,6 +164,8 @@ private fun platformScreens(activity: MainActivity): PlatformScreens = PlatformS
             pendingAvatarCropResult = pendingAvatarCropResult,
             onAvatarCropResultConsumed = onAvatarCropResultConsumed,
             onRefreshHome = { homeViewModel.getHomePage() },
+            onNavigateToLogin = { activity.openLogin() },
+            isLogoutConfirmedByCaller = true,
             onLogout = { activity.showLogoutConfirmDialog(closeCurrentPageOnConfirm = true) },
         )
     },
