@@ -12,12 +12,14 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlin.concurrent.thread
 import org.openani.mediamp.MediaStatus
 import org.openani.mediamp.features.AudioLevelController
 import org.openani.mediamp.features.FramePreview
@@ -77,19 +79,22 @@ class DesktopMpvPlaybackEngine(
     /**
      * 给渲染面用的挂起获取：返回预热好的 player。
      *
-     * 注意调用方必须在 composition 之外调用（LaunchedEffect），不能在组合/布局
-     * 阶段直接读 [mediampPlayer]——mpv 原生初始化几百毫秒，会把跳转过渡卡死。
+     * 惰性初始化（解压 + dlopen + mpv_create）在 Default 线程上执行 —— 即使
+     * 启动预载还没跑完就进了视频页，EDT 也只等一次返回，不会阻塞在
+     * SynchronizedLazyImpl 的锁上把整个界面冻住。
      */
-    suspend fun awaitPlayer(): MpvMediampPlayer = mediampPlayer
+    suspend fun awaitPlayer(): MpvMediampPlayer =
+        withContext(Dispatchers.Default) { mediampPlayer }
 
     init {
-        // 预热放进 EDT 异步队列：构造（含 remember）与首帧合成立即返回，
-        // 详情页先画出来（简介缓存/骨架），播放器面就绪后挂载。
-        // 之前这里同步 touch lazy，点卡片后转场直接冻住等 mpv_create。
-        mainScope.launch {
+        // 预热放后台线程：mpv 原生初始化（解压 49MB dylib + dlopen + mpv_create）
+        // 在 macOS 首次装载实测 10~15s，之前排进 EDT 异步队列，把视频详情页的
+        // 首次组合后到数据到货前整段冻死（compose-done +40ms → info-ready +12s，
+        // jstack 实证 EDT 全程卡在 NativeLibraries.load）。挪到 Default 后，
+        // EDT 只负责 setMediaData 等真正的控制面调用。
+        scope.launch {
             val player = mediampPlayer
-            scope.launch {
-                combine(
+            combine(
                 player.state,
                 player.currentPositionMillis,
                 player.mediaProperties,
@@ -124,27 +129,48 @@ class DesktopMpvPlaybackEngine(
                         null
                     },
                 )
-            }.collect { _state.value = it }
+            }.collect { state ->
+                _state.value = state
+                if (state.phase == PlaybackPhase.Error) maybeRetryAfterError()
             }
         }
     }
 
+    /** 当前 load 的请求（错误自动重试用）。 */
+    @Volatile private var currentRequest: PlaybackRequest? = null
+
+    /** 当前请求的自动重试计数（每次用户发起的 load 从 0 重新计）。 */
+    @Volatile private var currentAttempt = 0
+
+    /** load 代数：用户发起新 load 后，作废仍在等待中的旧重试。 */
+    @Volatile private var loadGeneration = 0
+
     override fun load(request: PlaybackRequest) {
         if (released) return
         LogUtil.d(TAG, "load: ${request.uri} (headers=${request.headers.keys})")
+        issueLoad(request, attempt = 0)
+    }
+
+    private fun issueLoad(request: PlaybackRequest, attempt: Int) {
+        loadGeneration++
+        currentRequest = request
+        currentAttempt = attempt
         mainScope.launch {
             runCatching {
+                // 惰性初始化先在 Default 线程摸热：万一启动预载尚未完成，
+                // 这里也只会挂起等待，不会把 EDT 阻塞在 lazy 锁上。
+                val player = withContext(Dispatchers.Default) { mediampPlayer }
                 // ⚠️ 必须在 setMediaData **之前**：mpv 的网络选项在"打开流"那一刻生效。
                 // 不做这一步，mpv 会用**直连**去拉流（它不继承 OkHttp 的代理），
                 // 在受限网络下表现为 mpv_error=-13（LOADING_FAILED）——页面能开、视频永远转圈。
                 mpvHandle()?.let { applyNetworkOptions(it) }
-                mediampPlayer.setMediaData(
+                player.setMediaData(
                     UriMediaData(request.uri, request.headers),
                     request.playWhenReady,
                     request.startPositionMs,
                 )
                 if (request.playWhenReady) {
-                    mediampPlayer.play()
+                    player.play()
                 }
             }.onFailure {
                 LogUtil.e(TAG, "load failed", it)
@@ -152,6 +178,28 @@ class DesktopMpvPlaybackEngine(
                     phase = PlaybackPhase.Error,
                     errorMessage = it.message,
                 )
+                maybeRetryAfterError()
+            }
+        }
+    }
+
+    /**
+     * 错误自愈：mpv 经 HTTP 代理拉流时，TLS 握手偶发被对端掐断
+     * （errSSLClosedGraceless / ffmpeg "Stream ends prematurely"，2026-09-14
+     * 三次探针两次复现；同一地址 curl 直连/代理均秒通）——纯瞬时故障。
+     * 静默重试一次；再失败才交给 UI 错误态。
+     */
+    private fun maybeRetryAfterError() {
+        val request = currentRequest ?: return
+        val generation = loadGeneration
+        val nextAttempt = currentAttempt + 1
+        if (nextAttempt > MAX_AUTO_RETRY) return
+        currentAttempt = nextAttempt
+        LogUtil.w(TAG, "播放失败（疑似瞬时网络/代理故障），${AUTO_RETRY_DELAY_MS}ms 后自动重试")
+        scope.launch {
+            delay(AUTO_RETRY_DELAY_MS)
+            if (!released && loadGeneration == generation) {
+                issueLoad(request, nextAttempt)
             }
         }
     }
@@ -347,6 +395,91 @@ class DesktopMpvPlaybackEngine(
 
         /** mediamp 里 mpv 句柄 getter 的 JVM 名字（internal 成员被 mangled）。 */
         private const val MPV_HANDLE_GETTER = "getHandle\$mediamp_mpv"
+
+        /** 播放失败自动重试上限（用户每次主动 load 重新计数）。 */
+        private const val MAX_AUTO_RETRY = 1
+
+        /** 自动重试前等待（毫秒）：给瞬时网络/代理故障一点恢复窗口。 */
+        private const val AUTO_RETRY_DELAY_MS = 1_500L
+
+        /**
+         * 启动预载：把 mediamp 的 mpv 原生运行时在**后台线程**提前消化。
+         *
+         * 这是"点开第一个视频卡冻结 2-3 分钟"的根因修复：此前解压 + dlopen 的
+         * 大成本在首次进视频页时由 EDT 承担，期间重组、数据到货的 collect、
+         * 一切输入全部停摆。预载后用户点进视频页时原生库已在进程内，引擎
+         * 惰性初始化只剩 mpv_create（几十毫秒，且在后台线程）。
+         *
+         * ## 为什么是"固定缓存目录"而不是临时目录
+         * mediamp 默认每次进程运行都 `Files.createTempDirectory("mediamp-mpv")`
+         * 解压 ~50MB dylib 进新目录并 `deleteOnExit` —— 解压是**每次运行**都逃
+         * 不掉、跟 dlopen 叠加才有的 10~15s。
+         *
+         * 这里把运行时目录固定在 `~/.lovehan1me/mpv_runtime`：
+         * - 首次：解压一次 + dlopen（后台线程，首页不受阻）；
+         * - 以后每次启动：产物已存在 → 直接 load，**省掉解压**，只剩 dlopen。
+         *   于是"构建后首次点开卡顿"不再逐次复现（除真·首次装机）。
+         *
+         * ## 实现
+         * mediamp 的 `LibraryLoader.setRuntimeLibraryDirectory(path, extractIfNeeded)`
+         * 在 Kotlin 编译层是 internal（这正是源码里用 create-temp-player 走公开 API
+         * 的原因），故用反射调用它来固定目录。反射失败只记一行日志，退回
+         * 原临时目录复用创建临时 player 的公开路径兜底 —— 功能不受损，只是
+         * 每次运行仍要重新解压。两套路径都 safe。
+         */
+        fun preloadAsync() {
+            thread(name = "mpv-native-preload", isDaemon = true) {
+                val startedAt = System.currentTimeMillis()
+                val cacheDir = mpvRuntimeDirectory()
+                val hadExisting = cacheDir.resolve(
+                    "libmpv.dylib",
+                ).isFile // 粗判：上次是否已解压过
+                runCatching {
+                    try {
+                        // 反射：固定运行时目录并触发"解压(首次)/直接 load(复用)+dlopen"。
+                        // extractIfNeeded=true：产物缺失时才解压（见 LibraryLoader.desktop.kt）。
+                        val cls = Class.forName("org.openani.mediamp.mpv.LibraryLoader")
+                        val instance = cls.getField("INSTANCE").get(null)
+                        val method = cls.getMethod(
+                            "setRuntimeLibraryDirectory",
+                            String::class.java,
+                            Boolean::class.javaPrimitiveType,
+                        )
+                        method.invoke(instance, cacheDir.absolutePath, true)
+                    } catch (reflEx: Throwable) {
+                        LogUtil.w(
+                            TAG,
+                            "mpv 反射固定目录不可用（mediamp 升级？退回临时目录路径）: ${reflEx.message}",
+                        )
+                        // 兜底：公开 API 创建临时 player，仍能达成"原生库已入进程"。
+                        val preloadScope =
+                            CoroutineScope(SupervisorJob() + Dispatchers.Default)
+                        try {
+                            MpvMediampPlayerFactory()
+                                .create(ENGINE_TOKEN, preloadScope.coroutineContext)
+                                .close()
+                        } finally {
+                            preloadScope.cancel()
+                        }
+                    }
+                }.onSuccess {
+                    LogUtil.i(
+                        TAG,
+                        "mpv natives preloaded in ${System.currentTimeMillis() - startedAt}ms"
+                            + if (hadExisting) "（复用缓存，豁免解压）" else "（首次解压）",
+                    )
+                }.onFailure {
+                    LogUtil.w(TAG, "mpv preload failed（视频页将退回懒加载）: ${it.message}")
+                }
+            }
+        }
+
+        /** mpv 原生库固定缓存目录：首次解压后跨**进程**运行复用（见 [preloadAsync]）。 */
+        private fun mpvRuntimeDirectory(): java.io.File {
+            val dir = java.io.File(System.getProperty("user.home"), ".lovehan1me/mpv_runtime")
+            if (!dir.exists()) dir.mkdirs()
+            return dir
+        }
     }
 }
 

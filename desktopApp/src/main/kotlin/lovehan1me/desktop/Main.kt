@@ -39,6 +39,7 @@ import lovehan1me.core.util.StartupTrace
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.datastore.DataStoreManager
 import lovehan1me.data.network.HanimeProxySelector
+import lovehan1me.feature.player.DesktopMpvPlaybackEngine
 import lovehan1me.feature.player.DesktopVideoPageHost
 import lovehan1me.feature.player.DesktopWindowHolder
 import lovehan1me.ui.component.content.LoadingContent
@@ -80,6 +81,10 @@ fun main() {
 
     // M5-3：尽早注册未捕获异常处理器（落盘报告 + 退出，下次启动展示崩溃页）
     installCrashHandler()
+    // mpv 原生库启动预载（视频详情页 EDT 冻结的根因修复，见
+    // DesktopMpvPlaybackEngine.preloadAsync 文档）：趁用户还在启动页/首页浏览，
+    // 后台线程把 ~49MB dylib 的解压 + dlopen 消化掉。越早越好，放在 main() 里。
+    DesktopMpvPlaybackEngine.preloadAsync()
     // M6-2：下载引擎端到端冒烟（HAN1ME_SMOKE=download，跑完即退）
     if (runSmokeIfRequested()) return
     // M7-2：CF cookie 落盘冒烟（HAN1ME_SMOKE=cookie-write / cookie-read，跑完即退）
@@ -171,8 +176,18 @@ fun main() {
                         StartupTrace.mark("first-frame")
                         StartupTrace.summary()
                     }
+                    // HAN1ME_AUTO_VIDEO=<code>：首页就绪后自动跳视频详情页（性能探针）。
+                    // 用于无人工点击采集 PlayerTrace 全链路（engine-create/fetch/parse/
+                    // load/first-frame 分段）；code 应选一个未进 http_cache 的视频，
+                    // 才能复现"构建后首次点开"。150s 后自动退出，跑法：
+                    // HAN1ME_AUTO_VIDEO=408236 ./gradlew :desktopApp:run
+                    val autoVideoCode = remember {
+                        System.getenv("HAN1ME_AUTO_VIDEO")?.takeIf { it.isNotBlank() }
+                    }
                     App(
                         onExit = ::exitApplication,
+                        autoNavigateVideoCode = autoVideoCode,
+                        autoNavigateExitAfterMs = 150_000L,
                         // M5-2：注入桌面窗口宿主，播放器全屏走 AWT setFullScreenWindow
                         platformScreens = PlatformScreens(
                             videoPageHost = remember { DesktopVideoPageHost() },

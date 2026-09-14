@@ -25,11 +25,14 @@ import lovehan1me.app.crash.CRASH_PACKAGE_FILTER
 import lovehan1me.app.crash.clearCrashReport
 import lovehan1me.app.crash.takePendingCrashReport
 import lovehan1me.app.crash.CrashScreen
+import lovehan1me.app.navigation.main.VideoRoute
+import lovehan1me.core.util.LogUtil
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.feature.home.homepage.HomePageViewModel
 import lovehan1me.ui.theme.HanimeTheme
 import lovehan1me.app.sharedViewModel
 import lovehan1me.core.util.SonnerToast
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import lovehan1me.Res
 import lovehan1me.loading
@@ -69,6 +72,14 @@ private fun StartupGateBackdrop() {
 fun App(
     onExit: () -> Unit = {},
     platformScreens: PlatformScreens = PlatformScreens(),
+    /**
+     * 性能探针（桌面 Main.kt 由 HAN1ME_AUTO_VIDEO 注入）：非空时首页就绪后
+     * 自动压入 [VideoRoute]，无人工点击即可采集 PlayerTrace 全链路。
+     * 正常运行为 null，零影响。
+     */
+    autoNavigateVideoCode: String? = null,
+    /** 探针配套：进视频页后多久退出应用（毫秒），仅 [autoNavigateVideoCode] 非空时生效。 */
+    autoNavigateExitAfterMs: Long = 150_000L,
 ) {
     HanimeTheme {
         // M5-3：上次崩溃残留的报告优先展示（桌面/iOS 崩溃后进程已退出，
@@ -134,6 +145,17 @@ fun App(
             // 此前这里**什么都不画** —— 用户看到的是"白窗 + 弹窗浮在半空"，
             // 分不清"应用在启动"还是"界面挂了"。给一层主题化底衬（不改门控语义）。
             StartupGateBackdrop()
+        }
+
+        // 性能探针：首页就绪后自动进视频详情页（见 App 参数 KDoc）。
+        autoNavigateVideoCode?.let { code ->
+            LaunchedEffect(code) {
+                delay(4000)
+                LogUtil.i("AutoVideoProbe", "进入视频页 $code")
+                backStack.add(VideoRoute(code), launchSingleTop = true)
+                delay(autoNavigateExitAfterMs)
+                onExit()
+            }
         }
 
         if (showOnboarding) {
