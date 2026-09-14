@@ -187,6 +187,7 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="try_login_here">Try logging in here</string>
     <string name="email">Email</string>
     <string name="login_failed">Login Failed</string>
+    <string name="login_requires_cf_verification">Please complete the Cloudflare verification first — a verification window has been opened. Try logging in again after passing.</string>
     <string name="login_success">Login Successful</string>
     <string name="account_or_password_wrong">Account or password may be incorrect</string>
     <string name="go_to_settings">Go to Settings</string>

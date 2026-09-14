@@ -143,10 +143,17 @@ class FormLoginLiveTest {
         println("[live] Set-Cookie 条数=${setCookies.size} 名=$names")
         assertTrue(names.any { it == "hanime1_session" }, "Set-Cookie 应含 hanime1_session")
 
-        // 会话有效性：HCookieJar 已自动接住 Set-Cookie，重进 /login 已登录应 404。
-        val again = HanimeNetwork.hanimeService.getLoginPage()
-        println("[live] 登录后重进 /login 状态=${again.status.value}")
-        assertEquals(404, again.status.value, "已登录重进 /login 应 404（与 NetworkRepo.login 内判定一致）")
+        // 会话有效性：HCookieJar 已自动接住 Set-Cookie，用与正式流同款的
+        // 正向判定（重进 /login 404 兼容 + 首页用户名）再验一次。
+        val proofLoginPage = HanimeNetwork.hanimeService.getLoginPage()
+        println("[live] 登录后重进 /login 状态=${proofLoginPage.status.value}")
+        val proofHome = HanimeNetwork.hanimeService.getHomePage(SettingsRepository.homeUrl)
+        val proofUser = runCatching { Parser.extractLoggedInUsername(proofHome.bodyAsText()) }.getOrNull()
+        println("[live] 首页用户名=${if (proofUser != null) "OK(已脱敏)" else "MISSING"}")
+        assertTrue(
+            proofLoginPage.status.value == 404 || proofUser != null,
+            "会话应有效（重进 /login 404，或首页能提到用户名）",
+        )
         println("[live] 真实登录 + 会话校验全通")
     }
 
@@ -175,6 +182,6 @@ class FormLoginLiveTest {
             .map { it.substringBefore(';').substringBefore('=') }
         println("[probe] 3) POST /login status=${post.status.value} setCookieNames=$postCookies")
         val g2 = HanimeNetwork.hanimeService.getLoginPage()
-        println("[probe] 4) 再 GET /login status=${g2.status.value}（404=已登录，200=凭据被拒，其他=站点语义变了）")
+        println("[probe] 4) 再 GET /login status=${g2.status.value}（404=旧语义已登录；现行站点成功登录后一般 302 回 /home，终态 200——200 不能直接当失败，看正式流的首页用户名判定）")
     }
 }

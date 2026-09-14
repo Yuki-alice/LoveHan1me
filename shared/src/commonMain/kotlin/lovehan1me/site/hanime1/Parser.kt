@@ -59,6 +59,22 @@ object Parser {
             ?: throw ParseException("Can't find csrf token from login page.")
     }
 
+    /**
+     * 正向登录态判定：从首页用户标识提用户名（与 [homePageVer2] 同选择器、
+     * 与 [isLoginStateExpired] 同语义），命中返回用户名，未登录返回 null。
+     *
+     * 背景：登录成功曾用"已登录重进 /login 得 404"判定，站点改版后该请求
+     * 302 回首页（终态 200），旧判定把成功登录全误杀。改从首页正向判定，
+     * 404 只在登录流内保留作兼容。
+     */
+    fun extractLoggedInUsername(body: String): String? {
+        val parseBody = Ksoup.parse(body).body()
+        val userHomePageLink = parseBody.getElementById("user-modal-trigger")?.attr("href").orEmpty()
+        val username = parseBody.selectFirst("div[id=user-modal-dp-wrapper]")
+            ?.getElementById("user-modal-name")?.text()?.trim()
+        return if (!userHomePageLink.contains("/login") && !username.isNullOrBlank()) username else null
+    }
+
     suspend fun homePageVer2(body: String): WebsiteState<HomePage> {
         val isAVSite = SettingsRepository.baseUrl == HANIME_URL[3]
         val parseBody = Ksoup.parse(body).body()

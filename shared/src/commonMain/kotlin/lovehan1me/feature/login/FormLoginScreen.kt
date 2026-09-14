@@ -40,6 +40,7 @@ import lovehan1me.login
 // E3 把 HanimeAccount.kt 从扁平包 lovehan1me 挪进 lovehan1me.data，
 // 于是 `login` 同时是「资源访问器」与「写会话的函数」，必须用别名区分。
 import lovehan1me.data.login as persistLogin
+import lovehan1me.core.domain.exception.CloudflareBlockedException
 import lovehan1me.login_failed
 import lovehan1me.login_success
 import lovehan1me.data.NetworkRepo
@@ -87,8 +88,16 @@ fun FormLoginScreen(
                 when (state) {
                     is WebsiteState.Error -> {
                         isLoggingIn = false
-                        if (state.throwable is IllegalStateException) {
+                        val throwable = state.throwable
+                        if (throwable is IllegalStateException) {
                             SonnerToast.error(getString(Res.string.account_or_password_wrong))
+                        } else if (throwable is CloudflareBlockedException) {
+                            // CF 拦截有自己的 localized 原因（IP 封禁 / 网络不一致），
+                            // 直接展示，不要吞成"登录失败"。
+                            SonnerToast.error(
+                                throwable.message?.takeIf { it.isNotBlank() }
+                                    ?: getString(Res.string.login_failed)
+                            )
                         } else {
                             SonnerToast.error(getString(Res.string.login_failed))
                         }

@@ -30,6 +30,7 @@ import lovehan1me.Res
 import lovehan1me.account_or_password_wrong
 import lovehan1me.cloudflare_ip_block_warning
 import lovehan1me.cloudflare_network_mismatch
+import lovehan1me.login_requires_cf_verification
 import lovehan1me.not_logged_in_currently
 import lovehan1me.parse_error_msg
 import lovehan1me.ssl_handshake_error
@@ -514,13 +515,16 @@ object NetworkRepo {
         emit(WebsiteState.Loading)
         // 首先获取token
         val loginPage = HanimeNetwork.hanimeService.getLoginPage()
+        // /login 匿名访问必为 200：CF 边缘按指纹/IP 拦截时这里直接 403/404
+        //（含无标记的隐身墙），此时无 token 可取——开验证窗并明说，不再误报密码错。
+        throwIfCloudflareBlocked(loginPage)
         val token = loginPage.bodyAsText().let(Parser::extractTokenFromLoginPage)
         val req = HanimeNetwork.hanimeService.login(token, email, password)
-        if (req.status.isSuccess()) {
-            // 再次获取登录页面，如果失败则返回 cookie
-            // 因为登录成功再次访问 login 返回 404，这是判断是否登录成功的方法
-            val loginPageAgain = HanimeNetwork.hanimeService.getLoginPage()
-            if (loginPageAgain.status.value == 404) {
+        LogUtil.d("login_verify", "POST /login status=${req.status.value}")
+        // 本栈不跟随重定向（Ktor 自带 HttpRedirect 未安装）：成功登录回 302→/home，
+        // 被拒回 302→/login——两者都走会话正向判定，Location 本身不作结论。
+        if (req.status.isSuccess() || req.status.value == 302) {
+            if (isSessionAuthenticated()) {
                 // Cookie 會返回 XSRF-TOKEN 和 hanime1_session，我們只需要後者
                 // 错误的，还需要 remember_web 字段！但我没找到！
                 LogUtil.d("login_headers", req.headers.entries().joinToString { "${it.key}=${it.value}" })
@@ -529,12 +533,35 @@ object NetworkRepo {
                 emit(WebsiteState.Error(IllegalStateException(getString(Res.string.account_or_password_wrong))))
             }
         } else {
+            // POST 也可能撞 CF（GET 放行不代表 POST 放行）：先识别，剩下的才算凭据问题。
+            throwIfCloudflareBlocked(req)
             // 雙重保險
             emit(WebsiteState.Error(IllegalStateException(getString(Res.string.account_or_password_wrong))))
         }
     }.catch { e ->
         emit(WebsiteState.Error(handleException(e)))
     }.flowOn(ioDispatcher)
+
+    /**
+     * 正向会话判定：POST 成功后确认服务器真的认了这个会话。
+     *
+     * 判定顺序：① 重进 /login 仍 404（旧站点语义，保留兼容）；
+     * ② 取首页提用户名（现行语义，[Parser.extractLoggedInUsername]）。
+     * 任一命中即已登录。校验请求自身撞 CF 时走 CF 通道（开验证窗），
+     * 不吞成"密码错"。
+     */
+    private suspend fun isSessionAuthenticated(): Boolean {
+        val loginPageAgain = HanimeNetwork.hanimeService.getLoginPage()
+        LogUtil.d("login_verify", "re-GET /login status=${loginPageAgain.status.value}")
+        if (loginPageAgain.status.value == 404) return true
+        throwIfCloudflareBlocked(loginPageAgain)
+        val home = HanimeNetwork.hanimeService.getHomePage(SettingsRepository.homeUrl)
+        LogUtil.d("login_verify", "GET home status=${home.status.value}")
+        if (!home.status.isSuccess()) return false
+        val username = Parser.extractLoggedInUsername(home.bodyAsText())
+        LogUtil.d("login_verify", "homepage username=${if (username != null) "present" else "missing"}")
+        return username != null
+    }
 
     /**
      * 用于单网页的情况
@@ -592,8 +619,44 @@ object NetworkRepo {
         emit(VideoLoadingState.Error(handleException(e)))
     }.flowOn(ioDispatcher)
 
-    internal suspend fun HttpResponse.throwRequestException(): Nothing {
-        // suspend 后可直接读 body（仍在 flowOn(IO) 上执行）
+    /**
+     * 登录链路专用 CF 识别：与 [throwRequestException] 同一套标记（"you have been blocked" /
+     * "Just a moment"），外加无标记 403/404 兜底；命中则抛 CF 异常（触发验证窗 +
+     * UI 显示真实原因），未命中则静默返回，调用方继续原逻辑。
+     *
+     * 背景：桌面端没有 OkHttp 层 CF 拦截器，CF 边缘按指纹/IP 拦截时登录请求直接
+     * 403/404，此前一路走到"账号或密码错误"，密码对也永远登不上。
+     *
+     * 状态码路由（仅登录流内成立）：成功登录的 POST 必 302→200，被拒的 POST
+     * 也 302→200（跟随回登录页），所以 POST 落到 403/404 只可能是边缘干扰 →
+     * 开验证窗；419（CSRF 过期）/422/5xx 走原逻辑（凭据或表单问题），不开窗。
+     */
+    internal suspend fun throwIfCloudflareBlocked(response: HttpResponse) {
+        if (response.status.isSuccess()) return
+        val body = runCatching { response.bodyAsText() }.getOrNull().orEmpty()
+        fun fireVerificationWindow() {
+            // 与 throwRequestException 同语义：通知 App() 压栈验证页。
+            runCatching {
+                CloudflareChallenges.request(response.call.request.url.toString())
+            }
+        }
+        when {
+            "you have been blocked" in body ->
+                throw IPBlockedException(getString(Res.string.cloudflare_ip_block_warning))
+
+            "Just a moment" in body -> {
+                fireVerificationWindow()
+                throw CloudflareBlockedException(getString(Res.string.cloudflare_network_mismatch))
+            }
+
+            response.status.value == 403 || response.status.value == 404 -> {
+                fireVerificationWindow()
+                throw CloudflareBlockedException(getString(Res.string.login_requires_cf_verification))
+            }
+        }
+    }
+
+    internal suspend fun HttpResponse.throwRequestException(): Nothing {        // suspend 后可直接读 body（仍在 flowOn(IO) 上执行）
         val body = runCatching { bodyAsText() }.getOrNull()
         when (val code = status.value) {
             403 -> if (!body.isNullOrBlank()) {

@@ -185,6 +185,7 @@
     <string name="try_login_here">嘗試在此登入</string>
     <string name="email">電子郵件</string>
     <string name="login_failed">登入失敗</string>
+    <string name="login_requires_cf_verification">請先完成 Cloudflare 驗證，驗證視窗已開啟，通過後重新登入即可。</string>
     <string name="login_success">登入成功</string>
     <string name="account_or_password_wrong">帳號或密碼可能錯誤</string>
     <string name="go_to_settings">前往設定</string>
