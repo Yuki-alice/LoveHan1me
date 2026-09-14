@@ -464,20 +464,23 @@ fun VideoRouteHostScreen(
         }
     }
 
-    LaunchedEffect(route.videoCode, route.localUri) {
+    // fetch 触发改同步：此前用 LaunchedEffect，经实测 effect 调度在进页后被
+    // 主线程其它工作堵住 9s 才起跑（compose-done +35ms → effect-fetch-start +9312ms）。
+    // 改用 remember 在组合阶段同步发起，绕过调度空转；重复进入同视频由
+    // introRestored 守卫，已有内存缓存则秒画后再刷新。
+    remember(route.videoCode, route.localUri) {
         PlayerTrace.mark("effect-fetch-start")
         checkedQuality = null
         pendingDownloadPrompt = null
         videoTitle = ""
         viewModel.videoCode = route.videoCode
         viewModel.fromDownload = route.videoCode == "-1" || route.localUri != null
-        // 有内存简介缓存先秒画（二次点进），再强制刷新；清标记保证下面一定拉新。
-        // 本地播放不走缓存（videoCode "-1" 会串台）。
         if (route.localUri == null && route.videoCode != "-1") {
             viewModel.restoreFromCacheIfExists(route.videoCode)
             viewModel.clearVideoIntroRestoredFlag(route.videoCode)
         }
         viewModel.getHanimeVideo(route.videoCode, route.localUri)
+        route.videoCode
     }
 
     LaunchedEffect(route.videoCode, route.localUri, playbackController, viewModel.fromDownload) {
