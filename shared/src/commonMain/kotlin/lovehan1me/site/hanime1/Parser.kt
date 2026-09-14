@@ -581,7 +581,7 @@ object Parser {
 //                }
             }
         }
-        LogUtil.d("related_anime_list", relatedAnimeList.toString())
+        LogUtil.d("related_anime_list", "size=${relatedAnimeList.size}")
 
         val hanimeResolution = HanimeResolution()
         val videoClass = parseBody.selectFirst("video[id=player]")
@@ -1189,15 +1189,22 @@ object Parser {
         funcName: String, varName: String, loginNeeded: Boolean = false,
     ): T? = also {
         if (it == null) {
-            if (loginNeeded) {
-                if (isAlreadyLogin) {
-                    LogUtil.d("Parse::$funcName", "[$varName] is null. 而且處於登入狀態，這有點不正常")
+            // 同一会话内同一字段只报一次：评论列表里同一可选字段会在每条评论上都缺，
+            // 否则一次点开就刷 100 行，像刚才的 likeUserId。
+            val key = "$funcName:$varName:${if (loginNeeded) 1 else 0}"
+            if (ParserLoggedNullKeys.add(key)) {
+                if (loginNeeded) {
+                    if (isAlreadyLogin) {
+                        LogUtil.d("Parse::$funcName", "[$varName] is null. 而且處於登入狀態，這有點不正常")
+                    }
+                } else {
+                    LogUtil.d("Parse::$funcName", "[$varName] is null. 這有點不正常")
                 }
-            } else {
-                LogUtil.d("Parse::$funcName", "[$varName] is null. 這有點不正常")
             }
         }
     }
+
+    private val ParserLoggedNullKeys = mutableSetOf<String>()
 
     // P4：org.json 移除后的等价工具
     private fun String.toJsonObject(): JsonObject = Json.parseToJsonElement(this).jsonObject

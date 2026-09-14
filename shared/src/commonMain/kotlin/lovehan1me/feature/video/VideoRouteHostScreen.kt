@@ -136,9 +136,13 @@ fun VideoRouteHostScreen(
     val shareText = rememberShareText()
     val viewModel: VideoViewModel = sharedViewModel(::VideoViewModel)
     val commentViewModel: CommentViewModel = sharedViewModel(::CommentViewModel)
+    // A-1：会话起点 = 进详情页。用 remember 在组合阶段就 begin，确保后续的
+    // 引擎同步构造与异步 fetch 的 marks 都落在同一会话内（此前 begin 在
+    // LaunchedEffect，发生在组合之后，组合内 mark 全被 clear 丢弃）。
+    val sessionKey = remember(route.videoCode, route.localUri) { "video:" + route.videoCode }
+    remember(sessionKey) { PlayerTrace.begin(sessionKey); sessionKey }
     val kernel = remember { PlayerKernel.fromPreference(SettingsRepository.switchPlayerKernel) }
     val playbackEngine: PlaybackEngine = remember(route.videoCode, route.localUri, kernel) {
-        // A-1：引擎同步构造（含 Exo build / mpv 选项与原生加载）在组合线程，计时看它堵不堵首帧。
         PlayerTrace.mark("engine-create-start")
         createPlaybackEngine(kernel = kernel).also {
             PlayerTrace.mark("engine-create-end")
@@ -462,9 +466,6 @@ fun VideoRouteHostScreen(
         checkedQuality = null
         pendingDownloadPrompt = null
         videoTitle = ""
-        // A-1：会话起点前移到进页（此前从标题到货起算，watch 请求等待全程盲区）。
-        // key 用 videoCode：换片即换 key 照常重置，与原来按标题重置等价。
-        PlayerTrace.begin("video:" + route.videoCode)
         viewModel.videoCode = route.videoCode
         viewModel.fromDownload = route.videoCode == "-1" || route.localUri != null
         // 有内存简介缓存先秒画（二次点进），再强制刷新；清标记保证下面一定拉新。
