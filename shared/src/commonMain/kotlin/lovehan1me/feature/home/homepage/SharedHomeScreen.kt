@@ -204,6 +204,8 @@ fun SharedHomeScreen(
             onSearchClick = { onEvent(HomeUiEvent.OpenSearchPage()) },
             onNewAnimeListClick = { onEvent(HomeUiEvent.NavigateToPreview) },
             onAvatarClick = { onEvent(HomeUiEvent.OpenMine) },
+            avatarUrl = pageState.dataOrNull?.page?.avatarUrl,
+            isLoggedIn = settings.isAlreadyLogin,
             modifier = Modifier.zIndex(1f),
         )
     }

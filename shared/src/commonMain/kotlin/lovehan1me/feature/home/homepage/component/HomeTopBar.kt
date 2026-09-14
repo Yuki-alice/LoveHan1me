@@ -16,23 +16,23 @@ import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import lovehan1me.Res
-import lovehan1me.home_search_hint
 import lovehan1me.ic_calendar_month
 import lovehan1me.ic_person
 import lovehan1me.ic_search
 import lovehan1me.my_account
 import lovehan1me.new_anime_list
 import lovehan1me.ui.adaptive.rememberPageHorizontalMargin
+import lovehan1me.ui.component.HanimeAsyncImage
 import lovehan1me.ui.theme.HanimeDefaults
 
 /** 顶栏内容区高度（不含状态栏 inset）。 */
@@ -65,6 +65,8 @@ fun HomeTopBar(
     onSearchClick: () -> Unit,
     onNewAnimeListClick: () -> Unit,
     onAvatarClick: () -> Unit,
+    avatarUrl: String?,
+    isLoggedIn: Boolean,
     modifier: Modifier = Modifier,
 ) {
     val margin = rememberPageHorizontalMargin()
@@ -80,7 +82,11 @@ fun HomeTopBar(
         ) {
             SearchPill(onClick = onSearchClick, modifier = Modifier.weight(1f))
             NewAnimeListPill(onClick = onNewAnimeListClick)
-            AccountAvatar(onClick = onAvatarClick)
+            AccountAvatar(
+                avatarUrl = avatarUrl,
+                isLoggedIn = isLoggedIn,
+                onClick = onAvatarClick,
+            )
         }
     }
 }
@@ -90,6 +96,7 @@ private fun SearchPill(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    // 纯入口：只留搜索图标，不放提示文案（情感化文案等资产齐了再系统性设计）。
     Row(
         modifier = modifier
             .height(PillHeight)
@@ -106,56 +113,65 @@ private fun SearchPill(
             modifier = Modifier.size(18.dp),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
         )
-        Text(
-            text = stringResource(Res.string.home_search_hint),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-        )
     }
 }
 
 @Composable
 private fun NewAnimeListPill(onClick: () -> Unit) {
+    // 纯图标按钮：文字去掉，描述走无障碍标签。
+    val label = stringResource(Res.string.new_anime_list)
     Row(
         modifier = Modifier
-            .height(PillHeight)
+            .size(PillHeight)
             .clip(CircleShape)
             // tertiary 锚点：新番入口是点缀动作，與搜索框（中性容器）拉开层级。
             .background(MaterialTheme.colorScheme.tertiaryContainer)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(horizontal = HanimeDefaults.Spacing.large),
+            .clickable(role = Role.Button, onClick = onClick),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.small),
+        horizontalArrangement = Arrangement.Center,
     ) {
         Icon(
             painter = painterResource(Res.drawable.ic_calendar_month),
-            contentDescription = null,
+            contentDescription = label,
             modifier = Modifier.size(18.dp),
             tint = MaterialTheme.colorScheme.onTertiaryContainer,
-        )
-        Text(
-            text = stringResource(Res.string.new_anime_list),
-            style = MaterialTheme.typography.labelLarge,
-            color = MaterialTheme.colorScheme.onTertiaryContainer,
-            maxLines = 1,
         )
     }
 }
 
 @Composable
-private fun AccountAvatar(onClick: () -> Unit) {
+private fun AccountAvatar(
+    avatarUrl: String?,
+    isLoggedIn: Boolean,
+    onClick: () -> Unit,
+) {
     // 无障碍标签不能为 null：iOS XCUITest 与屏幕阅读器都靠它定位该按钮。
     val label = stringResource(Res.string.my_account)
-    Icon(
-        painter = painterResource(Res.drawable.ic_person),
-        contentDescription = label,
-        modifier = Modifier
-            .size(AvatarSize)
-            .clip(CircleShape)
-            .background(MaterialTheme.colorScheme.tertiaryContainer)
-            .clickable(role = Role.Button, onClick = onClick)
-            .padding(AvatarSize / 4),
-        tint = MaterialTheme.colorScheme.onTertiaryContainer,
-    )
+    val personPainter = painterResource(Res.drawable.ic_person)
+    if (isLoggedIn && avatarUrl != null) {
+        HanimeAsyncImage(
+            model = avatarUrl,
+            contentDescription = label,
+            modifier = Modifier
+                .size(AvatarSize)
+                .clip(CircleShape)
+                .clickable(role = Role.Button, onClick = onClick),
+            contentScale = ContentScale.Crop,
+            placeholder = personPainter,
+            error = personPainter,
+            fallback = personPainter,
+        )
+    } else {
+        Icon(
+            painter = personPainter,
+            contentDescription = label,
+            modifier = Modifier
+                .size(AvatarSize)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.tertiaryContainer)
+                .clickable(role = Role.Button, onClick = onClick)
+                .padding(AvatarSize / 4),
+            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+        )
+    }
 }
