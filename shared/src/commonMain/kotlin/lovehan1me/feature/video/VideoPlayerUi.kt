@@ -39,12 +39,15 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Card
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.ElevatedButton
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Slider
@@ -134,6 +137,7 @@ import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -246,7 +250,6 @@ fun VideoPlayerUi(
     var isLongPressSpeedActive by remember { mutableStateOf(false) }
     var suppressTapUntilMs by remember { mutableLongStateOf(0L) }
     var activeSidePanel by remember { mutableStateOf<PlayerSidePanel?>(null) }
-    var displayedSidePanel by remember { mutableStateOf<PlayerSidePanel?>(null) }
     var showUnlockButton by remember { mutableStateOf(false) }
     var unlockButtonTimeoutToken by remember { mutableIntStateOf(0) }
     val haptic = rememberHapticFeedback()
@@ -319,6 +322,31 @@ fun VideoPlayerUi(
     val latestOnLongPressStart by rememberUpdatedState(onLongPressStart)
     val latestOnLongPressEnd by rememberUpdatedState(onLongPressEnd)
 
+    // 静音前的音量（M 键来回切时用它恢复，避免"取消静音直接拉满"）
+    var volumeBeforeMute by remember { mutableFloatStateOf(1f) }
+    // 键盘快捷键：动作集用「最新值」语义组装（修饰符只装一次，回调会变）
+    val keyActions = rememberPlayerKeyActions(
+        onTogglePlay = onPlayClick,
+        onSeekBy = onSeekBy,
+        onVolumeUp = { fine ->
+            onVolumeChange((latestVolume + if (fine) 0.01f else 0.05f).coerceIn(0f, 1f))
+        },
+        onVolumeDown = { fine ->
+            onVolumeChange((latestVolume - if (fine) 0.01f else 0.05f).coerceIn(0f, 1f))
+        },
+        onToggleMute = {
+            if (latestVolume > 0f) {
+                volumeBeforeMute = latestVolume
+                onVolumeChange(0f)
+            } else {
+                onVolumeChange(volumeBeforeMute)
+            }
+        },
+        onToggleFullscreen = onFullscreenClick,
+        onSpeedSelected = onPlaybackSpeedSelected,
+    )
+
+
     // ── M5 埋点：手势 / 侧栏面板 ──────────────────────────────────
     // 这两个都是本 composable 的**局部 UI 状态**（不需要上提到 ViewModel），
     // 按"谁拥有状态谁负责副作用"，埋点就放在这里，而不是在屏幕边界镜像一份状态。
@@ -335,7 +363,6 @@ fun VideoPlayerUi(
 
     LaunchedEffect(activeSidePanel) {
         if (activeSidePanel != null) {
-            displayedSidePanel = activeSidePanel
             showControlsState = true
         }
     }
@@ -363,6 +390,8 @@ fun VideoPlayerUi(
             .background(HanimeDefaults.Overlay.backdrop)
             // 悬停即"用户在场"：配合上面的自动隐藏倒计时使用
             .hoverable(hoverInteractionSource)
+            // 键盘快捷键（桌面端；触摸端 actual 为恒等，见 PlayerKeyboardShortcuts）
+            .playerKeyboardShortcuts(keyActions)
             .pointerInput(isLocked) {
                 if (isLocked) {
                     detectTapGestures(onTap = { unlockButtonTimeoutToken++ })
@@ -1354,74 +1383,48 @@ fun VideoPlayerUi(
             }
         }
 
-        AnimatedVisibility(
-            visible = activeSidePanel != null,
-            enter = fadeIn(),
-            exit = fadeOut(),
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                Box(
-                    modifier = Modifier
-                        .matchParentSize()
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                        ) {
-                            activeSidePanel = null
-                        }
-                )
+        /**
+         * 侧栏面板 → **M3 官方形态**（ModalBottomSheet）。
+         *
+         * 之前是自绘右侧滑入面板 + 手搓遮罩，缺三样东西：
+         *   ① 返回键关闭（含预测性返回）② 官方 scrim ③ 无障碍语义 —— ModalBottomSheet 三样都自带。
+         * M3 没有官方的 side sheet 组件（那只是规范，无实现），所以"官方形态"落在 bottom sheet。
+         * 保留：面板内容（倍速/清晰度/超分）、单选高亮、选项来源与回调、选完即关。
+         */
+        when (activeSidePanel) {
+            PlayerSidePanel.Speed -> PlayerSidePanelBottomSheet(
+                options = PlayerDefaults.speeds.map {
+                    stringResource(Res.string.player_speed_format, it)
+                },
+                selectedIndex = speedSelectedIndex,
+                onDismiss = { activeSidePanel = null },
+                onSelected = { index ->
+                    activeSidePanel = null
+                    onPlaybackSpeedSelected(PlayerDefaults.speeds[index])
+                },
+            )
 
-            }
-        }
+            PlayerSidePanel.SuperResolution -> PlayerSidePanelBottomSheet(
+                options = superResolutionOptions,
+                selectedIndex = selectedSuperResolutionIndex,
+                onDismiss = { activeSidePanel = null },
+                onSelected = { index ->
+                    activeSidePanel = null
+                    onSuperResolutionSelected(index)
+                },
+            )
 
-        AnimatedVisibility(
-            visible = activeSidePanel != null,
-            enter = slideInHorizontally(initialOffsetX = { it }),
-            exit = slideOutHorizontally(targetOffsetX = { it }),
-        ) {
-            Box(modifier = Modifier.fillMaxSize()) {
-                when (displayedSidePanel) {
-                    PlayerSidePanel.Speed -> {
-                        PlayerSidePanelSheet(
-                            options = PlayerDefaults.speeds.map {
-                                stringResource(Res.string.player_speed_format, it)
-                            },
-                            selectedIndex = speedSelectedIndex,
-                            panelWidth = HanimeDefaults.PlayerSizes.panelWidth,
-                            onSelected = { index ->
-                                activeSidePanel = null
-                                onPlaybackSpeedSelected(PlayerDefaults.speeds[index])
-                            },
-                        )
-                    }
+            PlayerSidePanel.Quality -> PlayerSidePanelBottomSheet(
+                options = qualities.map(PlaybackQuality::label),
+                selectedIndex = qualitySelectedIndex.takeIf { it >= 0 },
+                onDismiss = { activeSidePanel = null },
+                onSelected = { index ->
+                    activeSidePanel = null
+                    onQualitySelected(index)
+                },
+            )
 
-                    PlayerSidePanel.SuperResolution -> {
-                        PlayerSidePanelSheet(
-                            options = superResolutionOptions,
-                            selectedIndex = selectedSuperResolutionIndex,
-                            panelWidth = HanimeDefaults.PlayerSizes.panelWidth,
-                            onSelected = { index ->
-                                activeSidePanel = null
-                                onSuperResolutionSelected(index)
-                            },
-                        )
-                    }
-
-                    PlayerSidePanel.Quality -> {
-                        PlayerSidePanelSheet(
-                            options = qualities.map(PlaybackQuality::label),
-                            selectedIndex = qualitySelectedIndex.takeIf { it >= 0 },
-                            panelWidth = HanimeDefaults.PlayerSizes.panelWidth,
-                            onSelected = { index ->
-                                activeSidePanel = null
-                                onQualitySelected(index)
-                            },
-                        )
-                    }
-
-                    null -> Unit
-                }
-            }
+            null -> Unit
         }
     }
 }
@@ -1555,37 +1558,43 @@ private enum class PlayerSidePanel {
     Quality,
 }
 
+/**
+ * 面板选项列表：原自绘侧栏的**内容**原样搬进 M3 ModalBottomSheet。
+ *
+ * 单选高亮、选项来源与回调不变；行高补到 M3 的 48dp 触控目标；
+ * 关闭统一「先播收起动画，动画结束后再摘状态」，避免面板瞬移消失。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun BoxScope.PlayerSidePanelSheet(
+private fun PlayerSidePanelBottomSheet(
     options: List<String>,
     selectedIndex: Int?,
+    onDismiss: () -> Unit,
     onSelected: (Int) -> Unit,
-    panelWidth: Dp = HanimeDefaults.PlayerSizes.panelWidth,
 ) {
-    Box(
-        modifier = Modifier
-            .align(Alignment.CenterEnd)
-            .width(panelWidth)
-            .fillMaxHeight()
+    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
+    val scope = rememberCoroutineScope()
+
+    ModalBottomSheet(
+        // 返回键（含预测性返回）/ 点 scrim / 下滑手势都走这里 —— M3 自带 BackHandler
+        onDismissRequest = onDismiss,
+        sheetState = sheetState,
     ) {
-        Box(
-            modifier = Modifier
-                .matchParentSize()
-                // M3：见 posterBlur()（Android S+ RenderEffect，其他平台恒等）。
-                .posterBlur()
-                .background(HanimeDefaults.Overlay.panelDim)
-        )
         LazyColumn(
             modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 6.dp, vertical = 6.dp),
+                .fillMaxWidth()
+                .padding(horizontal = HanimeDefaults.Spacing.small),
         ) {
             itemsIndexed(options) { index, option ->
                 val isSelected = index == selectedIndex
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onSelected(index) }
+                        .heightIn(min = HanimeDefaults.PlayerSizes.minTouchTarget)
+                        .clickable {
+                            // 选中即关：先播收起动画，动画结束再回调
+                            scope.launch { sheetState.hide() }.invokeOnCompletion { onSelected(index) }
+                        }
                         .background(
                             if (isSelected) {
                                 MaterialTheme.colorScheme.secondaryContainer
