@@ -13,6 +13,8 @@
 | 2026-09-13 | M3-b/c 以"三端各录一段可播放 GIF"为**闭环硬门槛** | **门禁放宽**：iOS 编译/真机验证列为后续项，不阻塞闭环 | 当前 macOS 设备不可用；iOS 代码已实现并标注了 5 处待验符号形态，风险可控（失败会返回 null 并被如实报"抓帧失败"，不会产出错帧） |
 | 2026-09-13 | 文件头 28 处"`@project` 批量改 LoveHan1me"（验收 grep 0 命中） | **追加修正归属**：`@project` 全仓统一为 LoveHan1me（51 处），并把裸 `@author Yenaly Liew` 标为「上游原作者，见 NOTICE」 | 原批量替换只改了 `@project` 没改 `@author` → 形成"文件属于 LoveHan1me 却署名原作者"的自相矛盾；且 `Hanime1`/`Han1meViewer` 两旧名残留，三个项目名并存 |
 | 2026-09-13 | M3-c 能力矩阵写"Android FileProvider 分享 / iOS `UIActivityViewController`" | **继承 M3-b 已落地的 `MediaExport` 取舍**：Android 走 **MediaStore**（省掉 FileProvider 覆盖目录与 `file_paths.xml`）、桌面"落盘 + 打开所在文件夹"、iOS 仍降级为"存 `Documents` + 提示位置"（`SavedOnly`，无分享面板） | 截图与 GIF 是**同一个"保存并分享"手势**（M3-b 已合并为一个平台动作），共用一处实现才不会两边漂移；iOS 的 `UIActivityViewController` 接入属独立议题（既有先例 `rememberShareText` 同样是降级实现），与"iOS 门禁放宽"同批处置 |
+| 2026-09-14 | P2-1 播放器叠层常量**无集中定义**（实测 41 处 `Color.White/Black`、25 处裸 `alpha`、76 处字面 `dp`；alpha 按千行密度约是 animeko 播放器模块的 18 倍） | **新增 `HanimeDefaults.Overlay`（scrim 渐变/玻璃底/描边）、`OverlayAlpha`（语义 alpha 阶梯）、`PlayerSizes`（播放器结构尺寸）**；播放器侧收敛为 **41→0 / 25→0 / 76→28**（剩余为非阶梯间距、1dp 描边与 Media3 规格值如 64dp 底边距） | 只**改名与位置**、值逐一对应 ⇒ 视觉零变化且可对账回退；通用间距按"不新建重复体系"落既有 `Spacing`；M3 控件档位（XS32/S40/M56）另建 `Sizes`，26/42/72 这类非档位值不强行套档 |
+| 2026-09-14 | 底栏 scrim 用**渐变**（`0.75→透明` / `0.82→透明` 两段黑） | **保持渐变**，不改 Media3 的平铺 69% 黑 | 本项目底栏是"模糊玻璃 + 1dp 白描边"，平铺黑会与模糊层叠成一块死黑、且与锁钮 45% 黑底撞色；Media3 用平铺是因为它没有模糊层。做成 token 后若要切平铺只改 `OverlayAlpha` 一处 |
 
 ---
 

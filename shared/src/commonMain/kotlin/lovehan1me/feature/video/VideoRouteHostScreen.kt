@@ -8,6 +8,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -598,6 +599,9 @@ fun VideoRouteHostScreen(
         updatePipAction()
     }
 
+    // 画面缩放（双指 / 桌面 Ctrl+滚轮）：状态归屏幕边界持有，UI 只拿值与回调
+    var videoScale by remember { mutableFloatStateOf(1f) }
+
     LaunchedEffect(showResumeButton) {
         if (showResumeButton) {
             kotlinx.coroutines.delay(5_000L.milliseconds)
@@ -621,6 +625,36 @@ fun VideoRouteHostScreen(
         if (hostUiState.playerHeightDp != resolvedPlayerHeightDp) {
             viewModel.setPlayerHeightDp(resolvedPlayerHeightDp)
         }
+    }
+
+    // ── M5 埋点：一次播放会话（换片才重置，同片重组不重置）──────────────
+    LaunchedEffect(videoTitle) { PlayerTrace.begin(videoTitle) }
+    DisposableEffect(videoTitle) { onDispose { PlayerTrace.summary() } }
+
+    // 首帧：量"起播 → 出画"，三端可比
+    val hasRenderedFirstFrame = playbackState.engine.hasRenderedFirstFrame
+    LaunchedEffect(hasRenderedFirstFrame) {
+        if (hasRenderedFirstFrame) PlayerTrace.mark("first-frame")
+    }
+
+    // 缓冲起止：提前成 val —— 下面 showLoading 直接复用，避免两处表达式漂移
+    val showLoading =
+        (videoState is VideoLoadingState.Loading ||
+                playbackState.engine.phase == PlaybackPhase.Preparing ||
+                // 卡顿看门狗（M5-3）：位置停滞时也转圈 —— 引擎侧的 isBuffering
+                // 三端语义不一致，只有 Exo 是真信号，mpv/iOS 中途卡住根本不置位。
+                playbackState.isStalled) &&
+                // 切画质期间不显示全屏转圈：画面保留上一帧才像"无缝换档"，
+                // 转圈+海报反而是"重新打开了一遍"的观感。
+                !playbackState.isSwitchingQuality
+    LaunchedEffect(showLoading) {
+        if (showLoading) PlayerTrace.spanStart("buffering") else PlayerTrace.spanEnd("buffering")
+    }
+
+    // 错误：引擎/网络给的真实原因（与重试卡上屏的同源）
+    val engineError = playbackState.engine.errorMessage
+    LaunchedEffect(engineError) {
+        if (!engineError.isNullOrBlank()) PlayerTrace.event("error", engineError)
     }
 
     VideoShellContent(
@@ -647,23 +681,24 @@ fun VideoRouteHostScreen(
         isPlaybackEnded = playbackState.engine.phase == PlaybackPhase.Ended,
         isLocked = isPlayerLocked,
         showPoster = !playbackState.engine.hasRenderedFirstFrame,
-        showLoading =
-            (videoState is VideoLoadingState.Loading ||
-                    playbackState.engine.phase == PlaybackPhase.Preparing ||
-                    // 卡顿看门狗（M5-3）：位置停滞时也转圈 —— 引擎侧的 isBuffering
-                    // 三端语义不一致，只有 Exo 是真信号，mpv/iOS 中途卡住根本不置位。
-                    playbackState.isStalled) &&
-                    // 切画质期间不显示全屏转圈：画面保留上一帧才像"无缝换档"，
-                    // 转圈+海报反而是"重新打开了一遍"的观感。
-                    !playbackState.isSwitchingQuality,
+        showLoading = showLoading,
         showRetry = playbackState.engine.phase == PlaybackPhase.Error,
         errorMessage = playbackState.engine.errorMessage,
         brightnessGestureEnabled = platformHost.supportsBrightness(),
-        onSeekBy = playbackController::seekBy,
+        onSeekBy = { deltaMs ->
+            playbackController.seekBy(deltaMs)
+            PlayerTrace.event("seek-by", "delta=${deltaMs}ms")
+        },
+        scale = videoScale,
+        onScaleChange = { videoScale = it },
         durationMs = playbackState.engine.durationMs,
         fullscreenEnabled = platformHost.supportsFullscreen(),
         showResumeButton = showResumeButton,
-        onPlayClick = playbackController::togglePlayPause,
+        onPlayClick = {
+            playbackController.togglePlayPause()
+            // isPlaying 是点击**前**的值，所以这里记的是"点了要变成的状态"
+            PlayerTrace.event("play-click", if (playbackState.engine.isPlaying) "暂停" else "播放")
+        },
         onReplay = playbackController::replay,
         onBackClick = onBack,
         onHomeClick = onNavigateHome,
@@ -673,9 +708,14 @@ fun VideoRouteHostScreen(
         onLockClick = { isPlayerLocked = !isPlayerLocked },
         onProgressChange = { value ->
             val duration = playbackState.engine.durationMs
-            if (duration > 0L) playbackController.seekTo((duration * value).toLong())
+            if (duration > 0L) {
+                playbackController.seekTo((duration * value).toLong())
+                // 埋点：播放器内部已按 120ms 节流，这里不会每帧刷屏
+                PlayerTrace.event("seek", "-> ${(value * 100).toInt()}%")
+            }
         },
         onRetry = {
+            PlayerTrace.event("retry")
             video?.let { info ->
                 val qualities =
                     info.videoUrls.map { (label, link) ->

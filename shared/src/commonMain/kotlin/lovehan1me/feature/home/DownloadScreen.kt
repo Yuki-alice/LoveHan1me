@@ -76,6 +76,7 @@ import lovehan1me.feature.home.download.toDisplayGroups
 import lovehan1me.feature.home.download.toFlatNodeList
 import lovehan1me.feature.home.download.toNodeList
 import lovehan1me.ui.component.rememberHapticFeedback
+import lovehan1me.ui.theme.HanimeDefaults
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -362,7 +363,7 @@ private fun DownloadFabMenu(
                             hapticFeedback()
                             expanded = !expanded
                         },
-                        modifier = Modifier.size(56.dp),
+                        modifier = Modifier.size(HanimeDefaults.Sizes.controlM),
                     ) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_close),

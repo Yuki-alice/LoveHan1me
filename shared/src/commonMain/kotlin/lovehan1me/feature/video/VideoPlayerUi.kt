@@ -9,9 +9,13 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -62,11 +66,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextOverflow
@@ -168,6 +176,12 @@ fun VideoPlayerUi(
     onProgressChange: (Float) -> Unit = {},
     /** M5-3：相对跳转（双击左右快退/快进）。传毫秒增量。 */
     onSeekBy: (Long) -> Unit = {},
+    /**
+     * 画面缩放倍率（1f = 原始尺寸）。双指缩放 / 桌面 Ctrl+滚轮 调，双击归零。
+     * 状态由屏幕边界持有，这里只拿值与回调。
+     */
+    scale: Float = 1f,
+    onScaleChange: (Float) -> Unit = {},
     /** 视频总时长（毫秒）。双击跳转的 HUD 要用它把 ±秒 换算成百分比。 */
     durationMs: Long = 0L,
     onResumeClick: () -> Unit = onPlayClick,
@@ -227,6 +241,8 @@ fun VideoPlayerUi(
     var dragStartedOnLeft by remember { mutableStateOf(true) }
     var progressDirection by remember { mutableStateOf<ProgressGestureDirection?>(null) }
     var isProgressGestureActive by remember { mutableStateOf(false) }
+    /** 双指缩放进行中：此时冻结亮度/音量/进度三种手势，避免"一根手指拖动 + 缩放"抢事件。 */
+    var isScaleGestureActive by remember { mutableStateOf(false) }
     var isLongPressSpeedActive by remember { mutableStateOf(false) }
     var suppressTapUntilMs by remember { mutableLongStateOf(0L) }
     var activeSidePanel by remember { mutableStateOf<PlayerSidePanel?>(null) }
@@ -245,9 +261,35 @@ fun VideoPlayerUi(
         }
     }
 
-    LaunchedEffect(showControlsState, isPlaying, activeSidePanel) {
-        if (showControlsState && isPlaying && activeSidePanel == null) {
-            delay(3000.milliseconds)
+    // 鼠标/触控笔悬停：**只有指针设备才会产生悬停交互**，
+    // Android / iOS 的触摸输入不会触发 Enter/Exit，因此这里不需要按平台分支 ——
+    // 触摸平台上它恒为 false，"不加 hover 逻辑"是自然结果而不是要特判。
+    val hoverInteractionSource = remember { MutableInteractionSource() }
+    val isHovered by hoverInteractionSource.collectIsHoveredAsState()
+
+    // 控件自动隐藏：**5 秒**倒计时（3s 太急，音量/亮度条还没看清就被收走）。
+    // 三种"先别收"的情形：
+    //   ① 手势进行中（含横向拖动 seek）—— 手势结束后**重新计时**，而不是立刻消失；
+    //   ② 指针悬停在播放器上 —— 用户显然还在操作；
+    //   ③ 侧栏面板展开中 —— 面板要用控件。
+    // 键里带上这些状态：它们一变，倒计时就重启，天然做到"手势结束不自动消失"。
+    LaunchedEffect(
+        showControlsState,
+        isPlaying,
+        activeSidePanel,
+        gestureType,
+        isProgressGestureActive,
+        isHovered,
+    ) {
+        if (
+            showControlsState &&
+            isPlaying &&
+            activeSidePanel == null &&
+            gestureType == null &&
+            !isProgressGestureActive &&
+            !isHovered
+        ) {
+            delay(CONTROLS_AUTO_HIDE_MS.milliseconds)
             showControlsState = false
         }
     }
@@ -266,6 +308,8 @@ fun VideoPlayerUi(
     val latestBrightness by rememberUpdatedState(currentBrightness)
     val latestBrightnessGestureEnabled by rememberUpdatedState(brightnessGestureEnabled)
     val latestOnSeekBy by rememberUpdatedState(onSeekBy)
+    val latestScale by rememberUpdatedState(scale)
+    val latestOnScaleChange by rememberUpdatedState(onScaleChange)
     val latestDurationMs by rememberUpdatedState(durationMs)
     val latestProgressSensitivity by rememberUpdatedState(progressGestureSensitivity)
     val latestOnProgressGesture by rememberUpdatedState(onProgressGesture)
@@ -274,6 +318,16 @@ fun VideoPlayerUi(
     val latestIsPlaying by rememberUpdatedState(isPlaying)
     val latestOnLongPressStart by rememberUpdatedState(onLongPressStart)
     val latestOnLongPressEnd by rememberUpdatedState(onLongPressEnd)
+
+    // ── M5 埋点：手势 / 侧栏面板 ──────────────────────────────────
+    // 这两个都是本 composable 的**局部 UI 状态**（不需要上提到 ViewModel），
+    // 按"谁拥有状态谁负责副作用"，埋点就放在这里，而不是在屏幕边界镜像一份状态。
+    LaunchedEffect(gestureType) {
+        gestureType?.let { PlayerTrace.event("gesture", it.name) }
+    }
+    LaunchedEffect(activeSidePanel) {
+        activeSidePanel?.let { PlayerTrace.event("panel", it.name) }
+    }
 
     LaunchedEffect(isPlaying) {
         if (!isPlaying) isLongPressSpeedActive = false
@@ -306,7 +360,9 @@ fun VideoPlayerUi(
 
     Box(
         modifier = modifier
-            .background(Color.Black)
+            .background(HanimeDefaults.Overlay.backdrop)
+            // 悬停即"用户在场"：配合上面的自动隐藏倒计时使用
+            .hoverable(hoverInteractionSource)
             .pointerInput(isLocked) {
                 if (isLocked) {
                     detectTapGestures(onTap = { unlockButtonTimeoutToken++ })
@@ -350,6 +406,11 @@ fun VideoPlayerUi(
                         // 两家成熟播放器都是这个语义（本项目此前双击只能切播放/暂停，
                         // 而快进快退是视频播放器最常用的手势）。
                         onDoubleTap = { offset ->
+                            // 缩放非 1 时，双击 = 归零（与快进/快退互斥：两者抢同一个手势，
+                            // 归零优先 —— 画面看不清时，用户第一反应就是双击复位）
+                            if (latestScale != 1f) {
+                                latestOnScaleChange(1f)
+                            } else {
                             val stepMs = DOUBLE_TAP_SEEK_STEP_MS
                             val third = size.width / 3f
                             val direction = when {
@@ -372,6 +433,7 @@ fun VideoPlayerUi(
                                     }
                                     doubleTapSeekFeedback = direction to target
                                 }
+                            }
                             }
                         },
                     )
@@ -406,7 +468,9 @@ fun VideoPlayerUi(
                 key(playbackEngine, safeAspectRatio) {
                     Box(
                         modifier = videoModifier
-                            .background(Color.Black)
+                            .background(HanimeDefaults.Overlay.backdrop)
+                            // 画面缩放（双指 / Ctrl+滚轮）；控件层是兄弟节点，不跟着放大
+                            .scale(scale)
                     ) {
                         // P5-1：Surface 渲染走 shared 插槽（androidMain 内为原 SurfaceView 代码，
                         // 含 attach/detach 回调 + Mpv updateSurfaceSize；其余 1900 行零改动）
@@ -420,7 +484,7 @@ fun VideoPlayerUi(
                 }
             } else {
                 Box(
-                    modifier = videoModifier.background(Color.Black)
+                    modifier = videoModifier.background(HanimeDefaults.Overlay.backdrop)
                 )
             }
         }
@@ -435,6 +499,12 @@ fun VideoPlayerUi(
                         var longPressOwnsDrag = false
                         detectDragGestures(
                             onDragStart = { offset ->
+                                // 双指缩放期间：亮度/音量/进度**全部冻结**（缩放优先，避免抢事件）
+                                if (isScaleGestureActive) {
+                                    gestureType = null
+                                    isProgressGestureActive = false
+                                    return@detectDragGestures
+                                }
                                 longPressOwnsDrag = isLongPressSpeedActive
                                 if (longPressOwnsDrag) {
                                     gestureType = null
@@ -474,6 +544,7 @@ fun VideoPlayerUi(
                                 isProgressGestureActive = false
                             },
                             onDrag = { _, dragAmount ->
+                                if (isScaleGestureActive) return@detectDragGestures
                                 if (longPressOwnsDrag || isLongPressSpeedActive) {
                                     return@detectDragGestures
                                 }
@@ -529,6 +600,46 @@ fun VideoPlayerUi(
                             },
                         )
                     }
+                }
+                // ── 双指缩放：**仅缩放**，不做平移 ──────────────────────────
+                // 与亮度/音量/进度同一套"跟随手指"语义：只按两指间距的**比值**增量缩放，
+                // 不记起点、不吸附 —— 跟到哪算到哪。缩放期间三种拖动手势被冻结（见
+                // onDragStart/onDrag 的 isScaleGestureActive 短路），长按倍速期间也不启动。
+                .pointerInput(isLocked) {
+                    if (isLocked) return@pointerInput
+                    awaitEachGesture {
+                        awaitFirstDown(requireUnconsumed = false)
+                        var previousSpan = 0f
+                        do {
+                            val event = awaitPointerEvent()
+                            val pressed = event.changes.filter { it.pressed }
+                            if (pressed.size >= 2 && !isLongPressSpeedActive) {
+                                val dx = pressed[0].position.x - pressed[1].position.x
+                                val dy = pressed[0].position.y - pressed[1].position.y
+                                val span = kotlin.math.sqrt(dx * dx + dy * dy)
+                                if (previousSpan > 0f && span > 0f) {
+                                    isScaleGestureActive = true
+                                    latestOnScaleChange(
+                                        (latestScale * (span / previousSpan))
+                                            .coerceIn(VIDEO_SCALE_MIN, VIDEO_SCALE_MAX)
+                                    )
+                                }
+                                previousSpan = span
+                            } else {
+                                previousSpan = 0f
+                            }
+                        } while (event.changes.any { it.pressed })
+                        previousSpan = 0f
+                        if (isScaleGestureActive) {
+                            isScaleGestureActive = false
+                            // 双指抬手不能被单击当成"显示/隐藏控件"
+                            suppressTapUntilMs = nowMs() + 500L
+                        }
+                    }
+                }
+                // 桌面"Ctrl+滚轮"模拟双指缩放（触摸端 actual 为恒等，见 PlayerWheelZoom）
+                .playerWheelZoom(latestScale) { next ->
+                    latestOnScaleChange(next.coerceIn(VIDEO_SCALE_MIN, VIDEO_SCALE_MAX))
                 },
         )
 
@@ -576,11 +687,11 @@ fun VideoPlayerUi(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(120.dp)
+                    .height(HanimeDefaults.PlayerSizes.scrimTop)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
-                                Color.Black.copy(alpha = 0.75f),
+                                HanimeDefaults.Overlay.scrimTopEnd,
                                 Color.Transparent
                             )
                         )
@@ -600,12 +711,12 @@ fun VideoPlayerUi(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(180.dp)
+                    .height(HanimeDefaults.PlayerSizes.scrimBottom)
                     .background(
                         Brush.verticalGradient(
                             colors = listOf(
                                 Color.Transparent,
-                                Color.Black.copy(alpha = 0.82f)
+                                HanimeDefaults.Overlay.scrimBottomEnd
                             )
                         )
                     )
@@ -627,8 +738,8 @@ fun VideoPlayerUi(
                     .fillMaxWidth()
                     .then(if (isFullscreen) Modifier.statusBarsPadding() else Modifier)
                     .padding(
-                        horizontal = 16.dp,
-                        vertical = 4.dp,
+                        horizontal = HanimeDefaults.Spacing.extraLarge,
+                        vertical = HanimeDefaults.Spacing.small,
                     )
             ) {
 
@@ -649,7 +760,7 @@ fun VideoPlayerUi(
                                 // 其他平台恒等（见 ui.player.VideoPlatform）。
                                 .posterBlur()
                                 .background(
-                                    Color.Black.copy(alpha = 0.18f)
+                                    HanimeDefaults.Overlay.barSurface
                                 )
                         )
 
@@ -658,7 +769,7 @@ fun VideoPlayerUi(
                                 .matchParentSize()
                                 .border(
                                     1.dp,
-                                    Color.White.copy(alpha = 0.06f),
+                                    HanimeDefaults.Overlay.border,
                                     MaterialTheme.shapes.largeIncreased
                                 )
                         )
@@ -671,7 +782,7 @@ fun VideoPlayerUi(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .heightIn(min = 52.dp)
+                        .heightIn(min = HanimeDefaults.PlayerSizes.topBarMinHeight)
                         .padding(
                             horizontal = 10.dp,
                             vertical = 6.dp
@@ -684,30 +795,35 @@ fun VideoPlayerUi(
                      */
                     IconButton(
                         onClick = onBackClick,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier
+                            // 命中区 48dp / 视觉 32dp：向上仍报告 32dp，排布零变化
+                            .playerHitTarget(visual = HanimeDefaults.Sizes.controlXS)
+                            .size(PLAYER_MIN_TOUCH_TARGET)
                     ) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_arrow_back_ios),
                             contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
+                            tint = HanimeDefaults.Overlay.onScrim,
+                            modifier = Modifier.size(HanimeDefaults.PlayerSizes.iconLarge)
                         )
                     }
 
-                    Spacer(modifier = Modifier.width(2.dp))
+                    Spacer(modifier = Modifier.width(HanimeDefaults.Spacing.extraSmall))
 
                     /**
                      * Home
                      */
                     IconButton(
                         onClick = onHomeClick,
-                        modifier = Modifier.size(32.dp)
+                        modifier = Modifier
+                            .playerHitTarget(visual = HanimeDefaults.Sizes.controlXS)
+                            .size(PLAYER_MIN_TOUCH_TARGET)
                     ) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_home),
                             contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(20.dp)
+                            tint = HanimeDefaults.Overlay.onScrim,
+                            modifier = Modifier.size(HanimeDefaults.PlayerSizes.iconLarge)
                         )
                     }
 
@@ -718,7 +834,7 @@ fun VideoPlayerUi(
                      */
                     Text(
                         text = title,
-                        color = Color.White.copy(alpha = 0.95f),
+                        color = HanimeDefaults.Overlay.textPrimary,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                         style = MaterialTheme.typography.titleSmall,
@@ -764,7 +880,7 @@ fun VideoPlayerUi(
                         ) {
                             Text(
                                 text = deviceTime,
-                                color = Color.White.copy(alpha = 0.72f),
+                                color = HanimeDefaults.Overlay.textTertiary,
                                 style = MaterialTheme.typography.labelSmall,
                             )
                             PlayerBatteryIndicator()
@@ -778,20 +894,20 @@ fun VideoPlayerUi(
             visible = isLongPressSpeedActive,
             modifier = Modifier
                 .align(Alignment.CenterStart)
-                .padding(start = 24.dp),
+                .padding(start = HanimeDefaults.Spacing.extraExtraLarge),
             enter = fadeIn(),
             exit = fadeOut(),
         ) {
             Surface(
                 shape = MaterialTheme.shapes.medium,
-                color = Color.Black.copy(alpha = 0.46f),
+                color = HanimeDefaults.Overlay.videoDim,
             ) {
                 Icon(
                     painter = painterResource(Res.drawable.ic_fast_forward),
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = HanimeDefaults.Overlay.onScrim,
                     modifier = Modifier
-                        .padding(8.dp)
+                        .padding(HanimeDefaults.Spacing.medium)
                         .size(20.dp),
                 )
             }
@@ -845,27 +961,69 @@ fun VideoPlayerUi(
                 if (!isPlaying) {
                     FilledTonalIconButton(
                         onClick = onPlayClick,
-                        modifier = Modifier.size(72.dp)
+                        modifier = Modifier.size(HanimeDefaults.PlayerSizes.centerButton)
                     ) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_play_arrow),
                             contentDescription = null,
-                            modifier = Modifier.size(42.dp)
+                            modifier = Modifier.size(HanimeDefaults.PlayerSizes.centerIcon)
                         )
                     }
                 } else {
                     // Playing: small pause button when controls are visible
                     IconButton(
                         onClick = onPlayClick,
-                        modifier = Modifier.size(72.dp)
+                        modifier = Modifier.size(HanimeDefaults.PlayerSizes.centerButton)
                     ) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_pause),
                             contentDescription = null,
-                            tint = Color.White,
-                            modifier = Modifier.size(42.dp)
+                            tint = HanimeDefaults.Overlay.onScrim,
+                            modifier = Modifier.size(HanimeDefaults.PlayerSizes.centerIcon)
                         )
                     }
+                }
+            }
+        }
+
+        /**
+         * 最小控件（Minimal controls）：**播放中且控件已自动隐藏**时，中央给一枚小号暂停键，
+         * 点它**直接暂停**，而不是把整排控件叫回来（Media3 minimal controls 的行为）。
+         *
+         * 与上面的大键互斥：大键要求 `!isPlaying || effectiveShowControls`，
+         * 本键要求 `isPlaying && !effectiveShowControls` —— 两者不可能同时为真。
+         * 锁屏态不出现（PiP 在壳层被折算成 `isLocked = true`，见 VideoShellContent 的两处调用，
+         * 所以 PiP 也一并排除）。
+         *
+         * 只有 `onPlayClick` 一个动作、点击后只切换播放状态：事务脚本只有一步，
+         * 因此**绝不可能**出现"点了没反应"（PiP 态同理：不显示就不会被误点）。
+         */
+        AnimatedVisibility(
+            visible =
+                isPlaying &&
+                        !effectiveShowControls &&
+                        !isLocked &&
+                        activeSidePanel == null,
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                IconButton(
+                    onClick = onPlayClick,
+                    modifier = Modifier
+                        // 透明无底：命中区 48dp（M3 硬指标）/ 视觉 XS(32dp)，向上仍报告 XS
+                        .playerHitTarget(visual = HanimeDefaults.Sizes.controlXS)
+                        .size(PLAYER_MIN_TOUCH_TARGET)
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_pause),
+                        contentDescription = null,
+                        tint = HanimeDefaults.Overlay.onScrim,
+                        modifier = Modifier.size(HanimeDefaults.Sizes.controlXS)
+                    )
                 }
             }
         }
@@ -882,10 +1040,10 @@ fun VideoPlayerUi(
             FilledIconButton(
                 onClick = onLockClick,
                 modifier = Modifier
-                    .padding(end = 16.dp)
-                    .size(42.dp),
+                    .padding(end = HanimeDefaults.Spacing.extraLarge)
+                    .size(HanimeDefaults.PlayerSizes.lockButton),
                 colors = IconButtonDefaults.filledIconButtonColors(
-                    containerColor = Color.Black.copy(alpha = 0.45f)
+                    containerColor = HanimeDefaults.Overlay.lockButton
                 )
             ) {
                 Icon(
@@ -894,7 +1052,7 @@ fun VideoPlayerUi(
                     else
                         painterResource(Res.drawable.ic_unlock),
                     contentDescription = null,
-                    tint = Color.White
+                    tint = HanimeDefaults.Overlay.onScrim
                 )
             }
         }
@@ -915,7 +1073,7 @@ fun VideoPlayerUi(
                     .navigationBarsPadding()
                     .padding(
                         horizontal = 18.dp,
-                        vertical = 4.dp,
+                        vertical = HanimeDefaults.Spacing.small,
                     )
             ) {
 
@@ -933,7 +1091,7 @@ fun VideoPlayerUi(
                             .matchParentSize()
                             .posterBlur()
                             .background(
-                                Color.Black.copy(alpha = 0.18f)
+                                HanimeDefaults.Overlay.barSurface
                             )
                     )
 
@@ -942,7 +1100,7 @@ fun VideoPlayerUi(
                             .matchParentSize()
                             .border(
                                 1.dp,
-                                Color.White.copy(alpha = 0.06f),
+                                HanimeDefaults.Overlay.border,
                                 MaterialTheme.shapes.largeIncreased
                             )
                     )
@@ -953,7 +1111,7 @@ fun VideoPlayerUi(
                  */
                 Column(
                     modifier = Modifier.padding(
-                        horizontal = 12.dp,
+                        horizontal = HanimeDefaults.Spacing.large,
                         vertical = 6.dp
                     )
                 ) {
@@ -981,7 +1139,10 @@ fun VideoPlayerUi(
                             sliderDragValue?.let(onProgressChange)
                             sliderDragValue = null
                         },
-                        modifier = Modifier.height(12.dp)
+                        // 命中区 48dp（M3 硬指标）/ 视觉 12dp：向上仍报告 12dp，底栏总高不变
+                        modifier = Modifier
+                            .playerHitTarget(visual = HanimeDefaults.Spacing.large)
+                            .height(PLAYER_MIN_TOUCH_TARGET)
                     )
 
                     /**
@@ -990,7 +1151,7 @@ fun VideoPlayerUi(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(30.dp),
+                            .height(HanimeDefaults.PlayerSizes.bottomRow),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
 
@@ -999,7 +1160,10 @@ fun VideoPlayerUi(
                          */
                         IconButton(
                             onClick = onPlayClick,
-                            modifier = Modifier.size(26.dp)
+                            modifier = Modifier
+                                // 命中区 48dp / 视觉 26dp：向上仍报告 26dp，底栏排布零变化
+                                .playerHitTarget(visual = HanimeDefaults.PlayerSizes.bottomBarButton)
+                                .size(PLAYER_MIN_TOUCH_TARGET)
                         ) {
                             Icon(
                                 painter = if (isPlaying)
@@ -1007,12 +1171,12 @@ fun VideoPlayerUi(
                                 else
                                     painterResource(Res.drawable.ic_play_arrow),
                                 contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
+                                tint = HanimeDefaults.Overlay.onScrim,
+                                modifier = Modifier.size(HanimeDefaults.PlayerSizes.iconSmall)
                             )
                         }
 
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(HanimeDefaults.Spacing.small))
 
                         /**
                          * Time
@@ -1022,7 +1186,7 @@ fun VideoPlayerUi(
                                 currentTime,
                                 totalTime
                             ),
-                            color = Color.White.copy(alpha = 0.88f),
+                            color = HanimeDefaults.Overlay.textSecondary,
                             style = MaterialTheme.typography.labelSmall
                         )
 
@@ -1040,7 +1204,7 @@ fun VideoPlayerUi(
                             onClick = { activeSidePanel = PlayerSidePanel.Quality },
                         )
 
-                        Spacer(modifier = Modifier.width(2.dp))
+                        Spacer(modifier = Modifier.width(HanimeDefaults.Spacing.extraSmall))
 
                         /**
                          * Fullscreen —— 平台没实现全屏时不显示入口（iOS 目前未实现），
@@ -1049,13 +1213,15 @@ fun VideoPlayerUi(
                         if (fullscreenEnabled) {
                             IconButton(
                                 onClick = onFullscreenClick,
-                                modifier = Modifier.size(26.dp)
+                                modifier = Modifier
+                                    .playerHitTarget(visual = HanimeDefaults.PlayerSizes.bottomBarButton)
+                                    .size(PLAYER_MIN_TOUCH_TARGET)
                             ) {
                                 Icon(
                                     painter = painterResource(Res.drawable.ic_fullscreen),
                                     contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(18.dp)
+                                    tint = HanimeDefaults.Overlay.onScrim,
+                                    modifier = Modifier.size(HanimeDefaults.PlayerSizes.iconSmall)
                                 )
                             }
                         }
@@ -1071,7 +1237,7 @@ fun VideoPlayerUi(
             visible = showResumeButton && activeSidePanel == null && !isLocked,
             modifier = Modifier
                 .align(Alignment.BottomCenter)
-                .padding(bottom = 72.dp),
+                .padding(bottom = HanimeDefaults.PlayerSizes.centerButton),
             enter = fadeIn(),
             exit = fadeOut(),
         ) {
@@ -1105,7 +1271,7 @@ fun VideoPlayerUi(
                         style = MaterialTheme.typography.titleMedium,
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(HanimeDefaults.Spacing.large))
 
                     FilledTonalButton(onClick = onReplay) {
                         Icon(
@@ -1148,21 +1314,29 @@ fun VideoPlayerUi(
                         style = MaterialTheme.typography.titleMedium
                     )
 
-                    // M5-3：把引擎/网络给的真实原因显示出来。
-                    // 此前 errorMessage 只写不读，用户永远只有"加载影片失败"一句，
-                    // 分不清是网络、403 还是解码器问题（也拿不到可反馈的信息）。
+                    // M5-3：把引擎/网络给的真实原因显示出来 —— 按 Media3 官方错误视图规格：
+                    //   高 32dp / 底边距 64dp / padding 12&4dp / 文本 14sp（= M3 bodyMedium）。
+                    // "文本可选"：没有原因文本 → **整个错误视图不渲染**，只留重试卡。
                     errorMessage?.takeIf { it.isNotBlank() }?.let { reason ->
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = reason,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            maxLines = 3,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                        Spacer(modifier = Modifier.height(HanimeDefaults.Spacing.medium))
+                        Box(
+                            modifier = Modifier
+                                .padding(bottom = 64.dp)
+                                .height(HanimeDefaults.Spacing.huge)
+                                .padding(horizontal = HanimeDefaults.Spacing.large, vertical = HanimeDefaults.Spacing.small),
+                            contentAlignment = Alignment.CenterStart,
+                        ) {
+                            Text(
+                                text = reason,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                            )
+                        }
                     }
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(HanimeDefaults.Spacing.large))
 
                     FilledTonalButton(
                         onClick = onRetry
@@ -1213,7 +1387,7 @@ fun VideoPlayerUi(
                                 stringResource(Res.string.player_speed_format, it)
                             },
                             selectedIndex = speedSelectedIndex,
-                            panelWidth = 156.dp,
+                            panelWidth = HanimeDefaults.PlayerSizes.panelWidth,
                             onSelected = { index ->
                                 activeSidePanel = null
                                 onPlaybackSpeedSelected(PlayerDefaults.speeds[index])
@@ -1225,7 +1399,7 @@ fun VideoPlayerUi(
                         PlayerSidePanelSheet(
                             options = superResolutionOptions,
                             selectedIndex = selectedSuperResolutionIndex,
-                            panelWidth = 156.dp,
+                            panelWidth = HanimeDefaults.PlayerSizes.panelWidth,
                             onSelected = { index ->
                                 activeSidePanel = null
                                 onSuperResolutionSelected(index)
@@ -1237,7 +1411,7 @@ fun VideoPlayerUi(
                         PlayerSidePanelSheet(
                             options = qualities.map(PlaybackQuality::label),
                             selectedIndex = qualitySelectedIndex.takeIf { it >= 0 },
-                            panelWidth = 156.dp,
+                            panelWidth = HanimeDefaults.PlayerSizes.panelWidth,
                             onSelected = { index ->
                                 activeSidePanel = null
                                 onQualitySelected(index)
@@ -1255,6 +1429,68 @@ fun VideoPlayerUi(
 // M3：createGoogleCastIndicator / whiteDrawable 已随 Cast 按钮搬
 // androidMain（ui.player.VideoPlatform.android.kt）。
 
+/**
+ * M3 官方硬指标：图标按钮的**触控目标**不得小于 48dp。
+ *
+ * 注意区分两件事：
+ * - **视觉尺寸**：用户看到的图形（图标 18/20dp、锁钮圆底 42dp、chip 药丸高度）—— 本轮一律不动；
+ * - **命中区**：真正吃掉点击/触摸的区域 —— 本轮统一补到 [PLAYER_MIN_TOUCH_TARGET]。
+ */
+private val PLAYER_MIN_TOUCH_TARGET = HanimeDefaults.PlayerSizes.minTouchTarget
+
+/**
+ * 把可点控件的**命中区**撑到 [hit]（默认 M3 的 48dp），但**向上仍报告视觉尺寸**，
+ * 因此父级排布（间距、容器高度、相邻控件位置）与改动前逐像素一致。
+ *
+ * 实现要点：
+ * 1. 量子节点时把约束放宽到 ≥[hit]，这样被包裹的 clickable 自身边界就是 48dp ——
+ *    M3 的 `minimumInteractiveComponentSize()` 只把**上报尺寸**撑到 48，
+ *    被 `Modifier.size()` 夹住时 clickable 的边界并不会变大（M3 1.5 `MinimumInteractiveModifierNode`
+ *    是用父级约束量子节点、再 `max(placeable, 48dp)` 上报），所以必须放行约束。
+ * 2. 量完以后**上报**视觉尺寸（[visual]，或 [visual] 为空时取子节点在原始约束下的固有尺寸），
+ *    并把 48dp 的命中盒居中放好 —— 于是：“盒子”变大了，“占位”没变。
+ * 3. 超出上报尺寸的那部分命中区依然能收到指针事件：`NodeCoordinator.hitTest` 在
+ *    `isPointerInBounds` 为假时会走 `hitNear`（触摸的最小命中区外扩）/ `speculativeHit`
+ *    （“本节点没命中，但子节点可能命中”），最终 `hitTestChild` 仍会访问到那个 48dp 的 clickable。
+ *    前提是祖先链上没有 `clip` / 裁剪型 graphicsLayer —— 播放器的顶栏、底栏、chip 均无。
+ *
+ * 已知取舍：底栏是 6+12(进度条)+30(按钮行)+6 = 54dp，装不下两个 48dp，所以底栏按钮的命中盒
+ *   会向上压进进度条下沿 9dp（只在按钮的水平范围内），该范围内按钮优先。
+ *   彻底消除需要把底栏抬到 ≥60dp（Media3 官方底栏就是 60dp）—— 那是视觉变更，本轮不做。
+ *
+ * @param visual 向上报告的视觉尺寸；为 null 时取子节点固有尺寸（供尺寸由文字决定的 chip 使用）。
+ */
+private fun Modifier.playerHitTarget(
+    hit: Dp = PLAYER_MIN_TOUCH_TARGET,
+    visual: Dp? = null,
+): Modifier = layout { measurable, constraints ->
+    val hitPx = hit.roundToPx()
+    // 1) 放宽约束：让内部 clickable 真的按 48dp 铺开
+    val relaxed = constraints.copy(
+        minWidth = maxOf(constraints.minWidth, hitPx),
+        minHeight = maxOf(constraints.minHeight, hitPx),
+        maxWidth = maxOf(constraints.maxWidth, hitPx),
+        maxHeight = maxOf(constraints.maxHeight, hitPx),
+    )
+    // 2) 视觉尺寸：显式给定，或回落到子节点在原始约束下的固有尺寸
+    val visualPx = visual?.roundToPx()
+    val intrinsicWidth = measurable.minIntrinsicWidth(relaxed.maxHeight)
+    val intrinsicHeight = measurable.minIntrinsicHeight(relaxed.maxWidth)
+    val placeable = measurable.measure(relaxed)
+
+    fun reported(measured: Int, intrinsic: Int, min: Int, max: Int): Int {
+        val target = minOf(measured, visualPx ?: intrinsic)
+        return maxOf(target, min).coerceAtMost(max)
+    }
+    val width = reported(placeable.width, measurable.minIntrinsicWidth(relaxed.maxHeight), constraints.minWidth, constraints.maxWidth)
+    val height = reported(placeable.height, measurable.minIntrinsicHeight(relaxed.maxWidth), constraints.minHeight, constraints.maxHeight)
+
+    // 3) 命中盒居中压在视觉尺寸上：视觉位置不变，多出来的部分向四周外扩
+    layout(width, height) {
+        placeable.place((width - placeable.width) / 2, (height - placeable.height) / 2)
+    }
+}
+
 @Composable
 private fun PlayerMenuChip(
     label: String,
@@ -1262,30 +1498,41 @@ private fun PlayerMenuChip(
     onLongClick: (() -> Unit)? = null,
 ) {
     val shape = MaterialTheme.shapes.medium
+    // 命中层：M3 要求可点控件 ≥48dp。药丸外壳（视觉）保持原尺寸，多出来的命中区向外扩。
     Box(
         modifier = Modifier
+            .playerHitTarget()
             .clip(shape)
             .combinedClickable(
+                interactionSource = null,
+                indication = null,
                 onClick = onClick,
                 onLongClick = onLongClick,
-            )
-            .background(Color.White.copy(alpha = 0.08f))
-            .border(
-                1.dp,
-                Color.White.copy(alpha = 0.06f),
-                shape,
-            )
-            .padding(
-                horizontal = 8.dp,
-                vertical = 4.dp,
             ),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = label,
-            color = Color.White.copy(alpha = 0.88f),
-            style = MaterialTheme.typography.labelSmall,
-        )
+        // 视觉外壳：与改动前逐像素一致（clip / 底色 / 描边 / 内边距）
+        Box(
+            modifier = Modifier
+                .clip(shape)
+                .background(HanimeDefaults.Overlay.glass)
+                .border(
+                    1.dp,
+                    HanimeDefaults.Overlay.border,
+                    shape,
+                )
+                .padding(
+                    horizontal = HanimeDefaults.Spacing.medium,
+                    vertical = HanimeDefaults.Spacing.small,
+                ),
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = label,
+                color = HanimeDefaults.Overlay.textSecondary,
+                style = MaterialTheme.typography.labelSmall,
+            )
+        }
     }
 }
 
@@ -1294,6 +1541,13 @@ private const val DOUBLE_TAP_SEEK_STEP_MS = 10_000L
 
 /** 拖动进度条时的 seek 节流间隔（毫秒，M5-3）。 */
 private const val SLIDER_SEEK_THROTTLE_MS = 120L
+
+/** 控件自动隐藏倒计时（毫秒，M5 体验打磨）：3s → 5s。 */
+private const val CONTROLS_AUTO_HIDE_MS = 5_000L
+
+/** 画面缩放下限/上限（双指缩放 / Ctrl+滚轮）。 */
+private const val VIDEO_SCALE_MIN = 0.5f
+private const val VIDEO_SCALE_MAX = 4f
 
 private enum class PlayerSidePanel {
     Speed,
@@ -1306,7 +1560,7 @@ private fun BoxScope.PlayerSidePanelSheet(
     options: List<String>,
     selectedIndex: Int?,
     onSelected: (Int) -> Unit,
-    panelWidth: Dp = 156.dp,
+    panelWidth: Dp = HanimeDefaults.PlayerSizes.panelWidth,
 ) {
     Box(
         modifier = Modifier
@@ -1319,7 +1573,7 @@ private fun BoxScope.PlayerSidePanelSheet(
                 .matchParentSize()
                 // M3：见 posterBlur()（Android S+ RenderEffect，其他平台恒等）。
                 .posterBlur()
-                .background(Color.Black.copy(alpha = 0.72f))
+                .background(HanimeDefaults.Overlay.panelDim)
         )
         LazyColumn(
             modifier = Modifier
@@ -1347,7 +1601,7 @@ private fun BoxScope.PlayerSidePanelSheet(
                         color = if (isSelected) {
                             MaterialTheme.colorScheme.onSecondaryContainer
                         } else {
-                            Color.White
+                            HanimeDefaults.Overlay.onScrim
                         },
                         textAlign = androidx.compose.ui.text.style.TextAlign.Center,
                         style = MaterialTheme.typography.bodyLarge,
@@ -1382,7 +1636,7 @@ fun PlayerSlider(
         thumb = {
             Box(
                 modifier = Modifier
-                    .size(14.dp),
+                    .size(HanimeDefaults.PlayerSizes.thumbBox),
                 contentAlignment = Alignment.Center
             ) {
 
@@ -1391,9 +1645,9 @@ fun PlayerSlider(
                  */
                 Box(
                     modifier = Modifier
-                        .size(15.dp)
+                        .size(HanimeDefaults.PlayerSizes.thumbGlow)
                         .background(
-                            Color.White.copy(alpha = 0.22f),
+                            HanimeDefaults.Overlay.thumbGlow,
                             CircleShape
                         )
                 )
@@ -1403,9 +1657,9 @@ fun PlayerSlider(
                  */
                 Box(
                     modifier = Modifier
-                        .size(9.dp)
+                        .size(HanimeDefaults.PlayerSizes.thumb)
                         .background(
-                            Color.White,
+                            HanimeDefaults.Overlay.onScrim,
                             CircleShape
                         )
                 )
@@ -1420,7 +1674,7 @@ fun PlayerSlider(
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(18.dp),
+                    .height(HanimeDefaults.PlayerSizes.trackBox),
                 contentAlignment = Alignment.CenterStart
             ) {
 
@@ -1430,10 +1684,10 @@ fun PlayerSlider(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(3.dp)
+                        .height(HanimeDefaults.PlayerSizes.track)
                         .clip(HanimeDefaults.Corners.pill)
                         .background(
-                            Color.White.copy(alpha = 0.14f)
+                            HanimeDefaults.Overlay.track
                         )
                 )
 
@@ -1443,10 +1697,10 @@ fun PlayerSlider(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(buffered.coerceIn(0f, 1f))
-                        .height(3.dp)
+                        .height(HanimeDefaults.PlayerSizes.track)
                         .clip(HanimeDefaults.Corners.pill)
                         .background(
-                            Color.White.copy(alpha = 0.32f)
+                            HanimeDefaults.Overlay.trackBuffered
                         )
                 )
 
@@ -1456,13 +1710,13 @@ fun PlayerSlider(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(value.coerceIn(0f, 1f))
-                        .height(3.dp)
+                        .height(HanimeDefaults.PlayerSizes.track)
                         .clip(HanimeDefaults.Corners.pill)
                         .background(
                             Brush.horizontalGradient(
                                 colors = listOf(
                                     MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.primary.copy(alpha = 0.82f)
+                                    MaterialTheme.colorScheme.primary.copy(alpha = HanimeDefaults.Alpha.secondary)
                                 )
                             )
                         )
@@ -1529,7 +1783,7 @@ private fun GestureIndicatorOverlay(
                         .matchParentSize()
                         .posterBlur(55f)
                         .background(
-                            Color.Black.copy(alpha = 0.32f)
+                            HanimeDefaults.Overlay.blurDim
                         )
                 )
 
@@ -1542,8 +1796,8 @@ private fun GestureIndicatorOverlay(
                         .background(
                             Brush.verticalGradient(
                                 colors = listOf(
-                                    Color.White.copy(alpha = 0.12f),
-                                    Color.White.copy(alpha = 0.04f)
+                                    HanimeDefaults.Overlay.divider,
+                                    HanimeDefaults.Overlay.textFaint
                                 )
                             )
                         )
@@ -1557,7 +1811,7 @@ private fun GestureIndicatorOverlay(
                         .matchParentSize()
                         .border(
                             1.dp,
-                            Color.White.copy(alpha = 0.12f),
+                            HanimeDefaults.Overlay.divider,
                             MaterialTheme.shapes.extraLargeIncreased
                         )
                 )
@@ -1568,7 +1822,7 @@ private fun GestureIndicatorOverlay(
                 Column(
                     modifier = Modifier
                         .fillMaxSize()
-                        .padding(16.dp),
+                        .padding(HanimeDefaults.Spacing.extraLarge),
                     horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.Center
                 ) {
@@ -1583,11 +1837,11 @@ private fun GestureIndicatorOverlay(
                             }
                         },
                         contentDescription = null,
-                        tint = Color.White,
+                        tint = HanimeDefaults.Overlay.onScrim,
                         modifier = Modifier.size(36.dp)
                     )
 
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(HanimeDefaults.Spacing.medium))
 
                     Text(
                         text = when (type) {
@@ -1595,26 +1849,26 @@ private fun GestureIndicatorOverlay(
                             GestureIndicatorType.Volume -> stringResource(Res.string.player_gesture_volume)
                             GestureIndicatorType.Progress -> stringResource(Res.string.player_gesture_progress)
                         },
-                        color = Color.White.copy(alpha = 0.92f),
+                        color = HanimeDefaults.Overlay.textStrong,
                         style = MaterialTheme.typography.titleMedium
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(HanimeDefaults.Spacing.large))
 
                     LinearProgressIndicator(
                         progress = { percent.coerceIn(0f, 1f) },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(8.dp)
+                            .height(HanimeDefaults.Spacing.medium)
                             .clip(HanimeDefaults.Corners.pill),
-                        trackColor = Color.White.copy(alpha = 0.12f),
+                        trackColor = HanimeDefaults.Overlay.divider,
                     )
 
-                    Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(HanimeDefaults.Spacing.large))
 
                     Text(
                         text = displayText,
-                        color = Color.White,
+                        color = HanimeDefaults.Overlay.onScrim,
                         style = MaterialTheme.typography.headlineSmall
                     )
                 }

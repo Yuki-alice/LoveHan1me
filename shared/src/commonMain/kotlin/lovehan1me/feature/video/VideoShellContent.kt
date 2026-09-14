@@ -113,6 +113,9 @@ fun VideoShellContent(
     brightnessGestureEnabled: Boolean,
     /** M5-3：双击左右快退/快进的相对跳转。 */
     onSeekBy: (Long) -> Unit,
+    /** 画面缩放倍率（1f = 原始尺寸）。 */
+    scale: Float = 1f,
+    onScaleChange: (Float) -> Unit = {},
     /** M5-3：视频总时长（双击 HUD 换算百分比用）。 */
     durationMs: Long,
     /** 平台是否支持全屏（iOS 未实现 → false 时隐藏入口）。 */
@@ -220,6 +223,8 @@ fun VideoShellContent(
                     errorMessage = errorMessage,
                     brightnessGestureEnabled = brightnessGestureEnabled,
                     onSeekBy = onSeekBy,
+                    scale = scale,
+                    onScaleChange = onScaleChange,
                     durationMs = durationMs,
                     fullscreenEnabled = fullscreenEnabled,
                     onLongPressStart = onLongPressStart,
@@ -306,6 +311,8 @@ fun VideoShellContent(
                     errorMessage = errorMessage,
                     brightnessGestureEnabled = brightnessGestureEnabled,
                     onSeekBy = onSeekBy,
+                    scale = scale,
+                    onScaleChange = onScaleChange,
                     durationMs = durationMs,
                     fullscreenEnabled = fullscreenEnabled,
                     onLongPressStart = onLongPressStart,
