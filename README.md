@@ -80,7 +80,7 @@ LoveHan1me/
 └── build-logic/     # Convention plugins（KMP 模块配置统一收口）
 ```
 
-共享模块的内部分层见 [`目标架构设计.md`](目标架构设计.md)。
+共享模块的内部分层见 [`规划.md`](规划.md)。历史规划文档归档在 `docs/history/`，仅供翻阅，不作为依据。
 
 ---
 
