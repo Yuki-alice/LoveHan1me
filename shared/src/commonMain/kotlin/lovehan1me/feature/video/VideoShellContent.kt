@@ -33,7 +33,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.movableContentOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -166,11 +165,15 @@ fun VideoShellContent(
         )
     }
 
-    // 播放器实例跨布局分支复用（Compose movableContentOf）：
-    // 原先 PlayerContent / MainContent 各写一次 VideoPlayerUi，窗口尺寸变化导致布局分支
-    // 切换时会重建播放内核（黑帧 + 进度丢失）；现在同样的组合内容在分支间"移动"。
-    // 两处 53 个参数完全一致、只有 modifier 不同，所以 modifier 作为唯一入参。
-    val playerContent = movableContentOf<Modifier> { playerModifier ->
+    // 播放器内容：单一组合路径，**刻意不再使用 movableContentOf**。
+    // 本组合函数持有 progress / currentTime / isPlaying 等逐帧变化的参数，会持续高频重组；
+    // 而这里的 movableContentOf 每次重组都被重新创建（未 remember），身份不稳定，
+    // Compose 会把它当作「新内容」→ 播放器子树连同 Skia 渲染面被反复销毁重建：
+    // 表现为持续闪烁，并最终把 Skia GPU 资源缓存搞崩
+    // （崩溃栈稳定停在 SkSurface_Ganesh::~SkSurface_Ganesh）。
+    // 全项目只有 MainContent 一处调用点，movable 的跨分支搬运能力本就用不上，故回归直接调用。
+    @Composable
+    fun PlayerBox(playerModifier: Modifier) {
         VideoPlayerUi(
             modifier = playerModifier,
             playbackEngine = playbackEngine,
@@ -231,34 +234,6 @@ fun VideoShellContent(
     }
 
     @Composable
-    fun PlayerContent(modifier: Modifier) {
-        Box(modifier = modifier) {
-            if (!isFullscreen) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .windowInsetsTopHeight(WindowInsets.statusBars)
-                        .background(Color.Black)
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(if (!isFullscreen) Modifier.statusBarsPadding() else Modifier)
-            ) {
-                playerContent(
-                    Modifier
-                        .fillMaxSize()
-                        .onGloballyPositioned { coordinates ->
-                            onPlayerBoundsChanged(coordinates.boundsInWindow())
-                        },
-                )
-            }
-        }
-    }
-
-    @Composable
     fun MainContent(contentModifier: Modifier) {
         Box(modifier = contentModifier) {
             if (!isFullscreen) {
@@ -275,7 +250,7 @@ fun VideoShellContent(
                     .fillMaxSize()
                     .then(if (!isFullscreen) Modifier.statusBarsPadding() else Modifier)
             ) {
-                playerContent(
+                PlayerBox(
                     Modifier
                         .fillMaxWidth()
                         .then(

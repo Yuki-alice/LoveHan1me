@@ -15,7 +15,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.window.LocalWindow
 import lovehan1me.core.util.LogUtil
 import org.openani.mediamp.mpv.MpvMediampPlayer
-import org.openani.mediamp.mpv.compose.MpvMediampPlayerSurfaceProvider
+import org.openani.mediamp.mpv.compose.MpvMediampPlayerSurface
 
 /**
  * M3：桌面真渲染（mediamp Skia 面）。
@@ -50,7 +50,12 @@ actual fun PlatformVideoSurface(
         CompositionLocalProvider(LocalWindow provides window) {
             // 渲染面随 engine 同 jar（0.3.2），版本天然对齐；缺的是 CMP 1.12
             // 移除的 LocalWindow——本文件同模块垫片已补回。
-            MpvMediampPlayerSurfaceProvider().Surface(player, modifier)
+            //
+            // 用顶层 MpvMediampPlayerSurface 而非 MpvMediampPlayerSurfaceProvider().Surface：
+            // provider 未覆写 equals，组合里每次 new 都让 Compose 认为接收者变了，
+            // Surface body 反复重跑 → mpv Skia 层反复 detach/attach（闪帧/闪退）。
+            // animeko 同库同版本就是这个写法（reference/animeko/.../VideoPlayer.desktop.kt:25）。
+            MpvMediampPlayerSurface(player, modifier)
         }
     } else {
         Box(modifier.background(Color.Black))
