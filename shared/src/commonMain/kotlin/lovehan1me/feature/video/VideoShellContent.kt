@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.Arrangement
 import lovehan1me.ui.adaptive.rememberRelatedPaneWidth
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
-import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
@@ -18,6 +17,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
@@ -31,9 +31,9 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.movableContentOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -53,6 +53,7 @@ import lovehan1me.feature.player.PlaybackQuality
 import lovehan1me.ui.component.rememberHapticFeedback
 import kotlin.math.roundToInt
 import lovehan1me.ui.theme.HanimeDefaults
+import lovehan1me.ui.theme.HanimeTheme
 
 data class ClassicTabletLayoutConfig(
     val relatedItems: List<HanimeInfo>,
@@ -170,9 +171,13 @@ fun VideoShellContent(
     // 原先 PlayerContent / MainContent 各写一次 VideoPlayerUi，窗口尺寸变化导致布局分支
     // 切换时会重建播放内核（黑帧 + 进度丢失）；现在同样的组合内容在分支间"移动"。
     // 两处 53 个参数完全一致、只有 modifier 不同，所以 modifier 作为唯一入参。
-    val playerContent = movableContentOf<Modifier> { playerModifier ->
-        VideoPlayerUi(
-            modifier = playerModifier,
+    @Composable
+    fun PlayerBox(playerModifier: Modifier) {
+        // R3：播放器强制暗色（学 animeko）：叠层/控件与浅色主题解耦，
+        // 省掉浅色下整套叠层 token。
+        HanimeTheme(darkTheme = true) {
+            VideoPlayerUi(
+                modifier = playerModifier,
             playbackEngine = playbackEngine,
             posterUrl = posterUrl,
             title = title,
@@ -230,143 +235,117 @@ fun VideoShellContent(
         )
     }
 
-    @Composable
-    fun PlayerContent(modifier: Modifier) {
-        Box(modifier = modifier) {
-            if (!isFullscreen) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .windowInsetsTopHeight(WindowInsets.statusBars)
-                        .background(Color.Black)
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(if (!isFullscreen) Modifier.statusBarsPadding() else Modifier)
-            ) {
-                playerContent(
-                    Modifier
-                        .fillMaxSize()
-                        .onGloballyPositioned { coordinates ->
-                            onPlayerBoundsChanged(coordinates.boundsInWindow())
-                        },
-                )
-            }
-        }
-    }
-
-    @Composable
-    fun MainContent(contentModifier: Modifier) {
-        Box(modifier = contentModifier) {
-            if (!isFullscreen) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .windowInsetsTopHeight(WindowInsets.statusBars)
-                        .background(Color.Black)
-                )
-            }
-
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .then(if (!isFullscreen) Modifier.statusBarsPadding() else Modifier)
-            ) {
-                playerContent(
-                    Modifier
-                        .fillMaxWidth()
-                        .then(
-                            if (!isFullscreen && playerHeightDp != null) {
-                                Modifier.height(playerHeightDp)
-                            } else {
-                                Modifier.weight(1f)
-                            }
-                        )
-                        .onGloballyPositioned { coordinates ->
-                            onPlayerBoundsChanged(coordinates.boundsInWindow())
-                        },
-                )
-                if (!isInPipMode && !isFullscreen) {
-                    Box(modifier = Modifier.weight(1f)) {
-                        tabsContent()
-                    }
-                }
-            }
-        }
-    }
-
-    if (showClassicSideRelated) {
+    // R1 单组合路径：下面三块（播放器 / 下方内容 / 右栏）按模式显隐，
+    // VideoPlayerUi 只出现一次——窗口跨断点、进出全屏都不移动、不重建实例。
+    // （此前 movableContentOf 跨分支搬运 + 全屏/PiP 换分支，渲染面反复 detach。）
+    val fullBleedPlayer = isFullscreen || isInPipMode
+    BoxWithConstraints(modifier = modifier.fillMaxSize()) {
+        // 右栏宽：经典=可折叠动画宽；普通双栏=总宽 25% clamp 340–460（学 animeko）；
+        // 其余（单栏/全屏/PiP）无右栏。
+        val normalRailWidth = (maxWidth * 0.25f).coerceIn(340.dp, 460.dp)
         val indicatorWidth = 28.dp
-        // P5：固定像素宽度，不再按 `maxWidth * 0.38f` 随窗口比例放大。
-        val relatedPaneWidth = rememberRelatedPaneWidth()
-        BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-            val sideWidth by animateDpAsState(
-                targetValue = if (isSideRelatedCollapsed) indicatorWidth else relatedPaneWidth,
-                // P6：宽度是空间属性，走 spatial 档而非硬编码 tween(300)。
-                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-                label = "sideRelatedWidth",
-            )
-            Row(modifier = Modifier.fillMaxSize()) {
-                MainContent(
-                    contentModifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                )
-                Row(
-                    modifier = Modifier
-                        .width(sideWidth)
-                        .fillMaxHeight()
-                        .background(HanimeDefaults.Colors.pageSurface)
-                ) {
-                    RelatedCollapseIndicator(
-                        collapsed = isSideRelatedCollapsed,
-                        onClick = { isSideRelatedCollapsed = !isSideRelatedCollapsed },
-                        modifier = Modifier
-                            .width(indicatorWidth)
-                            .fillMaxHeight(),
-                    )
-                    if (!isSideRelatedCollapsed) {
-                        RelatedVideosSection(
-                            videos = classicTabletLayout.relatedItems,
-                            onOpenVideo = classicTabletLayout.onOpenVideo,
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight(),
-                        )
-                    }
-                }
-            }
+        val classicRailWidth by animateDpAsState(
+            targetValue = if (isSideRelatedCollapsed) indicatorWidth else rememberRelatedPaneWidth(),
+            // P6：宽度是空间属性，走 spatial 档而非硬编码 tween(300)。
+            animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
+            label = "sideRelatedWidth",
+        )
+        val railWidth: Dp? = when {
+            showClassicSideRelated -> classicRailWidth
+            showSideRelated -> normalRailWidth
+            else -> null
         }
-    } else if (showSideRelated) {
-        Row(modifier = modifier.fillMaxSize()) {
-            // 宽屏右栏布局：左列 = 播放器 + 简介（introContent，非 null 时必是右栏模式），
-            // 不再是播满全高的 PlayerContent。
-            MainContent(
-                contentModifier = Modifier
-                    .weight(1f)
-                    .fillMaxHeight(),
-            )
-            // P5：固定 360dp（内容宽 < 1000dp 时 320dp）。原 `fillMaxWidth(0.38f)`
-            // 在 2560dp 窗口下会变成 973dp 的巨型侧栏，注意力被完全拉走。
+        val mainWidth = if (railWidth != null) maxWidth - railWidth else maxWidth
+
+        if (!isFullscreen) {
+            // 状态栏底衬（黑色）：原 PlayerContent/MainContent 逐分支各画一条，收拢到一处。
             Box(
                 modifier = Modifier
-                    .fillMaxHeight()
-                    .statusBarsPadding()
-                    .consumeWindowInsets(
-                        WindowInsets.safeDrawing.only(WindowInsetsSides.Start)
-                    )
-                    .background(HanimeDefaults.Colors.pageSurface)
-                    .width(rememberRelatedPaneWidth()),
-            ) {
-                // 右栏 Tab（相关推荐｜评论）；null 回退旧行为（简介/评论 Tab）。
-                (railTabsContent ?: tabsContent)()
-            }
+                    .align(Alignment.TopStart)
+                    .fillMaxWidth()
+                    .windowInsetsTopHeight(WindowInsets.statusBars)
+                    .background(Color.Black)
+            )
         }
-    } else {
-        MainContent(contentModifier = modifier.fillMaxSize())
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .then(if (!isFullscreen) Modifier.statusBarsPadding() else Modifier)
+        ) {
+            // 1. 播放器：唯一实例。尺寸按模式给，外框变化不触碰实例。
+            PlayerBox(
+                Modifier
+                    .align(Alignment.TopStart)
+                    .then(
+                        if (fullBleedPlayer || playerHeightDp == null) {
+                            Modifier.fillMaxSize()
+                        } else {
+                            Modifier
+                                .width(mainWidth)
+                                .height(playerHeightDp)
+                        }
+                    )
+                    .onGloballyPositioned { coordinates ->
+                        onPlayerBoundsChanged(coordinates.boundsInWindow())
+                    },
+            )
+            // 2. 下方内容：单栏/双栏左列/经典左列的简介 Tab（全屏/PiP 无）。
+            if (!fullBleedPlayer && playerHeightDp != null) {
+                Box(
+                    modifier = Modifier
+                        .align(Alignment.TopStart)
+                        .padding(top = playerHeightDp)
+                        .width(mainWidth)
+                        .fillMaxHeight()
+                ) {
+                    tabsContent()
+                }
+            }
+            // 3. 右栏：经典=可折叠相关推荐；普通双栏=相关/评论 Tab。
+            if (railWidth != null) {
+                if (showClassicSideRelated) {
+                    Row(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .width(railWidth)
+                            .fillMaxHeight()
+                            .background(HanimeDefaults.Colors.pageSurface)
+                    ) {
+                        RelatedCollapseIndicator(
+                            collapsed = isSideRelatedCollapsed,
+                            onClick = { isSideRelatedCollapsed = !isSideRelatedCollapsed },
+                            modifier = Modifier
+                                .width(indicatorWidth)
+                                .fillMaxHeight(),
+                        )
+                        if (!isSideRelatedCollapsed) {
+                            RelatedVideosSection(
+                                videos = classicTabletLayout.relatedItems,
+                                onOpenVideo = classicTabletLayout.onOpenVideo,
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxHeight(),
+                            )
+                        }
+                    }
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .width(railWidth)
+                            .fillMaxHeight()
+                            .consumeWindowInsets(
+                                WindowInsets.safeDrawing.only(WindowInsetsSides.Start)
+                            )
+                            .background(HanimeDefaults.Colors.pageSurface),
+                    ) {
+                        // 右栏 Tab（相关推荐｜评论）；null 回退旧行为（简介/评论 Tab）。
+                        (railTabsContent ?: tabsContent)()
+                    }
+                }
+            }
+}
+        }
     }
 }
 
