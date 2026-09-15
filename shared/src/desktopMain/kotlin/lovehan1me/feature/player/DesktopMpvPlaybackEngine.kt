@@ -1,6 +1,7 @@
 package lovehan1me.feature.player
 
 import lovehan1me.core.util.MpvShaders
+import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.data.network.currentHttpUserAgent
 import java.net.InetSocketAddress
@@ -164,6 +165,14 @@ class DesktopMpvPlaybackEngine(
                 // 不做这一步，mpv 会用**直连**去拉流（它不继承 OkHttp 的代理），
                 // 在受限网络下表现为 mpv_error=-13（LOADING_FAILED）——页面能开、视频永远转圈。
                 mpvHandle()?.let { applyNetworkOptions(it) }
+                // 硬解二分（闪烁+崩溃排查）：设置里选 SW 才强制软解，其余不动
+                //（mediamp 默认 auto）。hwdec 支持运行时修改，会重建解码链。
+                mpvHandle()?.let { handle ->
+                    if (SettingsRepository.mpvHwdec == "SW") {
+                        val ok = handle.setPropertyString("hwdec", "no")
+                        LogUtil.d(TAG, "mpv hwdec=no(SW) set=$ok")
+                    }
+                }
                 player.setMediaData(
                     UriMediaData(request.uri, request.headers),
                     request.playWhenReady,
