@@ -15,6 +15,7 @@ import lovehan1me.ui.component.LoadMoreFooter
 import lovehan1me.ui.component.VideoCardItem
 import lovehan1me.ui.component.lazy.LazyVerticalGrid
 import lovehan1me.ui.component.rememberVideoGridColumns
+import lovehan1me.ui.transition.coverSharedElementKey
 
 /**
  * 视频网格 Content 层。纯 UI，不持有 ViewModel。
@@ -49,6 +50,8 @@ fun VideoGridContent(
                 videoItem = item,
                 isHorizontalCard = true,
                 showDeleteAction = true,
+                // 与详情页封面配对：点卡片时封面形变着飞过去
+                sharedElementKey = coverSharedElementKey(item.videoCode),
                 onClickVideosItem = { onOpenVideo(item) },
                 onLongClickVideosItem = { _, _ -> onDeleteItem(item) },
             )

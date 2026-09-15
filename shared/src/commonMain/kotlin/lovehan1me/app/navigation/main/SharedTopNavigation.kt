@@ -22,6 +22,7 @@ import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -44,6 +45,7 @@ import lovehan1me.login_first
 import lovehan1me.search
 import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.component.rememberHapticFeedback
+import lovehan1me.ui.transition.LocalSharedTransitionScope
 import lovehan1me.app.navigation.settings.AboutSettingsRoute
 import lovehan1me.app.navigation.settings.AppearanceSettingsRoute
 import lovehan1me.app.navigation.settings.DataPrivacySettingsRoute
@@ -149,6 +151,9 @@ fun SharedTopNavigation(
     )
 
     SharedTransitionLayout {
+    // 把 scope 下发给卡片 / 详情等调用点：sharedElement 必须在 SharedTransitionLayout
+    // 的接收者作用域里调用，而调用点深埋在导航层之下，靠 LocalSharedTransitionScope 取用。
+    CompositionLocalProvider(LocalSharedTransitionScope provides this) {
     NavDisplay(
         backStack = backStack.backStack,
         onBack = onBack,
@@ -602,6 +607,7 @@ fun SharedTopNavigation(
         }
         },
     )
+    }
     }
 }
 

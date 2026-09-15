@@ -90,6 +90,7 @@ import lovehan1me.core.util.image.ScreenshotCapturer
 import lovehan1me.core.util.SonnerToast
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.core.util.rememberShareText
+import lovehan1me.ui.transition.coverSharedElementKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -684,6 +685,8 @@ fun VideoRouteHostScreen(
         playerHeightDp = resolvedPlayerHeightDp,
         playbackEngine = playbackEngine,
         posterUrl = video?.coverUrl,
+        // 与首页/搜索页的卡片封面配对（同 videoCode）
+        sharedElementKey = route.videoCode.takeIf { it != "-1" }?.let(::coverSharedElementKey),
         title = videoTitle,
         currentTime = formatPlaybackTime(playbackState.engine.positionMs),
         totalTime = formatPlaybackTime(playbackState.engine.durationMs),

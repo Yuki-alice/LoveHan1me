@@ -33,6 +33,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.movableContentOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -69,6 +70,8 @@ fun VideoShellContent(
     playerHeightDp: Dp?,
     playbackEngine: PlaybackEngine,
     posterUrl: String?,
+    // 与列表页卡片封面配对的共享元素 key（null = 不做过渡）
+    sharedElementKey: String? = null,
     title: String,
     currentTime: String,
     totalTime: String,
@@ -158,6 +161,70 @@ fun VideoShellContent(
         )
     }
 
+    // 播放器实例跨布局分支复用（Compose movableContentOf）：
+    // 原先 PlayerContent / MainContent 各写一次 VideoPlayerUi，窗口尺寸变化导致布局分支
+    // 切换时会重建播放内核（黑帧 + 进度丢失）；现在同样的组合内容在分支间"移动"。
+    // 两处 53 个参数完全一致、只有 modifier 不同，所以 modifier 作为唯一入参。
+    val playerContent = movableContentOf<Modifier> { playerModifier ->
+        VideoPlayerUi(
+            modifier = playerModifier,
+            playbackEngine = playbackEngine,
+            posterUrl = posterUrl,
+            title = title,
+            currentTime = currentTime,
+            totalTime = totalTime,
+            progress = progress,
+            bufferedProgress = bufferedProgress,
+            currentVolume = currentVolume,
+            currentBrightness = currentBrightness,
+            isFullscreen = isFullscreen,
+            isPlaying = isPlaying,
+            isPlaybackEnded = isPlaybackEnded,
+            isLocked = isLocked || isInPipMode,
+            showPoster = showPoster,
+            sharedElementKey = sharedElementKey,
+            showControls = !isInPipMode,
+            showLoading = showLoading,
+            showRetry = showRetry,
+            showResumeButton = showResumeButton,
+            onPlayClick = onPlayClick,
+            onReplay = onReplay,
+            onBackClick = onBackClick,
+            onHomeClick = onHomeClick,
+            onFullscreenClick = onFullscreenClick,
+            onLockClick = onLockClick,
+            onProgressChange = onProgressChange,
+            onRetry = onRetry,
+            onResumeClick = onResumeClick,
+            qualities = qualities,
+            selectedQuality = selectedQuality,
+            onQualitySelected = onQualitySelected,
+            playbackSpeed = playbackSpeed,
+            onPlaybackSpeedSelected = onPlaybackSpeedSelected,
+            superResolutionLabel = superResolutionLabel,
+            superResolutionOptions = superResolutionOptions,
+            selectedSuperResolutionIndex = selectedSuperResolutionIndex,
+            onSuperResolutionSelected = onSuperResolutionSelected,
+            frameCaptureEnabled = frameCaptureEnabled,
+            onOpenGifCapture = onOpenGifCapture,
+            onCaptureScreenshot = onCaptureScreenshot,
+            errorMessage = errorMessage,
+            brightnessGestureEnabled = brightnessGestureEnabled,
+            onSeekBy = onSeekBy,
+            scale = scale,
+            onScaleChange = onScaleChange,
+            durationMs = durationMs,
+            fullscreenEnabled = fullscreenEnabled,
+            onLongPressStart = onLongPressStart,
+            onLongPressEnd = onLongPressEnd,
+            onVolumeChange = onVolumeChange,
+            onBrightnessChange = onBrightnessChange,
+            onProgressGesture = onProgressGesture,
+            progressGestureSensitivity = progressGestureSensitivity,
+            videoAspectRatio = videoAspectRatio,
+        )
+    }
+
     @Composable
     fun PlayerContent(modifier: Modifier) {
         Box(modifier = modifier) {
@@ -175,65 +242,12 @@ fun VideoShellContent(
                     .fillMaxSize()
                     .then(if (!isFullscreen) Modifier.statusBarsPadding() else Modifier)
             ) {
-                VideoPlayerUi(
-                    modifier = Modifier
+                playerContent(
+                    Modifier
                         .fillMaxSize()
                         .onGloballyPositioned { coordinates ->
                             onPlayerBoundsChanged(coordinates.boundsInWindow())
                         },
-                    playbackEngine = playbackEngine,
-                    posterUrl = posterUrl,
-                    title = title,
-                    currentTime = currentTime,
-                    totalTime = totalTime,
-                    progress = progress,
-                    bufferedProgress = bufferedProgress,
-                    currentVolume = currentVolume,
-                    currentBrightness = currentBrightness,
-                    isFullscreen = isFullscreen,
-                    isPlaying = isPlaying,
-                    isPlaybackEnded = isPlaybackEnded,
-                    isLocked = isLocked || isInPipMode,
-                    showPoster = showPoster,
-                    showControls = !isInPipMode,
-                    showLoading = showLoading,
-                    showRetry = showRetry,
-                    showResumeButton = showResumeButton,
-                    onPlayClick = onPlayClick,
-                    onReplay = onReplay,
-                    onBackClick = onBackClick,
-                    onHomeClick = onHomeClick,
-                    onFullscreenClick = onFullscreenClick,
-                    onLockClick = onLockClick,
-                    onProgressChange = onProgressChange,
-                    onRetry = onRetry,
-                    onResumeClick = onResumeClick,
-                    qualities = qualities,
-                    selectedQuality = selectedQuality,
-                    onQualitySelected = onQualitySelected,
-                    playbackSpeed = playbackSpeed,
-                    onPlaybackSpeedSelected = onPlaybackSpeedSelected,
-                    superResolutionLabel = superResolutionLabel,
-                    superResolutionOptions = superResolutionOptions,
-                    selectedSuperResolutionIndex = selectedSuperResolutionIndex,
-                    onSuperResolutionSelected = onSuperResolutionSelected,
-                    frameCaptureEnabled = frameCaptureEnabled,
-                    onOpenGifCapture = onOpenGifCapture,
-                    onCaptureScreenshot = onCaptureScreenshot,
-                    errorMessage = errorMessage,
-                    brightnessGestureEnabled = brightnessGestureEnabled,
-                    onSeekBy = onSeekBy,
-                    scale = scale,
-                    onScaleChange = onScaleChange,
-                    durationMs = durationMs,
-                    fullscreenEnabled = fullscreenEnabled,
-                    onLongPressStart = onLongPressStart,
-                    onLongPressEnd = onLongPressEnd,
-                    onVolumeChange = onVolumeChange,
-                    onBrightnessChange = onBrightnessChange,
-                    onProgressGesture = onProgressGesture,
-                    progressGestureSensitivity = progressGestureSensitivity,
-                    videoAspectRatio = videoAspectRatio,
                 )
             }
         }
@@ -256,8 +270,8 @@ fun VideoShellContent(
                     .fillMaxSize()
                     .then(if (!isFullscreen) Modifier.statusBarsPadding() else Modifier)
             ) {
-                VideoPlayerUi(
-                    modifier = Modifier
+                playerContent(
+                    Modifier
                         .fillMaxWidth()
                         .then(
                             if (!isFullscreen && playerHeightDp != null) {
@@ -269,59 +283,6 @@ fun VideoShellContent(
                         .onGloballyPositioned { coordinates ->
                             onPlayerBoundsChanged(coordinates.boundsInWindow())
                         },
-                    playbackEngine = playbackEngine,
-                    posterUrl = posterUrl,
-                    title = title,
-                    currentTime = currentTime,
-                    totalTime = totalTime,
-                    progress = progress,
-                    bufferedProgress = bufferedProgress,
-                    currentVolume = currentVolume,
-                    currentBrightness = currentBrightness,
-                    isFullscreen = isFullscreen,
-                    isPlaying = isPlaying,
-                    isPlaybackEnded = isPlaybackEnded,
-                    isLocked = isLocked || isInPipMode,
-                    showPoster = showPoster,
-                    showControls = !isInPipMode,
-                    showLoading = showLoading,
-                    showRetry = showRetry,
-                    showResumeButton = showResumeButton,
-                    onPlayClick = onPlayClick,
-                    onReplay = onReplay,
-                    onBackClick = onBackClick,
-                    onHomeClick = onHomeClick,
-                    onFullscreenClick = onFullscreenClick,
-                    onLockClick = onLockClick,
-                    onProgressChange = onProgressChange,
-                    onRetry = onRetry,
-                    onResumeClick = onResumeClick,
-                    qualities = qualities,
-                    selectedQuality = selectedQuality,
-                    onQualitySelected = onQualitySelected,
-                    playbackSpeed = playbackSpeed,
-                    onPlaybackSpeedSelected = onPlaybackSpeedSelected,
-                    superResolutionLabel = superResolutionLabel,
-                    superResolutionOptions = superResolutionOptions,
-                    selectedSuperResolutionIndex = selectedSuperResolutionIndex,
-                    onSuperResolutionSelected = onSuperResolutionSelected,
-                    frameCaptureEnabled = frameCaptureEnabled,
-                    onOpenGifCapture = onOpenGifCapture,
-                    onCaptureScreenshot = onCaptureScreenshot,
-                    errorMessage = errorMessage,
-                    brightnessGestureEnabled = brightnessGestureEnabled,
-                    onSeekBy = onSeekBy,
-                    scale = scale,
-                    onScaleChange = onScaleChange,
-                    durationMs = durationMs,
-                    fullscreenEnabled = fullscreenEnabled,
-                    onLongPressStart = onLongPressStart,
-                    onLongPressEnd = onLongPressEnd,
-                    onVolumeChange = onVolumeChange,
-                    onBrightnessChange = onBrightnessChange,
-                    onProgressGesture = onProgressGesture,
-                    progressGestureSensitivity = progressGestureSensitivity,
-                    videoAspectRatio = videoAspectRatio,
                 )
                 if (!isInPipMode && !isFullscreen) {
                     Box(modifier = Modifier.weight(1f)) {

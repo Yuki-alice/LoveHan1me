@@ -60,6 +60,7 @@ import lovehan1me.feature.preview.fakeVideosItem
 import lovehan1me.ui.component.RetryableImage
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction
+import lovehan1me.ui.transition.sharedCoverElement
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.core.util.DisplayTextLocalizer
 import lovehan1me.core.util.SonnerToast
@@ -83,6 +84,8 @@ fun VideoCardItem(
     isPlaying: Boolean = false,
     showDeleteAction: Boolean = false,
     containerColor: Color? = null,
+    // 传了就与详情页封面做共享元素过渡（两侧同 key 才配对）；null = 退化成普通卡片。
+    sharedElementKey: String? = null,
     onClickVideosItem: (String) -> Unit,
     onLongClickVideosItem: (String, String) -> Unit,
 ) {
@@ -137,7 +140,8 @@ fun VideoCardItem(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .aspectRatio(imageAspectRatio),
+                        .aspectRatio(imageAspectRatio)
+                        .sharedCoverElement(sharedElementKey),
                 ) {
                     RetryableImage(
                         model = videoItem.coverUrl,
