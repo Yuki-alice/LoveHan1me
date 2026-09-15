@@ -13,7 +13,6 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -132,30 +131,17 @@ class DesktopMpvPlaybackEngine(
                 )
             }.collect { state ->
                 _state.value = state
-                if (state.phase == PlaybackPhase.Error) maybeRetryAfterError()
             }
         }
     }
 
-    /** 当前 load 的请求（错误自动重试用）。 */
-    @Volatile private var currentRequest: PlaybackRequest? = null
-
-    /** 当前请求的自动重试计数（每次用户发起的 load 从 0 重新计）。 */
-    @Volatile private var currentAttempt = 0
-
-    /** load 代数：用户发起新 load 后，作废仍在等待中的旧重试。 */
-    @Volatile private var loadGeneration = 0
-
     override fun load(request: PlaybackRequest) {
         if (released) return
         LogUtil.d(TAG, "load: ${request.uri} (headers=${request.headers.keys})")
-        issueLoad(request, attempt = 0)
+        issueLoad(request)
     }
 
-    private fun issueLoad(request: PlaybackRequest, attempt: Int) {
-        loadGeneration++
-        currentRequest = request
-        currentAttempt = attempt
+    private fun issueLoad(request: PlaybackRequest) {
         mainScope.launch {
             runCatching {
                 // 惰性初始化先在 Default 线程摸热：万一启动预载尚未完成，
@@ -182,33 +168,13 @@ class DesktopMpvPlaybackEngine(
                     player.play()
                 }
             }.onFailure {
+                // R2：失败即停（学 animeko）。此前这里 1.5s 后静默重载同一 URL，
+                // 纹理未释放就再开一流；手动重试（错误卡按钮调 load()）还在。
                 LogUtil.e(TAG, "load failed", it)
                 _state.value = _state.value.copy(
                     phase = PlaybackPhase.Error,
                     errorMessage = it.message,
                 )
-                maybeRetryAfterError()
-            }
-        }
-    }
-
-    /**
-     * 错误自愈：mpv 经 HTTP 代理拉流时，TLS 握手偶发被对端掐断
-     * （errSSLClosedGraceless / ffmpeg "Stream ends prematurely"，2026-09-14
-     * 三次探针两次复现；同一地址 curl 直连/代理均秒通）——纯瞬时故障。
-     * 静默重试一次；再失败才交给 UI 错误态。
-     */
-    private fun maybeRetryAfterError() {
-        val request = currentRequest ?: return
-        val generation = loadGeneration
-        val nextAttempt = currentAttempt + 1
-        if (nextAttempt > MAX_AUTO_RETRY) return
-        currentAttempt = nextAttempt
-        LogUtil.w(TAG, "播放失败（疑似瞬时网络/代理故障），${AUTO_RETRY_DELAY_MS}ms 后自动重试")
-        scope.launch {
-            delay(AUTO_RETRY_DELAY_MS)
-            if (!released && loadGeneration == generation) {
-                issueLoad(request, nextAttempt)
             }
         }
     }
@@ -404,12 +370,6 @@ class DesktopMpvPlaybackEngine(
 
         /** mediamp 里 mpv 句柄 getter 的 JVM 名字（internal 成员被 mangled）。 */
         private const val MPV_HANDLE_GETTER = "getHandle\$mediamp_mpv"
-
-        /** 播放失败自动重试上限（用户每次主动 load 重新计数）。 */
-        private const val MAX_AUTO_RETRY = 1
-
-        /** 自动重试前等待（毫秒）：给瞬时网络/代理故障一点恢复窗口。 */
-        private const val AUTO_RETRY_DELAY_MS = 1_500L
 
         /**
          * 启动预载：把 mediamp 的 mpv 原生运行时在**后台线程**提前消化。
