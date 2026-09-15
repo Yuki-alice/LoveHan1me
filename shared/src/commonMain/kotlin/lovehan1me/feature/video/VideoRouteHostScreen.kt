@@ -173,6 +173,18 @@ fun VideoRouteHostScreen(
     val video = viewModel.hanimeVideoFlow.collectAsStateWithLifecycle().value
     val relatedItems = video?.relatedHanimes.orEmpty()
 
+    // 宽屏右栏布局开关：双栏 + 非 Classic 横屏风格。此时左列只要简介
+    //（tabsContent 传 introOnly），相关挪到右栏 Tab；其余形态保持双 Tab。
+    val useRailLayout = isDualPane &&
+        appSettings.videoLandscapeLayoutStyle != VideoLandscapeLayoutStyle.Classic
+    // 右栏接管了相关推荐，简介底部的不再画（与经典双栏的 DisposableEffect 同语义）。
+    DisposableEffect(useRailLayout) {
+        if (useRailLayout) viewModel.hideRelatedInIntro = true
+        onDispose {
+            if (useRailLayout) viewModel.hideRelatedInIntro = false
+        }
+    }
+
     LaunchedEffect(playbackController) {
         playbackController.setPlaybackSpeed(SettingsRepository.playerSpeed)
     }
@@ -874,7 +886,25 @@ fun VideoRouteHostScreen(
                 onIntroductionLinkClick = actions::openIntroductionLink,
                 stringLongPressShare = stringLongPressShare,
                 pageHost = pageHost,
+                // 宽屏右栏布局时左列只要简介（相关挪到右栏 Tab）；窄屏/经典保持双 Tab。
+                introOnly = useRailLayout,
             )
+        },
+        // 宽屏右栏布局（设计稿 §宽屏右栏）：左列播放器 + 简介，右栏 Tab（相关｜评论）。
+        // 窄屏/经典双栏传 null，Shell 回退旧行为。
+        railTabsContent = if (useRailLayout) {
+            {
+                VideoRailTabsContent(
+                    videoCode = route.videoCode,
+                    relatedItems = relatedItems,
+                    onOpenVideo = { item -> onNavigateToVideo(item.videoCode) },
+                    commentViewModel = commentViewModel,
+                    pageHost = pageHost,
+                    commentsEnabled = !viewModel.fromDownload && !appSettings.disableComments,
+                )
+            }
+        } else {
+            null
         },
         classicTabletLayout = if (
             isDualPane &&

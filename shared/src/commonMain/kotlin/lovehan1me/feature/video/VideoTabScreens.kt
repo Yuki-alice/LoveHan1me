@@ -4,17 +4,23 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.SettingsRepository.isAlreadyLogin
 import lovehan1me.Res
+import lovehan1me.comment
+import lovehan1me.related_video
 import lovehan1me.there_is_a_small_issue
 import lovehan1me.core.constant.VIDEO_COMMENT_PREFIX
 import lovehan1me.data.getHanimeShareText
@@ -326,5 +332,60 @@ fun RenderVideoCommentContent(
                 viewModel.setCommentScrollState(videoCode, index, offset)
             },
         )
+    }
+}
+
+/**
+ * 宽屏右栏 Tab：**相关推荐｜评论**（设计稿 §宽屏右栏）。
+ *
+ * 默认相关推荐，切到评论后列表独立滚动、播放器继续播（边看边刷）。
+ * 评论页直接复用 [RenderVideoCommentContent]（弹窗看二级回复、滚动记忆全在里面）；
+ * 相关页复用简介底部的 [RelatedVideosSection]（同卡片同网格）。
+ * 窄屏/经典双栏不用它，走简介/评论双 Tab。
+ */
+@Composable
+fun VideoRailTabsContent(
+    videoCode: String,
+    relatedItems: List<HanimeInfo>,
+    onOpenVideo: (HanimeInfo) -> Unit,
+    commentViewModel: CommentViewModel,
+    pageHost: VideoPageHost,
+    commentsEnabled: Boolean,
+    modifier: Modifier = Modifier,
+) {
+    val tabs = remember(commentsEnabled) {
+        buildList {
+            add(VideoTabItem(Res.string.related_video))
+            if (commentsEnabled) add(VideoTabItem(Res.string.comment))
+        }
+    }
+    var selectedTabIndex by rememberSaveable(videoCode) { mutableIntStateOf(0) }
+    // 评论被关掉时只剩相关一页，选中态 clip 回来（读时裁，不写 state，避免组合内写入）。
+    val safeTabIndex = selectedTabIndex.coerceIn(0, (tabs.size - 1).coerceAtLeast(0))
+
+    VideoTabsContent(
+        tabs = tabs,
+        selectedTabIndex = safeTabIndex,
+        onSelectedTabChange = { selectedTabIndex = it },
+        modifier = modifier.fillMaxSize(),
+    ) { page ->
+        if (page == 0) {
+            RelatedVideosSection(
+                videos = relatedItems,
+                onOpenVideo = onOpenVideo,
+                modifier = Modifier.fillMaxSize(),
+            )
+        } else {
+            RenderVideoCommentContent(
+                videoCode = videoCode,
+                viewModel = commentViewModel,
+                reportMessages = remember { kotlinx.coroutines.flow.MutableSharedFlow() },
+                getMessageText = { message ->
+                    // 与 VideoRouteContent 评论页同语义：VM Message 已携带文本。
+                    message.text
+                },
+                pageHost = pageHost,
+            )
+        }
     }
 }

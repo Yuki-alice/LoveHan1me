@@ -132,6 +132,11 @@ fun VideoShellContent(
     videoAspectRatio: Float,
     onPlayerBoundsChanged: (Rect) -> Unit,
     tabsContent: @Composable () -> Unit,
+    /**
+     * 宽屏右栏 Tab（相关推荐｜评论），null = 回退到 [tabsContent]。
+     * 窄屏/经典双栏传 null。
+     */
+    railTabsContent: (@Composable () -> Unit)? = null,
     classicTabletLayout: ClassicTabletLayoutConfig?,
     modifier: Modifier = Modifier,
 ) {
@@ -337,8 +342,10 @@ fun VideoShellContent(
         }
     } else if (showSideRelated) {
         Row(modifier = modifier.fillMaxSize()) {
-            PlayerContent(
-                modifier = Modifier
+            // 宽屏右栏布局：左列 = 播放器 + 简介（introContent，非 null 时必是右栏模式），
+            // 不再是播满全高的 PlayerContent。
+            MainContent(
+                contentModifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(),
             )
@@ -354,7 +361,8 @@ fun VideoShellContent(
                     .background(HanimeDefaults.Colors.pageSurface)
                     .width(rememberRelatedPaneWidth()),
             ) {
-                tabsContent()
+                // 右栏 Tab（相关推荐｜评论）；null 回退旧行为（简介/评论 Tab）。
+                (railTabsContent ?: tabsContent)()
             }
         }
     } else {

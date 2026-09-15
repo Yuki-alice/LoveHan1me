@@ -45,6 +45,11 @@ fun VideoRouteContent(
     onIntroductionLinkClick: (String) -> Unit,
     stringLongPressShare: String,
     pageHost: VideoPageHost,
+    /**
+     * 宽屏右栏布局用：只渲染简介（播放器下方左列），相关推荐与评论挪到右栏 Tab。
+     * 窄屏/经典双栏保持 false，走简介/评论双 Tab。
+     */
+    introOnly: Boolean = false,
 ) {
     val hostUiState by videoViewModel.videoHostUiStateFlow.collectAsStateWithLifecycle()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
@@ -58,10 +63,43 @@ fun VideoRouteContent(
         }
     }
 
+    // 简介页只有一处实现：窄屏 Tab 页 0 与宽屏左列共用，改只改这里。
+    @Composable
+    fun IntroPage() {
+        RenderVideoIntroductionContent(
+            videoCode = videoCode,
+            viewModel = videoViewModel,
+            pendingDownloadPrompt = pendingDownloadPrompt,
+            onPendingDownloadPromptChange = onPendingDownloadPromptChange,
+            onOpenVideo = onOpenVideo,
+            onOpenArtist = onOpenArtist,
+            onNavigateToSearch = onNavigateToSearch,
+            onToggleSubscribe = onToggleSubscribe,
+            onToggleFavorite = onToggleFavorite,
+            onRequestManageMyList = onRequestManageMyList,
+            onRateVideo = onRateVideo,
+            onManageMyList = onManageMyList,
+            onQuickCheckIn = onQuickCheckIn,
+            onPrepareDownload = onPrepareDownload,
+            onConfirmDownloadPrompt = onConfirmDownloadPrompt,
+            onRequestOpenOfficialDownloadPage = onRequestOpenOfficialDownloadPage,
+            onOpenWebPage = onOpenWebPage,
+            onOpenOriginalComic = onOpenOriginalComic,
+            onOpenShare = onOpenShare,
+            onCopyText = onCopyText,
+            onIntroductionLinkClick = onIntroductionLinkClick,
+            stringLongPressShare = stringLongPressShare,
+        )
+    }
+
     VideoScreen(
         state = videoState,
         onRetry = onRetry,
     ) {
+        if (introOnly) {
+            IntroPage()
+            return@VideoScreen
+        }
         VideoTabsContent(
             tabs = tabs,
             selectedTabIndex = hostUiState.selectedTabIndex,
@@ -69,30 +107,7 @@ fun VideoRouteContent(
             modifier = Modifier.fillMaxSize(),
         ) { page ->
             if (page == 0) {
-                RenderVideoIntroductionContent(
-                    videoCode = videoCode,
-                    viewModel = videoViewModel,
-                    pendingDownloadPrompt = pendingDownloadPrompt,
-                    onPendingDownloadPromptChange = onPendingDownloadPromptChange,
-                    onOpenVideo = onOpenVideo,
-                    onOpenArtist = onOpenArtist,
-                    onNavigateToSearch = onNavigateToSearch,
-                    onToggleSubscribe = onToggleSubscribe,
-                    onToggleFavorite = onToggleFavorite,
-                    onRequestManageMyList = onRequestManageMyList,
-                    onRateVideo = onRateVideo,
-                    onManageMyList = onManageMyList,
-                    onQuickCheckIn = onQuickCheckIn,
-                    onPrepareDownload = onPrepareDownload,
-                    onConfirmDownloadPrompt = onConfirmDownloadPrompt,
-                    onRequestOpenOfficialDownloadPage = onRequestOpenOfficialDownloadPage,
-                    onOpenWebPage = onOpenWebPage,
-                    onOpenOriginalComic = onOpenOriginalComic,
-                    onOpenShare = onOpenShare,
-                    onCopyText = onCopyText,
-                    onIntroductionLinkClick = onIntroductionLinkClick,
-                    stringLongPressShare = stringLongPressShare,
-                )
+                IntroPage()
             } else {
                 RenderVideoCommentContent(
                     videoCode = videoCode,
