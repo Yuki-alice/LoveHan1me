@@ -17,7 +17,6 @@ import lovehan1me.core.domain.model.PlayerKernel
 import lovehan1me.core.domain.model.ProxyType
 import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.core.domain.model.ThemeMode
-import lovehan1me.core.domain.model.VideoLandscapeLayoutStyle
 import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
 import lovehan1me.core.domain.model.normalizeLegacySlideSensitivity
 import kotlinx.coroutines.CoroutineScope
@@ -117,9 +116,6 @@ object DataStoreManager : SettingsStore {
         disableComments = bool("disable_comments", defaults.disableComments),
         hapticFeedbackEnabled = bool("haptic_feedback_enabled", defaults.hapticFeedbackEnabled),
         disablePredictiveBack = bool("disable_predictive_back", defaults.disablePredictiveBack),
-        videoLandscapeLayoutStyle = VideoLandscapeLayoutStyle.fromValue(
-            string("video_landscape_layout_style", defaults.videoLandscapeLayoutStyle.value)
-        ),
         navBarStyle = NavBarStyle.fromValue(
             string("nav_bar_style", defaults.navBarStyle.value)
         ),
@@ -175,7 +171,7 @@ object DataStoreManager : SettingsStore {
 
     private fun AppSettings.toMap(): Map<String, Any> = buildMap {
         put("app_language", appLanguage.preferenceValue); put("use_dark_mode", themeMode.value); put("app_theme_id", themeId); put("amoled_black", amoled); put("app_contrast_level", contrastLevel.value)
-        put("allow_pip_mode", allowPipMode); put("secure_mode", secureMode); put("disable_comments", disableComments); put("haptic_feedback_enabled", hapticFeedbackEnabled); put("disable_predictive_back", disablePredictiveBack); put("video_landscape_layout_style", videoLandscapeLayoutStyle.value); put("nav_bar_style", navBarStyle.value)
+        put("allow_pip_mode", allowPipMode); put("secure_mode", secureMode); put("disable_comments", disableComments); put("haptic_feedback_enabled", hapticFeedbackEnabled); put("disable_predictive_back", disablePredictiveBack); put("nav_bar_style", navBarStyle.value)
         put("usage_notice_accepted_v2", usageNoticeAccepted); put("usage_source_verified", usageSourceVerified); put("usage_source_pending", usageSourcePending); put("already_login", isAlreadyLogin); put("local_list_notice_dismissed", localListNoticeDismissed); put("saved_user_id", savedUserId); put("cookie", loginCookie); put("cf_cookie", cloudFlareCookie); put("cf_cookie_host", cloudFlareCookieHost); put("desktop_browser_user_agent", desktopBrowserUserAgent)
         put("domain_name", domainName); put("selectedBaseUrl", selectedBaseUrl); put("use_custom_mirror_site", useCustomMirrorSite); put("custom_mirror_site", customMirrorSite); put("append_custom_mirror_path", appendCustomMirrorPath); put("use_built_in_hosts", useBuiltInHosts); put("custom_hosts_data", customHostsData); put("use_doh", useDoH); put("doh_preset", dohPreset); put("doh_custom_url", dohCustomUrl); put("doh_bootstrap_ips", dohBootstrapIps); put("doh_timeout_seconds", dohTimeoutSeconds); put("proxy_type", proxyType.id); put("proxy_ip", proxyIp); put("proxy_port", proxyPort)
         cachedUpdateJson?.let { put("app_update_cached_json", it) }; put("app_update_ignored_version_code", ignoredVersionCode); put("download_count_limit", downloadCountLimit); put("download_speed_limit", downloadSpeedLimitIndex); put("use_private_storage", usePrivateStorage); safDownloadPath?.let { put("saf_download_path", it) }; put("collapse_downloaded_group", collapseDownloadedGroup)

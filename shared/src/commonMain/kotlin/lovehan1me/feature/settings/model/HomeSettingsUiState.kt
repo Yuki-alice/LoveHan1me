@@ -18,7 +18,6 @@ data class HomeSettingsUiState(
     val searchArtistIgnoreVideoType: Boolean,
     val disableMobileDataWarning: Boolean,
     val disablePredictiveBack: Boolean,
-    val videoLandscapeLayoutStyle: String,
     val navBarStyle: String,
     val disableComments: Boolean,
     val collapseDownloadedGroup: Boolean,

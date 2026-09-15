@@ -95,10 +95,6 @@
     <string name="add_to_playlist">Add to Playlist</string>
     <string name="no_custom_playlist_hint">No custom playlists yet. Create one from Playlists in the navigation drawer.</string>
     <string name="player_settings">Player Settings</string>
-    <string name="video_landscape_layout_style">Landscape video page layout</string>
-    <string name="video_landscape_layout_style_summary">Choose how the player, tabs, and related videos are arranged in landscape</string>
-    <string name="layout_style_classic">Classic</string>
-    <string name="layout_style_dual_pane">Dual-pane</string>
     <string name="search_grid_columns_title">Video Grid Columns</string>
     <string name="search_grid_columns_summary">Only effective in tablet mode, adjust the number of columns on search, watch later, liked videos and subscription pages based on screen width</string>
     <string name="search_grid_columns_dialog_hint">Set the number of video grid columns for different screen widths</string>

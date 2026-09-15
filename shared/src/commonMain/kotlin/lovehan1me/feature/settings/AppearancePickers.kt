@@ -49,14 +49,10 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
-import lovehan1me.video_landscape_layout_style_summary
-import lovehan1me.video_landscape_layout_style
 import lovehan1me.theme_board
 import lovehan1me.theme_board_summary
 import lovehan1me.amoled_mode
 import lovehan1me.amoled_mode_summary
-import lovehan1me.layout_style_dual_pane
-import lovehan1me.layout_style_classic
 import lovehan1me.follow_system
 import lovehan1me.dark_theme
 import lovehan1me.dark_mode_picker_summary
@@ -65,8 +61,6 @@ import lovehan1me.always_off
 import lovehan1me.ic_lightbulb
 import lovehan1me.ic_light_mode
 import lovehan1me.ic_dark_mode
-import lovehan1me.bg_settings_pad_new
-import lovehan1me.bg_settings_pad_classic
 import lovehan1me.ui.component.immediateClickable
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.ThemeBoard
@@ -114,39 +108,6 @@ fun ThemeBoardPicker(
                 ),
                 selected = selectedId == board.id,
                 onClick = { onSelect(board.id) },
-            )
-        }
-    }
-}
-
-@Composable
-fun VideoLandscapeLayoutStylePicker(
-    selectedValue: String,
-    onSelect: (String) -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val options = listOf(
-        VideoLandscapeLayoutOption(
-            value = "classic",
-            title = stringResource(Res.string.layout_style_classic),
-            previewRes = Res.drawable.bg_settings_pad_classic,
-        ),
-        VideoLandscapeLayoutOption(
-            value = "dual_pane",
-            title = stringResource(Res.string.layout_style_dual_pane),
-            previewRes = Res.drawable.bg_settings_pad_new,
-        ),
-    )
-    PickerContainer(
-        title = stringResource(Res.string.video_landscape_layout_style),
-        description = stringResource(Res.string.video_landscape_layout_style_summary),
-        modifier = modifier,
-    ) {
-        items(items = options, key = { it.value }) { option ->
-            VideoLandscapeLayoutStyleItem(
-                option = option,
-                selected = selectedValue == option.value,
-                onClick = { onSelect(option.value) },
             )
         }
     }
@@ -235,48 +196,6 @@ private fun PickerContainer(
                 content = content,
             )
         }
-    }
-}
-
-@Composable
-private fun VideoLandscapeLayoutStyleItem(
-    option: VideoLandscapeLayoutOption,
-    selected: Boolean,
-    onClick: () -> Unit,
-) {
-    val borderWidth by animateDpAsState(
-        targetValue = if (selected) 3.dp else (-1).dp,
-        animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
-        label = "video-landscape-layout-border",
-    )
-    PickerOption(
-        onClick = onClick,
-        width = 200.dp,
-    ) {
-        Image(
-            painter = painterResource(option.previewRes),
-            contentDescription = null,
-            contentScale = ContentScale.Fit,
-            modifier = Modifier
-                .fillMaxWidth()
-                .aspectRatio(4f / 3f)
-                .clip(MaterialTheme.shapes.large)
-                .background(MaterialTheme.colorScheme.surfaceContainer)
-                .border(
-                    width = borderWidth,
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = MaterialTheme.shapes.large,
-                ),
-        )
-        Text(
-            text = option.title,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (selected) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.onSurface
-            },
-        )
     }
 }
 
@@ -399,12 +318,6 @@ private data class DarkModeOption(
     val title: String,
     val iconRes: DrawableResource,
     val dark: Boolean,
-)
-
-private data class VideoLandscapeLayoutOption(
-    val value: String,
-    val title: String,
-    val previewRes: DrawableResource,
 )
 
 private fun ContentDrawScope.drawFadedEdge(

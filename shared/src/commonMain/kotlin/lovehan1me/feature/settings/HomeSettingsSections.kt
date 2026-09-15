@@ -213,7 +213,6 @@ internal fun previewHomeSettingsState() = HomeSettingsUiState(
     searchArtistIgnoreVideoType = false,
     disableMobileDataWarning = false,
     disablePredictiveBack = false,
-    videoLandscapeLayoutStyle = "classic",
     navBarStyle = "standard",
     disableComments = false,
     collapseDownloadedGroup = false,
@@ -456,13 +455,8 @@ internal fun AnimatedLazyListScope.interfaceInteractionSection(
                 onCheckedChange = actions.disablePredictiveBackChange,
                 enabled = false,
             )
-            // P0：「平板模式」开关已删除。它的两个语义分别归位——
-            // 「要不要双栏」由可用内容宽度决定（恒开，不再是开关）；
-            // 「双栏长什么样」保留为下面的布局风格选择（恒显，不再被开关门控）。
-            VideoLandscapeLayoutStylePicker(
-                selectedValue = state.videoLandscapeLayoutStyle,
-                onSelect = actions.videoLandscapeLayoutStyleChange,
-            )
+            // P0：「平板模式」开关已删除，「双栏长什么样」的布局风格选择也已随
+            // 详情页宽屏重构（照 animeko 双栏定稿）移除——双栏形态恒定，不再可配。
             // P6：底栏形态。**只影响 Compact 宽度** —— Medium+ 走 NavigationRail，
             // 该设置对它们无意义，故摘要里写明作用域，避免用户在大屏上调了没反应。
             SettingNavigationItem(

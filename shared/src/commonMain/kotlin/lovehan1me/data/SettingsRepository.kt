@@ -10,7 +10,6 @@ import lovehan1me.core.domain.model.ContrastLevel
 import lovehan1me.core.domain.model.PlayerKernel
 import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.core.domain.model.ThemeMode
-import lovehan1me.core.domain.model.VideoLandscapeLayoutStyle
 import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -85,7 +84,6 @@ object SettingsRepository : SettingsStore {
     val searchArtistIgnoreVideoType get() = current.searchArtistIgnoreVideoType
     val disableMobileDataWarning get() = current.disableMobileDataWarning
     val disablePredictiveBack get() = current.disablePredictiveBack
-    val videoLandscapeLayoutStyle get() = current.videoLandscapeLayoutStyle
     val navBarStyle get() = current.navBarStyle
     val hapticFeedbackEnabled get() = current.hapticFeedbackEnabled
     val funLoadingHints get() = current.funLoadingHints
@@ -137,9 +135,6 @@ object SettingsRepository : SettingsStore {
     suspend fun setIgnoredVersionCode(value: Int) = update { it.copy(ignoredVersionCode = value) }
     suspend fun setAlwaysShowUpdateCard(value: Boolean) = update { it.copy(alwaysShowUpdateCard = value) }
     suspend fun setDisplayDensity(value: DisplayDensity) = update { it.copy(displayDensity = value) }
-    suspend fun setVideoLandscapeLayoutStyle(value: VideoLandscapeLayoutStyle) =
-        update { it.copy(videoLandscapeLayoutStyle = value) }
-
     suspend fun setNavBarStyle(value: NavBarStyle) = update { it.copy(navBarStyle = value) }
 
     private fun String.withTrailingSlash() = if (endsWith('/')) this else "$this/"

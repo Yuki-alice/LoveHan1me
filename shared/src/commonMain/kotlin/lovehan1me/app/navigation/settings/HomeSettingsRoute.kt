@@ -97,7 +97,6 @@ import lovehan1me.core.domain.model.DisplayDensity
 import lovehan1me.core.domain.model.NavBarStyle
 import lovehan1me.core.domain.model.ContrastLevel
 import lovehan1me.core.domain.model.ThemeMode
-import lovehan1me.core.domain.model.VideoLandscapeLayoutStyle
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.feature.settings.HomeSettingsPage
 import lovehan1me.feature.settings.HomeSettingsScreen
@@ -297,13 +296,6 @@ fun HomeSettingsRouteScreen(
             },
             disablePredictiveBackChange = {
                 coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(disablePredictiveBack = it) } }
-            },
-            videoLandscapeLayoutStyleChange = { value ->
-                coroutineScope.launch {
-                    SettingsRepository.setVideoLandscapeLayoutStyle(
-                        VideoLandscapeLayoutStyle.fromValue(value)
-                    )
-                }
             },
             navBarStyleChange = { value ->
                 coroutineScope.launch {
@@ -538,7 +530,6 @@ private fun buildHomeSettingsUiState(
         searchArtistIgnoreVideoType = SettingsRepository.searchArtistIgnoreVideoType,
         disableMobileDataWarning = SettingsRepository.disableMobileDataWarning,
         disablePredictiveBack = SettingsRepository.disablePredictiveBack,
-        videoLandscapeLayoutStyle = SettingsRepository.videoLandscapeLayoutStyle.value,
         // 只存值，标签在 UI 层用 stringResource 算 —— 本函数是**非 composable** 的
         // buildHomeSettingsUiState，在这里调 stringResource 编译不过。
         navBarStyle = SettingsRepository.navBarStyle.value,

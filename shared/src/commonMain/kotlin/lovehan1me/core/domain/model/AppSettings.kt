@@ -69,16 +69,6 @@ enum class DisplayDensity(val percent: Int, val scale: Float) {
     }
 }
 
-enum class VideoLandscapeLayoutStyle(val value: String) {
-    Classic("classic"),
-    DualPane("dual_pane");
-
-    companion object {
-        fun fromValue(value: String): VideoLandscapeLayoutStyle =
-            entries.firstOrNull { it.value == value } ?: Classic
-    }
-}
-
 /**
  * 底栏形态（P6）。**只影响 Compact 宽度下的底栏**，Medium+ 的 NavigationRail 不受影响。
  *
@@ -136,7 +126,6 @@ data class AppSettings(
     val disableComments: Boolean = false,
     val hapticFeedbackEnabled: Boolean = false,
     val disablePredictiveBack: Boolean = false,
-    val videoLandscapeLayoutStyle: VideoLandscapeLayoutStyle = VideoLandscapeLayoutStyle.Classic,
     val navBarStyle: NavBarStyle = NavBarStyle.Standard,
     val usageNoticeAccepted: Boolean = false,
     val usageSourceVerified: Boolean = false,
