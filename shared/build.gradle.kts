@@ -88,6 +88,10 @@ kotlin {
             // Compose 资源（P4：Res 类 / 最小字符串集）
             implementation(compose.components.resources)
 
+            // @Preview 注解（ui/preview 包）。注解是全平台的，但"渲染能力"要落在
+            // 具体平台源集：Android 见 androidMain 的 ui-tooling。
+            implementation(libs.cmp.ui.tooling.preview)
+
             // 设置存储：DataStore Preferences 的多平台 core（P2b：DataStoreManager 已下沉）
             implementation(libs.datastore.preferences.core)
 
@@ -126,6 +130,11 @@ kotlin {
             // core-ktx（androidx.core.net.toUri）+ coroutines-android（Dispatchers.Main）
             implementation(libs.core.ktx)
             implementation(libs.coroutines.android)
+
+            // Android Studio 渲染 commonMain 的 @Preview 需要渲染器（注解在 commonMain，
+            // 渲染能力在平台源集）。桌面侧渲染要 org.jetbrains.compose.ui:ui-tooling-desktop，
+            // 暂未引入——当前预览在 Android Studio 里看。
+            implementation(libs.compose.ui.ui.tooling)
 
             // P6d-1-C：动态取色（Kyant0 m3color，无 KMP 坐标，仅 androidMain；坐标从 :app 照搬）
             implementation(libs.kyant.m3color)

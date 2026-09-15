@@ -150,6 +150,9 @@ cmp-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = 
 cmp-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
 cmp-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMultiplatformMaterial3" }
 cmp-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
+# @Preview 注解：CMP 平台必须用 JetBrains 坐标——androidx 的 ui-tooling-preview 只有
+# Android 变体，放 commonMain 会报 KMP Dependencies Resolution Failure（desktop/iOS 解析不到）
+cmp-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }
 
 # 网络：Ktor 取代 Retrofit + OkHttp
 ktor-client-core = { module = "io.ktor:ktor-client-core", version.ref = "ktor" }
