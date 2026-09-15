@@ -32,6 +32,11 @@ fun VideoTabsContent(
     selectedTabIndex: Int,
     onSelectedTabChange: (Int) -> Unit,
     modifier: Modifier = Modifier,
+    /**
+     * Tab 行容器色。null = 主题默认（surface）；
+     * 传 Transparent 让右栏底色（VideoShellContent 涂的沉浸黑）透上来，B 站风宽屏用。
+     */
+    tabRowContainerColor: androidx.compose.ui.graphics.Color? = null,
     pageContent: @Composable (Int) -> Unit,
 ) {
     val scope = rememberCoroutineScope()
@@ -56,37 +61,51 @@ fun VideoTabsContent(
         }
     }
 
+    @Composable
+    fun tabItems() {
+        tabs.forEachIndexed { index, item ->
+            Tab(
+                selected = pagerState.currentPage == index,
+                onClick = {
+                    scope.launch {
+                        pagerState.animateScrollToPage(index)
+                    }
+                },
+                text = {
+                    if (item.badgeCount > 0) {
+                        BadgedBox(
+                            badge = {
+                                Badge { Text(item.badgeCount.toString()) }
+                            }
+                        ) {
+                            Text(
+                                text = stringResource(item.titleRes),
+                                color = MaterialTheme.colorScheme.onSurface,
+                            )
+                        }
+                    } else {
+                        Text(
+                            text = stringResource(item.titleRes),
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                    }
+                },
+            )
+        }
+    }
+
     Column(modifier = modifier.fillMaxSize()) {
         if (tabs.isNotEmpty()) {
-            PrimaryTabRow(selectedTabIndex = pagerState.currentPage) {
-                tabs.forEachIndexed { index, item ->
-                    Tab(
-                        selected = pagerState.currentPage == index,
-                        onClick = {
-                            scope.launch {
-                                pagerState.animateScrollToPage(index)
-                            }
-                        },
-                        text = {
-                            if (item.badgeCount > 0) {
-                                BadgedBox(
-                                    badge = {
-                                        Badge { Text(item.badgeCount.toString()) }
-                                    }
-                                ) {
-                                    Text(
-                                        text = stringResource(item.titleRes),
-                                        color = MaterialTheme.colorScheme.onSurface,
-                                    )
-                                }
-                            } else {
-                                Text(
-                                    text = stringResource(item.titleRes),
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                )
-                            }
-                        },
-                    )
+            if (tabRowContainerColor != null) {
+                PrimaryTabRow(
+                    selectedTabIndex = pagerState.currentPage,
+                    containerColor = tabRowContainerColor,
+                ) {
+                    tabItems()
+                }
+            } else {
+                PrimaryTabRow(selectedTabIndex = pagerState.currentPage) {
+                    tabItems()
                 }
             }
         }

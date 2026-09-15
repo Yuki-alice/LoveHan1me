@@ -44,6 +44,8 @@
     <string name="expand">展开</string>
     <string name="series_video">系列影片</string>
     <string name="related_video">相关影片</string>
+    <string name="danmaku_input_hint">发个友善的弹幕，见证当下</string>
+    <string name="danmaku_send">发送</string>
     <string name="now_playing">现正播放</string>
     <string name="view_more_replies">查看 %1$d 条回复</string>
     <string name="comment_not_found">未发现评论</string>
@@ -706,6 +708,7 @@
     <string name="player_gesture_brightness">亮度</string>
     <string name="player_gesture_volume">音量</string>
     <string name="player_gesture_progress">进度</string>
+    <string name="player_seek_release_to_cancel">松手取消</string>
     <string name="player_play_from_beginning">从头开始播放</string>
     <string name="perception">感知</string>
     <string name="check_in_feature_name">冲了么</string>

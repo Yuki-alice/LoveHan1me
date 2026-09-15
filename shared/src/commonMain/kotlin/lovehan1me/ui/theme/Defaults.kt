@@ -96,6 +96,13 @@ object HanimeDefaults {
         const val scrimDeep = 0.82f
         /** 底部控制栏的玻璃底（作用在模糊层之上）。 */
         const val barSurface = 0.18f
+        /**
+         * 进度条时间预览气泡的底。
+         *
+         * 比 [barSurface] 实得多：气泡是**压在画面上**的独立浮层，不像控制栏那样有模糊底兜着，
+         * 0.18 的玻璃在亮画面上读不出白字。
+         */
+        const val previewBubble = 0.82f
         /** 侧栏遮罩。 */
         const val panelDim = 0.72f
         /** 模糊压暗（posterBlur 之上的那层黑）。 */
@@ -133,6 +140,9 @@ object HanimeDefaults {
         val trackBuffered = Color.White.copy(alpha = OverlayAlpha.trackBuffered)
         val thumbGlow = Color.White.copy(alpha = OverlayAlpha.thumbGlow)
 
+        /** 进度条时间预览气泡的底（深色胶囊，压在画面上保证白字可读）。 */
+        val previewBubble = Color.Black.copy(alpha = OverlayAlpha.previewBubble)
+
         /** 顶栏 scrim 渐变的两端（透明 → [OverlayAlpha.scrim]）。 */
         val scrimTopStart = Color.Transparent
         val scrimTopEnd = Color.Black.copy(alpha = OverlayAlpha.scrim)
@@ -167,8 +177,15 @@ object HanimeDefaults {
         val scrimBottom = 180.dp
         /** 顶栏最小高度。 */
         val topBarMinHeight = 52.dp
-        /** 底栏按钮行高度。 */
+        /** 底栏按钮的**视觉**行高（图标本体的高度档位）。 */
         val bottomRow = 30.dp
+        /**
+         * 底栏控制行的**布局**高度。
+         *
+         * 复刻 animeko 后进度条内联进按钮行，行内必须容得下进度条的 48dp 命中区 ——
+         * 因此行高按 [minTouchTarget] 而不是 [bottomRow] 给。
+         */
+        val bottomControlRow = minTouchTarget
         /** 中央大播放键。 */
         val centerButton = 72.dp
         /** 中央大键里的图标。 */
@@ -176,26 +193,26 @@ object HanimeDefaults {
         /** 右中锁定按钮。42 → 48：可见填充圆钮**就是**点击面（FilledIconButton 的 clickable
          *  边界 = 容器尺寸），42 不是任何官方档位、也达不到 M3 触控目标，直接归一到 48。 */
         val lockButton = 48.dp
-        /** 左右两侧的次级图标（顶栏/底栏）。 */
-        val iconLarge = 20.dp
-        /** 底栏小图标。 */
-        val iconSmall = 18.dp
-        /** 底栏按钮的视觉尺寸（**非** M3 档位值，故不并进 [Sizes]）。 */
-        val bottomBarButton = 26.dp
+        /** 顶栏/底栏的次级图标（返回、主页…）。20 → **24**：对齐 animeko 顶栏的 24dp。 */
+        val iconLarge = 24.dp
+        /** 底栏主图标（播放/暂停、下一集）。animeko 用 36dp，取 32 保住信息密度又不显小。 */
+        val bottomPrimaryIcon = 32.dp
+        /** 底栏次级图标（全屏）。animeko 用 32dp，这里与主图标拉开一档做层级。 */
+        val bottomSecondaryIcon = 26.dp
         /** 侧栏面板宽度。 */
         val panelWidth = 156.dp
-        /** 进度轨道厚度（视觉）。 */
-        val track = 3.dp
-        /** 轨道容器高（thumb 光晕的容纳盒）。 */
-        val trackBox = 18.dp
+        /** 进度轨道厚度（视觉）。3 → **5**：animeko 6dp，取 5 既看清又保住"细轨"观感。 */
+        val track = 5.dp
+        /** 轨道容器高（thumb 光晕的容纳盒）。18 → **22**：对齐 animeko 的 22dp 容器。 */
+        val trackBox = 22.dp
         /** 轨道触摸区高（Media3：进度触摸 48dp）。 */
         val trackTouch = 48.dp
-        /** thumb 外圈容器。 */
-        val thumbBox = 14.dp
-        /** thumb 光晕。 */
-        val thumbGlow = 15.dp
-        /** thumb（实心）。 */
-        val thumb = 9.dp
+        /** thumb 外圈容器。14 → **16**。 */
+        val thumbBox = 16.dp
+        /** thumb 光晕。15 → **18**。 */
+        val thumbGlow = 18.dp
+        /** thumb（实心）。9 → **12**：animeko 自绘 12×24，取 12 保住圆形形制。 */
+        val thumb = 12.dp
     }
 
     object Widths {

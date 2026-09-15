@@ -45,11 +45,16 @@ import lovehan1me.Res
 import lovehan1me.player_progress_percent
 import lovehan1me.player_gesture_volume
 import lovehan1me.player_gesture_progress
+import lovehan1me.player_seek_release_to_cancel
 import lovehan1me.player_gesture_brightness
 import lovehan1me.ic_volume_up
 import lovehan1me.ic_light_mode
 import lovehan1me.ic_fast_rewind
 import lovehan1me.ic_fast_forward
+// ⚠️ 必须**显式**导入：同包的 `VideoRouteHostScreen.kt` 里有一个 file-private 的
+// `formatPlaybackTime`，同名会让解析器选中它并报"private in file"。
+// 显式导入的优先级高于同包声明，因此这一行是必需的，不是冗余。
+import lovehan1me.feature.player.formatPlaybackTime
 import lovehan1me.feature.player.posterBlur
 import lovehan1me.ui.theme.HanimeDefaults
 import kotlinx.coroutines.launch
@@ -94,9 +99,18 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.IntOffset
+import androidx.compose.ui.unit.IntRect
+import androidx.compose.ui.unit.IntSize
+import androidx.compose.ui.unit.LayoutDirection
+import androidx.compose.ui.window.Popup
+import androidx.compose.ui.window.PopupPositionProvider
+import androidx.compose.ui.window.PopupProperties
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.sp
 import lovehan1me.video_loading_failed
@@ -142,6 +156,7 @@ import lovehan1me.core.util.SonnerToast
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
 
 
@@ -339,6 +354,80 @@ internal fun PlayerSidePanelBottomSheet(
 }
 
 
+/** 进度条时间预览气泡离进度条上沿的间距。 */
+private val SliderPreviewGap = 6.dp
+
+/**
+ * 「上滑取消 seek」的竖直阈值：累计上滑超过这个距离就认为用户想放弃这次拖动。
+ *
+ * 48dp 是一个拇指容易表达、又不容易被误触的距离（与 M3 触控目标同档）。
+ */
+private val SeekCancelThreshold = 48.dp
+
+/**
+ * 时间预览气泡的位置：贴在进度条**上沿**、横向跟随指针 / thumb，并在窗口内夹住不越界。
+ *
+ * 为什么用 `Popup` 而不是把气泡画在底栏里：气泡需要"溢出到进度条上方"，
+ * 而底栏外面套着 `AnimatedVisibility`，画在内部的浮层会被宿主的布局边界约束住。
+ * `Popup` 以**父布局**为锚点、不受宿主裁剪影响，正好够用（animeko 也是这么做的）。
+ */
+private class SliderPreviewPositionProvider(
+    private val ratio: Float,
+    private val gapPx: Int,
+) : PopupPositionProvider {
+    override fun calculatePosition(
+        anchorBounds: IntRect,
+        windowSize: IntSize,
+        layoutDirection: LayoutDirection,
+        popupContentSize: IntSize,
+    ): IntOffset {
+        // 气泡中心对准锚点内的对应比例位置，再整体左移半个气泡宽
+        val anchorX = anchorBounds.left +
+            (anchorBounds.width * ratio.coerceIn(0f, 1f)).roundToInt()
+        val maxX = (windowSize.width - popupContentSize.width).coerceAtLeast(0)
+        return IntOffset(
+            x = (anchorX - popupContentSize.width / 2).coerceIn(0, maxX),
+            y = (anchorBounds.top - popupContentSize.height - gapPx).coerceAtLeast(0),
+        )
+    }
+}
+
+/**
+ * 进度条时间预览气泡（animeko `ProgressSliderPreviewPopup` 的**无帧形态**）：
+ * 深底胶囊 + 时间文字。有帧预览（160×90 圆角矩形）需要引擎提供抓帧，
+ * 见 `frameCaptureEnabled` —— 等接上再做，这里先把时间气泡立起来。
+ */
+@Composable
+private fun SliderPreviewBubble(text: String) {
+    Text(
+        text = text,
+        color = HanimeDefaults.Overlay.onScrim,
+        style = MaterialTheme.typography.labelMedium,
+        maxLines = 1,
+        modifier = Modifier
+            .clip(HanimeDefaults.Corners.pill)
+            .background(HanimeDefaults.Overlay.previewBubble)
+            .border(1.dp, HanimeDefaults.Overlay.border, HanimeDefaults.Corners.pill)
+            .padding(
+                horizontal = HanimeDefaults.Spacing.medium,
+                vertical = HanimeDefaults.Spacing.small,
+            ),
+    )
+}
+
+/**
+ * 播放器进度条。
+ *
+ * 复刻 animeko `MediaProgressSlider` 的**交互面**（轨道/thumb 形制仍是我们自己的样式）：
+ * - **时间预览气泡**：hover（指针设备）或拖动时贴着进度条上沿弹出，跟随指针 / thumb；
+ * - **上滑取消 seek**：拖动中向上滑过 [SeekCancelThreshold] 即放弃本次拖动，
+ *   松手回到拖动起点（animeko 的 `TouchSeekState` 的 Cancelling 语义）。
+ *
+ * 两条新能力的默认值都是"关"（`durationMs = 0`），所以老调用点行为零变化。
+ *
+ * @param durationMs 视频总时长（毫秒）。`> 0` 才启用预览气泡与上滑取消；
+ *   `0` 时本组件与改动前逐像素一致。
+ */
 @Composable
 fun PlayerSlider(
     value: Float,
@@ -347,108 +436,199 @@ fun PlayerSlider(
     /** 松手回调：调用方据此补一次最终 seek 并清掉本地乐观值。 */
     onValueChangeFinished: (() -> Unit)? = null,
     modifier: Modifier = Modifier,
+    durationMs: Long = 0L,
 ) {
+    // 观察层永远只读"最新值"，因此这两个状态不参与 pointerInput 的重启 key ——
+    // 否则拖动期间 value 每帧都变，手势协程会被反复取消重启。
+    val latestValue by rememberUpdatedState(value)
+    val latestOnValueChange by rememberUpdatedState(onValueChange)
 
-    Slider(
-        value = value,
-        onValueChange = onValueChange,
-        onValueChangeFinished = onValueChangeFinished,
-        modifier = modifier,
+    /** 拖动起点。上滑取消时回吐它，让调用方把最后一个值提交成"起点"。 */
+    var dragStartValue by remember { mutableFloatStateOf(0f) }
+    var isDragging by remember { mutableStateOf(false) }
+    var isCancellingSeek by remember { mutableStateOf(false) }
+    /** 悬停预览位置（0..1）。触摸端不产生 Enter/Move/Exit 悬停事件 → 恒为 null。 */
+    var hoverRatio by remember { mutableStateOf<Float?>(null) }
 
-        /**
-         * Thumb
-         */
-        thumb = {
-            Box(
-                modifier = Modifier
-                    .size(HanimeDefaults.PlayerSizes.thumbBox),
-                contentAlignment = Alignment.Center
-            ) {
+    val density = LocalDensity.current
+    val cancelThresholdPx = with(density) { SeekCancelThreshold.roundToPx() }
+    val bubbleGapPx = with(density) { SliderPreviewGap.roundToPx() }
 
-                /**
-                 * Glow
-                 */
-                Box(
-                    modifier = Modifier
-                        .size(HanimeDefaults.PlayerSizes.thumbGlow)
-                        .background(
-                            HanimeDefaults.Overlay.thumbGlow,
-                            CircleShape
-                        )
-                )
-
-                /**
-                 * Real Thumb
-                 */
-                Box(
-                    modifier = Modifier
-                        .size(HanimeDefaults.PlayerSizes.thumb)
-                        .background(
-                            HanimeDefaults.Overlay.onScrim,
-                            CircleShape
-                        )
-                )
+    // 气泡作为 Box 的子节点 → Popup 的锚点就是"进度条本身"，横向跟随才有意义。
+    Box(
+        modifier = modifier
+            // ── 悬停跟踪（只读，不消费事件）──────────────────────────────
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val event = awaitPointerEvent(PointerEventPass.Initial)
+                        when (event.type) {
+                            PointerEventType.Move -> {
+                                val x = event.changes.lastOrNull()?.position?.x
+                                hoverRatio = if (x != null && size.width > 0) {
+                                    (x / size.width).coerceIn(0f, 1f)
+                                } else {
+                                    null
+                                }
+                            }
+                            // 指针离开（触摸端抬手后 Compose 也会补一个 Exit）→ 收气泡
+                            PointerEventType.Exit -> hoverRatio = null
+                            else -> Unit
+                        }
+                    }
+                }
             }
-        },
+            // ── 上滑取消 seek（只读，不消费事件）────────────────────────
+            // 走 Initial pass：比 M3 Slider 内部的 draggable（Main pass）更早看到抬手，
+            // 因此"回吐起点值"一定发生在 Slider 的 onValueChangeFinished 之前。
+            .pointerInput(Unit) {
+                awaitPointerEventScope {
+                    while (true) {
+                        val down = awaitFirstDown(requireUnconsumed = false)
+                        dragStartValue = latestValue
+                        isDragging = true
+                        isCancellingSeek = false
+                        var accumulatedDy = 0f
+                        while (true) {
+                            val event = awaitPointerEvent(PointerEventPass.Initial)
+                            val change = event.changes.firstOrNull { it.id == down.id } ?: break
+                            // 手算增量而不用 positionChange()：后者在新版 Compose 里
+                            // 已被属性取代（不再是函数），position/previousPosition 是长期稳定的。
+                            accumulatedDy += change.position.y - change.previousPosition.y
+                            isCancellingSeek = accumulatedDy <= -cancelThresholdPx
+                            if (!change.pressed) break
+                        }
+                        // 取消 = 回到起点：把起点值当成"最后一个值"回吐，
+                        // 调用方的 onValueChangeFinished 会把它提交给引擎。
+                        if (isCancellingSeek) latestOnValueChange(dragStartValue)
+                        isDragging = false
+                        isCancellingSeek = false
+                    }
+                }
+            },
+    ) {
 
-        /**
-         * Track
-         */
-        track = {
+        Slider(
+            value = value,
+            onValueChange = onValueChange,
+            onValueChangeFinished = onValueChangeFinished,
+            // 轨道/thumb 都给足高度：命中区由外层 Box 的 48dp 保证，这里让轨道垂直居中
+            modifier = Modifier.fillMaxSize(),
 
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(HanimeDefaults.PlayerSizes.trackBox),
-                contentAlignment = Alignment.CenterStart
-            ) {
+            /**
+             * Thumb
+             */
+            thumb = {
+                Box(
+                    modifier = Modifier
+                        .size(HanimeDefaults.PlayerSizes.thumbBox),
+                    contentAlignment = Alignment.Center
+                ) {
 
-                /**
-                 * Background Track
-                 */
+                    /**
+                     * Glow
+                     */
+                    Box(
+                        modifier = Modifier
+                            .size(HanimeDefaults.PlayerSizes.thumbGlow)
+                            .background(
+                                HanimeDefaults.Overlay.thumbGlow,
+                                CircleShape
+                            )
+                    )
+
+                    /**
+                     * Real Thumb
+                     */
+                    Box(
+                        modifier = Modifier
+                            .size(HanimeDefaults.PlayerSizes.thumb)
+                            .background(
+                                HanimeDefaults.Overlay.onScrim,
+                                CircleShape
+                            )
+                    )
+                }
+            },
+
+            /**
+             * Track
+             */
+            track = {
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(HanimeDefaults.PlayerSizes.track)
-                        .clip(HanimeDefaults.Corners.pill)
-                        .background(
-                            HanimeDefaults.Overlay.track
-                        )
-                )
+                        .height(HanimeDefaults.PlayerSizes.trackBox),
+                    contentAlignment = Alignment.CenterStart
+                ) {
 
-                /**
-                 * Buffered Track
-                 */
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(buffered.coerceIn(0f, 1f))
-                        .height(HanimeDefaults.PlayerSizes.track)
-                        .clip(HanimeDefaults.Corners.pill)
-                        .background(
-                            HanimeDefaults.Overlay.trackBuffered
-                        )
-                )
+                    /**
+                     * Background Track
+                     */
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(HanimeDefaults.PlayerSizes.track)
+                            .clip(HanimeDefaults.Corners.pill)
+                            .background(
+                                HanimeDefaults.Overlay.track
+                            )
+                    )
 
-                /**
-                 * Active Track
-                 */
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(value.coerceIn(0f, 1f))
-                        .height(HanimeDefaults.PlayerSizes.track)
-                        .clip(HanimeDefaults.Corners.pill)
-                        .background(
-                            Brush.horizontalGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    MaterialTheme.colorScheme.primary.copy(alpha = HanimeDefaults.Alpha.secondary)
+                    /**
+                     * Buffered Track
+                     */
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(buffered.coerceIn(0f, 1f))
+                            .height(HanimeDefaults.PlayerSizes.track)
+                            .clip(HanimeDefaults.Corners.pill)
+                            .background(
+                                HanimeDefaults.Overlay.trackBuffered
+                            )
+                    )
+
+                    /**
+                     * Active Track
+                     */
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth(value.coerceIn(0f, 1f))
+                            .height(HanimeDefaults.PlayerSizes.track)
+                            .clip(HanimeDefaults.Corners.pill)
+                            .background(
+                                Brush.horizontalGradient(
+                                    colors = listOf(
+                                        MaterialTheme.colorScheme.primary,
+                                        MaterialTheme.colorScheme.primary.copy(alpha = HanimeDefaults.Alpha.secondary)
+                                    )
                                 )
                             )
-                        )
+                    )
+                }
+            }
+        )
+
+        // ── 时间预览气泡 ────────────────────────────────────────────────
+        // 拖动中跟 thumb（`value` 是乐观值），悬停时跟指针。两者同时刻只有一个为真。
+        val previewRatio = if (isDragging) value.coerceIn(0f, 1f) else hoverRatio
+        if (durationMs > 0L && previewRatio != null) {
+            Popup(
+                popupPositionProvider = SliderPreviewPositionProvider(previewRatio, bubbleGapPx),
+                // 浮层不吃焦点：它跟着鼠标跑，抢焦点会把 hover 打断
+                properties = PopupProperties(focusable = false),
+            ) {
+                SliderPreviewBubble(
+                    text = if (isCancellingSeek) {
+                        stringResource(Res.string.player_seek_release_to_cancel)
+                    } else {
+                        formatPlaybackTime((previewRatio * durationMs).toLong())
+                    },
                 )
             }
         }
-    )
+    }
 }
 
 enum class GestureIndicatorType {
@@ -470,10 +650,76 @@ internal fun GestureIndicatorOverlay(
     modifier: Modifier = Modifier,
     progressDirection: ProgressGestureDirection? = null,
     text: String? = null,
+    /**
+     * Kazumi 哔哩哔哩风：顶部小 HUD（实色卡、无模糊），替代中央 170x190 大玻璃卡。
+     * 只在宽屏/全屏由调用方打开，窄屏竖屏保持 false → 原分支逐像素不变。
+     */
+    bilibiliStyle: Boolean = false,
 ) {
     val displayText = text ?: stringResource(Res.string.player_progress_percent,
         (percent * 100).toInt(),
     )
+
+    if (bilibiliStyle) {
+        AnimatedVisibility(
+            visible = visible,
+            modifier = modifier,
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.TopCenter,
+            ) {
+                // Kazumi PlayerSeek/Speed/AdjustmentHud：top:25 小卡，surfaceContainerHighest
+                // 实色 + 阴影，刻意不用 BackdropFilter/模糊（Impeller 下模糊有坑，且 B 站本就没有）。
+                Surface(
+                    modifier = Modifier.padding(top = 72.dp),
+                    shape = MaterialTheme.shapes.medium,
+                    color = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    shadowElevation = 8.dp,
+                ) {
+                    Row(
+                        modifier = Modifier.padding(
+                            horizontal = HanimeDefaults.Spacing.large,
+                            vertical = HanimeDefaults.Spacing.medium,
+                        ),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
+                    ) {
+                        Icon(
+                            painter = when (type) {
+                                GestureIndicatorType.Brightness -> painterResource(Res.drawable.ic_light_mode)
+                                GestureIndicatorType.Volume -> painterResource(Res.drawable.ic_volume_up)
+                                GestureIndicatorType.Progress -> when (progressDirection) {
+                                    ProgressGestureDirection.Backward -> painterResource(Res.drawable.ic_fast_rewind)
+                                    else -> painterResource(Res.drawable.ic_fast_forward)
+                                }
+                            },
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = when (type) {
+                                GestureIndicatorType.Brightness -> stringResource(Res.string.player_gesture_brightness)
+                                GestureIndicatorType.Volume -> stringResource(Res.string.player_gesture_volume)
+                                GestureIndicatorType.Progress -> stringResource(Res.string.player_gesture_progress)
+                            },
+                            color = MaterialTheme.colorScheme.onSurface,
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                        Text(
+                            text = displayText,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.labelLarge,
+                        )
+                    }
+                }
+            }
+        }
+        return
+    }
 
     AnimatedVisibility(
         visible = visible,

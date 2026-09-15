@@ -1,5 +1,7 @@
 package lovehan1me.feature.video
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -46,10 +48,11 @@ fun VideoRouteContent(
     stringLongPressShare: String,
     pageHost: VideoPageHost,
     /**
-     * 宽屏右栏布局用：只渲染简介（播放器下方左列），相关推荐与评论挪到右栏 Tab。
-     * 窄屏/经典双栏保持 false，走简介/评论双 Tab。
+     * Animeko 宽屏右栏：详情（全量简介：标题收藏钮 + 底部相关推荐）｜评论。
+     * 窄屏保持 false，走原简介/评论双 Tab。
+     * 配色**跟随设置的主题**，不做强制深色（弹幕输入条在播放器底栏，不在这里）。
      */
-    introOnly: Boolean = false,
+    wideRail: Boolean = false,
 ) {
     val hostUiState by videoViewModel.videoHostUiStateFlow.collectAsStateWithLifecycle()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
@@ -63,9 +66,9 @@ fun VideoRouteContent(
         }
     }
 
-    // 简介页只有一处实现：窄屏 Tab 页 0 与宽屏左列共用，改只改这里。
+    // 简介页只有一处实现：窄屏 Tab 页 0 与宽屏右栏详情页共用，改只改这里。
     @Composable
-    fun IntroPage() {
+    fun IntroPage(showTitleFavorite: Boolean = false) {
         RenderVideoIntroductionContent(
             videoCode = videoCode,
             viewModel = videoViewModel,
@@ -89,17 +92,26 @@ fun VideoRouteContent(
             onCopyText = onCopyText,
             onIntroductionLinkClick = onIntroductionLinkClick,
             stringLongPressShare = stringLongPressShare,
+            showTitleFavorite = showTitleFavorite,
         )
     }
 
-    VideoScreen(
-        state = videoState,
-        onRetry = onRetry,
-    ) {
-        if (introOnly) {
-            IntroPage()
-            return@VideoScreen
-        }
+    @Composable
+    fun CommentPage() {
+        RenderVideoCommentContent(
+            videoCode = videoCode,
+            viewModel = commentViewModel,
+            reportMessages = remember { kotlinx.coroutines.flow.MutableSharedFlow() },
+            getMessageText = { message ->
+                // P6c：VM Message 已携带文本（commonMain 无 R-int）
+                message.text
+            },
+            pageHost = pageHost,
+        )
+    }
+
+    @Composable
+    fun DetailsTabs(showTitleFavorite: Boolean = false) {
         VideoTabsContent(
             tabs = tabs,
             selectedTabIndex = hostUiState.selectedTabIndex,
@@ -107,19 +119,25 @@ fun VideoRouteContent(
             modifier = Modifier.fillMaxSize(),
         ) { page ->
             if (page == 0) {
-                IntroPage()
+                IntroPage(showTitleFavorite = showTitleFavorite)
             } else {
-                RenderVideoCommentContent(
-                    videoCode = videoCode,
-                    viewModel = commentViewModel,
-                    reportMessages = remember { kotlinx.coroutines.flow.MutableSharedFlow() },
-                    getMessageText = { message ->
-                        // P6c：VM Message 已携带文本（commonMain 无 R-int）
-                        message.text
-                    },
-                    pageHost = pageHost,
-                )
+                CommentPage()
             }
         }
+    }
+
+    VideoScreen(
+        state = videoState,
+        onRetry = onRetry,
+    ) {
+        if (wideRail) {
+            // 宽屏右栏：详情（标题收藏钮）｜评论。配色**跟随设置的主题**——
+            // 原先这里整体套 HanimeTheme(darkTheme = true) 强制沉浸黑，浅色模式下
+            // 右栏仍是深色、与「跟随主题」的预期相悖，已移除（连同下层两处重复包裹）。
+            // 弹幕输入条在播放器底栏（Kazumi 布局），不挂在右栏 tab 顶上。
+            DetailsTabs(showTitleFavorite = true)
+            return@VideoScreen
+        }
+        DetailsTabs()
     }
 }

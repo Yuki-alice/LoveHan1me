@@ -23,7 +23,10 @@ import androidx.compose.material3.Text
 import lovehan1me.ui.component.HapticTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -66,8 +69,17 @@ import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.adaptive.rememberVideoCardMinWidth
 import lovehan1me.ui.component.rememberHapticFeedback
 import kotlinx.coroutines.flow.distinctUntilChanged
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Spacer
+import lovehan1me.ic_keyboard_arrow_down
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -302,6 +314,11 @@ internal fun PlaylistSection(
     onOpenVideo: (HanimeInfo) -> Unit,
     onShowAllPlaylist: (() -> Unit)?,
     onPlaylistScrollChange: (Int) -> Unit,
+    /**
+     * Animeko 剧集列表折叠卡：标题行点击展开/收起（默认收起，箭头 ∨/∧）。
+     * 只在宽屏详情列打开；窄屏保持 false → 原平铺行为不变。
+     */
+    collapsible: Boolean = false,
 ) {
     val (_, itemsToShow) = rememberCardResponsiveWidth()
     val videos = remember(playlist.video) { playlist.video.distinctBy(HanimeInfo::videoCode) }
@@ -324,29 +341,84 @@ internal fun PlaylistSection(
             .distinctUntilChanged()
             .collect(onPlaylistScrollChange)
     }
+    // 折叠卡展开态：collapsible=false 时恒展开（窄屏原样）。
+    var expanded by remember(collapsible) { androidx.compose.runtime.mutableStateOf(!collapsible) }
+    val haptic = rememberHapticFeedback()
+
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        SectionHeader(
-            title = stringResource(Res.string.series_video),
-            subtitle = playlist.playlistName,
-            actionText = if (onShowAllPlaylist != null) stringResource(Res.string.more) else null,
-            onActionClick = onShowAllPlaylist,
-        )
-        val (cardWidth, _) = rememberCardResponsiveWidth()
-        LazyRow(
-            state = listState,
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            contentPadding = PaddingValues(horizontal = 16.dp)
-        ) {
-            items(videos, key = { it.videoCode }) { item ->
-                VideoCardItem(
-                    modifier = Modifier.width(cardWidth),
-                    videoItem = item,
-                    isHorizontalCard = item.itemType == HanimeInfo.NORMAL,
-                    isPlaying = item.isPlaying,
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-                    onClickVideosItem = { onOpenVideo(item) },
-                    onLongClickVideosItem = { _, _ -> },
+        if (collapsible) {
+            // Animeko 折叠卡头：标题 + 副标题 + 尾部箭头，整行可点。
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(MaterialTheme.shapes.medium)
+                    .clickable {
+                        haptic()
+                        expanded = !expanded
+                    }
+                    .padding(horizontal = 4.dp, vertical = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+            ) {
+                Text(
+                    text = stringResource(Res.string.series_video),
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.onSurface,
                 )
+                if (!playlist.playlistName.isNullOrBlank()) {
+                    Text(
+                        text = playlist.playlistName.orEmpty(),
+                        style = MaterialTheme.typography.labelMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                } else {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
+                Icon(
+                    painter = painterResource(Res.drawable.ic_keyboard_arrow_down),
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier
+                        .size(22.dp)
+                        .graphicsLayer {
+                            rotationZ = if (expanded) 180f else 0f
+                        },
+                )
+            }
+        } else {
+            SectionHeader(
+                title = stringResource(Res.string.series_video),
+                subtitle = playlist.playlistName,
+                actionText = if (onShowAllPlaylist != null) stringResource(Res.string.more) else null,
+                onActionClick = onShowAllPlaylist,
+            )
+        }
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn() + expandVertically(),
+            exit = fadeOut() + shrinkVertically(),
+        ) {
+            val (cardWidth, _) = rememberCardResponsiveWidth()
+            LazyRow(
+                state = listState,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp)
+            ) {
+                items(videos, key = { it.videoCode }) { item ->
+                    VideoCardItem(
+                        modifier = Modifier.width(cardWidth),
+                        videoItem = item,
+                        isHorizontalCard = item.itemType == HanimeInfo.NORMAL,
+                        isPlaying = item.isPlaying,
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
+                        onClickVideosItem = { onOpenVideo(item) },
+                        onLongClickVideosItem = { _, _ -> },
+                    )
+                }
             }
         }
     }

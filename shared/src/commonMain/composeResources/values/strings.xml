@@ -44,6 +44,8 @@
     <string name="expand">Expand</string>
     <string name="series_video">Series Videos</string>
     <string name="related_video">Related Videos</string>
+    <string name="danmaku_input_hint">Send a friendly danmaku…</string>
+    <string name="danmaku_send">Send</string>
     <string name="now_playing">Now Playing</string>
     <string name="view_more_replies">View %1$d replies</string>
     <string name="comment_not_found">Comments Not Found</string>
@@ -727,6 +729,7 @@ Recommendations are as follows:\n
     <string name="player_gesture_brightness">Brightness</string>
     <string name="player_gesture_volume">Volume</string>
     <string name="player_gesture_progress">Progress</string>
+    <string name="player_seek_release_to_cancel">Release to cancel</string>
     <string name="player_play_from_beginning">Play from beginning</string>
     <string name="perception">Sensing</string>
     <string name="check_in_feature_name">Cum Tracker</string>

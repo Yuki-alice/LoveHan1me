@@ -1,13 +1,8 @@
 package lovehan1me.feature.video
 
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Arrangement
 import lovehan1me.ui.adaptive.rememberRelatedPaneWidth
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
@@ -19,46 +14,20 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsTopHeight
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
-import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.dp
-import lovehan1me.Res
-import lovehan1me.ic_chevron_left
-import lovehan1me.ic_chevron_right
-import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.feature.player.PlaybackEngine
 import lovehan1me.feature.player.PlaybackQuality
-import lovehan1me.ui.component.rememberHapticFeedback
-import kotlin.math.roundToInt
 import lovehan1me.ui.theme.HanimeDefaults
-
-data class ClassicTabletLayoutConfig(
-    val relatedItems: List<HanimeInfo>,
-    val onHideRelatedInIntroChange: (Boolean) -> Unit,
-    val onSideRelatedCollapsedChange: (Boolean) -> Unit,
-    val onOpenVideo: (HanimeInfo) -> Unit,
-)
 
 @Composable
 fun VideoShellContent(
@@ -91,6 +60,8 @@ fun VideoShellContent(
     onHomeClick: () -> Unit,
     onFullscreenClick: () -> Unit,
     onLockClick: () -> Unit,
+    /** 下一集（系列视频才有，null = 不显示）。只在 B 站风底栏使用。 */
+    onNextClick: (() -> Unit)? = null,
     onProgressChange: (Float) -> Unit,
     onRetry: () -> Unit,
     onResumeClick: () -> Unit,
@@ -132,38 +103,22 @@ fun VideoShellContent(
     onPlayerBoundsChanged: (Rect) -> Unit,
     tabsContent: @Composable () -> Unit,
     /**
-     * 宽屏右栏 Tab（相关推荐｜评论），null = 回退到 [tabsContent]。
-     * 窄屏/经典双栏传 null。
+     * 宽屏右栏 Tab（详情｜评论），null = 回退到 [tabsContent]。
+     * 窄屏/经典双栏传 null。弹幕输入条在播放器底栏（BilibiliBottomBar），不挂这里。
      */
     railTabsContent: (@Composable () -> Unit)? = null,
-    classicTabletLayout: ClassicTabletLayoutConfig?,
     modifier: Modifier = Modifier,
 ) {
     // P0：不再要求「横屏」。原 `isTabletMode && isLandscapeOrientation()` 有两个问题：
     //   1) iOS 侧 `isLandscapeOrientation()` 恒为 false → iPad 永远拿不到双栏；
     //   2) 双栏与否本应由宽度决定（横屏手机的宽度天然超过阈值，方向语义已被宽度蕴含）。
     val showSideRelated = isDualPane && !isInPipMode && !isFullscreen
-    val showClassicSideRelated = showSideRelated && classicTabletLayout != null
-    var isSideRelatedCollapsed by rememberSaveable { mutableStateOf(false) }
-
-    DisposableEffect(showClassicSideRelated) {
-        if (showClassicSideRelated) {
-            classicTabletLayout.onHideRelatedInIntroChange.invoke(true)
-        }
-        onDispose {
-            if (showClassicSideRelated) {
-                classicTabletLayout.onHideRelatedInIntroChange.invoke(false)
-                classicTabletLayout.onSideRelatedCollapsedChange.invoke(false)
-            }
-        }
-    }
-
-    LaunchedEffect(showClassicSideRelated, isSideRelatedCollapsed) {
-        if (!showClassicSideRelated) isSideRelatedCollapsed = false
-        classicTabletLayout?.onSideRelatedCollapsedChange?.invoke(
-            showClassicSideRelated && isSideRelatedCollapsed
-        )
-    }
+    // Kazumi B 站风总开关：宽屏双栏或全屏（非 PiP）才开，窄屏竖屏恒 false。
+    val bilibiliStyle = (isDualPane || isFullscreen) && !isInPipMode
+    // animeko 的「expanded」形态（底栏进度条独占一行）：宽屏双栏或全屏。
+    // 与 bilibiliStyle **当前同源但语义不同**——那是皮肤，这是行结构，
+    // 所以各自派生一次，将来要拆开时只改这一行。
+    val expandedBottomBar = (isDualPane || isFullscreen) && !isInPipMode
 
     // 播放器内容：单一组合路径，**刻意不再使用 movableContentOf**。
     // 本组合函数持有 progress / currentTime / isPlaying 等逐帧变化的参数，会持续高频重组；
@@ -201,6 +156,7 @@ fun VideoShellContent(
             onHomeClick = onHomeClick,
             onFullscreenClick = onFullscreenClick,
             onLockClick = onLockClick,
+            onNextClick = onNextClick,
             onProgressChange = onProgressChange,
             onRetry = onRetry,
             onResumeClick = onResumeClick,
@@ -230,6 +186,8 @@ fun VideoShellContent(
             onProgressGesture = onProgressGesture,
             progressGestureSensitivity = progressGestureSensitivity,
             videoAspectRatio = videoAspectRatio,
+            bilibiliStyle = bilibiliStyle,
+            expanded = expandedBottomBar,
         )
     }
 
@@ -273,59 +231,43 @@ fun VideoShellContent(
         }
     }
 
-    if (showClassicSideRelated) {
-        val indicatorWidth = 28.dp
-        // P5：固定像素宽度，不再按 `maxWidth * 0.38f` 随窗口比例放大。
-        val relatedPaneWidth = rememberRelatedPaneWidth()
-        BoxWithConstraints(modifier = modifier.fillMaxSize()) {
-            val sideWidth by animateDpAsState(
-                targetValue = if (isSideRelatedCollapsed) indicatorWidth else relatedPaneWidth,
-                // P6：宽度是空间属性，走 spatial 档而非硬编码 tween(300)。
-                animationSpec = MaterialTheme.motionScheme.defaultSpatialSpec(),
-                label = "sideRelatedWidth",
-            )
-            Row(modifier = Modifier.fillMaxSize()) {
-                MainContent(
-                    contentModifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight(),
-                )
-                Row(
-                    modifier = Modifier
-                        .width(sideWidth)
-                        .fillMaxHeight()
-                        .background(HanimeDefaults.Colors.pageSurface)
-                ) {
-                    RelatedCollapseIndicator(
-                        collapsed = isSideRelatedCollapsed,
-                        onClick = { isSideRelatedCollapsed = !isSideRelatedCollapsed },
-                        modifier = Modifier
-                            .width(indicatorWidth)
-                            .fillMaxHeight(),
-                    )
-                    if (!isSideRelatedCollapsed) {
-                        RelatedVideosSection(
-                            videos = classicTabletLayout.relatedItems,
-                            onOpenVideo = classicTabletLayout.onOpenVideo,
-                            modifier = Modifier
-                                .weight(1f)
-                                .fillMaxHeight(),
-                        )
-                    }
-                }
-            }
-        }
-    } else if (showSideRelated) {
-        Row(modifier = modifier.fillMaxSize()) {
-            // 宽屏右栏布局：左列 = 播放器 + 简介（introContent，非 null 时必是右栏模式），
-            // 不再是播满全高的 PlayerContent。
-            MainContent(
-                contentModifier = Modifier
+    if (showSideRelated) {
+        // Animeko 宽屏（EpisodeScreenTabletVeryWide）：左列纯播放器（expanded video，
+        // 撑满整列高度，不再定 16:9 高），右栏 = 详情｜评论 Tab
+        // （弹幕占位条 + 标题收藏钮，见 VideoRouteContent wideRail）。
+        Row(
+            modifier = modifier
+                .fillMaxSize()
+                // 本页是 edge-to-edge，状态栏区域统一由 pageSurface 填充；左列播放器
+                // 不再顶到状态栏之下。否则浅色模式下系统栏图标是深色，压在纯黑画面上
+                // 会看不见 —— 原先这点是被右栏那层 `HanimeTheme(darkTheme = true)`
+                // 意外「兜住」的（它顺带把系统栏图标强制成浅色），右栏改为跟随主题后
+                // 必须在这里显式处理。
+                .background(HanimeDefaults.Colors.pageSurface),
+        ) {
+            Box(
+                modifier = Modifier
                     .weight(1f)
-                    .fillMaxHeight(),
-            )
+                    .fillMaxHeight()
+                    .statusBarsPadding(),
+            ) {
+                PlayerBox(
+                    Modifier
+                        .fillMaxSize()
+                        .onGloballyPositioned { coordinates ->
+                            onPlayerBoundsChanged(coordinates.boundsInWindow())
+                        },
+                )
+            }
             // P5：固定 360dp（内容宽 < 1000dp 时 320dp）。原 `fillMaxWidth(0.38f)`
             // 在 2560dp 窗口下会变成 973dp 的巨型侧栏，注意力被完全拉走。
+            // 右栏配色**跟随设置的主题**。原先这里按 `bilibiliStyle` 硬编码
+            // `Color(0xFF111111)`（Kazumi 沉浸黑详情栏），但该分支在宽屏时恒为 true
+            // —— 因为能进这个 Row 的条件本身就是 `isDualPane && !isInPipMode`，
+            // 于是浅色模式下右栏也被迫变黑。`pageSurface` 那条 else 实际是死代码。
+            // 现统一走 `pageSurface`：浅色近白 / 深色近黑，与 App 其余页面同一色板。
+            // 注意：播放器顶栏/底栏的 B 站风皮肤仍由 `bilibiliStyle` 控制，未受影响
+            // （那是叠加在视频画面上的控件，本就该是深色场景）。
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -336,44 +278,11 @@ fun VideoShellContent(
                     .background(HanimeDefaults.Colors.pageSurface)
                     .width(rememberRelatedPaneWidth()),
             ) {
-                // 右栏 Tab（相关推荐｜评论）；null 回退旧行为（简介/评论 Tab）。
+                // 右栏 Tab（详情｜评论）；null 回退旧行为（简介/评论 Tab）。
                 (railTabsContent ?: tabsContent)()
             }
         }
     } else {
         MainContent(contentModifier = modifier.fillMaxSize())
-    }
-}
-
-@Composable
-private fun RelatedCollapseIndicator(
-    collapsed: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val haptic = rememberHapticFeedback()
-    Row(
-        modifier = modifier
-            .clickable {
-                haptic()
-                onClick()
-            }
-            .background(MaterialTheme.colorScheme.surfaceContainerLow),
-        horizontalArrangement = Arrangement.Center,
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Icon(
-            painter = if (collapsed) {
-                painterResource(Res.drawable.ic_chevron_left)
-            } else {
-                painterResource(Res.drawable.ic_chevron_right)
-            },
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier
-                .size(22.dp)
-                .clip(HanimeDefaults.Corners.pill)
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.72f)),
-        )
     }
 }

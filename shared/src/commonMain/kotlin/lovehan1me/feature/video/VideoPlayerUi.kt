@@ -226,6 +226,22 @@ fun VideoPlayerUi(
     onProgressGesture: (Float) -> Unit = onProgressChange,
     progressGestureSensitivity: Float = PlayerDefaults.DEFAULT_PROGRESS_SLIDE_SENSITIVITY.toFloat(),
     videoAspectRatio: Float = 16f / 9f,
+    /**
+     * Kazumi 哔哩哔哩风总开关（顶/底 scrim、白字入口、无中央大键、小手势 HUD）。
+     * 调用方按 `isDualPane || isFullscreen` 置位：窄屏竖屏恒 false → 零视觉变化。
+     */
+    bilibiliStyle: Boolean = false,
+    /** 下一集（系列视频才有，null = 不显示）。只在 [bilibiliStyle] 底栏使用。 */
+    onNextClick: (() -> Unit)? = null,
+    /**
+     * animeko 的「expanded」形态（宽屏双栏 / 全屏）：底栏进度条从"内联在图标之间"
+     * 切换为"独占一行"。
+     *
+     * 与 [bilibiliStyle] 是**两件事** —— 那个管皮肤，这个管行结构。当前调用方两者由
+     * 同一个条件（`isDualPane || isFullscreen`）派生，但刻意分成两个参数：
+     * 将来要拆开时不必再动一遍签名。
+     */
+    expanded: Boolean = false,
 ) {
     var showControlsState by remember { mutableStateOf(true) }
 
@@ -270,13 +286,21 @@ fun VideoPlayerUi(
     // 鼠标/触控笔悬停：**只有指针设备才会产生悬停交互**，
     // Android / iOS 的触摸输入不会触发 Enter/Exit，因此这里不需要按平台分支 ——
     // 触摸平台上它恒为 false，"不加 hover 逻辑"是自然结果而不是要特判。
-    val hoverInteractionSource = remember { MutableInteractionSource() }
-    val isHovered by hoverInteractionSource.collectIsHoveredAsState()
+    //
+    // ⚠️ 悬停挂在**顶栏 / 底栏容器**上，不挂整个播放器 Box。
+    // animeko 用的是 `Modifier.hoverToRequestAlwaysOn()`（挂在 VideoScaffold 的顶/底栏槽位，
+    // 见 `VideoScaffold.kt:189` / `:236`）。挂满整屏的后果是"鼠标停在画面正中也会让控件
+    // 永不隐藏"—— 那不是用户意图，也让"自动隐藏"在桌面端形同虚设。
+    val topBarHoverSource = remember { MutableInteractionSource() }
+    val bottomBarHoverSource = remember { MutableInteractionSource() }
+    val isTopBarHovered by topBarHoverSource.collectIsHoveredAsState()
+    val isBottomBarHovered by bottomBarHoverSource.collectIsHoveredAsState()
+    val isControlsHovered = isTopBarHovered || isBottomBarHovered
 
     // 控件自动隐藏：**5 秒**倒计时（3s 太急，音量/亮度条还没看清就被收走）。
     // 三种"先别收"的情形：
     //   ① 手势进行中（含横向拖动 seek）—— 手势结束后**重新计时**，而不是立刻消失；
-    //   ② 指针悬停在播放器上 —— 用户显然还在操作；
+    //   ② 指针悬停在**控件上**（顶栏/底栏）—— 用户显然还在操作；
     //   ③ 侧栏面板展开中 —— 面板要用控件。
     // 键里带上这些状态：它们一变，倒计时就重启，天然做到"手势结束不自动消失"。
     LaunchedEffect(
@@ -285,7 +309,7 @@ fun VideoPlayerUi(
         activeSidePanel,
         gestureType,
         isProgressGestureActive,
-        isHovered,
+        isControlsHovered,
     ) {
         if (
             showControlsState &&
@@ -293,7 +317,7 @@ fun VideoPlayerUi(
             activeSidePanel == null &&
             gestureType == null &&
             !isProgressGestureActive &&
-            !isHovered
+            !isControlsHovered
         ) {
             delay(CONTROLS_AUTO_HIDE_MS.milliseconds)
             showControlsState = false
@@ -391,8 +415,6 @@ fun VideoPlayerUi(
     Box(
         modifier = modifier
             .background(HanimeDefaults.Overlay.backdrop)
-            // 悬停即"用户在场"：配合上面的自动隐藏倒计时使用
-            .hoverable(hoverInteractionSource)
             // 键盘快捷键（桌面端；触摸端 actual 为恒等，见 PlayerKeyboardShortcuts）
             .playerKeyboardShortcuts(keyActions)
             .pointerInput(isLocked) {
@@ -685,6 +707,7 @@ fun VideoPlayerUi(
                 percent = seekFeedback.second,
                 progressDirection = seekFeedback.first,
                 modifier = Modifier.fillMaxSize(),
+                bilibiliStyle = bilibiliStyle,
             )
         } else gestureType?.let { type ->
             GestureIndicatorOverlay(
@@ -693,6 +716,7 @@ fun VideoPlayerUi(
                 percent = gesturePercent,
                 progressDirection = progressDirection,
                 modifier = Modifier.fillMaxSize(),
+                bilibiliStyle = bilibiliStyle,
             )
         }
 
@@ -716,6 +740,7 @@ fun VideoPlayerUi(
             onOpenSuperResolutionPanel = { activeSidePanel = PlayerSidePanel.SuperResolution },
             onBackClick = onBackClick,
             onHomeClick = onHomeClick,
+            bilibiliStyle = bilibiliStyle,
         )
 
         AnimatedVisibility(
@@ -762,6 +787,7 @@ fun VideoPlayerUi(
             playerUiVisible = playerUiVisible,
             onPlayClick = onPlayClick,
             onLockClick = onLockClick,
+            bilibiliStyle = bilibiliStyle,
         )
 
         PlayerBottomBar(
@@ -795,6 +821,11 @@ fun VideoPlayerUi(
             onFullscreenClick = onFullscreenClick,
             onOpenSpeedPanel = { activeSidePanel = PlayerSidePanel.Speed },
             onOpenQualityPanel = { activeSidePanel = PlayerSidePanel.Quality },
+            bilibiliStyle = bilibiliStyle,
+            onNextClick = onNextClick,
+            durationMs = durationMs,
+            expanded = expanded,
+            hoverInteractionSource = bottomBarHoverSource,
         )
 
         PlayerStateCards(

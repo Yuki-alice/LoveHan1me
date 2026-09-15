@@ -91,6 +91,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import lovehan1me.ui.component.HanimeAsyncImage
+import lovehan1me.ui.component.IconButton
 import lovehan1me.sure_to_download
 import lovehan1me.sure_to_redownload
 import lovehan1me.watch_later
@@ -200,6 +201,11 @@ fun VideoIntroductionScreen(
     onPlaylistScrollChange: (Int) -> Unit,
     onIntroductionScrollChange: (Int, Int) -> Unit,
     onIntroductionLinkClick: (String) -> Unit,
+    /**
+     * Animeko 宽屏详情列：标题行右侧常驻收藏钮（对标 FavoriteIconButton）。
+     * 默认 false，窄屏竖屏不传 → 原布局逐像素不变。
+     */
+    showTitleFavorite: Boolean = false,
 ) {
     val maxScreenWidth = LocalWindowInfo.current.containerSize.width.dp
 
@@ -241,6 +247,7 @@ fun VideoIntroductionScreen(
                 onPlaylistScrollChange = onPlaylistScrollChange,
                 onIntroductionScrollChange = onIntroductionScrollChange,
                 onIntroductionLinkClick = onIntroductionLinkClick,
+                showTitleFavorite = showTitleFavorite,
             )
 
             state is VideoLoadingState.Error -> ErrorContent(
@@ -294,6 +301,7 @@ internal fun VideoIntroductionContent(
     onPlaylistScrollChange: (Int) -> Unit,
     onIntroductionScrollChange: (Int, Int) -> Unit,
     onIntroductionLinkClick: (String) -> Unit,
+    showTitleFavorite: Boolean = false,
 ) {
     val bottomInset = WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding()
     val listState = rememberLazyListState(
@@ -415,7 +423,24 @@ internal fun VideoIntroductionContent(
             }
 
             item(key = "title") {
-                TitleSection(video = video)
+                if (showTitleFavorite) {
+                    // Animeko EpisodeDetails 标题行：标题占满 + 右侧收藏钮。
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        Box(modifier = Modifier.weight(1f)) {
+                            TitleSection(video = video)
+                        }
+                        TitleFavoriteButton(
+                            isFav = video.isFav,
+                            onToggleFavorite = onToggleFavorite,
+                        )
+                    }
+                } else {
+                    TitleSection(video = video)
+                }
             }
 
             item(key = "meta") {
@@ -475,6 +500,8 @@ internal fun VideoIntroductionContent(
                             null
                         },
                         onPlaylistScrollChange = onPlaylistScrollChange,
+                        // Animeko 折叠卡只在宽屏详情列开（showTitleFavorite 即宽屏标志）。
+                        collapsible = showTitleFavorite,
                     )
                 }
             }
@@ -506,5 +533,37 @@ internal fun VideoIntroductionContent(
                 }
             }
         }
+    }
+}
+
+/**
+ * Animeko `FavoriteIconButton` 对应物：标题行右侧的收藏开关。
+ * 已收藏实心 + primary 色，未收藏描边 + 次级色；只在宽屏详情列使用。
+ */
+@Composable
+private fun TitleFavoriteButton(
+    isFav: Boolean,
+    onToggleFavorite: () -> Unit,
+) {
+    val haptic = rememberHapticFeedback()
+    IconButton(
+        onClick = {
+            haptic()
+            onToggleFavorite()
+        },
+        modifier = Modifier.size(48.dp),
+    ) {
+        Icon(
+            painter = painterResource(
+                if (isFav) Res.drawable.ic_favorite else Res.drawable.ic_favorite_border
+            ),
+            contentDescription = null,
+            tint = if (isFav) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+            modifier = Modifier.size(24.dp),
+        )
     }
 }

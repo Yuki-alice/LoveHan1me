@@ -25,7 +25,6 @@ import androidx.compose.ui.unit.dp
 import lovehan1me.data.SettingsRepository
 import lovehan1me.ui.adaptive.WindowWidthBreakpoints
 import lovehan1me.ui.adaptive.rememberContentWidthDp
-import lovehan1me.ui.adaptive.rememberRelatedPaneWidth
 import lovehan1me.ui.adaptive.rememberWindowHeightDp
 import lovehan1me.Res
 import lovehan1me.add_failed
@@ -62,7 +61,6 @@ import lovehan1me.data.database.entity.WatchHistoryEntity
 import lovehan1me.core.domain.exception.ParseException
 import lovehan1me.core.domain.model.HanimeVideo
 import lovehan1me.core.domain.model.SearchOption
-import lovehan1me.core.domain.model.VideoLandscapeLayoutStyle
 import lovehan1me.core.domain.state.VideoLoadingState
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.core.platform.MediaExportOutcome
@@ -153,37 +151,19 @@ fun VideoRouteHostScreen(
     }
     val playbackController = remember(playbackEngine) { ComposePlaybackController(playbackEngine) }
     val playbackState by playbackController.state.collectAsStateWithLifecycle()
-    val appSettings by SettingsRepository.settings.collectAsStateWithLifecycle()
     // 单栏 / 双栏判定：**只由内容区可用宽度决定**（P0 起）。
     // 演进链：`tabletMode && isLandscapeOrientation()`（用户开关 + 物理方向双重门控）
     // → 内容区宽 ≥ 840dp。
-    //   - 删开关：自适应不该被用户开关门控（开关只保留「布局风格」语义，见
-    //     videoLandscapeLayoutStyle）。
+    //   - 删开关：自适应不该被用户开关门控；宽屏双栏形态已在详情页宽屏重构中
+    //     照 animeko `EpisodeScreenTabletVeryWide` 定稿，原「布局风格」设置项删除。
     //   - 删方向：iOS 侧 `isLandscapeOrientation()` 恒为 false，等于 iPad 永远拿不到
     //     双栏；而「横屏手机」的宽度本就会超过 840dp，宽度已经隐含了方向语义。
     val contentWidth = rememberContentWidthDp()
     val isDualPane = contentWidth >= WindowWidthBreakpoints.ExpandedDp
-    // P5：侧栏固定宽度（双栏时才占宽），用来反推主栏真实宽度。
-    val relatedPaneWidth = rememberRelatedPaneWidth()
-    val mainPaneWidth = (contentWidth - if (isDualPane) relatedPaneWidth else 0.dp)
-        .coerceAtLeast(0.dp)
     val windowHeight = rememberWindowHeightDp()
     val hostUiState by viewModel.videoHostUiStateFlow.collectAsStateWithLifecycle()
     val videoState by viewModel.hanimeVideoStateFlow.collectAsStateWithLifecycle()
     val video = viewModel.hanimeVideoFlow.collectAsStateWithLifecycle().value
-    val relatedItems = video?.relatedHanimes.orEmpty()
-
-    // 宽屏右栏布局开关：双栏 + 非 Classic 横屏风格。此时左列只要简介
-    //（tabsContent 传 introOnly），相关挪到右栏 Tab；其余形态保持双 Tab。
-    val useRailLayout = isDualPane &&
-        appSettings.videoLandscapeLayoutStyle != VideoLandscapeLayoutStyle.Classic
-    // 右栏接管了相关推荐，简介底部的不再画（与经典双栏的 DisposableEffect 同语义）。
-    DisposableEffect(useRailLayout) {
-        if (useRailLayout) viewModel.hideRelatedInIntro = true
-        onDispose {
-            if (useRailLayout) viewModel.hideRelatedInIntro = false
-        }
-    }
 
     LaunchedEffect(playbackController) {
         playbackController.setPlaybackSpeed(SettingsRepository.playerSpeed)
@@ -212,7 +192,6 @@ fun VideoRouteHostScreen(
         mutableStateOf<DownloadPromptState?>(null)
     }
     var videoTitle by remember(route.videoCode, route.localUri) { mutableStateOf("") }
-    var isSideRelatedCollapsed by remember { mutableStateOf(false) }
     var isFullscreen by remember { mutableStateOf(false) }
     var isPlayerLocked by remember { mutableStateOf(false) }
     var volume by remember { mutableStateOf(1f) }
@@ -641,15 +620,14 @@ fun VideoRouteHostScreen(
         }
     }
 
-    // P5：比例式播放器高度。原来固定 250dp（单栏）/ 400dp（双栏），
-    // 在 1920dp 宽的桌面窗口下播放器只占 13% 宽度，小得荒谬。
-    // 取「主栏宽 × 9/16」与「窗高 × 0.55」的较小值，再兜底 240dp：
-    // 前者保证 16:9 不溢出，后者防止宽而矮的窗口把播放器顶到屏幕外。
+    // Animeko 宽屏左列是纯播放器（撑满高度），不再定 16:9 高；窄屏保持比例式高度。
+    // 原固定 250dp（单栏）/ 400dp（双栏）在 1920dp 桌面窗口下播放器只占 13% 宽度；
+    // 窄屏取「内容宽 × 9/16」与「窗高 × 0.55」的较小值、兜底 240dp。
     val resolvedPlayerHeightDp = when {
-        hostUiState.isInPipMode -> null
+        hostUiState.isInPipMode || isDualPane -> null
         else -> maxOf(
             240.dp,
-            minOf(mainPaneWidth * 9f / 16f, windowHeight * 0.55f),
+            minOf(contentWidth * 9f / 16f, windowHeight * 0.55f),
         )
     }
 
@@ -688,6 +666,72 @@ fun VideoRouteHostScreen(
     val engineError = playbackState.engine.errorMessage
     LaunchedEffect(engineError) {
         if (!engineError.isNullOrBlank()) PlayerTrace.event("error", engineError)
+    }
+
+    // B 站风底栏「下一集」：系列视频当前播放项的后一项；
+    // 没有系列/已是最后一集则为 null，底栏不显示入口（窄屏不受影响）。
+    val nextPlaylistItem = remember(video) {
+        val playlist = video?.playlist?.video.orEmpty()
+        val playingIndex = playlist.indexOfFirst { it.isPlaying }
+        if (playingIndex >= 0) playlist.getOrNull(playingIndex + 1) else null
+    }
+
+    // 简介/评论 Tab 只有一处装配：窄屏播放器下方（wideRail=false）与
+    // Animeko 宽屏右栏（wideRail=true：弹幕占位条 + 标题收藏钮）共用，改只改这里。
+    @Composable
+    fun HostVideoTabs(wideRail: Boolean) {
+        VideoRouteContent(
+            videoCode = route.videoCode,
+            videoState = videoState,
+            videoViewModel = viewModel,
+            commentViewModel = commentViewModel,
+            fromDownload = viewModel.fromDownload,
+            pendingDownloadPrompt = pendingDownloadPrompt,
+            onPendingDownloadPromptChange = { pendingDownloadPrompt = it },
+            onRetry = { viewModel.getHanimeVideo(route.videoCode, route.localUri) },
+            onOpenVideo = { item -> onNavigateToVideo(item.videoCode) },
+            onOpenArtist = actions::openArtistSearch,
+            onNavigateToSearch = actions::openTagSearch,
+            onToggleSubscribe = actions::toggleArtistSubscription,
+            onToggleFavorite = actions::toggleFavorite,
+            onRequestManageMyList = { action ->
+                if (SettingsRepository.isAlreadyLogin ||
+                    SettingsRepository.localListNoticeDismissed
+                ) {
+                    action()
+                } else {
+                    pendingLocalListAction = action
+                }
+            },
+            onRateVideo = actions::rateVideo,
+            onManageMyList = actions::updateMyListSelection,
+            onQuickCheckIn = actions::quickCheckIn,
+            onPrepareDownload = { quality, item ->
+                checkedQuality = quality
+                item?.let(actions::startDownloadFlow)
+            },
+            onConfirmDownloadPrompt = { item, autoCreateGroup ->
+                item?.let {
+                    actions.confirmPendingDownload(
+                        it,
+                        pendingDownloadPrompt,
+                        autoCreateGroup,
+                    )
+                }
+            },
+            onRequestOpenOfficialDownloadPage = actions::openOfficialDownloadPage,
+            onOpenWebPage = actions::openVideoWebPage,
+            onOpenOriginalComic = actions::openOriginalComic,
+            onOpenShare = shareText,
+            onCopyText = {
+                copyTextToClipboard(it)
+                scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
+            },
+            onIntroductionLinkClick = actions::openIntroductionLink,
+            stringLongPressShare = stringLongPressShare,
+            pageHost = pageHost,
+            wideRail = wideRail,
+        )
     }
 
     VideoShellContent(
@@ -835,87 +879,16 @@ fun VideoRouteHostScreen(
             16f / 9f
         },
         onPlayerBoundsChanged = { platformHost.setPipSourceRect(it) },
+        onNextClick = nextPlaylistItem?.let { item ->
+            { onNavigateToVideo(item.videoCode) }
+        },
         tabsContent = {
-            VideoRouteContent(
-                videoCode = route.videoCode,
-                videoState = videoState,
-                videoViewModel = viewModel,
-                commentViewModel = commentViewModel,
-                fromDownload = viewModel.fromDownload,
-                pendingDownloadPrompt = pendingDownloadPrompt,
-                onPendingDownloadPromptChange = { pendingDownloadPrompt = it },
-                onRetry = { viewModel.getHanimeVideo(route.videoCode, route.localUri) },
-                onOpenVideo = { item -> onNavigateToVideo(item.videoCode) },
-                onOpenArtist = actions::openArtistSearch,
-                onNavigateToSearch = actions::openTagSearch,
-                onToggleSubscribe = actions::toggleArtistSubscription,
-                onToggleFavorite = actions::toggleFavorite,
-                onRequestManageMyList = { action ->
-                    if (SettingsRepository.isAlreadyLogin ||
-                        SettingsRepository.localListNoticeDismissed
-                    ) {
-                        action()
-                    } else {
-                        pendingLocalListAction = action
-                    }
-                },
-                onRateVideo = actions::rateVideo,
-                onManageMyList = actions::updateMyListSelection,
-                onQuickCheckIn = actions::quickCheckIn,
-                onPrepareDownload = { quality, item ->
-                    checkedQuality = quality
-                    item?.let(actions::startDownloadFlow)
-                },
-                onConfirmDownloadPrompt = { item, autoCreateGroup ->
-                    item?.let {
-                        actions.confirmPendingDownload(
-                            it,
-                            pendingDownloadPrompt,
-                            autoCreateGroup,
-                        )
-                    }
-                },
-                onRequestOpenOfficialDownloadPage = actions::openOfficialDownloadPage,
-                onOpenWebPage = actions::openVideoWebPage,
-                onOpenOriginalComic = actions::openOriginalComic,
-                onOpenShare = shareText,
-                onCopyText = {
-                    copyTextToClipboard(it)
-                    scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
-                },
-                onIntroductionLinkClick = actions::openIntroductionLink,
-                stringLongPressShare = stringLongPressShare,
-                pageHost = pageHost,
-                // 宽屏右栏布局时左列只要简介（相关挪到右栏 Tab）；窄屏/经典保持双 Tab。
-                introOnly = useRailLayout,
-            )
+            HostVideoTabs(wideRail = false)
         },
-        // 宽屏右栏布局（设计稿 §宽屏右栏）：左列播放器 + 简介，右栏 Tab（相关｜评论）。
-        // 窄屏/经典双栏传 null，Shell 回退旧行为。
-        railTabsContent = if (useRailLayout) {
-            {
-                VideoRailTabsContent(
-                    videoCode = route.videoCode,
-                    relatedItems = relatedItems,
-                    onOpenVideo = { item -> onNavigateToVideo(item.videoCode) },
-                    commentViewModel = commentViewModel,
-                    pageHost = pageHost,
-                    commentsEnabled = !viewModel.fromDownload && !appSettings.disableComments,
-                )
-            }
-        } else {
-            null
-        },
-        classicTabletLayout = if (
-            isDualPane &&
-            appSettings.videoLandscapeLayoutStyle == VideoLandscapeLayoutStyle.Classic
-        ) {
-            ClassicTabletLayoutConfig(
-                relatedItems = relatedItems,
-                onHideRelatedInIntroChange = { viewModel.hideRelatedInIntro = it },
-                onSideRelatedCollapsedChange = { isSideRelatedCollapsed = it },
-                onOpenVideo = { item -> onNavigateToVideo(item.videoCode) },
-            )
+        // Animeko 宽屏右栏：详情｜评论（弹幕占位条 + 标题收藏钮），左列纯播放器。
+        // 非双栏传 null，Shell 回退窄屏行为。
+        railTabsContent = if (isDualPane) {
+            { HostVideoTabs(wideRail = true) }
         } else {
             null
         },

@@ -163,13 +163,22 @@ internal fun BoxScope.PlayerCenterControls(
     playerUiVisible: Boolean,
     onPlayClick: () -> Unit,
     onLockClick: () -> Unit,
+    /**
+     * Kazumi 哔哩哔哩风：中央没有大播放键（整块中央是透明手势层，暂停只走底栏）。
+     * 只在宽屏/全屏由调用方打开，窄屏竖屏保持 false → 原分支逐像素不变。
+     * 锁定按钮不受影响（Kazumi 右侧锁照样有）。
+     */
+    bilibiliStyle: Boolean = false,
 ) {
+    // B 站风下中央大键与 minimal 小暂停键都不画（与上面的大键互斥的 minimal 键同理）。
+    val showCenterPlayControls = !bilibiliStyle
 /**
  * 中间播放/暂停按钮
  */
 AnimatedVisibility(
     visible =
-        !isLocked &&
+        showCenterPlayControls &&
+                !isLocked &&
                 activeSidePanel == null &&
                 gestureType == null &&
                 !isPlaybackEnded &&
@@ -224,7 +233,8 @@ AnimatedVisibility(
  */
 AnimatedVisibility(
     visible =
-        isPlaying &&
+        showCenterPlayControls &&
+                isPlaying &&
                 !effectiveShowControls &&
                 !isLocked &&
                 activeSidePanel == null,
@@ -253,31 +263,62 @@ AnimatedVisibility(
 }
 
 /**
- * 锁定按钮
+ * 锁定按钮 —— 交给具名槽位 [PlayerGestureLockButton]（实现见文件末尾）。
+ * 保留这一行调用是为了让三个中央控件的**可见性条件**能在同一屏里读完。
  */
-AnimatedVisibility(
-    visible = if (isLocked) showUnlockButton else playerUiVisible,
-    modifier = Modifier.align(Alignment.CenterEnd),
-    enter = fadeIn(),
-    exit = fadeOut(),
-) {
-    FilledIconButton(
-        onClick = onLockClick,
-        modifier = Modifier
-            .padding(end = HanimeDefaults.Spacing.extraLarge)
-            .size(HanimeDefaults.PlayerSizes.lockButton),
-        colors = IconButtonDefaults.filledIconButtonColors(
-            containerColor = HanimeDefaults.Overlay.lockButton
-        )
-    ) {
-        Icon(
-            painter = if (isLocked)
-                painterResource(Res.drawable.ic_lock)
-            else
-                painterResource(Res.drawable.ic_unlock),
-            contentDescription = null,
-            tint = HanimeDefaults.Overlay.onScrim
-        )
-    }
+PlayerGestureLockButton(
+    isLocked = isLocked,
+    showUnlockButton = showUnlockButton,
+    playerUiVisible = playerUiVisible,
+    onLockClick = onLockClick,
+)
 }
+
+/**
+ * 手势锁槽位（对应 animeko `VideoScaffold` 的 `gestureLock` 具名槽）。
+ *
+ * **可见性规则**（两侧源码逐个核对后的实情）：
+ * - 未锁定：跟 [playerUiVisible] 一起显隐 —— 它就是"控件的一部分"；
+ * - 已锁定：**点屏**才亮 [showUnlockButton] 那一下（3s），其余时间收起。
+ *
+ * 第 2 条与 animeko 完全一致：那边 `ControllerVisibility.Invisible.gestureLock = false`，
+ * 而 `withGestureLocked(true)` 只关 topBar / bottomBar / rhsBar / detachedSlider、
+ * **不动 gestureLock** —— 所以锁定态的路径是"点屏 → 只剩锁钮可见 → 超时收起"。
+ * （曾误记为"animeko 锁定时锁钮常驻"，核对 `PlayerControllerState.kt:126-180` 后已纠正。）
+ *
+ * 之所以仍抽成独立具名槽位：位置与显隐规则要能独立于"中央大键""最小暂停键"阅读，
+ * 免得以后调锁交互时又被大键的可见性条件带着走。
+ */
+@Composable
+internal fun BoxScope.PlayerGestureLockButton(
+    isLocked: Boolean,
+    showUnlockButton: Boolean,
+    playerUiVisible: Boolean,
+    onLockClick: () -> Unit,
+) {
+    AnimatedVisibility(
+        visible = if (isLocked) showUnlockButton else playerUiVisible,
+        modifier = Modifier.align(Alignment.CenterEnd),
+        enter = fadeIn(),
+        exit = fadeOut(),
+    ) {
+        FilledIconButton(
+            onClick = onLockClick,
+            modifier = Modifier
+                .padding(end = HanimeDefaults.Spacing.extraLarge)
+                .size(HanimeDefaults.PlayerSizes.lockButton),
+            colors = IconButtonDefaults.filledIconButtonColors(
+                containerColor = HanimeDefaults.Overlay.lockButton
+            )
+        ) {
+            Icon(
+                painter = if (isLocked)
+                    painterResource(Res.drawable.ic_lock)
+                else
+                    painterResource(Res.drawable.ic_unlock),
+                contentDescription = null,
+                tint = HanimeDefaults.Overlay.onScrim
+            )
+        }
+    }
 }

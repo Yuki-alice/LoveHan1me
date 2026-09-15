@@ -165,7 +165,37 @@ internal fun BoxScope.PlayerTopBar(
     onOpenSuperResolutionPanel: () -> Unit,
     onBackClick: () -> Unit,
     onHomeClick: () -> Unit,
+    /**
+     * Kazumi 哔哩哔哩风：黑渐变 Scrim + 白图标/白字，去毛玻璃卡片与主页键。
+     * 只在宽屏/全屏由调用方打开，窄屏竖屏保持 false → 原分支逐像素不变。
+     */
+    bilibiliStyle: Boolean = false,
+    /**
+     * 悬停交互源：**顶栏容器**上的 hover 用来"请求控件常亮"。
+     *
+     * 复刻 animeko 的挂点 —— 它用 `Modifier.hoverToRequestAlwaysOn()` 挂在
+     * `VideoScaffold` 的**顶/底栏槽位**上（`VideoScaffold.kt:189` / `:236`），
+     * 而不是整个播放器。默认值让调用方可以（也必须）传入共享的源来读取悬停状态。
+     */
+    hoverInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
 ) {
+    if (bilibiliStyle) {
+        BilibiliTopBar(
+            visible = visible,
+            isFullscreen = isFullscreen,
+            title = title,
+            deviceTime = deviceTime,
+            superResolutionLabel = superResolutionLabel,
+            superResolutionOptions = superResolutionOptions,
+            frameCaptureEnabled = frameCaptureEnabled,
+            onCaptureScreenshot = onCaptureScreenshot,
+            onOpenGifCapture = onOpenGifCapture,
+            onOpenSuperResolutionPanel = onOpenSuperResolutionPanel,
+            onBackClick = onBackClick,
+            hoverInteractionSource = hoverInteractionSource,
+        )
+        return
+    }
 /**
  * 顶部控制栏
  */
@@ -180,6 +210,8 @@ AnimatedVisibility(
         modifier = Modifier
             .fillMaxWidth()
             .then(if (isFullscreen) Modifier.statusBarsPadding() else Modifier)
+            // 悬停顶栏 = 请求控件常亮（animeko `hoverToRequestAlwaysOn` 的等价物）
+            .hoverable(hoverInteractionSource)
             .padding(
                 horizontal = HanimeDefaults.Spacing.extraLarge,
                 vertical = HanimeDefaults.Spacing.small,
@@ -332,4 +364,150 @@ AnimatedVisibility(
         }
     }
 }
+}
+
+/**
+ * Kazumi `_buildTopControls` 对应物：`Row[返回 | Expanded(标题) | 超分/截图/GIF 白字 | 时间电量]`，
+ * 背景是顶 scrim（scrimTopEnd → Transparent 纵向渐变），无毛玻璃、无描边、无主页键。
+ */
+@Composable
+private fun BoxScope.BilibiliTopBar(
+    visible: Boolean,
+    isFullscreen: Boolean,
+    title: String,
+    deviceTime: String,
+    superResolutionLabel: String,
+    superResolutionOptions: List<String>,
+    frameCaptureEnabled: Boolean,
+    onCaptureScreenshot: (() -> Unit)?,
+    onOpenGifCapture: (() -> Unit)?,
+    onOpenSuperResolutionPanel: () -> Unit,
+    onBackClick: () -> Unit,
+    hoverInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+) {
+    AnimatedVisibility(
+        visible = visible,
+        modifier = Modifier.align(Alignment.TopCenter),
+        enter = fadeIn(),
+        exit = fadeOut(),
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .then(if (isFullscreen) Modifier.statusBarsPadding() else Modifier)
+                // 悬停顶栏 = 请求控件常亮（与默认皮肤同一语义）
+                .hoverable(hoverInteractionSource)
+        ) {
+            // 顶 scrim：matchParentSize 压在内容区上（Kazumi 是 h=50 的 black45 渐变；
+            // 这里复用 Overlay scrim token，色值由 Defaults 统一收敛）。
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(
+                                HanimeDefaults.Overlay.scrimTopEnd,
+                                HanimeDefaults.Overlay.scrimTopStart,
+                            )
+                        )
+                    )
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .heightIn(min = HanimeDefaults.PlayerSizes.topBarMinHeight)
+                    .padding(
+                        horizontal = 10.dp,
+                        vertical = 6.dp
+                    ),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                IconButton(
+                    onClick = onBackClick,
+                    modifier = Modifier
+                        .playerHitTarget(visual = HanimeDefaults.Sizes.controlXS)
+                        .size(PLAYER_MIN_TOUCH_TARGET)
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_arrow_back_ios),
+                        contentDescription = null,
+                        tint = HanimeDefaults.Overlay.onScrim,
+                        modifier = Modifier.size(HanimeDefaults.PlayerSizes.iconLarge)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(HanimeDefaults.Spacing.extraSmall))
+
+                Text(
+                    text = title,
+                    color = HanimeDefaults.Overlay.textPrimary,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    style = MaterialTheme.typography.titleSmall,
+                    modifier = Modifier.weight(1f)
+                )
+
+                if (superResolutionOptions.isNotEmpty()) {
+                    BiliTextButton(
+                        label = superResolutionLabel,
+                        onClick = onOpenSuperResolutionPanel,
+                    )
+                }
+
+                if (frameCaptureEnabled && onCaptureScreenshot != null) {
+                    BiliTextButton(
+                        label = stringResource(Res.string.screenshot),
+                        onClick = onCaptureScreenshot,
+                    )
+                }
+
+                if (frameCaptureEnabled && onOpenGifCapture != null) {
+                    BiliTextButton(
+                        label = stringResource(Res.string.gif_capture),
+                        onClick = onOpenGifCapture,
+                    )
+                }
+
+                if (isFullscreen) {
+                    Spacer(modifier = Modifier.width(10.dp))
+
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            text = deviceTime,
+                            color = HanimeDefaults.Overlay.textTertiary,
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                        PlayerBatteryIndicator()
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Kazumi 顶/底栏的白字入口（超分/倍速/清晰度）：纯文字 + 48dp 命中区，
+ * 替代玻璃药丸 [PlayerMenuChip]。只在 B 站风分支使用。
+ */
+@Composable
+internal fun BiliTextButton(
+    label: String,
+    onClick: () -> Unit,
+) {
+    val haptic = rememberHapticFeedback()
+    Text(
+        text = label,
+        color = HanimeDefaults.Overlay.onScrim,
+        style = MaterialTheme.typography.labelMedium,
+        maxLines = 1,
+        modifier = Modifier
+            .playerHitTarget()
+            .clickable {
+                haptic()
+                onClick()
+            }
+            .padding(horizontal = 8.dp, vertical = 4.dp),
+    )
 }
