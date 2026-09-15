@@ -181,7 +181,8 @@ data class AppSettings(
     val showBottomProgress: Boolean = true,
     val playerSpeed: Float = 1f,
     val slideSensitivity: Int = 4,
-    val longPressSpeedTime: Float = 2.5f,
+    /** 长按速播倍率（对齐 animeko 默认 3x；设置里可改）。 */
+    val longPressSpeedTime: Float = 3f,
     val videoLanguage: String = "zhs",
     val videoQuality: String = "1080P",
     val showPlayedIndicator: Boolean = true,
