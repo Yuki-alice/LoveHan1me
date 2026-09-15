@@ -30,17 +30,24 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.movableContentOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
+import androidx.compose.ui.platform.LocalDensity
 import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -60,6 +67,9 @@ data class ClassicTabletLayoutConfig(
     val onSideRelatedCollapsedChange: (Boolean) -> Unit,
     val onOpenVideo: (HanimeInfo) -> Unit,
 )
+
+/** 随滚折叠到底的迷你条高度（标题 + 播控可读的下限）。 */
+private val CollapsedPlayerHeight = 96.dp
 
 @Composable
 fun VideoShellContent(
@@ -137,6 +147,11 @@ fun VideoShellContent(
      * 窄屏/经典双栏传 null。
      */
     railTabsContent: (@Composable () -> Unit)? = null,
+    /**
+     * 内容 key（传 videoCode）：折叠进度等纯 UI 状态按它重置，
+     * 切片不把上个视频的折叠态带过来。
+     */
+    contentKey: Any? = null,
     classicTabletLayout: ClassicTabletLayoutConfig?,
     modifier: Modifier = Modifier,
 ) {
@@ -260,6 +275,38 @@ fun VideoShellContent(
 
     @Composable
     fun MainContent(contentModifier: Modifier) {
+        // 随滚折叠（设计稿 §窄屏）：简介上滑时播放器从公式高度压到迷你条，
+        // 首屏让给标题选集；下滑回顶自动弹回。纯表现层偏移，不碰高度公式与 VM。
+        // 全屏/PiP（playerHeightDp == null 走 weight 分支）无滚动可折，maxCollapse = 0。
+        val density = LocalDensity.current
+        var collapsePx by remember(contentKey) { mutableFloatStateOf(0f) }
+        val fullHeightPx = if (!isFullscreen && playerHeightDp != null) {
+            with(density) { playerHeightDp.toPx() }
+        } else {
+            0f
+        }
+        val maxCollapsePx = (fullHeightPx - with(density) { CollapsedPlayerHeight.toPx() })
+            .coerceAtLeast(0f)
+        val collapseConnection = remember(maxCollapsePx) {
+            object : NestedScrollConnection {
+                override fun onPreScroll(
+                    available: Offset,
+                    source: NestedScrollSource,
+                ): Offset {
+                    if (maxCollapsePx <= 0f) return Offset.Zero
+                    // 上滑为正：先折播放器，剩下的才给列表。
+                    val next = (collapsePx - available.y).coerceIn(0f, maxCollapsePx)
+                    val consumed = next - collapsePx
+                    collapsePx = next
+                    return Offset(0f, -consumed)
+                }
+            }
+        }
+        val collapsedHeight = if (!isFullscreen && playerHeightDp != null && maxCollapsePx > 0f) {
+            with(density) { (fullHeightPx - collapsePx).toDp() }
+        } else {
+            null
+        }
         Box(modifier = contentModifier) {
             if (!isFullscreen) {
                 Box(
@@ -273,13 +320,16 @@ fun VideoShellContent(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    .nestedScroll(collapseConnection)
                     .then(if (!isFullscreen) Modifier.statusBarsPadding() else Modifier)
             ) {
                 playerContent(
                     Modifier
                         .fillMaxWidth()
                         .then(
-                            if (!isFullscreen && playerHeightDp != null) {
+                            if (!isFullscreen && collapsedHeight != null) {
+                                Modifier.height(collapsedHeight)
+                            } else if (!isFullscreen && playerHeightDp != null) {
                                 Modifier.height(playerHeightDp)
                             } else {
                                 Modifier.weight(1f)

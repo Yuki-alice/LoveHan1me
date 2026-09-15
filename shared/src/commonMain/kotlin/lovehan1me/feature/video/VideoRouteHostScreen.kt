@@ -695,6 +695,8 @@ fun VideoRouteHostScreen(
         isInPipMode = hostUiState.isInPipMode,
         isFullscreen = isFullscreen,
         playerHeightDp = resolvedPlayerHeightDp,
+        // 折叠进度按视频重置。
+        contentKey = route.videoCode,
         playbackEngine = playbackEngine,
         posterUrl = video?.coverUrl,
         // 与首页/搜索页的卡片封面配对（同 videoCode）
@@ -892,8 +894,7 @@ fun VideoRouteHostScreen(
         },
         // 宽屏右栏布局（设计稿 §宽屏右栏）：左列播放器 + 简介，右栏 Tab（相关｜评论）。
         // 窄屏/经典双栏传 null，Shell 回退旧行为。
-        railTabsContent = if (useRailLayout) {
-            {
+        railTabsContent = if (useRailLayout) {            {
                 VideoRailTabsContent(
                     videoCode = route.videoCode,
                     relatedItems = relatedItems,
