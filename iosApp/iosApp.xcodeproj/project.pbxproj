@@ -220,7 +220,7 @@
 			buildSettings = {
 				ARCHS = arm64;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				SDKROOT = iphoneos;
+				SDKROOT = auto;
 				SWIFT_VERSION = 5.10;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -233,7 +233,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				PRODUCT_BUNDLE_IDENTIFIER = me.lovehan1me.iosUITests;
 				PRODUCT_NAME = iosAppUITests;
-				SDKROOT = iphoneos;
+				SDKROOT = auto;
 				SWIFT_VERSION = 5.10;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = iosApp;
@@ -245,7 +245,7 @@
 			buildSettings = {
 				ARCHS = arm64;
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
-				SDKROOT = iphoneos;
+				SDKROOT = auto;
 				SWIFT_VERSION = 5.10;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
@@ -258,7 +258,7 @@
 				IPHONEOS_DEPLOYMENT_TARGET = 15.0;
 				PRODUCT_BUNDLE_IDENTIFIER = me.lovehan1me.iosUITests;
 				PRODUCT_NAME = iosAppUITests;
-				SDKROOT = iphoneos;
+				SDKROOT = auto;
 				SWIFT_VERSION = 5.10;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = iosApp;

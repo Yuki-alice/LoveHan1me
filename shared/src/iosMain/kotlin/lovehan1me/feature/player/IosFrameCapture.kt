@@ -3,7 +3,8 @@
 package lovehan1me.feature.player
 
 import kotlinx.cinterop.ExperimentalForeignApi
-import kotlinx.cinterop.UByteVar
+import kotlinx.cinterop.ByteVar
+import kotlinx.cinterop.readBytes
 import kotlinx.cinterop.reinterpret
 import kotlinx.coroutines.delay
 import lovehan1me.core.platform.currentEpochMillis
@@ -12,10 +13,7 @@ import lovehan1me.core.util.gif.FrameScaler
 import platform.AVFoundation.AVPlayer
 import platform.AVFoundation.AVPlayerItemVideoOutput
 import platform.AVFoundation.addOutput
-import platform.AVFoundation.copyPixelBufferForItemTime
 import platform.AVFoundation.currentItem
-import platform.AVFoundation.currentTime
-import platform.AVFoundation.hasNewPixelBufferForItemTime
 import platform.AVFoundation.pause
 import platform.AVFoundation.removeOutput
 import platform.AVFoundation.seekToTime
@@ -136,17 +134,21 @@ private fun CVPixelBufferRef.toArgbPixelsScaled(targetWidth: Int, targetHeight: 
         val stride = CVPixelBufferGetBytesPerRow(this).toInt()
         if (width <= 0 || height <= 0 || stride <= 0) return null
         val base = CVPixelBufferGetBaseAddress(this) ?: return null
-        val bytes = base.reinterpret<UByteVar>()
-
+        // 指针算术在 cinterop 里形态不稳，整块一次读出再按行跨步索引：
+        // 每行 width*4 有效字节，行与行之间隔 stride（含系统填充），Byte 转 Int 去符号扩展。
+        val baseBytes = base.reinterpret<ByteVar>()
+        val totalBytes = stride * height
+        if (totalBytes <= 0) return null
+        val all = baseBytes.readBytes(totalBytes)
+        if (all.size < totalBytes) return null
         val source = IntArray(width * height)
         for (y in 0 until height) {
-            val rowOffset = y * stride
             for (x in 0 until width) {
-                val o = rowOffset + x * 4
-                val b = bytes[o].toInt()
-                val g = bytes[o + 1].toInt()
-                val r = bytes[o + 2].toInt()
-                val a = bytes[o + 3].toInt()
+                val o = y * stride + x * 4
+                val b = all[o].toInt() and 0xFF
+                val g = all[o + 1].toInt() and 0xFF
+                val r = all[o + 2].toInt() and 0xFF
+                val a = all[o + 3].toInt() and 0xFF
                 source[y * width + x] = (a shl 24) or (r shl 16) or (g shl 8) or b
             }
         }

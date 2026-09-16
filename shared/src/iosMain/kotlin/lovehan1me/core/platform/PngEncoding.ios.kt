@@ -22,7 +22,7 @@ import org.jetbrains.skia.ImageInfo
  *
  * ## ⚠️ 本文件**未经编译验证**（Windows 无法编译 Kotlin/Native，见项目约定）
  * 已做的离线验证：把 `skiko-iosarm64-0.150.1.klib` 拉下来解包，
- * 在 `default/linkdata/package_org.jetbrains.skia/*.knm` 里确认了
+ * 在 `default/linkdata/package_org.jetbrains.skia/` 下的星号 `.knm` 里确认了
  * `makeRaster` / `installPixels` / `makeFromBitmap` / `encodeToData` /
  * `RGBA_8888` / `UNPREMUL` / `ImageInfo` **在 iosArm64 这一侧确实存在**
  * （脚本 `.workbuddy/_klib_probe.py`）。这能排除"符号不存在"，但**排除不了签名形态的差异**。

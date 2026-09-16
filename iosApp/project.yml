@@ -18,6 +18,10 @@ settings:
     SWIFT_VERSION: "5.10"
     IPHONEOS_DEPLOYMENT_TARGET: "15.0"
     TARGETED_DEVICE_FAMILY: "1,2"
+    # SDKROOT 不写死 iphoneos：auto 按目标设备自动切 iphoneos / iphonesimulator，
+    # 命令行编模拟器包与真机包都要它（xcodegen 对 platform:iOS 默认写死 iphoneos，
+    # 写死会导致 xcodebuild 列不出任何模拟器目标）。
+    SDKROOT: auto
     # Kotlin/Native 只编了 iosArm64/iosSimulatorArm64（无 x86_64 模拟器 slice），
     # 不锁的话 xcodebuild 默认双架构，Gradle 任务会报
     # "Unknown iOS simulator arch: 'x86_64'"
@@ -39,6 +43,10 @@ targets:
         LSSupportsOpeningDocumentsInPlace: true
         UIBackgroundModes:
           - audio
+        # 启动屏声明：键是单数 UILaunchScreen 直接挂根（曾误套一层复数 wrapper，被构建当未知键丢掉）。
+        # 没有它，系统把 App 当老应用跑兼容信箱模式，在新比例 iPhone 上下补黑边
+        # （iPhone 17 模拟器实测）。空字典即默认启动屏，只起“声明新屏支持”作用。
+        UILaunchScreen: {}
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: me.lovehan1me.ios
@@ -78,7 +86,7 @@ targets:
         # 不显式给 PRODUCT_NAME 的话产物名是空的（-Runner.app / .xctest），
         # xcodegen 顶层 settings 也不会透传到这个 target，以下都得手写：
         PRODUCT_NAME: iosAppUITests
-        SDKROOT: iphoneos
+        SDKROOT: auto
         IPHONEOS_DEPLOYMENT_TARGET: "15.0"
         SWIFT_VERSION: "5.10"
         TARGETED_DEVICE_FAMILY: "1,2"

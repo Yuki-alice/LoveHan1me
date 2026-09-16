@@ -129,7 +129,8 @@ fun ThemeAuditScreen(modifier: Modifier = Modifier) {
                         modifier = Modifier.weight(1f),
                     )
                     Text(
-                        text = "${"%.1f".format(ratio)} ${if (pass) "✓" else "✗"}",
+                        // Native 侧没有 String.format：对比度恒 ≥0，一位小数手拼即可。
+                        text = "${ratio.formatOneDecimal()} ${if (pass) "✓" else "✗"}",
                         style = MaterialTheme.typography.bodyMedium,
                         color = if (pass) scheme.onSurfaceVariant else scheme.error,
                     )
@@ -230,7 +231,16 @@ private fun RoleChip(name: String, color: Color) {
     }
 }
 
-private fun Color.hex(): String = "#%06X".format(0xFFFFFF and toArgb())
+// Native 侧没有 String.format：上限位十六进制 + 补零，手拼与 "%06X" 等价。
+private fun Color.hex(): String {
+    val rgb = 0xFFFFFF and toArgb()
+    return "#" + rgb.toString(16).uppercase().padStart(6, '0')
+}
+
+private fun Float.formatOneDecimal(): String {
+    val tenths = (this * 10).toInt()
+    return "${tenths / 10}.${tenths % 10}"
+}
 
 private fun contrastRatio(foreground: Color, background: Color): Float {
     val l1 = foreground.luminance()

@@ -2,6 +2,8 @@ package lovehan1me.feature.video
 
 import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.core.util.LogUtil
+import lovehan1me.core.util.PlatformLock
+import lovehan1me.core.util.withLock
 
 /**
  * 播放器埋点（M5 体验打磨：**状态反馈 / 手势**两个方向的可观测性）。
@@ -37,7 +39,7 @@ object PlayerTrace {
 
     private const val TAG = "PlayerTrace"
 
-    private val lock = Any()
+    private val lock = PlatformLock()
     private var originMillis = 0L
     private var sessionKey = ""
     private var started = false
@@ -49,7 +51,7 @@ object PlayerTrace {
      * 只用来给日志做前缀和起算点，不参与任何业务判断。
      */
     fun begin(sessionKey: String) {
-        val changed = synchronized(lock) {
+        val changed = lock.withLock {
             if (started && this.sessionKey == sessionKey) {
                 false
             } else {
@@ -66,7 +68,7 @@ object PlayerTrace {
 
     /** 记录距会话起点多少毫秒；同名只记第一次（幂等，多处埋点也不会刷屏）。 */
     fun mark(name: String): Boolean {
-        val delta = synchronized(lock) {
+        val delta = lock.withLock {
             if (!started || marks.containsKey(name)) {
                 null
             } else {
@@ -81,20 +83,20 @@ object PlayerTrace {
 
     /** 一次性事件（无耗时语义），[detail] 直接拼进日志。 */
     fun event(name: String, detail: String = "") {
-        val delta = synchronized(lock) { if (started) currentEpochMillis() - originMillis else null }
+        val delta = lock.withLock { if (started) currentEpochMillis() - originMillis else null }
         val at = delta?.let { " +${it}ms" } ?: ""
         LogUtil.i(TAG, "[$sessionKey] $name${if (detail.isBlank()) "" else ": $detail"}$at")
     }
 
     /** 开始一段（如缓冲）。同名重复调用以最后一次为准。 */
     fun spanStart(name: String) {
-        synchronized(lock) { spans[name] = currentEpochMillis() }
+        lock.withLock { spans[name] = currentEpochMillis() }
         LogUtil.i(TAG, "[$sessionKey] $name 开始")
     }
 
     /** 结束一段并打出耗时；没有对应的 [spanStart] 时静默返回（例如刚进页面时的 false）。 */
     fun spanEnd(name: String) {
-        val elapsed = synchronized(lock) {
+        val elapsed = lock.withLock {
             val from = spans.remove(name) ?: return
             currentEpochMillis() - from
         }
@@ -103,7 +105,7 @@ object PlayerTrace {
 
     /** 一行汇总（离开播放页时打）。 */
     fun summary() {
-        val (line, total) = synchronized(lock) {
+        val (line, total) = lock.withLock {
             val total = if (started) currentEpochMillis() - originMillis else 0L
             marks.entries.joinToString(" | ") { "${it.key}+${it.value}ms" } to total
         }
@@ -112,7 +114,7 @@ object PlayerTrace {
 
     /** 单测用：清空状态（全局单例，测试之间必须隔离）。 */
     internal fun resetForTest() {
-        synchronized(lock) {
+        lock.withLock {
             originMillis = 0L
             sessionKey = ""
             started = false

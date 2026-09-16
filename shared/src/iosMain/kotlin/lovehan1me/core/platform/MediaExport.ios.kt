@@ -1,5 +1,6 @@
 package lovehan1me.core.platform
 
+import kotlinx.cinterop.ExperimentalForeignApi
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSSearchPathForDirectoriesInDomains
@@ -19,6 +20,7 @@ import platform.Foundation.NSUserDomainMask
  * 落盘复用 `AvatarImageIo.ios.kt` 的 `writeBytesAtPath`（同包 internal）
  * —— 那条路径已被 CI 的 macos runner 编译验证过，不自己新写 NSData 转换。
  */
+@OptIn(ExperimentalForeignApi::class)
 actual suspend fun exportMediaAndShare(
     bytes: ByteArray,
     fileName: String,

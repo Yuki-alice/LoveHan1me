@@ -27,7 +27,7 @@ object StartupTrace {
 
     private const val TAG = "Startup"
 
-    private val lock = Any()
+    private val lock = PlatformLock()
     private var originMillis = 0L
     private var started = false
     private val marks = LinkedHashMap<String, Long>()
@@ -37,7 +37,7 @@ object StartupTrace {
      * 第二次不该把耗时算歪。
      */
     fun begin(source: String) {
-        val first = synchronized(lock) {
+        val first = lock.withLock {
             if (started) false else {
                 started = true
                 originMillis = currentEpochMillis()
@@ -55,7 +55,7 @@ object StartupTrace {
      *         首帧那类"只想打一次汇总"的调用点据此避免重复输出（例如 Activity 重建）。
      */
     fun mark(name: String): Boolean {
-        val delta = synchronized(lock) {
+        val delta = lock.withLock {
             if (!started || marks.containsKey(name)) {
                 null
             } else {
@@ -95,13 +95,13 @@ object StartupTrace {
     }
 
     /** 距 [begin] 的毫秒数（未 begin 返回 0）。 */
-    fun elapsedMillis(): Long = synchronized(lock) {
+    fun elapsedMillis(): Long = lock.withLock {
         if (started) currentEpochMillis() - originMillis else 0L
     }
 
     /** 全部段落的一行汇总（首帧后打一次）。 */
     fun summary() {
-        val (line, total) = synchronized(lock) {
+        val (line, total) = lock.withLock {
             val total = if (started) currentEpochMillis() - originMillis else 0L
             marks.entries.joinToString(" | ") { "${it.key}+${it.value}ms" } to total
         }
@@ -110,7 +110,7 @@ object StartupTrace {
 
     /** 单测用：清空状态（对象是全局单例，测试之间必须隔离）。 */
     internal fun resetForTest() {
-        synchronized(lock) {
+        lock.withLock {
             originMillis = 0L
             started = false
             marks.clear()
