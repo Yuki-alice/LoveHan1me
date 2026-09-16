@@ -231,6 +231,19 @@ object HanimeDefaults {
             @Composable get() = MaterialTheme.shapes.largeIncreased
 
         /**
+         * 内容 sheet 的顶角形状（左上 28dp，值等于 `shapes.extraLarge`）。
+         *
+         * 宽屏下「左侧 chrome / 右侧内容」的分界**只靠这一个圆角 + 底色差**，
+         * 不再画细分隔线 —— 同系底色下 1px 细线约等于没有（见 `MainScaffold`
+         * 宽屏分支的注释）。首页宽屏与设置双栏共用本 token，避免两处
+         * 各写一个 28dp 各自漂移。
+         *
+         * 只圆**左上**：sheet 贴窗口右半边，另外三角落在屏幕边缘，圆角无意义。
+         */
+        val contentSheet: CornerBasedShape
+            get() = RoundedCornerShape(topStart = 28.dp)
+
+        /**
          * 胶囊/圆形 —— 走 percent=50 而非写死大数值（999dp/100 等）。
          * M3 `Shapes` 没有暴露 full 档，在 token 层补齐。
          *

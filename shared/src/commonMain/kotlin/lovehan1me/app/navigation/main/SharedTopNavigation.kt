@@ -52,7 +52,6 @@ import lovehan1me.app.navigation.settings.DataPrivacySettingsRoute
 import lovehan1me.app.navigation.settings.DeveloperOptionsSettingsRoute
 import lovehan1me.app.navigation.settings.DownloadSettingsRoute
 import lovehan1me.app.navigation.settings.HomeSettingsRoute
-import lovehan1me.app.navigation.settings.HomeSettingsRouteScreen
 import lovehan1me.app.navigation.settings.InterfaceInteractionSettingsRoute
 import lovehan1me.app.navigation.settings.MpvPlayerSettingsRoute
 import lovehan1me.app.navigation.settings.MpvPlayerSettingsRouteScreen
@@ -61,9 +60,9 @@ import lovehan1me.app.navigation.settings.NetworkSettingsRoute
 import lovehan1me.app.navigation.settings.NetworkSettingsRouteScreen
 import lovehan1me.app.navigation.settings.OpenSourceLicensesRoute
 import lovehan1me.app.navigation.settings.PlayerSettingsRoute
-import lovehan1me.app.navigation.settings.PlayerSettingsRouteScreen
+import lovehan1me.app.navigation.settings.SettingsCategory
 import lovehan1me.app.navigation.settings.SettingsDestinationSpec
-import lovehan1me.app.navigation.settings.SettingsHomeHost
+import lovehan1me.app.navigation.settings.SettingsRouteHost
 import lovehan1me.app.navigation.settings.SettingsScaffold
 import lovehan1me.app.navigation.settings.ThemeAuditRoute
 import lovehan1me.app.navigation.settings.VideoPlaybackSettingsRoute
@@ -75,7 +74,6 @@ import lovehan1me.feature.account.AccountScreen
 import lovehan1me.feature.account.AvatarCropScreen
 import lovehan1me.feature.account.UserAccountViewModel
 import lovehan1me.app.sharedViewModel
-import lovehan1me.feature.settings.HomeSettingsPage
 import lovehan1me.feature.settings.OpenSourceLicensesScreen
 import lovehan1me.feature.settings.ThemeAuditScreen
 import lovehan1me.ui.theme.fadeScale
@@ -356,8 +354,11 @@ fun SharedTopNavigation(
         }
         entry<HomeSettingsRoute> {
             // P5.5：宽屏（内容宽 ≥ 900dp）走 List-Detail 双栏，窄屏仍是原来的钻取式。
-            SettingsHomeHost(
+            // 分类路由（`PlayerSettingsRoute` 等）走**同一个宿主** —— 否则"窄屏点进分类页
+            // → 拉宽窗口"时双栏不出现（各 entry 自带全屏单栏页，把双栏关在门外）。
+            SettingsRouteHost(
                 backStack = backStack,
+                category = null,
                 onOpenVideoPlayback = { backStack.add(VideoPlaybackSettingsRoute) },
                 onOpenPlayerSettings = { backStack.add(PlayerSettingsRoute) },
                 onOpenNetworkDownload = { backStack.add(NetworkDownloadSettingsRoute) },
@@ -373,77 +374,26 @@ fun SharedTopNavigation(
             )
         }
         entry<VideoPlaybackSettingsRoute>(metadata = pageTransition()) {
-            SettingsScaffold(
-                backStack = backStack,
-                destination = SettingsDestinationSpec.VideoPlayback,
-                fallbackDestination = HomeSettingsRoute,
-            ) {
-                HomeSettingsRouteScreen(
-                    page = HomeSettingsPage.VideoPlayback,
-                    downloadSettingsContent = {},
-                )
-            }
+            SettingsRouteHost(backStack = backStack, category = SettingsCategory.VideoPlayback)
         }
         entry<NetworkDownloadSettingsRoute>(metadata = pageTransition()) {
-            SettingsScaffold(
-                backStack = backStack,
-                destination = SettingsDestinationSpec.NetworkDownload,
-                fallbackDestination = HomeSettingsRoute,
-            ) {
-                HomeSettingsRouteScreen(
-                    page = HomeSettingsPage.NetworkDownload,
-                    downloadSettingsContent = {},
-                )
-            }
+            SettingsRouteHost(backStack = backStack, category = SettingsCategory.NetworkDownload)
         }
         entry<AppearanceSettingsRoute>(metadata = pageTransition()) {
-            SettingsScaffold(
-                backStack = backStack,
-                destination = SettingsDestinationSpec.Appearance,
-                fallbackDestination = HomeSettingsRoute,
-            ) {
-                HomeSettingsRouteScreen(
-                    page = HomeSettingsPage.Appearance,
-                    downloadSettingsContent = {},
-                )
-            }
+            SettingsRouteHost(backStack = backStack, category = SettingsCategory.Appearance)
         }
         entry<InterfaceInteractionSettingsRoute>(metadata = pageTransition()) {
-            SettingsScaffold(
-                backStack = backStack,
-                destination = SettingsDestinationSpec.InterfaceInteraction,
-                fallbackDestination = HomeSettingsRoute,
-            ) {
-                HomeSettingsRouteScreen(
-                    page = HomeSettingsPage.InterfaceInteraction,
-                    downloadSettingsContent = {},
-                )
-            }
+            SettingsRouteHost(backStack = backStack, category = SettingsCategory.InterfaceInteraction)
         }
         entry<DataPrivacySettingsRoute>(metadata = pageTransition()) {
-            SettingsScaffold(
-                backStack = backStack,
-                destination = SettingsDestinationSpec.DataPrivacy,
-                fallbackDestination = HomeSettingsRoute,
-            ) {
-                HomeSettingsRouteScreen(
-                    page = HomeSettingsPage.DataPrivacy,
-                    downloadSettingsContent = {},
-                )
-            }
+            SettingsRouteHost(backStack = backStack, category = SettingsCategory.DataPrivacy)
         }
         entry<DeveloperOptionsSettingsRoute>(metadata = pageTransition()) {
-            SettingsScaffold(
+            SettingsRouteHost(
                 backStack = backStack,
-                destination = SettingsDestinationSpec.DeveloperOptions,
-                fallbackDestination = HomeSettingsRoute,
-            ) {
-                HomeSettingsRouteScreen(
-                    page = HomeSettingsPage.DeveloperOptions,
-                    onOpenThemeAudit = { backStack.add(ThemeAuditRoute) },
-                    downloadSettingsContent = {},
-                )
-            }
+                category = SettingsCategory.DeveloperOptions,
+                onOpenThemeAudit = { backStack.add(ThemeAuditRoute) },
+            )
         }
         entry<ThemeAuditRoute>(metadata = pageTransition()) {
             SettingsScaffold(
@@ -455,19 +405,13 @@ fun SharedTopNavigation(
             }
         }
         entry<AboutSettingsRoute>(metadata = pageTransition()) {
-            SettingsScaffold(
+            SettingsRouteHost(
                 backStack = backStack,
-                destination = SettingsDestinationSpec.About,
-                fallbackDestination = HomeSettingsRoute,
-            ) {
-                HomeSettingsRouteScreen(
-                    page = HomeSettingsPage.About,
-                    onNavigateToOpenSourceLicenses = {
-                        backStack.add(OpenSourceLicensesRoute)
-                    },
-                    downloadSettingsContent = {},
-                )
-            }
+                category = SettingsCategory.About,
+                onNavigateToOpenSourceLicenses = {
+                    backStack.add(OpenSourceLicensesRoute)
+                },
+            )
         }
         entry<OpenSourceLicensesRoute>(metadata = pageTransition()) {
             var searchMode by remember { mutableStateOf(false) }
@@ -501,15 +445,9 @@ fun SharedTopNavigation(
             }
         }
         entry<PlayerSettingsRoute>(metadata = pageTransition()) {
-            SettingsScaffold(
-                backStack = backStack,
-                destination = SettingsDestinationSpec.Player,
-                fallbackDestination = HomeSettingsRoute,
-            ) {
-                PlayerSettingsRouteScreen(
-                    onNavigateToMpvSettings = { backStack.add(MpvPlayerSettingsRoute) },
-                )
-            }
+            // 「播放器设置」不属 `HomeSettingsPage` 那一族（自带整屏），但**同样是左栏的一个
+            // 分类** —— 宽屏下必须能双栏显示它，窄屏下仍是这个全屏单栏页。
+            SettingsRouteHost(backStack = backStack, category = SettingsCategory.Player)
         }
         entry<NetworkSettingsRoute>(metadata = pageTransition()) {
             SettingsScaffold(

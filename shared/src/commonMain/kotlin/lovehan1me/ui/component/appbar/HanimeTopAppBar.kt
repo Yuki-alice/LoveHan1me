@@ -2,6 +2,7 @@ package lovehan1me.ui.component.appbar
 
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.RowScope
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
 import lovehan1me.ui.component.FilledIconButton
@@ -11,6 +12,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarColors
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.TopAppBarScrollBehavior
 import androidx.compose.runtime.Composable
@@ -34,6 +36,7 @@ fun HanimeTopAppBar(
     actions: @Composable RowScope.() -> Unit = {},
     scrollBehavior: TopAppBarScrollBehavior? = null,
     colors: TopAppBarColors? = null,
+    windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
 ) {
     HanimeTopAppBar(
         title = {
@@ -59,6 +62,7 @@ fun HanimeTopAppBar(
         actions = actions,
         scrollBehavior = scrollBehavior,
         colors = colors,
+        windowInsets = windowInsets,
     )
 }
 
@@ -71,6 +75,15 @@ fun HanimeTopAppBar(
     actions: @Composable RowScope.() -> Unit = {},
     scrollBehavior: TopAppBarScrollBehavior? = null,
     colors: TopAppBarColors? = null,
+    /**
+     * 该顶栏要自己申请的 window insets。
+     *
+     * **默认值适用于「顶栏挂在 Scaffold 的 topBar 槽」**（状态栏 inset 由它消费）。
+     * 若顶栏被放进 **已由外层让出状态栏 inset 的容器**里（例如设置页双栏的栏内标题栏，
+     * 外层 `HanimeScaffold` 的 `innerPadding` 已经推下来了），必须传 `WindowInsets(0,0,0,0)`
+     * —— 否则会叠成双倍顶距，Android 上肉眼可见。
+     */
+    windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
 ) {
     HanimeTopAppBar(
         title = title,
@@ -95,6 +108,7 @@ fun HanimeTopAppBar(
         actions = actions,
         scrollBehavior = scrollBehavior,
         colors = colors,
+        windowInsets = windowInsets,
     )
 }
 
@@ -107,6 +121,8 @@ fun HanimeTopAppBar(
     actions: @Composable RowScope.() -> Unit = {},
     scrollBehavior: TopAppBarScrollBehavior? = null,
     colors: TopAppBarColors? = null,
+    /** 见上一条重载的同名参数：被外层让出 inset 时传 `WindowInsets(0,0,0,0)`。 */
+    windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
 ) {
     TopAppBar(
         modifier = modifier,
@@ -119,5 +135,6 @@ fun HanimeTopAppBar(
         navigationIcon = navigationIcon,
         actions = actions,
         scrollBehavior = scrollBehavior,
+        windowInsets = windowInsets,
     )
 }

@@ -25,7 +25,6 @@ import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.material3.WideNavigationRail
 import androidx.compose.material3.WideNavigationRailDefaults
@@ -131,8 +130,9 @@ fun MainScaffold(
 
     if (rememberWindowWidthSizeClass() >= WindowWidthSizeClass.Medium) {
         // M3E 内容 sheet：窗底走 surfaceContainerLow，Rail 透明坐底，
-        // 内容区是 surface 圆角（topStart 28dp）大卡片 —— 分界靠"底色差 + 圆角"，
-        // 不再靠一条细分隔线（细线在同系底色下约等于没有）。
+        // 内容区是 surface 圆角（`Corners.contentSheet`，左上 28dp）大卡片 ——
+        // 分界靠"底色差 + 圆角"，不再靠一条细分隔线（细线在同系底色下约等于没有）。
+        // 设置页宽屏双栏复用同一套（见 `SettingsRouteHost`），保证两处边界一致。
         Row(
             modifier = Modifier
                 .fillMaxSize()
@@ -150,7 +150,7 @@ fun MainScaffold(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight()
-                    .clip(RoundedCornerShape(topStart = 28.dp))
+                    .clip(HanimeDefaults.Corners.contentSheet)
                     .background(MaterialTheme.colorScheme.surface),
             ) {
                 page()
