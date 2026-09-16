@@ -19,12 +19,17 @@ sealed interface AdvancedSearchDialogState {
         val onReset: () -> Unit,
     ) : AdvancedSearchDialogState
 
+    /**
+     * @param showBroad 是否显示「宽泛配对」开关。品牌等多选域在站点侧不参与
+     *   `broad=on`（只对 `tags[]` 生效），显示开关会让用户以为品牌也受它影响。
+     */
     data class MultiChoice(
         override val key: String,
         override val titleRes: StringResource,
         val scopes: List<SearchScopeSection>,
         val selected: Set<SearchOption>,
         val broad: Boolean,
+        val showBroad: Boolean = true,
         val onSave: (Set<SearchOption>, Boolean) -> Unit,
         val onReset: () -> Unit,
     ) : AdvancedSearchDialogState

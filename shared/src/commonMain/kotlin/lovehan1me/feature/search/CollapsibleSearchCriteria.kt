@@ -163,6 +163,7 @@ internal fun ActiveSearchCriteria(
     onClearGenre: () -> Unit,
     onClearSort: () -> Unit,
     onClearDuration: () -> Unit,
+    onClearReleaseDate: () -> Unit,
     onClearTagCount: () -> Unit,
     onClearBrandCount: () -> Unit,
     onClearBroad: () -> Unit,
@@ -208,7 +209,8 @@ internal fun ActiveSearchCriteria(
         }
         filter.releaseDate?.let {
             AssistChip(
-                onClick = onClearDuration,
+                // 曾误绑 onClearDuration：点「发行日期」会连带清掉「时长」。
+                onClick = onClearReleaseDate,
                 label = { Text("${stringResource(Res.string.release_date)}: $it") },
                 colors = AssistChipDefaults.assistChipColors(
                     containerColor = MaterialTheme.colorScheme.secondaryContainer,

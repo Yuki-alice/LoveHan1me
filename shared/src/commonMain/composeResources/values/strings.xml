@@ -30,6 +30,17 @@
     <string name="pair_widely_alert">More Results, Less Precision. Pair anime with any selected tag rather than all.</string>
     <string name="reset">Reset</string>
     <string name="save">Save</string>
+    <string name="filter_all">All</string>
+    <string name="filter_count">%1$d</string>
+    <string name="filter_selected_count">%1$d selected</string>
+    <string name="filter_search_in_category">Search in %1$s</string>
+    <string name="filter_no_match">No matching option</string>
+    <string name="filter_preset_title">Filter presets</string>
+    <string name="filter_preset_save_current">Save current</string>
+    <string name="filter_preset_name_title">Name this preset</string>
+    <string name="filter_preset_name_hint">Preset name</string>
+    <string name="filter_preset_empty">No presets yet</string>
+    <string name="filter_preset_overwrite_hint">An existing preset with this name will be overwritten</string>
     <string name="video_attr">Video Attributes</string>
     <string name="relationship">Character Relationships</string>
     <string name="characteristics">Characteristics</string>
@@ -301,7 +312,6 @@ Recommendations are as follows:\n
     <string name="download_error_range_not_supported">The server cannot resume from the saved position. Delete this task and download it again.</string>
     <string name="download_error_file_info">Unable to get file size or download information. Try again later.</string>
     <string name="custom">Custom</string>
-    <string name="show_bottom_progress">Show Bottom Progress Bar</string>
     <string name="default_playback_speed">Default Playback Speed</string>
     <string name="long_press_speed_multiplier">Long Press Seek Speed</string>
     <string name="long_press_speed_summary">Uses %1$s the current playback speed</string>
@@ -549,7 +559,6 @@ Recommendations are as follows:\n
     <string name="version_check_failed">\n⚠️ Version check failed</string>
     <string name="switch_site">Switch Site</string>
     <string name="confirm_switch_site">Are you sure you want to switch site?</string>
-    <string name="disable_predictive_back_title">Disable Predictive Back Animation</string>
     <string name="play_trailer">Play Trailer</string>
     <string name="load_complete">Load complete !</string>
     <string name="search_video_hint">Enter keywords</string>

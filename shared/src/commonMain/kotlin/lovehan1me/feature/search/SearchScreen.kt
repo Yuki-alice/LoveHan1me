@@ -335,14 +335,15 @@ fun SearchScreen(
         clearGenre: Boolean = false,
         clearSort: Boolean = false,
         clearDuration: Boolean = false,
+        clearReleaseDate: Boolean = false,
         clearTags: Boolean = false,
         clearBrands: Boolean = false,
         clearBroad: Boolean = false,
     ) {
         if (clearGenre) viewModel.genre = null
         if (clearSort) viewModel.sort = null
-        if (clearDuration) {
-            viewModel.duration = null
+        if (clearDuration) viewModel.duration = null
+        if (clearReleaseDate) {
             viewModel.year = null
             viewModel.month = null
             viewModel.approxTime = null
@@ -350,6 +351,8 @@ fun SearchScreen(
         if (clearTags) viewModel.tagMap.clear()
         if (clearBrands) viewModel.brandMap.clear()
         if (clearBroad) viewModel.broad = false
+        // 本次改动发生在筛选面板之外：常驻栏靠版本号才能重新读到新值（否则显示漂移）。
+        viewModel.bumpFilterRevision()
         doSearch(resetScroll = true)
     }
 
@@ -395,6 +398,7 @@ fun SearchScreen(
                             clearGenre = true,
                             clearSort = true,
                             clearDuration = true,
+                            clearReleaseDate = true,
                             clearTags = true,
                             clearBrands = true,
                             clearBroad = true,
@@ -403,6 +407,7 @@ fun SearchScreen(
                     onClearGenre = { clearSearchCriteria(clearGenre = true) },
                     onClearSort = { clearSearchCriteria(clearSort = true) },
                     onClearDuration = { clearSearchCriteria(clearDuration = true) },
+                    onClearReleaseDate = { clearSearchCriteria(clearReleaseDate = true) },
                     onClearTagCount = { clearSearchCriteria(clearTags = true) },
                     onClearBrandCount = { clearSearchCriteria(clearBrands = true) },
                     onClearBroad = { clearSearchCriteria(clearBroad = true) },

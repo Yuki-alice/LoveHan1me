@@ -6,14 +6,16 @@ import androidx.lifecycle.viewModelScope
 import lovehan1me.core.constant.HanimeConstants.HANIME_URL
 import lovehan1me.data.SettingsRepository
 import lovehan1me.site.hanime1.HanimeAdvancedSearchRepo
-import lovehan1me.data.DatabaseRepo
+import lovehan1me.site.hanime1.HanimeAdvancedSearchRepo.toDbString
 import lovehan1me.site.hanime1.HanimeAdvancedSearchRepo.toSearchOptionSet
+import lovehan1me.data.DatabaseRepo
 import lovehan1me.data.NetworkRepo
-import lovehan1me.data.database.entity.HanimeAdvancedSearchHistoryEntity
 import lovehan1me.data.database.entity.SearchHistoryEntity
 import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.core.domain.model.HanimeInfo
+import lovehan1me.core.domain.model.SearchFilterSnapshot
 import lovehan1me.core.domain.model.SearchOption
+import lovehan1me.core.domain.model.SearchOption.Companion.flatten
 import lovehan1me.core.domain.state.PageLoadingState
 import lovehan1me.core.util.decodeComposeAsset
 import lovehan1me.core.util.unsafeLazy
@@ -26,6 +28,9 @@ import kotlinx.coroutines.flow.getAndUpdate
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.setValue
 
 /**
  * @project LoveHan1me
@@ -77,6 +82,23 @@ class SearchViewModel() : ViewModel() {
         decodeComposeAsset<List<SearchOption>>("files/search_options/release_date.json").orEmpty()
     }
 
+    /**
+     * 筛选态版本号。
+     *
+     * 上面这些筛选字段都是普通 `var`（不是 Compose State），所以**跨 composable 的写入不会
+     * 触发重组**：宽屏下右侧结果区的「已生效条件」chip 把日期清掉后，左侧常驻筛选栏仍显示
+     * 旧的「1990 年 / 已选 2 项」（2026-09-16 实测）。
+     *
+     * 约定：凡是**从筛选面板之外**改动筛选态的方法，改完都要 [bumpFilterRevision]；
+     * 常驻栏把本值并进重组 key 即可重新读取。面板内部的改动走它自己的 selectionVersion。
+     */
+    var filterRevision by mutableIntStateOf(0)
+        private set
+
+    fun bumpFilterRevision() {
+        filterRevision++
+    }
+
     private val _searchStateFlow =
         MutableStateFlow<PageLoadingState<List<HanimeInfo>>>(PageLoadingState.Loading)
     val searchStateFlow = _searchStateFlow.asStateFlow()
@@ -105,6 +127,7 @@ class SearchViewModel() : ViewModel() {
         gridFirstVisibleItemScrollOffset = 0
         _searchFlow.value = emptyList()
         _searchStateFlow.value = PageLoadingState.Loading
+        bumpFilterRevision()
     }
 
     fun getHanimeSearchResult(
@@ -224,29 +247,59 @@ class SearchViewModel() : ViewModel() {
         clearHanimeSearchResult()
         refreshTriggerFlow.tryEmit(Unit)
     }
-    fun restoreSearchMap(history: HanimeAdvancedSearchHistoryEntity) {
+    /**
+     * 把当前筛选态导出成 [SearchFilterSnapshot]（保存命名预设用）。
+     *
+     * 刻意走与 `insertAdvancedSearchHistory` 完全相同的字段与串表示（日期用 [getSearchDate] 拼、
+     * 标签/品牌用 `toDbString` 拼），这样 [restoreSearchMap] 对预设和历史的还原效果一致 ——
+     * 不会出现"历史能还原、预设还原不出来"这种分叉。
+     */
+    fun currentFilterSnapshot(): SearchFilterSnapshot = SearchFilterSnapshot(
+        query = query?.takeIf { it.isNotBlank() },
+        genre = genre,
+        sort = sort,
+        broad = broad,
+        date = getSearchDate(),
+        duration = duration,
+        tags = tagMap.toWireFilterString(),
+        brands = brandMap.toWireFilterString(),
+    )
+
+    /** 选中项集合 → wire 层逗号串；空集合给 null（表示该维度无筛选）。 */
+    private fun Map<*, Set<SearchOption>>.toWireFilterString(): String? =
+        flatten().map { SearchOption(searchKey = it) }.toSet().toDbString().ifBlank { null }
+
+    /**
+     * 把一份筛选快照恢复进搜索态。
+     *
+     * 参数从 `HanimeAdvancedSearchHistoryEntity` 放宽成 [SearchFilterSnapshot]（2026-09-16）：
+     * 高级搜索历史与命名预设都先归约成快照，于是"恢复"只有这一份实现。
+     * 新增筛选维度时改两处转换（`toSnapshot()` / [currentFilterSnapshot]）即可。
+     */
+    fun restoreSearchMap(snapshot: SearchFilterSnapshot) {
         with(this) {
             page = 1
-            query = history.query
-            genre = history.genre
-            sort = history.sort
-            broad = history.broad == true
-            duration = history.duration
+            query = snapshot.query
+            genre = snapshot.genre
+            sort = snapshot.sort
+            broad = snapshot.broad
+            duration = snapshot.duration
 
-            restoreDate(this, history.date)
+            restoreDate(this, snapshot.date)
 
             tagMap.clear()
             brandMap.clear()
 
-            history.tags?.takeIf { it.isNotBlank() }?.let { tagsString ->
+            snapshot.tags?.takeIf { it.isNotBlank() }?.let { tagsString ->
                 val tagOptions = tagsString.toSearchOptionSet()
                 tagMap.put("history", tagOptions)
             }
 
-            history.brands?.takeIf { it.isNotBlank() }?.let { brandsString ->
+            snapshot.brands?.takeIf { it.isNotBlank() }?.let { brandsString ->
                 val brandOptions = brandsString.toSearchOptionSet()
                 brandMap.put(0, brandOptions)
             }
+            bumpFilterRevision()
         }
     }
     private fun restoreDate(viewModel: SearchViewModel, date: String?) {

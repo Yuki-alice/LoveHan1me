@@ -73,10 +73,12 @@ fun SearchRouteScreen(
     // 窄屏保持顶栏漏斗按钮 + 底栏弹窗。常驻栏自带搜索按钮，顶栏漏斗按钮隐藏。
     if (rememberContentWidthDp() >= 900.dp) {
         Row(modifier = Modifier.fillMaxSize()) {
+            // 240dp：单列条件块（一行一个）后不再需要两列的横向余量，
+            // 再宽反而让右侧结果网格被挤（内容宽 900dp 时结果区只剩 660dp）。
             AdvancedSearchSidePanel(
                 viewModel = viewModel,
                 modifier = Modifier
-                    .width(300.dp)
+                    .width(240.dp)
                     .fillMaxHeight()
                     .background(MaterialTheme.colorScheme.surfaceContainerLow),
             )
