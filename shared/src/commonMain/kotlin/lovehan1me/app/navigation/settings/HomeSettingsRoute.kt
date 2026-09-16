@@ -107,7 +107,7 @@ import lovehan1me.feature.home.homepage.defaultHomeCategoryPreferenceItems
 import lovehan1me.feature.home.homepage.hiddenHomeCategoryKeys
 import lovehan1me.feature.home.homepage.homeCategoryOrder
 import lovehan1me.feature.home.homepage.saveHomeCategoryPreferences
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -141,8 +141,8 @@ fun HomeSettingsRouteScreen(
         uri ?: return@rememberBackupExportLauncher
         coroutineScope.launch(ioDispatcher) {
             runCatching { BackupManager.exportTo(uri) }
-                .onSuccess { SonnerToast.success(getString(Res.string.backup_export_success)) }
-                .onFailure { SonnerToast.error(getString(Res.string.backup_export_failed)) }
+                .onSuccess { AppToast.success(getString(Res.string.backup_export_success)) }
+                .onFailure { AppToast.error(getString(Res.string.backup_export_failed)) }
         }
     }
     val importLauncher = rememberBackupImportLauncher { pendingImportUri = it }
@@ -153,9 +153,9 @@ fun HomeSettingsRouteScreen(
                 val jsonText = LocalListRepository.exportLocalListsJson()
                 check(writeBackupText(uri, jsonText)) { "Unable to open output file" }
             }.onSuccess {
-                SonnerToast.success(getString(Res.string.local_data_export_success))
+                AppToast.success(getString(Res.string.local_data_export_success))
             }.onFailure {
-                SonnerToast.error(it.message ?: getString(Res.string.local_data_export_failed))
+                AppToast.error(it.message ?: getString(Res.string.local_data_export_failed))
             }
         }
     }
@@ -166,9 +166,9 @@ fun HomeSettingsRouteScreen(
                 val jsonText = readBackupText(uri) ?: error("Unable to open input file")
                 LocalListRepository.importLocalListsJson(jsonText, merge = true)
             }.onSuccess {
-                SonnerToast.success(getString(Res.string.local_data_import_success))
+                AppToast.success(getString(Res.string.local_data_import_success))
             }.onFailure {
-                SonnerToast.error(it.message ?: getString(Res.string.local_data_import_failed))
+                AppToast.error(it.message ?: getString(Res.string.local_data_import_failed))
             }
         }
     }
@@ -179,15 +179,15 @@ fun HomeSettingsRouteScreen(
                 val jsonText = OnlineListsBackup.exportOnlineListsJson()
                 check(writeBackupText(uri, jsonText)) { "Unable to open output file" }
             }.onSuccess {
-                SonnerToast.success(getString(Res.string.online_data_export_success))
+                AppToast.success(getString(Res.string.online_data_export_success))
             }.onFailure {
-                SonnerToast.error(it.message ?: getString(Res.string.online_data_export_failed))
+                AppToast.error(it.message ?: getString(Res.string.online_data_export_failed))
             }
         }
     }
     val onlineListsImportLauncher = rememberBackupImportLauncher {
         if (!SettingsRepository.isAlreadyLogin) {
-            SonnerToast.warning(loginFirstText)
+            AppToast.warning(loginFirstText)
             return@rememberBackupImportLauncher
         }
         val uri = it ?: return@rememberBackupImportLauncher
@@ -196,9 +196,9 @@ fun HomeSettingsRouteScreen(
                 val jsonText = readBackupText(uri) ?: error("Unable to open input file")
                 OnlineListsBackup.importOnlineListsJson(jsonText)
             }.onSuccess {
-                SonnerToast.success(getString(Res.string.online_data_import_success))
+                AppToast.success(getString(Res.string.online_data_import_success))
             }.onFailure {
-                SonnerToast.error(it.message ?: getString(Res.string.online_data_import_failed))
+                AppToast.error(it.message ?: getString(Res.string.online_data_import_failed))
             }
         }
     }
@@ -248,7 +248,7 @@ fun HomeSettingsRouteScreen(
             videoQualityChange = { value ->
                 coroutineScope.launch {
                     SettingsRepository.update { it.copy(videoQuality = value) }
-                    SonnerToast.success(getString(Res.string.success_value, value))
+                    AppToast.success(getString(Res.string.success_value, value))
                 }
             },
             darkModeChange = { value ->
@@ -273,7 +273,7 @@ fun HomeSettingsRouteScreen(
             },
             allowPipModeChange = { enabled ->
                 if (enabled && !isPipPermissionGranted()) {
-                    SonnerToast.warning(requestPipText)
+                    AppToast.warning(requestPipText)
                     openPipPermissionSettings()
                     coroutineScope.launch { SettingsRepository.update { it.copy(allowPipMode = false) } }
                 } else {
@@ -348,7 +348,7 @@ fun HomeSettingsRouteScreen(
             },
             openApplyDeepLinks = {
                 if (!supportsPerAppLinks()) {
-                    SonnerToast.warning(deepLinksWarnText)
+                    AppToast.warning(deepLinksWarnText)
                 } else {
                     showApplyDeepLinksDialog = true
                 }
@@ -356,7 +356,7 @@ fun HomeSettingsRouteScreen(
             openOpenSourceLicense = onNavigateToOpenSourceLicenses,
             clearCache = {
                 coroutineScope.launch {
-                    if (getCacheDirSize() == 0L) SonnerToast.info(cacheEmptyText)
+                    if (getCacheDirSize() == 0L) AppToast.info(cacheEmptyText)
                     else showClearCacheConfirm = true
                 }
             },
@@ -376,7 +376,7 @@ fun HomeSettingsRouteScreen(
             },
             exportOnlineLists = {
                 if (!SettingsRepository.isAlreadyLogin) {
-                    SonnerToast.warning(loginFirstText)
+                    AppToast.warning(loginFirstText)
                 } else {
                     onlineListsExportLauncher(
                         "LoveHan1me-online-lists-${currentEpochMillis()}.json"
@@ -385,7 +385,7 @@ fun HomeSettingsRouteScreen(
             },
             importOnlineLists = {
                 if (!SettingsRepository.isAlreadyLogin) {
-                    SonnerToast.warning(loginFirstText)
+                    AppToast.warning(loginFirstText)
                 } else {
                     onlineListsImportLauncher()
                 }
@@ -411,13 +411,13 @@ fun HomeSettingsRouteScreen(
                 runCatching { BackupManager.importFrom(uri) }
                     .onSuccess {
                         withContext(Dispatchers.Main) {
-                            SonnerToast.success(getString(Res.string.backup_import_success))
+                            AppToast.success(getString(Res.string.backup_import_success))
                             recreateActivity()
                         }
                     }
                     .onFailure {
                         withContext(Dispatchers.Main) {
-                            SonnerToast.error(getString(Res.string.backup_import_failed))
+                            AppToast.error(getString(Res.string.backup_import_failed))
                         }
                     }
             }
@@ -436,7 +436,7 @@ fun HomeSettingsRouteScreen(
             coroutineScope.launch(ioDispatcher) {
                 val success = clearCacheDir()
                 cacheKey++
-                if (success) SonnerToast.success(getString(Res.string.clear_success)) else SonnerToast.error(getString(Res.string.clear_failed))
+                if (success) AppToast.success(getString(Res.string.clear_success)) else AppToast.error(getString(Res.string.clear_failed))
             }
         },
         onDismiss = { showClearCacheConfirm = false },

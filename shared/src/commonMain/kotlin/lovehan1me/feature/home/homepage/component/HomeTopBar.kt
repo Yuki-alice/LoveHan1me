@@ -5,16 +5,13 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -70,8 +67,10 @@ fun HomeTopBar(
     modifier: Modifier = Modifier,
 ) {
     val margin = rememberPageHorizontalMargin()
+    // 顶栏自身**不垫**状态栏：唯一调用点 SharedHomeScreen 坐在 MainScaffold 的
+    // Scaffold 内容槽里，innerPadding 已经吃过一遍状态栏；这里再垫就是双倍 inset
+    // （iPhone 上方会多出一整块状态栏高度的空白）。要在无 Scaffold 处复用时再另行处理。
     Column(modifier = modifier.background(HanimeDefaults.Colors.pageSurface)) {
-        Spacer(modifier = Modifier.windowInsetsTopHeight(WindowInsets.statusBars))
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -118,23 +117,15 @@ private fun SearchPill(
 
 @Composable
 private fun NewAnimeListPill(onClick: () -> Unit) {
-    // 纯图标按钮：文字去掉，描述走无障碍标签。
+    // 去圆底：纯图标按钮，点缀色收敛到图标 tint —— 与中性底拉开层级，
+    // 但不再是一坨色块。触控目标走 M3 IconButton 默认（48dp 最小可点）。
     val label = stringResource(Res.string.new_anime_list)
-    Row(
-        modifier = Modifier
-            .size(PillHeight)
-            .clip(CircleShape)
-            // tertiary 锚点：新番入口是点缀动作，與搜索框（中性容器）拉开层级。
-            .background(MaterialTheme.colorScheme.tertiaryContainer)
-            .clickable(role = Role.Button, onClick = onClick),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center,
-    ) {
+    IconButton(onClick = onClick) {
         Icon(
             painter = painterResource(Res.drawable.ic_calendar_month),
             contentDescription = label,
-            modifier = Modifier.size(18.dp),
-            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+            modifier = Modifier.size(24.dp),
+            tint = MaterialTheme.colorScheme.tertiary,
         )
     }
 }
@@ -162,16 +153,14 @@ private fun AccountAvatar(
             fallback = personPainter,
         )
     } else {
-        Icon(
-            painter = personPainter,
-            contentDescription = label,
-            modifier = Modifier
-                .size(AvatarSize)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.tertiaryContainer)
-                .clickable(role = Role.Button, onClick = onClick)
-                .padding(AvatarSize / 4),
-            tint = MaterialTheme.colorScheme.onTertiaryContainer,
-        )
+        // 未登录：纯图标按钮，无圆底（与新番入口同理）。
+        IconButton(onClick = onClick) {
+            Icon(
+                painter = personPainter,
+                contentDescription = label,
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
     }
 }

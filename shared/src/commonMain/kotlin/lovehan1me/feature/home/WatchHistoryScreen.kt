@@ -10,6 +10,7 @@ import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -179,6 +180,7 @@ fun WatchHistoryTabScreen(
     )
 
     HanimeScaffold(
+        topBarWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
         title = stringResource(Res.string.watch_history),
         onBack = onBack,
         contentHorizontalPadding = 0.dp,

@@ -63,7 +63,7 @@ import lovehan1me.feature.settings.DelayResultUi
 import lovehan1me.feature.settings.DohTestResultUi
 import lovehan1me.feature.settings.NetworkSettingsScreen
 import lovehan1me.feature.settings.NetworkSettingsUiState
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import okhttp3.Request
 import java.net.InetAddress
 import kotlinx.coroutines.Dispatchers
@@ -365,7 +365,7 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             }
             if (!valid) {
                 // P6d-3-C2 附带：回调内非 suspend，用 scope 桥 CMP getString（C3 同模式先行一处）
-                coroutineScope.launch { SonnerToast.warning(getString(Res.string.invalid_ip_or_port)) }
+                coroutineScope.launch { AppToast.warning(getString(Res.string.invalid_ip_or_port)) }
                 return@NetworkSettingsScreen
             }
             if (type == HanimeProxySelector.TYPE_SOCKS) {

@@ -1,5 +1,6 @@
 package lovehan1me.feature.home.myplaylist
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -22,6 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import androidx.compose.ui.input.nestedscroll.nestedScroll
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.getString
@@ -43,7 +45,7 @@ import lovehan1me.ui.component.PullRefreshOverlay
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.feature.library.PlaylistController
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 
 /**
  * 播放列表页面 Screen 层。
@@ -95,10 +97,10 @@ fun PlaylistScreen(
     LaunchedEffect(Unit) {
         viewModel.createPlaylistFlow.collect { result ->
             when (result) {
-                is WebsiteState.Error -> SonnerToast.error(getString(Res.string.add_failed))
+                is WebsiteState.Error -> AppToast.error(getString(Res.string.add_failed))
                 is WebsiteState.Loading -> Unit
                 is WebsiteState.Success -> {
-                    SonnerToast.success(getString(Res.string.add_success))
+                    AppToast.success(getString(Res.string.add_success))
                     viewModel.loadMyPlayList()
                 }
             }
@@ -128,6 +130,7 @@ fun PlaylistScreen(
     }
 
     HanimeScaffold(
+        topBarWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         title = stringResource(Res.string.my_list),
         onBack = navigateBack,

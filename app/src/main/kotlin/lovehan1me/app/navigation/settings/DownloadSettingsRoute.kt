@@ -63,7 +63,7 @@ import lovehan1me.feature.settings.DownloadSettingsUiState
 import lovehan1me.core.util.SafFileManager
 import lovehan1me.core.util.SafFileManager.KEY_TREE_URI
 import lovehan1me.worker.HanimeDownloadManager
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import lovehan1me.core.util.toastText
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
@@ -93,10 +93,10 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
         if (result.resultCode == Activity.RESULT_OK && result.data != null) {
             coroutineScope.launch {
                 SafFileManager.persistUriPermission(context, result.data)
-                SonnerToast.success(getString(Res.string.directory_saved, result.data.toString()))
+                AppToast.success(getString(Res.string.directory_saved, result.data.toString()))
             }
         } else {
-            coroutineScope.launch { SonnerToast.warning(getString(Res.string.no_directory_selected)) }
+            coroutineScope.launch { AppToast.warning(getString(Res.string.no_directory_selected)) }
         }
     }
 
@@ -172,7 +172,7 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
             coroutineScope.launch {
                 SettingsRepository.setDownloadStorage(usePrivate = true, path = null)
                 showRestoreDefaultConfirm = false
-                SonnerToast.success(getString(Res.string.default_path_restored))
+                AppToast.success(getString(Res.string.default_path_restored))
             }
         },
         onDismiss = { showRestoreDefaultConfirm = false },
@@ -192,14 +192,14 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
                     0 -> {
                         importProgress = null
                         coroutineScope.launch {
-                            SonnerToast.info(getString(Res.string.no_exportable_files))
+                            AppToast.info(getString(Res.string.no_exportable_files))
                         }
                     }
 
                     -1 -> {
                         importProgress = null
                         coroutineScope.launch {
-                            SonnerToast.error(getString(Res.string.permission_error))
+                            AppToast.error(getString(Res.string.permission_error))
                         }
                     }
 
@@ -208,7 +208,7 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
                         if (migrated == total) {
                             importProgress = null
                             coroutineScope.launch {
-                                SonnerToast.success(getString(Res.string.import_complete, total))
+                                AppToast.success(getString(Res.string.import_complete, total))
                             }
                         }
                     }

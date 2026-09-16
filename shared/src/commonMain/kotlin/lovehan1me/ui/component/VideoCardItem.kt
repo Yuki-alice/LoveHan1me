@@ -63,7 +63,7 @@ import lovehan1me.ui.theme.shapeByInteraction
 import lovehan1me.ui.transition.sharedCoverElement
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.core.util.DisplayTextLocalizer
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.launch
 
 /**
@@ -328,7 +328,7 @@ fun VideoCardItem(
                                 videoItem.videoCode
                             )
                         )
-                        scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
+                        scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
                     },
                 )
                 if (currentArtist != null) {

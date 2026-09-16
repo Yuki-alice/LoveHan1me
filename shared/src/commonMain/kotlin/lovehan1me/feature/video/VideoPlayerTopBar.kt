@@ -93,7 +93,7 @@ import lovehan1me.Res
 import lovehan1me.cancel
 import lovehan1me.confirm
 import lovehan1me.core.platform.currentEpochMillis
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import lovehan1me.delete
 import lovehan1me.edit
 import lovehan1me.feature.player.PlatformVideoSurface

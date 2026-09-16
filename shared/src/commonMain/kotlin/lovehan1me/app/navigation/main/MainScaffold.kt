@@ -16,6 +16,10 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.only
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
@@ -295,7 +299,15 @@ private fun MainNavigationBar(
     selectedTab: MainTab,
     onSelectTab: (MainTab) -> Unit,
 ) {
-    NavigationBar {
+    NavigationBar(
+        // 底色必须延到屏幕底（盖住手势区）：M3 默认只吃 navigationBars，
+        // iOS 上这个值不可靠（手势区漏底色、露出身后的黑窗底），改吃 safeDrawing。
+        // 单点应用（不另包 wrapper），天然防叠加；Android 上 safeDrawing 与
+        // navigationBars 同值，零视觉变化。横向也带上，与 M3 默认（横+底）对齐。
+        windowInsets = WindowInsets.safeDrawing.only(
+            WindowInsetsSides.Horizontal + WindowInsetsSides.Bottom
+        ),
+    ) {
         MainTab.entries.forEach { tab ->
             NavigationBarItem(
                 selected = tab == selectedTab,

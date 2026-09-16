@@ -10,7 +10,7 @@ import lovehan1me.data.getHanimeShareText
 import lovehan1me.feature.home.SubscriptionScreen
 import lovehan1me.feature.library.MySubscriptionsViewModel
 import lovehan1me.core.util.rememberCopyTextToClipboard
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 
@@ -30,12 +30,12 @@ fun SubscriptionRouteScreen(
         onClickArtist = { onNavigateToSearch(it) },
         onLongClickArtist = { artistName ->
             copyTextToClipboard(getHanimeSearchShareText(artistName))
-            scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
+            scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
         },
         onClickVideosItem = onNavigateToVideo,
         onLongClickVideosItem = { videoCode, title ->
             copyTextToClipboard(getHanimeShareText(title, videoCode))
-            scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
+            scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
         },
     )
 }

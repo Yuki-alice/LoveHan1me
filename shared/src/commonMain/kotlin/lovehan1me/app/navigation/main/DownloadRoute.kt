@@ -42,7 +42,7 @@ import lovehan1me.feature.library.DownloadViewModel
 import lovehan1me.core.platform.downloadWorkController
 import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.core.platform.rememberBackupImportLauncher
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -81,9 +81,9 @@ fun DownloadRouteScreen(
                         sortedBy = HanimeDownloadEntity.SortedBy.ID,
                         ascending = false,
                     )
-                    SonnerToast.success(getString(Res.string.read_success))
+                    AppToast.success(getString(Res.string.read_success))
                 } else {
-                    SonnerToast.error(getString(Res.string.backup_import_failed))
+                    AppToast.error(getString(Res.string.backup_import_failed))
                 }
             }
         }
@@ -107,7 +107,7 @@ fun DownloadRouteScreen(
                 if (onImportDownloaded != null && !isImportingDownloaded) {
                     showImportDownloadedConfirm = true
                 } else {
-                    scope.launch { SonnerToast.warning(getString(Res.string.select_custom_directory)) }
+                    scope.launch { AppToast.warning(getString(Res.string.select_custom_directory)) }
                 }
             }
 
@@ -115,7 +115,7 @@ fun DownloadRouteScreen(
                 if (downloadWorkController().supportsExternalImport() && !isImportingExternalFile) {
                     externalImportLauncher()
                 } else {
-                    scope.launch { SonnerToast.warning(getString(Res.string.action_not_support)) }
+                    scope.launch { AppToast.warning(getString(Res.string.action_not_support)) }
                 }
             }
 
@@ -136,16 +136,16 @@ fun DownloadRouteScreen(
 
             is DownloadEvent.OnRenameGroup -> {
                 viewModel.updateGroupName(event.groupId, event.newName)
-                scope.launch { SonnerToast.success(getString(Res.string.group_renamed, event.newName)) }
+                scope.launch { AppToast.success(getString(Res.string.group_renamed, event.newName)) }
             }
 
             is DownloadEvent.OnCreateGroup -> {
                 if (event.name.isBlank()) {
-                    scope.launch { SonnerToast.warning(getString(Res.string.group_name_empty)) }
+                    scope.launch { AppToast.warning(getString(Res.string.group_name_empty)) }
                 } else {
                     viewModel.createNewGroup(event.name)
                     scope.launch {
-                        SonnerToast.success(
+                        AppToast.success(
                             getString(
                                 Res.string.create_group_success,
                                 event.name
@@ -157,7 +157,7 @@ fun DownloadRouteScreen(
 
             is DownloadEvent.OnDeleteGroup -> {
                 viewModel.deleteGroup(event.group)
-                scope.launch { SonnerToast.success(getString(Res.string.delete_success)) }
+                scope.launch { AppToast.success(getString(Res.string.delete_success)) }
             }
 
             is DownloadEvent.OnBatchDelete -> event.videos.forEach { video ->
@@ -213,9 +213,9 @@ fun DownloadRouteScreen(
                         sortedBy = HanimeDownloadEntity.SortedBy.ID,
                         ascending = false,
                     )
-                    SonnerToast.success(getString(Res.string.read_success))
+                    AppToast.success(getString(Res.string.read_success))
                 } else {
-                    SonnerToast.error(getString(Res.string.permission_error))
+                    AppToast.error(getString(Res.string.permission_error))
                 }
             }
         },

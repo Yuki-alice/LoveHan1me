@@ -78,7 +78,7 @@ import lovehan1me.feature.settings.OpenSourceLicensesScreen
 import lovehan1me.feature.settings.ThemeAuditScreen
 import lovehan1me.ui.theme.fadeScale
 import lovehan1me.ui.theme.sharedAxisX
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
 
@@ -200,7 +200,7 @@ fun SharedTopNavigation(
                 onOpenAccount = { backStack.add(AccountRoute) },
                 onOpenLogin = { backStack.add(LoginRoute) },
                 onLockedSection = {
-                    scope.launch { SonnerToast.warning(getString(Res.string.login_first)) }
+                    scope.launch { AppToast.warning(getString(Res.string.login_first)) }
                     backStack.add(LoginRoute, launchSingleTop = true)
                 },
                 onOpenCheckIn = { backStack.add(DailyCheckInRoute) },

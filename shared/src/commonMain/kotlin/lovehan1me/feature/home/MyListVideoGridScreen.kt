@@ -1,5 +1,6 @@
 package lovehan1me.feature.home
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
@@ -22,6 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import lovehan1me.Res
@@ -170,6 +172,7 @@ fun VideoGridScreen(
     )
 
     HanimeScaffold(
+        topBarWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
         title = stringResource(titleRes),
         subtitle = {
             Text(

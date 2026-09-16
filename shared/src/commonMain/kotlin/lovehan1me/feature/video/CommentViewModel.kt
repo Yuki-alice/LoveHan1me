@@ -18,7 +18,7 @@ import lovehan1me.thumb_down_success
 import lovehan1me.thumb_up_success
 import lovehan1me.feature.video.CommentSortType
 import lovehan1me.data.network.CsrfTokenProvider.csrfToken
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import lovehan1me.core.util.decodeComposeAsset
 import lovehan1me.core.util.unsafeLazy
 import org.jetbrains.compose.resources.getString
@@ -259,15 +259,15 @@ class CommentViewModel : ViewModel() {
     suspend fun handleCommentLike(args: VideoCommentArgs) {
         if (args.isPositive) {
             if (args.comment.post.likeCommentStatus) {
-                SonnerToast.success(getString(Res.string.cancel_thumb_up_success))
+                AppToast.success(getString(Res.string.cancel_thumb_up_success))
             } else {
-                SonnerToast.success(getString(Res.string.thumb_up_success))
+                AppToast.success(getString(Res.string.thumb_up_success))
             }
         } else {
             if (args.comment.post.unlikeCommentStatus) {
-                SonnerToast.success(getString(Res.string.cancel_thumb_down_success))
+                AppToast.success(getString(Res.string.cancel_thumb_down_success))
             } else {
-                SonnerToast.success(getString(Res.string.thumb_down_success))
+                AppToast.success(getString(Res.string.thumb_down_success))
             }
         }
     }

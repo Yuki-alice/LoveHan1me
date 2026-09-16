@@ -82,9 +82,6 @@ kotlin {
             // HTML 解析：ksoup（Fleeksoft 坐标，jsoup 兼容 API，P4 起使用）
             implementation(libs.ksoup)
 
-            // P6b：Toast（sonner 0.4.0 本身是 CMP 库）
-            implementation(libs.sonner)
-
             // Compose 资源（P4：Res 类 / 最小字符串集）
             implementation(compose.components.resources)
 
@@ -191,7 +188,14 @@ kotlin {
                 // 没有 desktopApp 注入的 skiko-awt-runtime 就会
                 // ExceptionInInitializerError（本地库未加载）。
                 // 版本必须与 compose 带来的 skiko 对齐（0.150.1）。
+                // 原生库按 OS 分发：CI 跑 Windows（见 ci.yml 注释），本地 Mac
+                // 此前是靠 sonner-desktop 顺带把 macos-arm64 抬进来——
+                // sonner 已删（Toast 走官方 M3），各 OS 在此显式声明，
+                // 不用的 OS 的包只是躺在 classpath 里，不会被加载。
                 runtimeOnly("org.jetbrains.skiko:skiko-awt-runtime-windows-x64:0.150.1")
+                runtimeOnly("org.jetbrains.skiko:skiko-awt-runtime-macos-arm64:0.150.1")
+                runtimeOnly("org.jetbrains.skiko:skiko-awt-runtime-macos-x64:0.150.1")
+                runtimeOnly("org.jetbrains.skiko:skiko-awt-runtime-linux-x64:0.150.1")
             }
         }
     }

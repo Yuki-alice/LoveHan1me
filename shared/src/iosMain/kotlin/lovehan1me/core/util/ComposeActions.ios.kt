@@ -18,6 +18,6 @@ actual fun rememberShareText(): (String, String?) -> Unit {
     val scope = rememberCoroutineScope()
     return { content, _ ->
         copyTextToClipboard(content)
-        scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
+        scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
     }
 }

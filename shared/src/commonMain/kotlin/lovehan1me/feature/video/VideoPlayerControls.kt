@@ -152,7 +152,7 @@ import lovehan1me.feature.player.PlatformVideoSurface
 import lovehan1me.feature.player.PlayerDefaults
 import lovehan1me.ui.transition.sharedCoverElement
 import lovehan1me.ui.component.rememberHapticFeedback
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlin.math.abs

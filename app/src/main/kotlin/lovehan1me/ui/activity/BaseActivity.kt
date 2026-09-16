@@ -15,7 +15,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.BuildConfig
 import lovehan1me.ui.theme.HanimeTheme
 import lovehan1me.data.SettingsRepository
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 
 abstract class BaseActivity : AppCompatActivity() {
 
@@ -58,7 +58,7 @@ abstract class BaseActivity : AppCompatActivity() {
             ) {
                 HanimeTheme {
                     content()
-                    SonnerToast.Host()
+                    AppToast.Host()
                 }
             }
         }

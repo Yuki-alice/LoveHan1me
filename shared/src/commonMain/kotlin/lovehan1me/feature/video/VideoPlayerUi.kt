@@ -138,7 +138,7 @@ import lovehan1me.confirm
 import lovehan1me.ic_volume_up
 import lovehan1me.ic_light_mode
 import lovehan1me.ic_fast_rewind
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone

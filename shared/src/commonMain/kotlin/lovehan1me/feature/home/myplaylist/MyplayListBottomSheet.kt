@@ -83,7 +83,7 @@ import lovehan1me.ui.component.RetryableImage
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.adaptive.PageMetrics
 import lovehan1me.feature.library.PlaylistController
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 
 /**
  * 播放列表详情底部弹窗。
@@ -134,7 +134,7 @@ fun PlaylistBottomSheet(
                 vm.getPlaylistItems(1, currentCode, true)
             }
         } else {
-            SonnerToast.error(getString(Res.string.unknown_error))
+            AppToast.error(getString(Res.string.unknown_error))
         }
     }
 
@@ -185,17 +185,17 @@ fun PlaylistBottomSheet(
     LaunchedEffect(Unit) {
         vm.modifyPlaylistFlow.collect { result ->
             when (result) {
-                is WebsiteState.Error -> SonnerToast.error(getString(Res.string.modify_failed))
+                is WebsiteState.Error -> AppToast.error(getString(Res.string.modify_failed))
                 WebsiteState.Loading -> {}
                 is WebsiteState.Success -> {
                     if (result.info.isDeleted) {
                         sheetState.hide()
                         onDismiss()
-                        SonnerToast.success(getString(Res.string.delete_success))
+                        AppToast.success(getString(Res.string.delete_success))
                         vm.loadMyPlayList()
                         return@collect
                     }
-                    SonnerToast.success(getString(Res.string.modify_success))
+                    AppToast.success(getString(Res.string.modify_success))
                     vm.getPlaylistItems(1, currentCode, true)
                     vm.loadMyPlayList()
                 }
@@ -206,10 +206,10 @@ fun PlaylistBottomSheet(
     LaunchedEffect(Unit) {
         vm.deleteFromPlaylistFlow.collect { result ->
             when (result) {
-                is WebsiteState.Error -> SonnerToast.error(getString(Res.string.delete_failed))
+                is WebsiteState.Error -> AppToast.error(getString(Res.string.delete_failed))
                 is WebsiteState.Loading -> {}
                 is WebsiteState.Success -> {
-                    SonnerToast.success(getString(Res.string.delete_success))
+                    AppToast.success(getString(Res.string.delete_success))
                     vm.loadMyPlayList()
                 }
             }

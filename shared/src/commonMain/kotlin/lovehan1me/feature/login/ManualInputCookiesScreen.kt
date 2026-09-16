@@ -1,6 +1,7 @@
 package lovehan1me.feature.login
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -47,6 +48,7 @@ fun ManualInputCookiesScreen(
     onCookieScanned: (String) -> Unit,
 ) {
     HanimeScaffold(
+        topBarWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
         title = stringResource(Res.string.title_activity_qrcode_scanner),
         onBack = onBack,
     ) { innerPadding ->

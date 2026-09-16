@@ -31,7 +31,7 @@ import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.feature.home.homepage.HomePageViewModel
 import lovehan1me.ui.theme.HanimeTheme
 import lovehan1me.app.sharedViewModel
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import lovehan1me.Res
@@ -102,7 +102,7 @@ fun App(
             )
             return@HanimeTheme
         }
-        SonnerToast.Host()
+        AppToast.Host()
         val homeViewModel: HomePageViewModel = sharedViewModel(::HomePageViewModel)
         // 复用 ViewModel 持有的回退栈：平台壳（Android intent 导航 / 返回键）与
         // 共享导航必须操作同一实例，否则会出现两套互不感知的栈。
@@ -111,8 +111,8 @@ fun App(
 
         LaunchedEffect(homeViewModel) {
             homeViewModel.sessionExpiredMessage.collect { event ->
-                event.message?.let(SonnerToast::error)
-                    ?: SonnerToast.error(getString(event.fallbackResId))
+                event.message?.let(AppToast::error)
+                    ?: AppToast.error(getString(event.fallbackResId))
             }
         }
 

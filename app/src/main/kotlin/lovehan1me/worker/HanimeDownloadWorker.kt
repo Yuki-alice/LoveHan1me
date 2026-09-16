@@ -48,7 +48,7 @@ import lovehan1me.core.util.SafFileManager
 import lovehan1me.core.util.await
 import lovehan1me.core.util.createFileIfNotExists
 import lovehan1me.core.util.saveTo
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import lovehan1me.core.util.toastText
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -320,7 +320,7 @@ class HanimeDownloadWorker(
                             LogUtil.d(TAG, "entity is null, create new raf failed")
                             val reason = getString(Res.string.download_error_file_info)
                             mainScope.launch {
-                                SonnerToast.error(
+                                AppToast.error(
                                     getString(Res.string.download_task_failed_s_reason_s, hanimeName, reason)
                                 )
                             }
@@ -400,7 +400,7 @@ class HanimeDownloadWorker(
                     if (!canWrite) {
                         val reason = response.toDownloadErrorMessage(requestNeedRange)
                         mainScope.launch {
-                            SonnerToast.error(getString(Res.string.download_task_failed_s_reason_s, hanimeName, reason))
+                            AppToast.error(getString(Res.string.download_task_failed_s_reason_s, hanimeName, reason))
                         }
                         result = Result.failure(workDataOf(DownloadState.STATE to DownloadState.Failed.mask))
                         return@withContext result
@@ -461,14 +461,14 @@ class HanimeDownloadWorker(
             } catch (e: Exception) {
                 result = if (e is CancellationException || e.isStoppedCancellation()) {
                     cancelDownloadNotification()
-                    mainScope.launch { SonnerToast.info(getString(Res.string.download_error_cancelled)) }
+                    mainScope.launch { AppToast.info(getString(Res.string.download_error_cancelled)) }
                     Result.success(
                         workDataOf(DownloadState.STATE to DownloadState.Paused.mask)
                     )
                 } else if (e.isRetryableNetworkError() && runAttemptCount < MAX_WORK_RETRY_COUNT) {
                     val reason = e.toDownloadErrorMessage()
                     mainScope.launch {
-                        SonnerToast.warning(getString(Res.string.download_task_retrying_s_reason_s, hanimeName, reason))
+                        AppToast.warning(getString(Res.string.download_task_retrying_s_reason_s, hanimeName, reason))
                     }
                     shouldRetry = true
                     Result.retry()
@@ -476,7 +476,7 @@ class HanimeDownloadWorker(
                     val reason = e.toDownloadErrorMessage()
                     e.printStackTrace()
                     mainScope.launch {
-                        SonnerToast.error(getString(Res.string.download_task_failed_s_reason_s, hanimeName, reason))
+                        AppToast.error(getString(Res.string.download_task_failed_s_reason_s, hanimeName, reason))
                     }
                     Result.failure(
                         workDataOf(DownloadState.STATE to DownloadState.Failed.mask)
@@ -612,6 +612,6 @@ class HanimeDownloadWorker(
     }
 
     // 阶段一决策⑥：下载「结果通知」（完成/失败/重试/文件已存在）已全端移除。
-    // 这三类提示统一走共享层 SonnerToast（各端一致）；上面保留的进度通知
+    // 这三类提示统一走共享层 AppToast（各端一致）；上面保留的进度通知
     // 是 WorkManager 前台服务（ForegroundInfo）的必需载体，不能删。
 }

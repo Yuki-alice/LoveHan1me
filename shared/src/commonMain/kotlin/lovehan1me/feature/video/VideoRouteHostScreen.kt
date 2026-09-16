@@ -85,7 +85,7 @@ import lovehan1me.feature.video.VideoViewModel
 import lovehan1me.app.sharedViewModel
 import lovehan1me.core.util.decodeComposeAsset
 import lovehan1me.core.util.image.ScreenshotCapturer
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.core.util.rememberShareText
 import lovehan1me.ui.transition.coverSharedElementKey
@@ -173,7 +173,8 @@ fun VideoRouteHostScreen(
     // 词典 JSON 移出组合：磁盘 IO 不许卡首帧，进场后异步装，到了重组 actions 即可。
     var genres by remember(SettingsRepository.baseUrl) { mutableStateOf(emptyList<SearchOption>()) }
     LaunchedEffect(SettingsRepository.baseUrl) {
-        genres = withContext(Dispatchers.IO) {
+        // Native 侧没有 Dispatchers.IO（JVM-only）：词典 JSON 解码放 Default，一样不在主线程。
+        genres = withContext(Dispatchers.Default) {
             decodeComposeAsset<List<SearchOption>>(
                 if (SettingsRepository.baseUrl == lovehan1me.core.constant.HanimeConstants.HANIME_URL[3]) {
                     "files/search_options/genre_av.json"
@@ -220,7 +221,7 @@ fun VideoRouteHostScreen(
      *    点截图却截到半秒前的画面，用户只会觉得"截偏了"。
      * 2. **原本在播就接着播**：抓帧实现会 pause 播放器（mpv 要先 pause 才取到稳定帧，
      *    Exo 与 iOS 同理），截图不该顺手把播放停掉。
-     * 3. **失败全部走 SonnerToast**：没有对话框可以承载错误文案，
+     * 3. **失败全部走 AppToast**：没有对话框可以承载错误文案，
      *    而 `ScreenshotCapturer` 已把失败收敛成结果类型（含"抓不到帧"与"编码失败"的区分）。
      */
     fun captureScreenshot() {
@@ -248,24 +249,24 @@ fun VideoRouteHostScreen(
                         )
                     ) {
                         // Shared 与 SavedOnly 对用户都是"存好了"，区别只在有没有弹分享面板
-                        is MediaExportOutcome.Shared -> SonnerToast.success(
+                        is MediaExportOutcome.Shared -> AppToast.success(
                             getString(Res.string.screenshot_saved, export.location),
                         )
 
-                        is MediaExportOutcome.SavedOnly -> SonnerToast.success(
+                        is MediaExportOutcome.SavedOnly -> AppToast.success(
                             getString(Res.string.screenshot_saved, export.location),
                         )
 
-                        is MediaExportOutcome.Failed -> SonnerToast.error(
+                        is MediaExportOutcome.Failed -> AppToast.error(
                             getString(Res.string.screenshot_failed, export.message),
                         )
                     }
 
-                    is ScreenshotCapturer.Outcome.NoFrame -> SonnerToast.error(
+                    is ScreenshotCapturer.Outcome.NoFrame -> AppToast.error(
                         getString(Res.string.screenshot_failed, outcome.detail),
                     )
 
-                    is ScreenshotCapturer.Outcome.EncodeFailed -> SonnerToast.error(
+                    is ScreenshotCapturer.Outcome.EncodeFailed -> AppToast.error(
                         getString(Res.string.screenshot_failed, outcome.message),
                     )
                 }
@@ -480,7 +481,7 @@ fun VideoRouteHostScreen(
             viewModel.hanimeVideoStateFlow.collect { state ->
                 when (state) {
                     is VideoLoadingState.Error -> {
-                        state.throwable.message?.let(SonnerToast::error)
+                        state.throwable.message?.let(AppToast::error)
                         if (state.throwable is ParseException) {
                             uriHandler.openUri(getHanimeVideoLink(route.videoCode))
                         }
@@ -499,7 +500,7 @@ fun VideoRouteHostScreen(
                             )
                         }
                         if (qualities.isEmpty()) {
-                            SonnerToast.error(getString(Res.string.fail_to_get_video_link))
+                            AppToast.error(getString(Res.string.fail_to_get_video_link))
                             uriHandler.openUri(getHanimeVideoLink(route.videoCode))
                         } else {
                             val history = DatabaseRepo.WatchHistory.findBy(route.videoCode)
@@ -558,7 +559,7 @@ fun VideoRouteHostScreen(
                         }
                     }
 
-                    is VideoLoadingState.NoContent -> SonnerToast.error(getString(Res.string.video_might_not_exist))
+                    is VideoLoadingState.NoContent -> AppToast.error(getString(Res.string.video_might_not_exist))
                 }
             }
         }
@@ -582,8 +583,8 @@ fun VideoRouteHostScreen(
             launch {
                 viewModel.localFavoriteActionFlow.collect { state ->
                     when (state) {
-                        is WebsiteState.Error -> SonnerToast.error(getString(Res.string.add_failed))
-                        is WebsiteState.Success -> SonnerToast.success(
+                        is WebsiteState.Error -> AppToast.error(getString(Res.string.add_failed))
+                        is WebsiteState.Success -> AppToast.success(
                             getString(
                                 if (state.info) Res.string.add_success
                                 else Res.string.local_favorite_cancelled
@@ -596,8 +597,8 @@ fun VideoRouteHostScreen(
             launch {
                 viewModel.localMyListActionFlow.collect { state ->
                     when (state) {
-                        is WebsiteState.Error -> SonnerToast.error(getString(Res.string.modify_failed))
-                        is WebsiteState.Success -> SonnerToast.success(getString(Res.string.modify_success))
+                        is WebsiteState.Error -> AppToast.error(getString(Res.string.modify_failed))
+                        is WebsiteState.Success -> AppToast.success(getString(Res.string.modify_success))
                         WebsiteState.Loading -> Unit
                     }
                 }
@@ -725,7 +726,7 @@ fun VideoRouteHostScreen(
             onOpenShare = shareText,
             onCopyText = {
                 copyTextToClipboard(it)
-                scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
+                scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
             },
             onIntroductionLinkClick = actions::openIntroductionLink,
             stringLongPressShare = stringLongPressShare,

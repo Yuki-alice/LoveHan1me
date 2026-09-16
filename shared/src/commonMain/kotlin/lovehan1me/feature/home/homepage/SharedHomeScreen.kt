@@ -9,9 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,7 +22,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -74,10 +71,11 @@ fun SharedHomeScreen(
     val homeListState = rememberLazyListState()
     val refreshState = rememberPullToRefreshState()
     val loadingHint = rememberRandomLoadingHint()
-    val density = LocalDensity.current
-    val contentTopPadding = with(density) {
-        WindowInsets.statusBars.getTop(this).toDp() + 72.dp
-    }
+    // 列表顶部只给悬浮顶栏让位（64dp 栏高 + 8dp 间隙），**不再加状态栏**：
+    // 本屏坐在 MainScaffold 的 Scaffold 内容槽里，innerPadding 已经把起点推到
+    // 状态栏下面；再加一次就是双倍空白（iPhone 上凭空多出约 60pt，之前圈出来的那截）。
+    // 桌面端 statusBars 本来就是 0，改前后无变化；Android 同理收紧一截状态栏高度。
+    val contentTopPadding = 72.dp
     val isAVSite = SettingsRepository.baseUrl == HanimeConstants.HANIME_URL[3]
 
     // 门控改用 settings 驱动而非 Unit：桌面/iOS 的 DataStore 初始化时机与 composition

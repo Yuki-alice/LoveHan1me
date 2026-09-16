@@ -18,7 +18,7 @@ import lovehan1me.core.domain.model.SearchOption
 import lovehan1me.app.navigation.main.SearchRoute
 import lovehan1me.feature.video.VideoViewModel
 import lovehan1me.core.platform.ioDispatcher
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -87,7 +87,7 @@ class VideoRouteActions(
     fun toggleArtistSubscription(artist: HanimeVideo.Artist) {
         val post = artist.post ?: return
         if (!SettingsRepository.isAlreadyLogin) {
-            scope.launch { SonnerToast.warning(getString(Res.string.login_first)) }
+            scope.launch { AppToast.warning(getString(Res.string.login_first)) }
             return
         }
         if (artist.isSubscribed) {
@@ -116,7 +116,7 @@ class VideoRouteActions(
 
     fun rateVideo(video: HanimeVideo, isPositive: Boolean) {
         if (!SettingsRepository.isAlreadyLogin) {
-            scope.launch { SonnerToast.warning(getString(Res.string.login_first)) }
+            scope.launch { AppToast.warning(getString(Res.string.login_first)) }
             return
         }
         viewModel.rateVideo(video, isPositive)
@@ -134,7 +134,7 @@ class VideoRouteActions(
             return
         }
         if (myList == null || myList.myListInfo.isEmpty()) {
-            scope.launch { SonnerToast.warning(getString(Res.string.login_first)) }
+            scope.launch { AppToast.warning(getString(Res.string.login_first)) }
             return
         }
         myList.myListInfo.forEachIndexed { index, info ->
@@ -154,7 +154,7 @@ class VideoRouteActions(
         scope.launch(ioDispatcher) {
             Han1meDatabases.checkInRecord.checkInDao().insert(record)
             withContext(Dispatchers.Main) {
-                SonnerToast.success(getString(Res.string.checkin_success))
+                AppToast.success(getString(Res.string.checkin_success))
             }
         }
     }
@@ -164,13 +164,13 @@ class VideoRouteActions(
             onOpenUri(link)
         } catch (_: Exception) {
             onCopyText(link)
-            scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
+            scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
         }
     }
 
     fun openOriginalComic(comicLink: String) {
         runCatching { onOpenUri(comicLink) }
-            .onFailure { scope.launch { SonnerToast.error(getString(Res.string.fault_prompt)) } }
+            .onFailure { scope.launch { AppToast.error(getString(Res.string.fault_prompt)) } }
     }
 
     fun openVideoWebPage() {
@@ -183,7 +183,7 @@ class VideoRouteActions(
 
     fun startDownloadFlow(videoData: HanimeVideo) {
         if (videoData.videoUrls.isEmpty()) {
-            scope.launch { SonnerToast.warning(getString(Res.string.no_video_links_found)) }
+            scope.launch { AppToast.warning(getString(Res.string.no_video_links_found)) }
             return
         }
         viewModel.findDownloadedHanime(viewModel.videoCode)

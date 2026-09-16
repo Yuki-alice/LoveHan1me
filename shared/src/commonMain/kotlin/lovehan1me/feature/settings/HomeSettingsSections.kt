@@ -381,6 +381,8 @@ internal fun AnimatedLazyListScope.appearanceSection(
             DarkModePicker(
                 selectedValue = state.darkMode,
                 onSelect = actions.darkModeChange,
+                boardId = state.themeId,
+                contrastLevel = state.contrastLevel,
             )
             SettingSwitchItem(
                 title = stringResource(Res.string.amoled_mode),

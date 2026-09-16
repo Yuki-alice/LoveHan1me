@@ -1,5 +1,6 @@
 package lovehan1me.feature.home.preview.getchupreview
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -46,6 +47,7 @@ fun GetchuPreviewDetailScreen(
     }
 
     HanimeScaffold(
+        topBarWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
             title = stringResource(Res.string.getchu_preview_detail),
             onBack = onBack,
             contentHorizontalPadding = 0.dp,

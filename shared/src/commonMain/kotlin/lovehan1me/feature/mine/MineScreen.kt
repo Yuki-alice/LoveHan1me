@@ -3,8 +3,8 @@
 package lovehan1me.feature.mine
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -107,6 +107,7 @@ fun MineScreen(
     modifier: Modifier = Modifier,
 ) {
     HanimeScaffold(
+        topBarWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
         title = title,
         onBack = null,
         modifier = modifier,
@@ -200,21 +201,13 @@ private fun CheckInCard(
                 .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    // tertiary 锚点：签到是点缀动作，用第三强调色与主按钮拉开（M3E 三色拉开）。
-                    .background(MaterialTheme.colorScheme.tertiaryContainer),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_calendar_month),
-                    contentDescription = null,
-                    modifier = Modifier.size(20.dp),
-                    tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                )
-            }
+            // 去圆底：纯图标，点缀色收敛到 tint（与首页顶栏新番入口同理）。
+            Icon(
+                painter = painterResource(Res.drawable.ic_calendar_month),
+                contentDescription = null,
+                modifier = Modifier.size(24.dp),
+                tint = MaterialTheme.colorScheme.tertiary,
+            )
             Column(
                 modifier = Modifier
                     .weight(1f)

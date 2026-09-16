@@ -13,7 +13,7 @@ import lovehan1me.feature.home.myplaylist.PlaylistScreen
 import lovehan1me.feature.library.LocalPlayListViewModel
 import lovehan1me.feature.library.MyPlayListViewModel
 import lovehan1me.core.util.rememberCopyTextToClipboard
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 
@@ -34,7 +34,7 @@ fun MyPlaylistRouteScreen(
             onClickItem = onNavigateToVideo,
             onLongClickItem = { videoCode, title ->
                 copyTextToClipboard(getHanimeShareText(title, videoCode))
-                scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
+                scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
             },
         )
     } else {
@@ -45,7 +45,7 @@ fun MyPlaylistRouteScreen(
             onClickItem = onNavigateToVideo,
             onLongClickItem = { videoCode, title ->
                 copyTextToClipboard(getHanimeShareText(title, videoCode))
-                scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
+                scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
             },
         )
     }

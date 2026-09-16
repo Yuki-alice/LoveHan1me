@@ -37,7 +37,7 @@ import lovehan1me.feature.home.homepage.SharedHomeScreen
 import lovehan1me.feature.home.homepage.component.AnnouncementDialog
 import lovehan1me.feature.home.CheckInCalendarViewModel
 import lovehan1me.update_link_open_failed
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -100,13 +100,13 @@ fun SharedHomeRouteScreen(
                     is HomeUiEvent.OpenVideo -> onNavigateToVideo(event.videoCode)
                     is HomeUiEvent.LongPressVideoCopy -> {
                         copyTextToClipboard(getHanimeShareText(event.videoTitle, event.videoCode))
-                        scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
+                        scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
                     }
                     is HomeUiEvent.ShowAnnouncementDialog -> { announcement = event.announcement }
                     is HomeUiEvent.ShowExitDialog -> { showExitDialog = true }
                     is HomeUiEvent.OpenUpdatePage -> {
                         runCatching { uriHandler.openUri(event.downloadUrl) }
-                            .onFailure { scope.launch { SonnerToast.error(getString(Res.string.update_link_open_failed)) } }
+                            .onFailure { scope.launch { AppToast.error(getString(Res.string.update_link_open_failed)) } }
                     }
                     is HomeUiEvent.IgnoreUpdate -> viewModel.ignoreUpdate(event.versionCode)
                 }

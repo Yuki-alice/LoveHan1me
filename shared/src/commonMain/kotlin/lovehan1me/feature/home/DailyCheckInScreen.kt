@@ -1,5 +1,6 @@
 package lovehan1me.feature.home
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -46,7 +47,7 @@ import lovehan1me.calendar_dialog_message
 import lovehan1me.calendar_dialog_confirm
 import lovehan1me.ic_event_note
 import lovehan1me.no_calendar_app
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.feature.home.dailycheckin.CheckInDialog
@@ -181,6 +182,7 @@ fun DailyCheckInScreen(
 
     val scrollBehavior = pinnedScrollBehavior(rememberTopAppBarState())
     HanimeScaffold(
+        topBarWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         title = stringResource(Res.string.check_in_feature_name),
         onBack = onBack,
@@ -242,7 +244,7 @@ fun DailyCheckInScreen(
             calendarDialogDate?.let { date ->
                 scope.launch {
                     if (!addToSystemCalendar(date)) {
-                        SonnerToast.warning(getString(Res.string.no_calendar_app))
+                        AppToast.warning(getString(Res.string.no_calendar_app))
                     }
                 }
             }
@@ -265,7 +267,7 @@ fun DailyCheckInScreen(
         onConfirm = {
             suckBackDialogDate?.let {
                 viewModel.clearCheckIn(it)
-                SonnerToast.success(suckBackDoneText)
+                AppToast.success(suckBackDoneText)
             }
             suckBackDialogDate = null
         },

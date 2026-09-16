@@ -154,7 +154,7 @@ import lovehan1me.ui.adaptive.PageMetrics
 import lovehan1me.ui.adaptive.rememberVideoCardMinWidth
 import lovehan1me.ui.theme.shapeByInteraction
 import lovehan1me.core.util.DisplayTextLocalizer
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.format

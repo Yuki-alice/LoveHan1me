@@ -9,19 +9,27 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.GenericShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ButtonShapes
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -59,6 +67,7 @@ import lovehan1me.dark_mode_picker_summary
 import lovehan1me.always_on
 import lovehan1me.always_off
 import lovehan1me.ic_lightbulb
+import lovehan1me.ic_check
 import lovehan1me.ic_light_mode
 import lovehan1me.ic_dark_mode
 import lovehan1me.ui.component.immediateClickable
@@ -84,28 +93,23 @@ fun ThemeBoardPicker(
     val contrastSpec = remember(contrastLevel) {
         lovehan1me.core.domain.model.ContrastLevel.fromValue(contrastLevel).spec
     }
-    PickerContainer(
+    PickerGridContainer(
         title = stringResource(Res.string.theme_board),
         description = stringResource(Res.string.theme_board_summary),
         modifier = modifier,
     ) {
-        items(items = options, key = { it.id }) { board ->
-            // 所见即所得：每张卡用自己槽位的落地色板渲染（与 HanimeTheme 同一入口）。
+        options.forEach { board ->
+            // 所见即所得：三瓣圆用自己槽位的落地色板渲染（与 HanimeTheme 同一入口）。
             val scheme = boardColorScheme(
                 board = board,
                 isDark = isDark,
                 contrastLevel = contrastSpec,
             )
-            BoardPreviewItem(
+            BoardBadgeItem(
                 board = board,
-                colors = listOf(
-                    scheme.primary,
-                    scheme.secondary,
-                    scheme.tertiary,
-                    scheme.surfaceContainerHighest,
-                    scheme.surfaceContainer,
-                    scheme.primaryContainer,
-                ),
+                primary = scheme.primary,
+                tertiary = scheme.tertiary,
+                container = scheme.primaryContainer,
                 selected = selectedId == board.id,
                 onClick = { onSelect(board.id) },
             )
@@ -118,6 +122,9 @@ fun DarkModePicker(
     selectedValue: String,
     onSelect: (String) -> Unit,
     modifier: Modifier = Modifier,
+    /** 当前主题槽位：手机框用它的落地色板渲染（真所见即所得）。 */
+    boardId: String,
+    contrastLevel: String,
 ) {
     val systemDark = isSystemInDarkTheme()
     val options = listOf(
@@ -150,6 +157,8 @@ fun DarkModePicker(
                 option = option,
                 selected = selectedValue == option.value,
                 onClick = { onSelect(option.value) },
+                boardId = boardId,
+                contrastLevel = contrastLevel,
             )
         }
     }
@@ -199,37 +208,107 @@ private fun PickerContainer(
     }
 }
 
+@OptIn(ExperimentalLayoutApi::class)
+@Composable
+private fun PickerGridContainer(
+    title: String,
+    description: String,
+    modifier: Modifier = Modifier,
+    content: @Composable () -> Unit,
+) {
+    Surface(
+        modifier = modifier.fillMaxWidth(),
+        color = HanimeDefaults.Colors.card,
+        shape = HanimeDefaults.buttonShape,
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            PickerHeader(title = title, description = description)
+            // 自适应网格：鼠标点选为主，彻底不需要横滑（桌面/Windows 鼠标无横向滚轮）。
+            // 条目固定 8 个，用 FlowRow 自然换行即可，不引入嵌套滚动。
+            FlowRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(4.dp, Alignment.CenterHorizontally),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                content()
+            }
+        }
+    }
+}
+
+@Composable
+private fun PickerHeader(
+    title: String,
+    description: String,
+) {
+    Column(
+        modifier = Modifier.padding(horizontal = HanimeDefaults.Spacing.itemHorizontal),
+        verticalArrangement = Arrangement.spacedBy(2.dp),
+    ) {
+        Text(title, style = MaterialTheme.typography.titleMedium)
+        Text(
+            description,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+    }
+}
+
 @Composable
 private fun DarkModeItem(
     option: DarkModeOption,
     selected: Boolean,
     onClick: () -> Unit,
+    boardId: String,
+    contrastLevel: String,
 ) {
     val borderWidth by animateDpAsState(
         targetValue = if (selected) 3.dp else (-1).dp,
         animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
         label = "dark-mode-border",
     )
+    val board = remember(boardId) { ThemeBoard.fromId(boardId) }
+    val contrastSpec = remember(contrastLevel) {
+        lovehan1me.core.domain.model.ContrastLevel.fromValue(contrastLevel).spec
+    }
+    // Animeko 式手机框预览：跟随系统 = 对角混搭（左上浅 + 右下深），
+    // 常开/常关 = 整机深/浅。颜色全部取当前槽位的落地色板。
+    // 注意：boardColorScheme 本身是 @Composable，不能塞进 remember{}，
+    // 直接在组合里算（ThemeBoardPicker 同例，开销可接受）。
+    val lightScheme = boardColorScheme(board = board, isDark = false, contrastLevel = contrastSpec)
+    val darkScheme = boardColorScheme(board = board, isDark = true, contrastLevel = contrastSpec)
     PickerOption(onClick = onClick) {
-        val background = if (option.dark) Color(0xFF1B1B1F) else Color(0xFFFFFBFF)
-        val foreground = if (option.dark) Color(0xFFE5E1E6) else Color(0xFF1B1B1F)
         Box(
             modifier = Modifier
-                .size(90.dp)
-                .clip(MaterialTheme.shapes.large)
-                .background(background)
+                .size(width = 96.dp, height = 140.dp)
+                .clip(RoundedCornerShape(12.dp))
                 .border(
                     width = borderWidth,
                     color = MaterialTheme.colorScheme.primary,
-                    shape = MaterialTheme.shapes.large,
+                    shape = RoundedCornerShape(12.dp),
                 ),
         ) {
-            Icon(
-                painter = painterResource(option.iconRes),
-                contentDescription = null,
-                tint = foreground,
-                modifier = Modifier.align(Alignment.Center),
-            )
+            when (option.value) {
+                "follow_system" -> {
+                    PhoneMockupBody(scheme = darkScheme, modifier = Modifier.fillMaxSize())
+                    PhoneMockupBody(
+                        scheme = lightScheme,
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(TopLeftDiagonalShape),
+                    )
+                }
+
+                else -> PhoneMockupBody(
+                    scheme = if (option.dark) darkScheme else lightScheme,
+                    modifier = Modifier.fillMaxSize(),
+                )
+            }
         }
         Text(
             text = option.title,
@@ -239,37 +318,176 @@ private fun DarkModeItem(
     }
 }
 
+/** 对角切（左上三角）：跟随系统项的浅色半区。 */
+private val TopLeftDiagonalShape = GenericShape { size, _ ->
+    moveTo(0f, 0f)
+    lineTo(size.width, 0f)
+    lineTo(0f, size.height)
+    close()
+}
+
+/**
+ * 迷你手机框（Animeko ThemePreviewPanel 同构缩小）：三色条 + 三横线 + 底栏，
+ * 只表达配色气质，不追求像素级复刻 App 界面。
+ */
 @Composable
-private fun BoardPreviewItem(
+private fun PhoneMockupBody(
+    scheme: ColorScheme,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier
+            .background(scheme.surface)
+            .padding(6.dp),
+    ) {
+        // 顶部三色条：primary / tertiary / secondary。
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(3.dp),
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(width = 16.dp, height = 28.dp)
+                    .clip(
+                        RoundedCornerShape(
+                            topStart = 4.dp,
+                            bottomStart = 4.dp,
+                        )
+                    )
+                    .background(scheme.primary),
+            )
+            Box(
+                modifier = Modifier
+                    .size(width = 16.dp, height = 28.dp)
+                    .background(scheme.tertiary),
+            )
+            Box(
+                modifier = Modifier
+                    .size(width = 16.dp, height = 28.dp)
+                    .clip(
+                        RoundedCornerShape(
+                            topEnd = 4.dp,
+                            bottomEnd = 4.dp,
+                        )
+                    )
+                    .background(scheme.secondary),
+            )
+        }
+        Spacer(modifier = Modifier.height(6.dp))
+        // 三横线：primaryContainer / secondaryContainer / tertiaryContainer。
+        Box(
+            modifier = Modifier
+                .size(width = 52.dp, height = 7.dp)
+                .clip(CircleShape)
+                .background(scheme.primaryContainer),
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .size(width = 38.dp, height = 7.dp)
+                .clip(CircleShape)
+                .background(scheme.secondaryContainer),
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Box(
+            modifier = Modifier
+                .size(width = 62.dp, height = 7.dp)
+                .clip(CircleShape)
+                .background(scheme.tertiaryContainer),
+        )
+        Spacer(modifier = Modifier.weight(1f))
+        // 底栏：圆钮 + 胶囊。
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(16.dp)
+                    .clip(CircleShape)
+                    .background(scheme.primary),
+            )
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .height(16.dp)
+                    .clip(CircleShape)
+                    .background(scheme.primaryContainer),
+            )
+        }
+    }
+}
+
+/**
+ * 主题槽位徽：72dp 三瓣圆（上半 primary、下左 tertiary、下右 primaryContainer，
+ * 用槽位自己的落地色板，所见即所得）+ 标题/副标题。
+ *
+ * 横滑在桌面端（尤其 Windows 鼠标）不好用，这里只负责长相；
+ * 排布由 [PickerGridContainer] 的自适应网格负责，一律点选。
+ */
+@Composable
+private fun BoardBadgeItem(
     board: ThemeBoard,
-    colors: List<Color>,
+    primary: Color,
+    tertiary: Color,
+    container: Color,
     selected: Boolean,
     onClick: () -> Unit,
 ) {
-    val borderWidth by animateDpAsState(
-        targetValue = if (selected) 3.dp else (-1).dp,
+    val checkSize by animateDpAsState(
+        targetValue = if (selected) 28.dp else 0.dp,
         animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
-        label = "theme-board-border",
+        label = "theme-board-check",
     )
     PickerOption(onClick = onClick) {
-        Column(
-            modifier = Modifier
-                .width(70.dp)
-                .clip(MaterialTheme.shapes.large)
-                .border(
-                    width = borderWidth,
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = MaterialTheme.shapes.large,
-                ),
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            colors.forEach { color ->
-                Spacer(
-                    Modifier
+        Box(contentAlignment = Alignment.Center) {
+            // 三瓣圆：无 Canvas，用裁剪 + 色块叠出来（Animeko/Kazumi 同法）。
+            Column(
+                modifier = Modifier
+                    .size(72.dp)
+                    .clip(CircleShape),
+            ) {
+                Box(
+                    modifier = Modifier
                         .fillMaxWidth()
-                        .height(20.dp)
-                        .background(color),
+                        .weight(1f)
+                        .background(primary),
                 )
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .background(tertiary),
+                    )
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxHeight()
+                            .background(container),
+                    )
+                }
+            }
+            if (checkSize > 0.dp) {
+                Box(
+                    modifier = Modifier
+                        .size(checkSize)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_check),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(16.dp),
+                    )
+                }
             }
         }
         Text(

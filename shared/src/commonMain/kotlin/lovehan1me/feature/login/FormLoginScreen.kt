@@ -48,7 +48,7 @@ import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.password
 import lovehan1me.scan_for_cookies
 import lovehan1me.try_login_here
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
@@ -90,23 +90,23 @@ fun FormLoginScreen(
                         isLoggingIn = false
                         val throwable = state.throwable
                         if (throwable is IllegalStateException) {
-                            SonnerToast.error(getString(Res.string.account_or_password_wrong))
+                            AppToast.error(getString(Res.string.account_or_password_wrong))
                         } else if (throwable is CloudflareBlockedException) {
                             // CF 拦截有自己的 localized 原因（IP 封禁 / 网络不一致），
                             // 直接展示，不要吞成"登录失败"。
-                            SonnerToast.error(
+                            AppToast.error(
                                 throwable.message?.takeIf { it.isNotBlank() }
                                     ?: getString(Res.string.login_failed)
                             )
                         } else {
-                            SonnerToast.error(getString(Res.string.login_failed))
+                            AppToast.error(getString(Res.string.login_failed))
                         }
                     }
 
                     is WebsiteState.Success -> {
                         persistLogin(state.info)
                         isLoggingIn = false
-                        SonnerToast.success(getString(Res.string.login_success))
+                        AppToast.success(getString(Res.string.login_success))
                         onLoginSucceeded()
                     }
 

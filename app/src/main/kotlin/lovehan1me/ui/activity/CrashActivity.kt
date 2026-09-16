@@ -17,7 +17,7 @@ import lovehan1me.crash_no_logs
 import lovehan1me.app.crash.CrashHandler
 import lovehan1me.app.crash.CrashScreen
 import lovehan1me.core.util.ActivityManager
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import lovehan1me.core.util.toastText
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import java.time.Instant
@@ -54,7 +54,7 @@ class CrashActivity : BaseActivity() {
                 packageName = packageName,
                 onCopyLog = {
                     copyTextToClipboard(report)
-                    scope.launch { SonnerToast.success(getString(Res.string.copy_to_clipboard)) }
+                    scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
                 },
                 onRestartApp = { ActivityManager.restart(killProcess = true) },
                 onExitApp = exitApp,

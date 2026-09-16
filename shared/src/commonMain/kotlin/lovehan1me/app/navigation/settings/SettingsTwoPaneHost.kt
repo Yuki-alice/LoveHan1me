@@ -11,8 +11,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationDrawerItem
@@ -191,46 +189,71 @@ fun SettingsRouteHost(
         return
     }
 
-    SettingsScaffold(
+    // 双栏直铺 Row，不经过 SettingsScaffold/HanimeScaffold 的 M3 Scaffold：
+    // 上一版把 Row 抽成 TwoPaneRow 却仍放在 SettingsScaffold 的 content 里，
+    // 外层三件套（内容边距、共享回弹、包浆 surface）一个没少，等于没改。
+    // 双栏自己就是 chrome（无全局顶栏、无 FAB、无 snackbar），直接铺满即可；
+    // 窄屏两条路保持走 SettingsScaffold，一点不动。
+    TwoPaneRow(
         backStack = backStack,
-        destination = selected.spec,
-        fallbackDestination = MainTab.Fallback.route,
-        // 关键：外壳不再限宽 —— 否则表单行宽会把左栏 280dp 一起吃掉，右栏被挤窄。
-        contentMaxWidth = Dp.Unspecified,
-        // 双栏是整窗布局：满幅、无页边距（与首页宽屏分支同规）。
-        contentHorizontalPadding = 0.dp,
-        // 顶栏按栏拆开（见本函数 KDoc），全局顶栏在双栏态必须关掉。
-        showTopBar = false,
+        selected = selected,
+        onSelect = { selected = it },
+        rightMaxWidth = rightMaxWidth,
+        onNavigateToMpvSettings = { backStack.add(MpvPlayerSettingsRoute) },
+        onNavigateToOpenSourceLicenses = onNavigateToOpenSourceLicenses,
+        onOpenThemeAudit = onOpenThemeAudit,
+        downloadSettingsContent = downloadSettingsContent,
+    )
+}
+
+/**
+ * 双栏 Row（左右两栏的直接容器）。
+ *
+ * 刻意**不**走 [SettingsScaffold]/`HanimeScaffold` 的 M3 Scaffold：双栏自己就是
+ * chrome（无全局顶栏、无 FAB、无 snackbar），套 Scaffold 只会继承三样不需要的东西 —
+ * 内容边距（顶上凭空多出一截空白）、共享的回弹位移（右栏滚到边时左栏跟着晃，
+ * 即"右滑动带动左栏"），以及 HanimePageSurface 的包浆。Row 直铺满幅，
+ * 两栏各自独立、互不干扰。
+ */
+@Composable
+private fun TwoPaneRow(
+    backStack: TopLevelBackStack<HanimeScreen>,
+    selected: SettingsCategory,
+    onSelect: (SettingsCategory) -> Unit,
+    rightMaxWidth: Dp,
+    onNavigateToMpvSettings: () -> Unit,
+    onNavigateToOpenSourceLicenses: () -> Unit,
+    onOpenThemeAudit: () -> Unit,
+    downloadSettingsContent: @Composable () -> Unit,
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxSize()
+            // M3E 内容 sheet 的窗底：与 MainScaffold 宽屏分支同规。
+            // 左栏因此**不需要自己的底色**，透明即可（再铺一层会深一号、把层次压平）。
+            .background(MaterialTheme.colorScheme.surfaceContainerLow),
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                // M3E 内容 sheet 的窗底：与 MainScaffold 宽屏分支同规。
-                // 左栏因此**不需要自己的底色**，透明即可（再铺一层会深一号、把层次压平）。
-                .background(MaterialTheme.colorScheme.surfaceContainerLow),
+        SettingsCategoryPane(
+            title = stringResource(Res.string.settings),
+            onBack = { backStack.navigateBackOrFallback(MainTab.Fallback.route) },
+            selected = selected,
+            // 双栏下左栏切换只改选中态，不动路由：路由一变，NavHost 会拿整棵双栏
+            // 去播页面转场动画（左栏跟着滑出去），观感被破坏。缩窄时的路由修正见上。
+            onSelect = onSelect,
+        )
+        // 右栏自己按表单档限宽并居中（外壳已放权）
+        SettingsDetailPane(
+            modifier = Modifier.weight(1f),
+            title = stringResource(selected.spec.titleRes),
+            maxWidth = rightMaxWidth,
         ) {
-            SettingsCategoryPane(
-                title = stringResource(Res.string.settings),
-                onBack = { backStack.navigateBackOrFallback(MainTab.Fallback.route) },
-                selected = selected,
-                // 双栏下左栏切换只改选中态，不动路由：路由一变，NavHost 会拿整棵双栏
-                // 去播页面转场动画（左栏跟着滑出去），观感被破坏。缩窄时的路由修正见上。
-                onSelect = { selected = it },
+            SettingsCategoryContent(
+                category = selected,
+                onNavigateToMpvSettings = onNavigateToMpvSettings,
+                onNavigateToOpenSourceLicenses = onNavigateToOpenSourceLicenses,
+                onOpenThemeAudit = onOpenThemeAudit,
+                downloadSettingsContent = downloadSettingsContent,
             )
-            // 右栏自己按表单档限宽并居中（外壳已放权）
-            SettingsDetailPane(
-                modifier = Modifier.weight(1f),
-                title = stringResource(selected.spec.titleRes),
-                maxWidth = rightMaxWidth,
-            ) {
-                SettingsCategoryContent(
-                    category = selected,
-                    onNavigateToMpvSettings = { backStack.add(MpvPlayerSettingsRoute) },
-                    onNavigateToOpenSourceLicenses = onNavigateToOpenSourceLicenses,
-                    onOpenThemeAudit = onOpenThemeAudit,
-                    downloadSettingsContent = downloadSettingsContent,
-                )
-            }
         }
     }
 }
@@ -302,10 +325,12 @@ private fun SettingsCategoryPane(
             windowInsets = PaneHeaderInsets,
         )
         Column(
+            // 宽屏双栏左栏钉死不滚：分类只有 8 项，任何正常窗口都放得下；
+            // 且左栏若可滚，它会和右栏通过外层嵌套滚动链路互相带动
+            // （右栏滚到边时左栏跟着晃）。右栏保持自己的独立滚动。
             modifier = Modifier
                 .weight(1f)
                 .fillMaxWidth()
-                .verticalScroll(rememberScrollState())
                 .padding(vertical = HanimeDefaults.Spacing.medium),
         ) {
             categories.forEach { category ->
@@ -405,6 +430,18 @@ enum class SettingsCategory(
      */
     val page: HomeSettingsPage? = null,
 ) {
+    // 声明顺序 = 单栏 SettingsMainScreen 的展示顺序（双栏左栏直接按 entries 排），
+    // 两处改一边必须改另一边。默认选中 entries.first()，即与单栏首项一致的「主题与外观」。
+    Appearance(
+        spec = SettingsDestinationSpec.Appearance,
+        page = HomeSettingsPage.Appearance,
+        iconRes = Res.drawable.ic_palette,
+    ),
+    InterfaceInteraction(
+        spec = SettingsDestinationSpec.InterfaceInteraction,
+        page = HomeSettingsPage.InterfaceInteraction,
+        iconRes = Res.drawable.ic_interests,
+    ),
     VideoPlayback(
         spec = SettingsDestinationSpec.VideoPlayback,
         page = HomeSettingsPage.VideoPlayback,
@@ -420,16 +457,6 @@ enum class SettingsCategory(
         spec = SettingsDestinationSpec.NetworkDownload,
         page = HomeSettingsPage.NetworkDownload,
         iconRes = Res.drawable.ic_captive_portal,
-    ),
-    Appearance(
-        spec = SettingsDestinationSpec.Appearance,
-        page = HomeSettingsPage.Appearance,
-        iconRes = Res.drawable.ic_palette,
-    ),
-    InterfaceInteraction(
-        spec = SettingsDestinationSpec.InterfaceInteraction,
-        page = HomeSettingsPage.InterfaceInteraction,
-        iconRes = Res.drawable.ic_interests,
     ),
     DataPrivacy(
         spec = SettingsDestinationSpec.DataPrivacy,

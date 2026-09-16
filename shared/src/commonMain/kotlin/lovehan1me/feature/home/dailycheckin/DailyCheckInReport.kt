@@ -3,6 +3,7 @@ package lovehan1me.feature.home.dailycheckin
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -121,6 +122,7 @@ fun ContributionReportDialog(
         properties = DialogProperties(usePlatformDefaultWidth = false)
     ) {
         HanimeScaffold(
+            topBarWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
             modifier = Modifier.fillMaxSize(),
             title = stringResource(Res.string.checkin_report),
             onBack = onDismiss,

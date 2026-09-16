@@ -32,7 +32,7 @@ import lovehan1me.data.SettingsRepository
 import lovehan1me.reason_for_download_notification
 import lovehan1me.ui.activity.MainActivity
 import lovehan1me.app.bridge.VideoPageHost
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 
@@ -57,7 +57,7 @@ fun rememberAndroidVideoPageHost(
             showNotificationPermissionReason = true
             // 降级提示：state 位保留（供后续 UI 使用），即时反馈走 Toast（下载本身不受阻）。
             scope.launch {
-                SonnerToast.warning(getString(Res.string.reason_for_download_notification))
+                AppToast.warning(getString(Res.string.reason_for_download_notification))
             }
         }
     }

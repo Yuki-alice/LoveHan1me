@@ -152,7 +152,7 @@ import lovehan1me.ui.adaptive.rememberVideoCardMinWidth
 import lovehan1me.ui.theme.shapeByInteraction
 import lovehan1me.core.util.DisplayTextLocalizer
 import lovehan1me.ui.component.rememberHapticFeedback
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.format
 import kotlinx.datetime.toLocalDateTime

@@ -80,7 +80,7 @@ fun HanimeTopAppBar(
      *
      * **默认值适用于「顶栏挂在 Scaffold 的 topBar 槽」**（状态栏 inset 由它消费）。
      * 若顶栏被放进 **已由外层让出状态栏 inset 的容器**里（例如设置页双栏的栏内标题栏，
-     * 外层 `HanimeScaffold` 的 `innerPadding` 已经推下来了），必须传 `WindowInsets(0,0,0,0)`
+     * 外层 `HanimeScaffold` 的 `innerPadding` 已经推下来了），必须传 `WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)`
      * —— 否则会叠成双倍顶距，Android 上肉眼可见。
      */
     windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
@@ -121,7 +121,7 @@ fun HanimeTopAppBar(
     actions: @Composable RowScope.() -> Unit = {},
     scrollBehavior: TopAppBarScrollBehavior? = null,
     colors: TopAppBarColors? = null,
-    /** 见上一条重载的同名参数：被外层让出 inset 时传 `WindowInsets(0,0,0,0)`。 */
+    /** 见上一条重载的同名参数：被外层让出 inset 时传 `WindowInsets(0.dp, 0.dp, 0.dp, 0.dp)`。 */
     windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
 ) {
     TopAppBar(

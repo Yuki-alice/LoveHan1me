@@ -1,5 +1,6 @@
 package lovehan1me.app.navigation.main
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -186,6 +187,7 @@ fun PreviewCommentRouteScreen(
     }
 
     HanimeScaffold(
+        topBarWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
         title = stringResource(Res.string.latest_hanime_comment, route.date),
         onBack = onBack,
     ) { paddingValues ->

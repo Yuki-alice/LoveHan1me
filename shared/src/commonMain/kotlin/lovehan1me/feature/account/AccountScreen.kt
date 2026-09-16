@@ -3,6 +3,7 @@ package lovehan1me.feature.account
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -98,7 +99,7 @@ import lovehan1me.ui.component.content.ErrorContent
 import lovehan1me.ui.component.rememberRandomLoadingHint
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.feature.account.UserAccountViewModel
-import lovehan1me.core.util.SonnerToast
+import lovehan1me.core.util.AppToast
 import lovehan1me.ui.component.HapticButton as Button
 import lovehan1me.ui.component.HapticTextButton as TextButton
 
@@ -143,7 +144,7 @@ fun AccountScreen(
         viewModel.actionFlow.collect { event ->
             when (val eventState = event.state) {
                 is WebsiteState.Error -> {
-                    SonnerToast.error(eventState.throwable.message ?: modifyFailed)
+                    AppToast.error(eventState.throwable.message ?: modifyFailed)
                 }
 
                 is WebsiteState.Success -> {
@@ -158,7 +159,7 @@ fun AccountScreen(
                         UserAccountAction.PasswordUpdated -> modifySuccess
                         UserAccountAction.AvatarUpdated -> modifySuccess
                     }
-                    SonnerToast.success(message)
+                    AppToast.success(message)
                 }
 
                 WebsiteState.Loading -> Unit
@@ -167,6 +168,7 @@ fun AccountScreen(
     }
 
     HanimeScaffold(
+        topBarWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
         title = stringResource(Res.string.my_account),
         onBack = onBack,
     ) { paddingValues ->
@@ -541,7 +543,7 @@ private fun AccountContent(
                 Button(
                     onClick = {
                         if (newPassword != newPasswordConfirm) {
-                            SonnerToast.warning(passwordNotMatchText)
+                            AppToast.warning(passwordNotMatchText)
                         } else {
                             onUpdatePassword(oldPassword, newPassword, newPasswordConfirm)
                             oldPassword = ""

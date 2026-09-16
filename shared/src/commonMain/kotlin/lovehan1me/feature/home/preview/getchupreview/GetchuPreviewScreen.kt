@@ -1,5 +1,6 @@
 package lovehan1me.feature.home.preview.getchupreview
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
@@ -63,6 +64,7 @@ fun GetchuPreviewScreen(
     }
 
     HanimeScaffold(
+        topBarWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
             title = {
                 Box(modifier = Modifier.fillMaxWidth()) {
                     TextButton(onClick = { monthMenuExpanded = true }) {
