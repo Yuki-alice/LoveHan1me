@@ -8,6 +8,7 @@ import java.net.InetSocketAddress
 import java.net.ProxySelector
 import java.net.URI
 import lovehan1me.core.util.materializeMpvShaders
+import lovehan1me.core.util.parseMpvCustomParams
 import lovehan1me.core.util.LogUtil
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,7 +37,11 @@ import org.openani.mediamp.source.UriMediaData
  * - 解码/状态/进度/音量/倍速全部走 mediamp 公开 API，映射进 [PlaybackEngineState]；
  * - 渲染不走 surface 回调（`attach/detach` 空实现，P5-2a Q1 裁定），由
  *   `PlatformVideoSurface.desktop` 的 Skia 面直接持有本引擎的 `mediampPlayer`；
- * - mpv 选项（user-agent/hwdec）暂用默认 + 请求头透传，调优随 M-后续。
+ * - mpv 选项分两条路径下发，都在 `setMediaData` 之前：网络/身份（代理 + UA，见
+ *   [applyNetworkOptions]）与「MPV 高级设置」页的用户选项（见 [applyMpvSettings]，
+ *   每次 load 重发以覆盖上一次的状态）。
+ * - **`vo` 不由本项目决定**：mediamp 持有 `vo=gpu-next`/`libmpv` 组合，故桌面端
+ *   「GPU Next 渲染器」开关无法生效 → 设置页按平台能力隐藏（[applyMpvSettings] KDoc 有证据）。
  */
 class DesktopMpvPlaybackEngine(
     /**
@@ -150,14 +155,10 @@ class DesktopMpvPlaybackEngine(
                 // ⚠️ 必须在 setMediaData **之前**：mpv 的网络选项在"打开流"那一刻生效。
                 // 不做这一步，mpv 会用**直连**去拉流（它不继承 OkHttp 的代理），
                 // 在受限网络下表现为 mpv_error=-13（LOADING_FAILED）——页面能开、视频永远转圈。
-                mpvHandle()?.let { applyNetworkOptions(it) }
-                // 硬解二分（闪烁+崩溃排查）：设置里选 SW 才强制软解，其余不动
-                //（mediamp 默认 auto）。hwdec 支持运行时修改，会重建解码链。
+                // 网络选项与「MPV 高级设置」同批下发，都在"打开流"那一步之前生效。
                 mpvHandle()?.let { handle ->
-                    if (SettingsRepository.mpvHwdec == "SW") {
-                        val ok = handle.setPropertyString("hwdec", "no")
-                        LogUtil.d(TAG, "mpv hwdec=no(SW) set=$ok")
-                    }
+                    applyNetworkOptions(handle)
+                    applyMpvSettings(handle)
                 }
                 player.setMediaData(
                     UriMediaData(request.uri, request.headers),
@@ -323,6 +324,86 @@ class DesktopMpvPlaybackEngine(
         val userAgent = currentHttpUserAgent()
         val uaOk = runCatching { handle.setPropertyString("user-agent", userAgent) }.getOrDefault(false)
         LogUtil.d(TAG, "mpv user-agent set=$uaOk")
+    }
+
+    /**
+     * 把「MPV 高级设置」页的用户选项下发到 mpv。
+     *
+     * ## 时机：与 [applyNetworkOptions] 同批、且在 `setMediaData` 之前
+     * 这些是"打开流那一刻"才读的选项（cache-secs / network-timeout / framedrop /
+     * deband / interpolation …），必须在 load 之前写入。**每次 load 都重发一遍是刻意的**：
+     * mediamp 的 player 跨视频复用（不会重建），只有重发才能让"改完设置 → 下一个视频
+     * 即生效"，也才能把上一个视频留下的状态（如 display-resample）洗干净。
+     *
+     * ## 与 Android 侧（`androidMain/MpvPlaybackEngine.mpvOptions`）的三处必要差异
+     *
+     * 1. **不下发 `vo`** —— `enableGpuNextRenderer` 在桌面**无法生效，故设置页隐藏该行**
+     *    （`SettingsPlatformCapabilities.mpvVideoOutput = false`）。
+     *    证据（反查 `mediamp-mpv-desktop-0.3.2.jar` 的 `JvmMpvMediampPlayer`）：
+     *    它自己写死了 `vo=gpu-next` / `vo=libmpv` + `gpu-context` + `gpu-dumb-mode`
+     *    的一整套组合，配合它自己的 render API 交付帧。改写 `vo` 会让渲染面收不到帧。
+     *    换言之：桌面上"用 gpu-next"本就是底色，那个开关没有可翻转的余地。
+     * 2. **`hwdec` 只有两档**：桌面没有 mediacodec / vulkan-copy，`HW`/`HW+`/`Vulkan`/
+     *    `Vulkan+` 一律折叠成 mpv 的自动硬解（macOS=videotoolbox / Windows=d3d11va /
+     *    Linux=vaapi）。与设置页收敛后的两档选项一致（`mpvMediacodecHwdec = false`）。
+     *    注意 mediamp 自己也会设 `hwdec`（`OpenGLRenderContextLifecycle` 随渲染上下文
+     *    创建设置），所以这里属于"覆盖它的默认值"。
+     * 3. **不设 `vd-lavc-threads` / `cache` / `cache-pause`**：这三条在 Android 侧是解码器
+     *    与缓冲调优（初始化前生效），桌面属 mediamp 的职责范围，抢过来只会和它的 render
+     *    配置打架。
+     *
+     * ## 顺序即优先级
+     * `profile` 最先（`gpu-hq` 会顺带改一串 `scale`/`deband` 缩放属性），随后逐项写入
+     * 用户设置（覆盖 profile 的副作用值），最后 [parseMpvCustomParams] 收尾 —— 与 Android
+     * 侧"`mpvOptions()` → `parseCustomMpvParams()`"的顺序一致，保证用户手写的
+     * 「自定义参数」永远是最终裁决者。
+     *
+     * ## 失败不致命，逐条记录
+     * mpv 有一部分选项只在初始化前可改，运行时下发会返回 false。这里不因单项失败中断播放，
+     * 而是把 `set=false` 的项写进日志 —— 那就是"这一项在桌面不生效"的直接证据，不必猜。
+     */
+    private fun applyMpvSettings(handle: MPVHandle) {
+        val options = buildMap {
+            put(
+                "profile",
+                SettingsRepository.mpvProfile.takeIf { it == "gpu-hq" || it == "fast" } ?: "default",
+            )
+            put("hwdec", if (SettingsRepository.mpvHwdec == "SW") "no" else "auto")
+            put("msg-level", "all=" + if (LogUtil.enabled) "debug" else "warn")
+            put("cache-secs", SettingsRepository.mpvCacheSecs.toString())
+            put("framedrop", if (SettingsRepository.mpvFramedrop) "vo" else "no")
+            put("deband", if (SettingsRepository.mpvDeband) "yes" else "no")
+            put("network-timeout", SettingsRepository.mpvNetworkTimeout.toString())
+            // ⚠️ 字段名与文案相反（历史遗留，勿"修正"）：`mpvTlsVerify = true` 的 UI 文案是
+            // 「忽略 HTTPS 证书验证」，对应 mpv 的 `tls-verify=no`。与 Android 侧同一约定。
+            put("tls-verify", if (SettingsRepository.mpvTlsVerify) "no" else "yes")
+            // 补帧：关掉时必须显式回落 `video-sync=audio`（mpv 默认值），否则上一次的
+            // display-resample 会残留到下一个视频（player 跨视频复用）。
+            put("interpolation", if (SettingsRepository.mpvInterpolation) "yes" else "no")
+            if (SettingsRepository.mpvInterpolation) {
+                put("tscale", "oversample")
+                put("video-sync", "display-resample")
+            } else {
+                put("video-sync", "audio")
+            }
+            putAll(parseMpvCustomParams(SettingsRepository.customMpvParams))
+        }
+        val rejected = mutableListOf<String>()
+        options.forEach { (key, value) ->
+            val ok = runCatching { handle.setPropertyString(key, value) }.getOrDefault(false)
+            if (ok) {
+                LogUtil.d(TAG, "mpv setting $key=$value")
+            } else {
+                rejected += "$key=$value"
+            }
+        }
+        if (rejected.isNotEmpty()) {
+            LogUtil.w(
+                TAG,
+                "mpv 拒绝运行时设置 ${rejected.size}/${options.size} 项：$rejected" +
+                    "（多为只在初始化前生效的选项；自定义参数写错键名也会落到这里）",
+            )
+        }
     }
 
     /**

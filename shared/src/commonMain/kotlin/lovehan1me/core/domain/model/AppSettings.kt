@@ -125,11 +125,8 @@ data class AppSettings(
     val secureMode: Boolean = false,
     val disableComments: Boolean = false,
     val hapticFeedbackEnabled: Boolean = false,
-    val disablePredictiveBack: Boolean = false,
     val navBarStyle: NavBarStyle = NavBarStyle.Standard,
     val usageNoticeAccepted: Boolean = false,
-    val usageSourceVerified: Boolean = false,
-    val usageSourcePending: Boolean = false,
     val isAlreadyLogin: Boolean = false,
     val localListNoticeDismissed: Boolean = false,
     val savedUserId: String = "",
@@ -167,7 +164,6 @@ data class AppSettings(
     val safDownloadPath: String? = null,
     val collapseDownloadedGroup: Boolean = false,
     val playerKernel: PlayerKernel = PlayerKernel.ExoPlayer,
-    val showBottomProgress: Boolean = true,
     val playerSpeed: Float = 1f,
     val slideSensitivity: Int = 4,
     /** 长按速播倍率（对齐 animeko 默认 3x；设置里可改）。 */
@@ -209,6 +205,13 @@ data class AppSettings(
     val subscriptionArtistRows: Int = 1,
     val homeCategoryOrder: List<String> = emptyList(),
     val hiddenHomeCategoryKeys: Set<String> = emptySet(),
+    /**
+     * 命名筛选预设（用户手工保存的常用筛选组合）。
+     *
+     * 存盘时序列化成一个 JSON 字符串放在 DataStore 的 `search_filter_presets` 键上；
+     * 因为 `BackupManager` 导出的是整份 preferences，所以预设自动进入备份，无需额外接线。
+     */
+    val searchFilterPresets: List<SearchFilterPreset> = emptyList(),
     val alwaysShowUpdateCard: Boolean = false,
     val displayDensity: DisplayDensity = DisplayDensity.Default,
 )

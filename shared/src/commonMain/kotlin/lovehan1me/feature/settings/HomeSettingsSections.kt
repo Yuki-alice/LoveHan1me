@@ -14,6 +14,7 @@ import androidx.compose.ui.unit.dp
 import lovehan1me.ui.model.HorizontalCardCountConfig
 import lovehan1me.core.constant.HA1_GITHUB_URL
 import lovehan1me.core.constant.UPSTREAM_GITHUB_URL
+import lovehan1me.core.platform.settingsPlatformCapabilities
 import lovehan1me.Res
 import lovehan1me.amoled_mode
 import lovehan1me.amoled_mode_summary
@@ -37,7 +38,6 @@ import lovehan1me.trigger_crash_summary
 import lovehan1me.trigger_crash
 import lovehan1me.theme_audit_summary
 import lovehan1me.theme_audit
-import lovehan1me.temporarily_unavailable
 import lovehan1me.submit_bug_summary
 import lovehan1me.submit_bug
 import lovehan1me.simulated_update_data
@@ -87,7 +87,6 @@ import lovehan1me.enable_check_in_feature_summary
 import lovehan1me.enable_check_in_feature
 import lovehan1me.display_density
 import lovehan1me.display
-import lovehan1me.disable_predictive_back_title
 import lovehan1me.disable_mobile_data_warning_summary
 import lovehan1me.disable_mobile_data_warning
 import lovehan1me.disable_comments_title
@@ -141,7 +140,6 @@ import lovehan1me.ic_setting_lang
 import lovehan1me.ic_simp_to_trad
 import lovehan1me.ic_skip
 import lovehan1me.ic_sort
-import lovehan1me.ic_swipe_right
 import lovehan1me.ic_thumb_up_off_alt
 import lovehan1me.ic_video_quilty
 import lovehan1me.ui.model.SearchGridColumnsConfig
@@ -212,7 +210,6 @@ internal fun previewHomeSettingsState() = HomeSettingsUiState(
     showPlayedIndicator = true,
     searchArtistIgnoreVideoType = false,
     disableMobileDataWarning = false,
-    disablePredictiveBack = false,
     navBarStyle = "standard",
     disableComments = false,
     collapseDownloadedGroup = false,
@@ -235,7 +232,15 @@ internal fun previewHomeSettingsState() = HomeSettingsUiState(
     useAvHomeCategoryTitles = false,
     alwaysShowUpdateCard = false,
     displayDensityPercent = 100,
+    // 可见性照真实平台能力取：预览与真机一致（桌面预览就不会画出安全模式/触感反馈，
+    // 因为它们在本平台确实没有实现）。改能力只需改 SettingsPlatformCapabilities，这里无需跟改。
+    showSecureMode = previewCapabilities.secureMode,
+    showHapticFeedback = previewCapabilities.hapticFeedback,
+    showPipMode = previewCapabilities.pipMode,
+    showMeteredDataWarning = previewCapabilities.meteredDataWarning,
 )
+
+private val previewCapabilities = settingsPlatformCapabilities()
 
 /**
  * 设置分类「VideoPlayback」的分支内容（审计后可独立编辑；原先是 HomeSettingsScreen 里的一段）。
@@ -262,13 +267,17 @@ internal fun AnimatedLazyListScope.videoPlaybackSection(
                 iconRes = Res.drawable.ic_video_quilty,
                 onClick = { openChoice(HomeSettingsChoiceDialog.VideoQuality) },
             )
-            SettingSwitchItem(
-                title = stringResource(Res.string.allow_pip_title),
-                summary = stringResource(Res.string.allow_pip_disc),
-                checked = state.allowPipMode,
-                iconRes = Res.drawable.ic_pip_mode,
-                onCheckedChange = actions.allowPipModeChange,
-            )
+            // 画中画：仅移动端（阶段一决策⑨），桌面恒不进入 PiP → 桌面不画这一行
+            //（此前桌面也显示，且 isPipPermissionGranted() 恒 true，开关能打开却永不生效）。
+            if (state.showPipMode) {
+                SettingSwitchItem(
+                    title = stringResource(Res.string.allow_pip_title),
+                    summary = stringResource(Res.string.allow_pip_disc),
+                    checked = state.allowPipMode,
+                    iconRes = Res.drawable.ic_pip_mode,
+                    onCheckedChange = actions.allowPipModeChange,
+                )
+            }
             SettingSwitchItem(
                 title = stringResource(Res.string.resume_playback_title),
                 summary = stringResource(Res.string.resume_playback_summary),
@@ -311,13 +320,17 @@ internal fun AnimatedLazyListScope.networkDownloadSection(
     }
     item {
         SettingsSegmentedGroup {
-            SettingSwitchItem(
-                title = stringResource(Res.string.disable_mobile_data_warning),
-                summary = stringResource(Res.string.disable_mobile_data_warning_summary),
-                checked = state.disableMobileDataWarning,
-                iconRes = Res.drawable.ic_mobile_data,
-                onCheckedChange = actions.disableMobileDataWarningChange,
-            )
+            // 移动数据提醒：桌面/iOS 的 isActiveNetworkMetered() 恒 false，守卫永不触发
+            // → 不画这一行（留着只会误导"我关了提醒"，实际它本来就从不提醒）。
+            if (state.showMeteredDataWarning) {
+                SettingSwitchItem(
+                    title = stringResource(Res.string.disable_mobile_data_warning),
+                    summary = stringResource(Res.string.disable_mobile_data_warning_summary),
+                    checked = state.disableMobileDataWarning,
+                    iconRes = Res.drawable.ic_mobile_data,
+                    onCheckedChange = actions.disableMobileDataWarningChange,
+                )
+            }
             SettingNavigationItem(
                 title = stringResource(Res.string.apply_deep_links),
                 summary = stringResource(Res.string.apply_deep_links_summary),
@@ -420,15 +433,19 @@ internal fun AnimatedLazyListScope.interfaceInteractionSection(
     openHomeCategory: () -> Unit,
     openHorizontalCardCount: () -> Unit,
 ) {
-    item {
-        SettingsSection(stringResource(Res.string.perception)) {
-            SettingSwitchItem(
-                title = stringResource(Res.string.haptic_feedback),
-                summary = stringResource(Res.string.haptic_feedback_summary),
-                checked = state.hapticFeedbackEnabled,
-                iconRes = Res.drawable.ic_mobile_vibrate,
-                onCheckedChange = actions.hapticFeedbackChange,
-            )
+    // 触感反馈：仅 Android 有真实实现（桌面/iOS 的 HapticFeedback 是空实现）。
+    // 这一段只有这一行，所以隐藏要连整个 item 一起 —— 否则桌面上会留一张空卡片。
+    if (state.showHapticFeedback) {
+        item {
+            SettingsSection(stringResource(Res.string.perception)) {
+                SettingSwitchItem(
+                    title = stringResource(Res.string.haptic_feedback),
+                    summary = stringResource(Res.string.haptic_feedback_summary),
+                    checked = state.hapticFeedbackEnabled,
+                    iconRes = Res.drawable.ic_mobile_vibrate,
+                    onCheckedChange = actions.hapticFeedbackChange,
+                )
+            }
         }
     }
     item {
@@ -446,14 +463,6 @@ internal fun AnimatedLazyListScope.interfaceInteractionSection(
                 checked = state.searchArtistIgnoreVideoType,
                 iconRes = Res.drawable.ic_prohibit,
                 onCheckedChange = actions.searchArtistIgnoreVideoTypeChange,
-            )
-            SettingSwitchItem(
-                title = stringResource(Res.string.disable_predictive_back_title),
-                summary = stringResource(Res.string.temporarily_unavailable),
-                checked = state.disablePredictiveBack,
-                iconRes = Res.drawable.ic_swipe_right,
-                onCheckedChange = actions.disablePredictiveBackChange,
-                enabled = false,
             )
             // P0：「平板模式」开关已删除，「双栏长什么样」的布局风格选择也已随
             // 详情页宽屏重构（照 animeko 双栏定稿）移除——双栏形态恒定，不再可配。
@@ -521,13 +530,17 @@ internal fun AnimatedLazyListScope.dataPrivacySection(
 ) {
     item {
         SettingsSection(stringResource(Res.string.privacy)) {
-            SettingSwitchItem(
-                title = stringResource(Res.string.secure_mode),
-                summary = stringResource(Res.string.secure_mode_summary),
-                checked = state.secureMode,
-                iconRes = Res.drawable.ic_admin_panel_settings,
-                onCheckedChange = actions.secureModeChange,
-            )
+            // 安全模式：仅 Android 有真实实现（FLAG_SECURE 防截屏）；桌面/iOS 是空实现，
+            // 开关只写 DataStore、无任何可见效果 → 不画这一行。
+            if (state.showSecureMode) {
+                SettingSwitchItem(
+                    title = stringResource(Res.string.secure_mode),
+                    summary = stringResource(Res.string.secure_mode_summary),
+                    checked = state.secureMode,
+                    iconRes = Res.drawable.ic_admin_panel_settings,
+                    onCheckedChange = actions.secureModeChange,
+                )
+            }
             SettingSwitchItem(
                 title = stringResource(Res.string.disable_comments_title),
                 summary = stringResource(Res.string.disable_comments_sum),

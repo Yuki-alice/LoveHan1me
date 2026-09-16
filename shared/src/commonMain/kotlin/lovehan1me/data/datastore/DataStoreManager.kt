@@ -15,6 +15,7 @@ import lovehan1me.core.domain.model.NavBarStyle
 import lovehan1me.core.domain.model.ContrastLevel
 import lovehan1me.core.domain.model.PlayerKernel
 import lovehan1me.core.domain.model.ProxyType
+import lovehan1me.core.domain.model.SearchFilterPreset
 import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.core.domain.model.ThemeMode
 import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
@@ -27,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.Json
 import kotlin.concurrent.Volatile
 import okio.Path.Companion.toPath
 
@@ -42,10 +44,19 @@ object DataStoreManager : SettingsStore {
     // 旧实现是 preferencesDataStoreFile("settings")，实际落盘名带 .preferences_pb 后缀
     private const val FILE_NAME = "settings.preferences_pb"
     private const val SLIDE_MIGRATED = "slide_sensitivity_v2_migrated"
+
+    /** 命名筛选预设整表序列化后放这个键上（见 [AppSettings.searchFilterPresets]）。 */
+    private const val KEY_SEARCH_FILTER_PRESETS = "search_filter_presets"
+
     private val defaults = AppSettings()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val mutableSettings = MutableStateFlow(defaults)
     override val settings: StateFlow<AppSettings> = mutableSettings
+
+    private val presetsJson = Json {
+        ignoreUnknownKeys = true
+        encodeDefaults = true
+    }
 
     private lateinit var dataStore: DataStore<Preferences>
     @Volatile private var initialized = false
@@ -115,13 +126,10 @@ object DataStoreManager : SettingsStore {
         secureMode = bool("secure_mode", defaults.secureMode),
         disableComments = bool("disable_comments", defaults.disableComments),
         hapticFeedbackEnabled = bool("haptic_feedback_enabled", defaults.hapticFeedbackEnabled),
-        disablePredictiveBack = bool("disable_predictive_back", defaults.disablePredictiveBack),
         navBarStyle = NavBarStyle.fromValue(
             string("nav_bar_style", defaults.navBarStyle.value)
         ),
         usageNoticeAccepted = bool("usage_notice_accepted_v2", defaults.usageNoticeAccepted),
-        usageSourceVerified = bool("usage_source_verified", defaults.usageSourceVerified),
-        usageSourcePending = bool("usage_source_pending", defaults.usageSourcePending),
         isAlreadyLogin = bool("already_login", defaults.isAlreadyLogin),
         localListNoticeDismissed = bool(
             "local_list_notice_dismissed",
@@ -141,7 +149,7 @@ object DataStoreManager : SettingsStore {
         cachedUpdateJson = nullableString("app_update_cached_json"), ignoredVersionCode = int("app_update_ignored_version_code", defaults.ignoredVersionCode),
         downloadCountLimit = int("download_count_limit", defaults.downloadCountLimit), downloadSpeedLimitIndex = intInRange("download_speed_limit", defaults.downloadSpeedLimitIndex, DOWNLOAD_SPEED_BYTES.indices),
         usePrivateStorage = bool("use_private_storage", defaults.usePrivateStorage), safDownloadPath = nullableString("saf_download_path"), collapseDownloadedGroup = bool("collapse_downloaded_group", defaults.collapseDownloadedGroup),
-        playerKernel = PlayerKernel.fromValue(string("switch_player_kernel", defaults.playerKernel.value)), showBottomProgress = bool("show_bottom_progress", defaults.showBottomProgress),
+        playerKernel = PlayerKernel.fromValue(string("switch_player_kernel", defaults.playerKernel.value)),
         playerSpeed = floatString("player_speed", defaults.playerSpeed), slideSensitivity = intInRange("slide_sensitivity", defaults.slideSensitivity, 1..7), longPressSpeedTime = floatString("long_press_speed_times", defaults.longPressSpeedTime),
         videoLanguage = string("video_language", defaults.videoLanguage), videoQuality = string("default_video_quality", defaults.videoQuality), showPlayedIndicator = bool("show_played_indicator", defaults.showPlayedIndicator),
         allowResumePlayback = bool("allow_resume_playback", defaults.allowResumePlayback),
@@ -158,6 +166,7 @@ object DataStoreManager : SettingsStore {
         subscriptionArtistRows = intInRange("subscription_artist_rows", defaults.subscriptionArtistRows, 1..3),
         homeCategoryOrder = nullableString("home_category_order")?.split(',')?.filter(String::isNotBlank).orEmpty(),
         hiddenHomeCategoryKeys = nullableString("home_category_hidden")?.split(',')?.filter(String::isNotBlank)?.toSet().orEmpty(),
+        searchFilterPresets = decodeFilterPresets(nullableString(KEY_SEARCH_FILTER_PRESETS)),
         alwaysShowUpdateCard = bool("developer_always_show_update_card", defaults.alwaysShowUpdateCard),
         displayDensity = DisplayDensity.fromPercent(int("developer_display_density_percent", defaults.displayDensity.percent)),
     )
@@ -171,19 +180,35 @@ object DataStoreManager : SettingsStore {
 
     private fun AppSettings.toMap(): Map<String, Any> = buildMap {
         put("app_language", appLanguage.preferenceValue); put("use_dark_mode", themeMode.value); put("app_theme_id", themeId); put("amoled_black", amoled); put("app_contrast_level", contrastLevel.value)
-        put("allow_pip_mode", allowPipMode); put("secure_mode", secureMode); put("disable_comments", disableComments); put("haptic_feedback_enabled", hapticFeedbackEnabled); put("disable_predictive_back", disablePredictiveBack); put("nav_bar_style", navBarStyle.value)
-        put("usage_notice_accepted_v2", usageNoticeAccepted); put("usage_source_verified", usageSourceVerified); put("usage_source_pending", usageSourcePending); put("already_login", isAlreadyLogin); put("local_list_notice_dismissed", localListNoticeDismissed); put("saved_user_id", savedUserId); put("cookie", loginCookie); put("cf_cookie", cloudFlareCookie); put("cf_cookie_host", cloudFlareCookieHost); put("desktop_browser_user_agent", desktopBrowserUserAgent)
+        put("allow_pip_mode", allowPipMode); put("secure_mode", secureMode); put("disable_comments", disableComments); put("haptic_feedback_enabled", hapticFeedbackEnabled); put("nav_bar_style", navBarStyle.value)
+        put("usage_notice_accepted_v2", usageNoticeAccepted); put("already_login", isAlreadyLogin); put("local_list_notice_dismissed", localListNoticeDismissed); put("saved_user_id", savedUserId); put("cookie", loginCookie); put("cf_cookie", cloudFlareCookie); put("cf_cookie_host", cloudFlareCookieHost); put("desktop_browser_user_agent", desktopBrowserUserAgent)
         put("domain_name", domainName); put("selectedBaseUrl", selectedBaseUrl); put("use_custom_mirror_site", useCustomMirrorSite); put("custom_mirror_site", customMirrorSite); put("append_custom_mirror_path", appendCustomMirrorPath); put("use_built_in_hosts", useBuiltInHosts); put("custom_hosts_data", customHostsData); put("use_doh", useDoH); put("doh_preset", dohPreset); put("doh_custom_url", dohCustomUrl); put("doh_bootstrap_ips", dohBootstrapIps); put("doh_timeout_seconds", dohTimeoutSeconds); put("proxy_type", proxyType.id); put("proxy_ip", proxyIp); put("proxy_port", proxyPort)
         cachedUpdateJson?.let { put("app_update_cached_json", it) }; put("app_update_ignored_version_code", ignoredVersionCode); put("download_count_limit", downloadCountLimit); put("download_speed_limit", downloadSpeedLimitIndex); put("use_private_storage", usePrivateStorage); safDownloadPath?.let { put("saf_download_path", it) }; put("collapse_downloaded_group", collapseDownloadedGroup)
-        put("switch_player_kernel", playerKernel.value); put("show_bottom_progress", showBottomProgress); put("player_speed", playerSpeed.toString()); put("slide_sensitivity", slideSensitivity); put("long_press_speed_times", longPressSpeedTime.toString()); put("video_language", videoLanguage); put("default_video_quality", videoQuality); put("show_played_indicator", showPlayedIndicator); put("allow_resume_playback", allowResumePlayback); put("auto_play_on_enter", autoPlayOnEnter)
+        put("switch_player_kernel", playerKernel.value); put("player_speed", playerSpeed.toString()); put("slide_sensitivity", slideSensitivity); put("long_press_speed_times", longPressSpeedTime.toString()); put("video_language", videoLanguage); put("default_video_quality", videoQuality); put("show_played_indicator", showPlayedIndicator); put("allow_resume_playback", allowResumePlayback); put("auto_play_on_enter", autoPlayOnEnter)
         put("mpv_profile", mpvProfile); put("mpv_gpu_next_render", enableGpuNextRenderer); put("mpv_interpolation", mpvInterpolation); put("mpv_deband", mpvDeband); put("mpv_framedrop", mpvFramedrop); put("mpv_hwdecx", mpvHwdec); put("mpv_cache_secs", mpvCacheSecs); put("mpv_tls_verify", mpvTlsVerify); put("mpv_network_timeout", mpvNetworkTimeout); put("mpv_custom_parameters", customMpvParams)
         put("search_artist_ignore_video_type", searchArtistIgnoreVideoType); put("disable_mobile_data_warning", disableMobileDataWarning); put("fun_loading_hints", funLoadingHints); put("check_in_enabled", checkInEnabled)
         put("search_grid_columns_compact", searchGridColumnsCompact); put("search_grid_columns_medium", searchGridColumnsMedium); put("search_grid_columns_expanded", searchGridColumnsExpanded); put("search_grid_columns_large", searchGridColumnsLarge)
         put("horizontal_card_count_narrow", horizontalCardCountNarrow.toString()); put("horizontal_card_count_compact", horizontalCardCountCompact.toString()); put("horizontal_card_count_medium", horizontalCardCountMedium.toString()); put("horizontal_card_count_expanded", horizontalCardCountExpanded.toString())
         put("subscription_artist_rows", subscriptionArtistRows)
         put("home_category_order", homeCategoryOrder.joinToString(",")); put("home_category_hidden", hiddenHomeCategoryKeys.joinToString(","))
+        put(KEY_SEARCH_FILTER_PRESETS, encodeFilterPresets(searchFilterPresets))
         put("developer_always_show_update_card", alwaysShowUpdateCard); put("developer_display_density_percent", displayDensity.percent)
     }
+
+    /**
+     * 预设整表 ↔ JSON 串。
+     *
+     * 读侧必须容错：这一串是「用户数据 + 未来版本可能写坏的形状」，解析失败只该丢掉预设，
+     * 不该让 [toAppSettings] 直接抛异常把整个设置体系带崩（那样连主题都读不出来）。
+     */
+    private fun decodeFilterPresets(raw: String?): List<SearchFilterPreset> {
+        if (raw.isNullOrBlank()) return emptyList()
+        return runCatching { presetsJson.decodeFromString<List<SearchFilterPreset>>(raw) }
+            .getOrElse { emptyList() }
+    }
+
+    private fun encodeFilterPresets(value: List<SearchFilterPreset>): String =
+        runCatching { presetsJson.encodeToString(value) }.getOrElse { "" }
 
     private fun Preferences.bool(name: String, default: Boolean) = runCatching { this[booleanPreferencesKey(name)] }.getOrNull() ?: default
     private fun Preferences.int(name: String, default: Int) = intOrNull(name) ?: default

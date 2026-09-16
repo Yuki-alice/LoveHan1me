@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.dp
 import lovehan1me.Res
 import lovehan1me.switch_player_kernel
 import lovehan1me.slide_sensitivity
-import lovehan1me.show_bottom_progress
 import lovehan1me.mpv_settings_disabled_summary
 import lovehan1me.mpv_advanced_settings
 import lovehan1me.moderate
@@ -24,7 +23,6 @@ import lovehan1me.default_playback_speed
 import lovehan1me.current_slide_sensitivity
 import lovehan1me.player_settings_controls
 import lovehan1me.ic_player_setting
-import lovehan1me.ic_seek_bar
 import lovehan1me.ic_speed
 import lovehan1me.ic_speed_flash
 import lovehan1me.ic_touch_long
@@ -32,7 +30,6 @@ import lovehan1me.ui.component.ChoiceDialog
 import lovehan1me.ui.component.SettingNavigationItem
 import lovehan1me.ui.component.SettingsPlainBox
 import lovehan1me.ui.component.SettingSliderItem
-import lovehan1me.ui.component.SettingSwitchItem
 import lovehan1me.ui.component.segmentedGroup
 import lovehan1me.ui.component.segmentedSection
 import lovehan1me.ui.component.lazy.LazyColumn
@@ -40,9 +37,17 @@ import lovehan1me.ui.component.lazy.LazyColumn
 data class PlayerSettingsUiState(
     val kernel: String,
     val kernelDisplay: String,
+    /**
+     * 本平台是否存在多个**语义不同**的内核（见 `SettingsPlatformCapabilities.playerKernelSelection`）。
+     *
+     * 桌面与 iOS 的 `createPlaybackEngine` 都忽略 kernel 参数，给出的选项纯属摆设，故不展示。
+     */
+    val showKernelSelection: Boolean,
+    /** 本平台是否可能让「MPV 高级设置」生效（iOS 无 mpv，整项不展示）。 */
+    val showMpvSettings: Boolean,
+    /** 展示 MPV 入口时它是否可点（Android 需先切到 MPV 内核；桌面恒可点）。 */
     val mpvSettingsEnabled: Boolean,
     val mpvSettingsSummary: String,
-    val showBottomProgress: Boolean,
     val playerSpeed: String,
     val playerSpeedLabel: String,
     val longPressSpeedTimes: String,
@@ -64,7 +69,6 @@ fun PlayerSettingsScreen(
     speedOptions: List<Pair<String, String>>,
     longPressSpeedOptions: List<Pair<String, String>>,
     onKernelChange: (String) -> Unit,
-    onShowBottomProgressChange: (Boolean) -> Unit,
     onPlayerSpeedChange: (String) -> Unit,
     onLongPressSpeedChange: (String) -> Unit,
     onSlideSensitivityChange: (Int) -> Unit,
@@ -116,26 +120,28 @@ fun PlayerSettingsScreen(
     ) {
         segmentedSection(titleRes = Res.string.player_settings_controls) {
             segmentedGroup {
-                SettingNavigationItem(
-                    title = stringResource(Res.string.switch_player_kernel),
-                    valueText = state.kernelDisplay,
-                    iconRes = Res.drawable.ic_player_setting,
-                    onClick = { activeDialog = PlayerChoiceDialog.Kernel },
-                )
-                SettingNavigationItem(
-                    title = stringResource(Res.string.mpv_advanced_settings),
-                    summary = state.mpvSettingsSummary,
-                    iconRes = Res.drawable.ic_player_setting,
-                    onClick = onOpenMpvSettings,
-                    enabled = state.mpvSettingsEnabled,
-                    valueText = null,
-                )
-                SettingSwitchItem(
-                    title = stringResource(Res.string.show_bottom_progress),
-                    checked = state.showBottomProgress,
-                    iconRes = Res.drawable.ic_seek_bar,
-                    onCheckedChange = onShowBottomProgressChange,
-                )
+                // 内核选择：只有 Android 真有三个语义不同的引擎。桌面/iOS 的
+                // createPlaybackEngine 忽略 kernel 参数，列出选项等于骗人。
+                if (state.showKernelSelection) {
+                    SettingNavigationItem(
+                        title = stringResource(Res.string.switch_player_kernel),
+                        valueText = state.kernelDisplay,
+                        iconRes = Res.drawable.ic_player_setting,
+                        onClick = { activeDialog = PlayerChoiceDialog.Kernel },
+                    )
+                }
+                // MPV 高级设置：iOS 无 mpv（AVPlayer），整项不展示；
+                // Android 需先切到 MPV 内核才可点；桌面引擎就是 mpv，恒可点。
+                if (state.showMpvSettings) {
+                    SettingNavigationItem(
+                        title = stringResource(Res.string.mpv_advanced_settings),
+                        summary = state.mpvSettingsSummary,
+                        iconRes = Res.drawable.ic_player_setting,
+                        onClick = onOpenMpvSettings,
+                        enabled = state.mpvSettingsEnabled,
+                        valueText = null,
+                    )
+                }
                 SettingNavigationItem(
                     title = stringResource(Res.string.default_playback_speed),
                     valueText = state.playerSpeedLabel,

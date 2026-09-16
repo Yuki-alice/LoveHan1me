@@ -8,6 +8,7 @@ import lovehan1me.core.domain.model.DisplayDensity
 import lovehan1me.core.domain.model.NavBarStyle
 import lovehan1me.core.domain.model.ContrastLevel
 import lovehan1me.core.domain.model.PlayerKernel
+import lovehan1me.core.domain.model.SearchFilterPreset
 import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.core.domain.model.ThemeMode
 import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
@@ -35,6 +36,12 @@ object SettingsRepository : SettingsStore {
     val loginStateFlow by lazy { settings.map { it.isAlreadyLogin }.stateIn(scope, SharingStarted.Eagerly, current.isAlreadyLogin) }
     val checkInEnabledFlow by lazy { settings.map { it.checkInEnabled }.stateIn(scope, SharingStarted.Eagerly, current.checkInEnabled) }
 
+    /** 命名筛选预设：给 UI 用的响应式流（增删改都要立刻反映到常驻栏/弹窗上）。 */
+    val searchFilterPresetsFlow by lazy {
+        settings.map { it.searchFilterPresets }
+            .stateIn(scope, SharingStarted.Eagerly, current.searchFilterPresets)
+    }
+
     val isAlreadyLogin get() = current.isAlreadyLogin
     val localListNoticeDismissed get() = current.localListNoticeDismissed
     val usageNoticeAccepted get() = current.usageNoticeAccepted
@@ -43,7 +50,6 @@ object SettingsRepository : SettingsStore {
     /** 桌面：CF 验证浏览器采集到的真实 UA（空 = 未采集）。 */
     val desktopBrowserUserAgent get() = current.desktopBrowserUserAgent
     val switchPlayerKernel get() = current.playerKernel.value
-    val showBottomProgress get() = current.showBottomProgress
     val playerSpeed get() = current.playerSpeed
     val slideSensitivity get() = current.slideSensitivity
     val longPressSpeedTime get() = current.longPressSpeedTime
@@ -83,7 +89,6 @@ object SettingsRepository : SettingsStore {
     val autoPlayOnEnter get() = current.autoPlayOnEnter
     val searchArtistIgnoreVideoType get() = current.searchArtistIgnoreVideoType
     val disableMobileDataWarning get() = current.disableMobileDataWarning
-    val disablePredictiveBack get() = current.disablePredictiveBack
     val navBarStyle get() = current.navBarStyle
     val hapticFeedbackEnabled get() = current.hapticFeedbackEnabled
     val funLoadingHints get() = current.funLoadingHints
@@ -104,6 +109,7 @@ object SettingsRepository : SettingsStore {
     val subscriptionArtistRows get() = current.subscriptionArtistRows
     val alwaysShowUpdateCard get() = current.alwaysShowUpdateCard
     val displayDensity get() = current.displayDensity
+    val searchFilterPresets get() = current.searchFilterPresets
 
     suspend fun setLoginState(value: Boolean) = update { it.copy(isAlreadyLogin = value) }
     suspend fun dismissLocalListNotice() = update { it.copy(localListNoticeDismissed = true) }
@@ -136,6 +142,10 @@ object SettingsRepository : SettingsStore {
     suspend fun setAlwaysShowUpdateCard(value: Boolean) = update { it.copy(alwaysShowUpdateCard = value) }
     suspend fun setDisplayDensity(value: DisplayDensity) = update { it.copy(displayDensity = value) }
     suspend fun setNavBarStyle(value: NavBarStyle) = update { it.copy(navBarStyle = value) }
+
+    /** 整表覆写命名筛选预设（增删改都由 [lovehan1me.feature.search.SearchFilterPresetStore] 先算好新表）。 */
+    suspend fun setSearchFilterPresets(value: List<SearchFilterPreset>) =
+        update { it.copy(searchFilterPresets = value) }
 
     private fun String.withTrailingSlash() = if (endsWith('/')) this else "$this/"
 

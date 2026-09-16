@@ -11,6 +11,7 @@ import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.core.util.AnimeShaders.getCert
 import lovehan1me.core.util.LogUtil
 import lovehan1me.core.util.materializeMpvShaders
+import lovehan1me.core.util.parseMpvCustomParams
 import `is`.xyz.mpv.MPVLib
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -290,7 +291,10 @@ class MpvPlaybackEngine(
     private fun initializeIfNeeded() {
         if (initialized) return
         mpvOptions().forEach { (key, value) -> MPVLib.setOptionString(key, value) }
-        parseCustomMpvParams().forEach { (key, value) -> MPVLib.setOptionString(key, value) }
+        // 自定义参数最后写入（覆盖上面的同名项）；解析器与桌面侧共用一份
+        // （commonMain 的 parseMpvCustomParams），避免两端对同一串输入理解不同。
+        parseMpvCustomParams(SettingsRepository.customMpvParams)
+            .forEach { (key, value) -> MPVLib.setOptionString(key, value) }
         MPVLib.observeProperty("time-pos", MPVLib.mpvFormat.MPV_FORMAT_DOUBLE)
         MPVLib.observeProperty("duration", MPVLib.mpvFormat.MPV_FORMAT_DOUBLE)
         MPVLib.observeProperty("pause", MPVLib.mpvFormat.MPV_FORMAT_FLAG)
@@ -405,15 +409,6 @@ class MpvPlaybackEngine(
             put("interpolation", "yes")
             put("tscale", "oversample")
             put("video-sync", "display-resample")
-        }
-    }
-
-    private fun parseCustomMpvParams(): Map<String, String> = buildMap {
-        SettingsRepository.customMpvParams.split(';').forEach { entry ->
-            val parts = entry.trim().split(',', limit = 2)
-            if (parts.size == 2 && parts[0].isNotBlank() && parts[1].isNotBlank()) {
-                put(parts[0].trim(), parts[1].trim())
-            }
         }
     }
 

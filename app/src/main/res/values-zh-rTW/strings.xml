@@ -274,7 +274,6 @@
     <string name="download_error_range_not_supported">伺服器不支援從中斷位置繼續下載，請刪除任務後重新下載。</string>
     <string name="download_error_file_info">無法取得檔案大小或下載資訊，請稍後重試。</string>
     <string name="custom">自訂</string>
-    <string name="show_bottom_progress">顯示底部進度條</string>
     <string name="default_playback_speed">預設播放速度</string>
     <string name="long_press_speed_multiplier">長按快進速度</string>
     <string name="long_press_speed_summary">目前速度的 %1$s</string>
@@ -532,7 +531,6 @@
     <string name="version_check_failed">\n⚠️ 版本檢查失敗</string>
     <string name="switch_site">切換網站</string>
     <string name="confirm_switch_site">確定要切換網站嗎？</string>
-    <string name="disable_predictive_back_title">關閉預測性返回動畫</string>
     <string name="play_trailer">播放預告片</string>
     <string name="search_video_hint">請輸入關鍵字</string>
     <string name="recent_searches">最近搜尋</string>

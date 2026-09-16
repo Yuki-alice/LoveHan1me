@@ -37,7 +37,6 @@ class HomeSettingsActions(
     val showPlayedIndicatorChange: (Boolean) -> Unit,
     val searchArtistIgnoreVideoTypeChange: (Boolean) -> Unit,
     val disableMobileDataWarningChange: (Boolean) -> Unit,
-    val disablePredictiveBackChange: (Boolean) -> Unit,
     val navBarStyleChange: (String) -> Unit,
     val checkInEnabledChange: (Boolean) -> Unit,
     val disableCommentsChange: (Boolean) -> Unit,

@@ -50,6 +50,7 @@ import lovehan1me.core.platform.restartApp
 import lovehan1me.core.platform.supportsPerAppLinks
 import lovehan1me.core.platform.writeBackupText
 import lovehan1me.core.platform.currentEpochMillis
+import lovehan1me.core.platform.settingsPlatformCapabilities
 import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.core.platform.openPerAppLinksSettings
 import lovehan1me.core.platform.rememberBackupExportLauncher
@@ -294,9 +295,6 @@ fun HomeSettingsRouteScreen(
             disableMobileDataWarningChange = {
                 coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(disableMobileDataWarning = it) } }
             },
-            disablePredictiveBackChange = {
-                coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(disablePredictiveBack = it) } }
-            },
             navBarStyleChange = { value ->
                 coroutineScope.launch {
                     SettingsRepository.setNavBarStyle(NavBarStyle.fromValue(value))
@@ -516,6 +514,7 @@ private fun buildHomeSettingsUiState(
     }
     val searchGridColumnsConfig = SettingsRepository.searchGridColumnsConfig
     val horizontalCardCountConfig = SettingsRepository.horizontalCardCountConfig
+    val capabilities = settingsPlatformCapabilities()
     return HomeSettingsUiState(
         videoLanguage = SettingsRepository.videoLanguage,
         videoLanguageLabel = videoLanguageLabel,
@@ -529,7 +528,6 @@ private fun buildHomeSettingsUiState(
         showPlayedIndicator = SettingsRepository.showPlayedIndicator,
         searchArtistIgnoreVideoType = SettingsRepository.searchArtistIgnoreVideoType,
         disableMobileDataWarning = SettingsRepository.disableMobileDataWarning,
-        disablePredictiveBack = SettingsRepository.disablePredictiveBack,
         // 只存值，标签在 UI 层用 stringResource 算 —— 本函数是**非 composable** 的
         // buildHomeSettingsUiState，在这里调 stringResource 编译不过。
         navBarStyle = SettingsRepository.navBarStyle.value,
@@ -559,5 +557,11 @@ private fun buildHomeSettingsUiState(
         useAvHomeCategoryTitles = SettingsRepository.baseUrl == HanimeConstants.HANIME_URL[3],
         alwaysShowUpdateCard = SettingsRepository.alwaysShowUpdateCard,
         displayDensityPercent = SettingsRepository.displayDensity.percent,
+        // 平台能力 → 可见性。四个开关在三端并非同等可用（详见 SettingsPlatformCapabilities
+        // 各 actual 的 KDoc），这里统一裁决，UI 层只管照着画。
+        showSecureMode = capabilities.secureMode,
+        showHapticFeedback = capabilities.hapticFeedback,
+        showPipMode = capabilities.pipMode,
+        showMeteredDataWarning = capabilities.meteredDataWarning,
     )
 }

@@ -80,6 +80,7 @@ import lovehan1me.ic_edit_square
 import lovehan1me.ic_hosts
 import lovehan1me.ic_router
 import lovehan1me.ic_vpn
+import lovehan1me.core.util.isDebugBuild
 import lovehan1me.data.network.DohConfig
 import lovehan1me.data.network.HProxyTypes
 import lovehan1me.ui.component.ChoiceDialog
@@ -296,20 +297,25 @@ fun NetworkSettingsScreen(
                 )
             }
 
-            SettingsSectionTitle(titleRes = Res.string.debug)
-            SettingsSegmentedGroup {
-                SettingNavigationItem(
-                    title = stringResource(Res.string.view_node_latency),
-                    summary = state.delaySummary,
-                    iconRes = Res.drawable.ic_delay,
-                    onClick = onOpenDelayTest,
-                )
-                SettingNavigationItem(
-                    title = stringResource(Res.string.test_doh),
-                    summary = stringResource(Res.string.test_doh_summary),
-                    iconRes = Res.drawable.ic_router,
-                    onClick = onOpenDohTest,
-                )
+            // 调试分组与「开发者选项」同级，门禁口径统一到 isDebugBuild()：
+            // 这两个入口（节点测速 / DoH 自检）是排查工具，release 用户不需要，
+            // 此前它们却对所有人可见（同一页的开发者选项却有门禁，两处规矩不一致）。
+            if (isDebugBuild()) {
+                SettingsSectionTitle(titleRes = Res.string.debug)
+                SettingsSegmentedGroup {
+                    SettingNavigationItem(
+                        title = stringResource(Res.string.view_node_latency),
+                        summary = state.delaySummary,
+                        iconRes = Res.drawable.ic_delay,
+                        onClick = onOpenDelayTest,
+                    )
+                    SettingNavigationItem(
+                        title = stringResource(Res.string.test_doh),
+                        summary = stringResource(Res.string.test_doh_summary),
+                        iconRes = Res.drawable.ic_router,
+                        onClick = onOpenDohTest,
+                    )
+                }
             }
         }
     }

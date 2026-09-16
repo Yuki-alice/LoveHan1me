@@ -114,7 +114,6 @@ import lovehan1me.dynamic_color_title
 import lovehan1me.dynamic_color_summary
 import lovehan1me.display_density
 import lovehan1me.display
-import lovehan1me.disable_predictive_back_title
 import lovehan1me.disable_mobile_data_warning_summary
 import lovehan1me.disable_mobile_data_warning
 import lovehan1me.disable_comments_title
@@ -168,7 +167,6 @@ import lovehan1me.ic_setting_lang
 import lovehan1me.ic_simp_to_trad
 import lovehan1me.ic_skip
 import lovehan1me.ic_sort
-import lovehan1me.ic_swipe_right
 import lovehan1me.ic_thumb_up_off_alt
 import lovehan1me.ic_video_quilty
 import lovehan1me.ui.model.SearchGridColumnsConfig

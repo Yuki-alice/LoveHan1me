@@ -58,6 +58,14 @@ import lovehan1me.ui.component.lazy.LazyColumn
 data class MpvPlayerSettingsUiState(
     val profile: String,
     val profileDisplay: String,
+    /**
+     * 能否在运行时切换 mpv 视频输出（`vo` 的 gpu / gpu-next）。
+     *
+     * 桌面为 **false**：渲染面由 `PlatformVideoSurface.desktop` 的 Skia 面直接持有
+     * mediamp player，`vo` 由 mediamp 持有；运行时改 `vo` 会重建视频输出并打断与
+     * 嵌入窗口的绑定，故该开关在桌面不展示（不是漏实现）。
+     */
+    val showVideoOutput: Boolean,
     val enableGpuNextRenderer: Boolean,
     val interpolation: Boolean,
     val deband: Boolean,
@@ -138,13 +146,16 @@ fun MpvPlayerSettingsScreen(
                     iconRes = Res.drawable.ic_render,
                     onClick = onOpenProfileDialog,
                 )
-                SettingSwitchItem(
-                    title = stringResource(Res.string.enable_gpu_next),
-                    summary = stringResource(Res.string.enable_gpu_next_summary),
-                    checked = state.enableGpuNextRenderer,
-                    iconRes = Res.drawable.ic_chip,
-                    onCheckedChange = onEnableGpuNextRendererChange,
-                )
+                // 桌面端 vo 由 mediamp 的 Skia 面持有，运行时切换会打断嵌入绑定 → 不展示。
+                if (state.showVideoOutput) {
+                    SettingSwitchItem(
+                        title = stringResource(Res.string.enable_gpu_next),
+                        summary = stringResource(Res.string.enable_gpu_next_summary),
+                        checked = state.enableGpuNextRenderer,
+                        iconRes = Res.drawable.ic_chip,
+                        onCheckedChange = onEnableGpuNextRendererChange,
+                    )
+                }
                 SettingSwitchItem(
                     title = stringResource(Res.string.mpv_interpolation),
                     summary = stringResource(Res.string.mpv_interpolation_summary),
