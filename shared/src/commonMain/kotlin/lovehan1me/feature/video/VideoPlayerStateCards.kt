@@ -155,7 +155,6 @@ internal fun BoxScope.PlayerStateCards(
     isPlaybackEnded: Boolean,
     showRetry: Boolean,
     isLocked: Boolean,
-    activeSidePanel: PlayerSidePanel?,
     errorMessage: String?,
     onResumeClick: () -> Unit,
     onReplay: () -> Unit,
@@ -165,7 +164,7 @@ internal fun BoxScope.PlayerStateCards(
  * Resume 按钮
  */
 AnimatedVisibility(
-    visible = showResumeButton && activeSidePanel == null && !isLocked,
+    visible = showResumeButton && !isLocked,
     modifier = Modifier
         .align(Alignment.BottomCenter)
         .padding(bottom = HanimeDefaults.PlayerSizes.centerButton),
@@ -181,7 +180,7 @@ AnimatedVisibility(
 }
 
 AnimatedVisibility(
-    visible = isPlaybackEnded && activeSidePanel == null && !isLocked,
+    visible = isPlaybackEnded && !isLocked,
     modifier = Modifier.align(Alignment.Center),
     enter = fadeIn(),
     exit = fadeOut(),
@@ -222,7 +221,7 @@ AnimatedVisibility(
  * Retry
  */
 AnimatedVisibility(
-    visible = showRetry && activeSidePanel == null && !isLocked,
+    visible = showRetry && !isLocked,
     modifier = Modifier.align(Alignment.Center),
     enter = fadeIn(),
     exit = fadeOut(),
@@ -283,70 +282,5 @@ AnimatedVisibility(
             }
         }
     }
-}
-}
-
-/**
- * 侧栏面板宿主（倍速 / 清晰度 / 超分 → M3 ModalBottomSheet）。
- *
- * 关闭动作统一走 [onDismissPanel] 回调（调用方负责把 activeSidePanel 置 null），
- * 本组件不持有面板开关状态。
- */
-@Composable
-internal fun PlayerSidePanelHost(
-    activeSidePanel: PlayerSidePanel?,
-    playbackSpeed: Float,
-    speedSelectedIndex: Int,
-    qualitySelectedIndex: Int,
-    selectedSuperResolutionIndex: Int,
-    superResolutionOptions: List<String>,
-    qualities: List<PlaybackQuality>,
-    onDismissPanel: () -> Unit,
-    onPlaybackSpeedSelected: (Float) -> Unit,
-    onQualitySelected: (Int) -> Unit,
-    onSuperResolutionSelected: (Int) -> Unit,
-) {
-/**
- * 侧栏面板 → **M3 官方形态**（ModalBottomSheet）。
- *
- * 之前是自绘右侧滑入面板 + 手搓遮罩，缺三样东西：
- *   ① 返回键关闭（含预测性返回）② 官方 scrim ③ 无障碍语义 —— ModalBottomSheet 三样都自带。
- * M3 没有官方的 side sheet 组件（那只是规范，无实现），所以"官方形态"落在 bottom sheet。
- * 保留：面板内容（倍速/清晰度/超分）、单选高亮、选项来源与回调、选完即关。
- */
-when (activeSidePanel) {
-    PlayerSidePanel.Speed -> PlayerSidePanelBottomSheet(
-        options = PlayerDefaults.speeds.map {
-            stringResource(Res.string.player_speed_format, it)
-        },
-        selectedIndex = speedSelectedIndex,
-        onDismiss = onDismissPanel,
-        onSelected = { index ->
-            onDismissPanel()
-            onPlaybackSpeedSelected(PlayerDefaults.speeds[index])
-        },
-    )
-
-    PlayerSidePanel.SuperResolution -> PlayerSidePanelBottomSheet(
-        options = superResolutionOptions,
-        selectedIndex = selectedSuperResolutionIndex,
-        onDismiss = onDismissPanel,
-        onSelected = { index ->
-            onDismissPanel()
-            onSuperResolutionSelected(index)
-        },
-    )
-
-    PlayerSidePanel.Quality -> PlayerSidePanelBottomSheet(
-        options = qualities.map(PlaybackQuality::label),
-        selectedIndex = qualitySelectedIndex.takeIf { it >= 0 },
-        onDismiss = onDismissPanel,
-        onSelected = { index ->
-            onDismissPanel()
-            onQualitySelected(index)
-        },
-    )
-
-    null -> Unit
 }
 }

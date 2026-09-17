@@ -107,12 +107,27 @@ fun VideoShellContent(
      * 窄屏/经典双栏传 null。弹幕输入条在播放器底栏（BilibiliBottomBar），不挂这里。
      */
     railTabsContent: (@Composable () -> Unit)? = null,
+    /**
+     * animeko 右栏折叠（EpisodeVideo `sidebarVisible`）：宽屏下顶栏的折叠按钮切换它。
+     * false → 右栏隐藏、左列播放器占满整宽（全屏/PiP 语义不变）。
+     * 默认 true，保持老行为零变化。
+     */
+    sidebarVisible: Boolean = true,
+    onToggleSidebar: (Boolean) -> Unit = {},
+    /** 顶栏收藏心（对齐 Kazumi 顶栏 collect 键）。 */
+    isFavVideo: Boolean = false,
+    onToggleFavoriteVideo: () -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
     // P0：不再要求「横屏」。原 `isTabletMode && isLandscapeOrientation()` 有两个问题：
     //   1) iOS 侧 `isLandscapeOrientation()` 恒为 false → iPad 永远拿不到双栏；
     //   2) 双栏与否本应由宽度决定（横屏手机的宽度天然超过阈值，方向语义已被宽度蕴含）。
-    val showSideRelated = isDualPane && !isInPipMode && !isFullscreen
+    // 对齐 animeko `EpisodeScreenTabletVeryWide`：`isFullscreen || !sidebarVisible` 时
+    // 右栏不占位（`return@Row`），视频独占整行。
+    val showSideRelated = isDualPane && sidebarVisible && !isInPipMode && !isFullscreen
+    // 顶栏折叠按钮只在「右栏存在过」时出现：宽屏非全屏非 PiP（与 animeko
+    // `expanded && isDesktop` 的桌面限定不同 —— 我们三端都给，触摸端同样需要收起右栏看片）。
+    val showSidebarToggle = isDualPane && !isInPipMode && !isFullscreen
     // Kazumi B 站风总开关：宽屏双栏或全屏（非 PiP）才开，窄屏竖屏恒 false。
     val bilibiliStyle = (isDualPane || isFullscreen) && !isInPipMode
     // animeko 的「expanded」形态（底栏进度条独占一行）：宽屏双栏或全屏。
@@ -188,6 +203,11 @@ fun VideoShellContent(
             videoAspectRatio = videoAspectRatio,
             bilibiliStyle = bilibiliStyle,
             expanded = expandedBottomBar,
+            showSidebarToggle = showSidebarToggle,
+            sidebarVisible = sidebarVisible,
+            onToggleSidebar = onToggleSidebar,
+            isFavVideo = isFavVideo,
+            onToggleFavoriteVideo = onToggleFavoriteVideo,
         )
     }
 
@@ -280,6 +300,27 @@ fun VideoShellContent(
             ) {
                 // 右栏 Tab（详情｜评论）；null 回退旧行为（简介/评论 Tab）。
                 (railTabsContent ?: tabsContent)()
+            }
+        }
+    } else if (isDualPane && !sidebarVisible && !isInPipMode && !isFullscreen) {
+        // animeko 折叠态：右栏隐藏，播放器独占整宽整高（不再回退到「下方挂简介」的窄屏结构）。
+        Box(
+            modifier = modifier
+                .fillMaxSize()
+                .background(HanimeDefaults.Colors.pageSurface),
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding(),
+            ) {
+                PlayerBox(
+                    Modifier
+                        .fillMaxSize()
+                        .onGloballyPositioned { coordinates ->
+                            onPlayerBoundsChanged(coordinates.boundsInWindow())
+                        },
+                )
             }
         }
     } else {

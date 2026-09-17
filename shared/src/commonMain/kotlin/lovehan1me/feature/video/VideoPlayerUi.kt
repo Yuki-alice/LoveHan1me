@@ -58,11 +58,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
+import lovehan1me.ic_fast_forward
 import lovehan1me.video_loading_failed
 import lovehan1me.gif_capture
 import lovehan1me.screenshot
@@ -81,7 +81,6 @@ import lovehan1me.ic_pause
 import lovehan1me.ic_lock
 import lovehan1me.ic_home
 import lovehan1me.ic_fullscreen
-import lovehan1me.ic_fast_forward
 import lovehan1me.ic_arrow_back_ios
 import lovehan1me.ui.component.FilledIconButton
 import lovehan1me.ui.component.FilledTonalButton
@@ -96,6 +95,7 @@ import lovehan1me.feature.player.posterBlur
 import lovehan1me.ui.transition.sharedCoverElement
 import lovehan1me.ui.component.rememberHapticFeedback
 import lovehan1me.ui.theme.HanimeDefaults
+import org.jetbrains.compose.resources.painterResource
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -242,6 +242,16 @@ fun VideoPlayerUi(
      * 将来要拆开时不必再动一遍签名。
      */
     expanded: Boolean = false,
+    /**
+     * animeko 右栏折叠开关（EpisodeVideoTopBarActions 的 RightPanelClose/Open）。
+     * 只在宽屏右栏存在时由壳层置 true；窄屏/全屏/PiP 恒 false → 零视觉变化。
+     */
+    showSidebarToggle: Boolean = false,
+    sidebarVisible: Boolean = true,
+    onToggleSidebar: (Boolean) -> Unit = {},
+    /** 顶栏收藏心：是否已收藏 + 切换回调（对齐 Kazumi 顶栏 collect 键）。 */
+    isFavVideo: Boolean = false,
+    onToggleFavoriteVideo: () -> Unit = {},
 ) {
     var showControlsState by remember { mutableStateOf(true) }
 
@@ -268,7 +278,29 @@ fun VideoPlayerUi(
     var isScaleGestureActive by remember { mutableStateOf(false) }
     var isLongPressSpeedActive by remember { mutableStateOf(false) }
     var suppressTapUntilMs by remember { mutableLongStateOf(0L) }
-    var activeSidePanel by remember { mutableStateOf<PlayerSidePanel?>(null) }
+    // 功能弹窗 hold（Kazumi `acquirePlayerPanelHold`）：底栏选单 / 顶栏更多菜单
+    // 任一打开，控件自动隐藏就暂停计时。
+    var topMenuOpen by remember { mutableStateOf(false) }
+    var bottomMenuOpen by remember { mutableStateOf(false) }
+    val menuHold = topMenuOpen || bottomMenuOpen
+    // Kazumi 音量 pill：调音量时弹出来，1 秒无变化后收起（Kazumi 手势 650ms / 滚轮 2s，取中间）。
+    var volumeHudVisible by remember { mutableStateOf(false) }
+    var volumeHudTick by remember { mutableIntStateOf(0) }
+    fun pokeVolumeHud() {
+        volumeHudTick++
+        volumeHudVisible = true
+    }
+    LaunchedEffect(volumeHudTick) {
+        if (volumeHudTick > 0) {
+            delay(1_000L.milliseconds)
+            volumeHudVisible = false
+        }
+    }
+    // 经由本包装器的音量变更都会点亮 pill；手势/键盘/ pill 滑块统一走这里。
+    val volumeChangeWithHud: (Float) -> Unit = { value ->
+        onVolumeChange(value)
+        if (!isLocked) pokeVolumeHud()
+    }
     var showUnlockButton by remember { mutableStateOf(false) }
     var unlockButtonTimeoutToken by remember { mutableIntStateOf(0) }
     val haptic = rememberHapticFeedback()
@@ -301,12 +333,12 @@ fun VideoPlayerUi(
     // 三种"先别收"的情形：
     //   ① 手势进行中（含横向拖动 seek）—— 手势结束后**重新计时**，而不是立刻消失；
     //   ② 指针悬停在**控件上**（顶栏/底栏）—— 用户显然还在操作；
-    //   ③ 侧栏面板展开中 —— 面板要用控件。
+    //   ③ 功能弹窗打开中（Kazumi 的 panel hold：选单开着时控件不能收）。
     // 键里带上这些状态：它们一变，倒计时就重启，天然做到"手势结束不自动消失"。
     LaunchedEffect(
         showControlsState,
         isPlaying,
-        activeSidePanel,
+        menuHold,
         gestureType,
         isProgressGestureActive,
         isControlsHovered,
@@ -314,7 +346,7 @@ fun VideoPlayerUi(
         if (
             showControlsState &&
             isPlaying &&
-            activeSidePanel == null &&
+            !menuHold &&
             gestureType == null &&
             !isProgressGestureActive &&
             !isControlsHovered
@@ -325,10 +357,7 @@ fun VideoPlayerUi(
     }
 
     val effectiveShowControls = showControls && showControlsState && !isLocked
-    val playerUiVisible = effectiveShowControls && activeSidePanel == null
-    val speedSelectedIndex = PlayerDefaults.speeds.indexOfFirst { it == playbackSpeed }
-        .takeIf { it >= 0 }
-        ?: PlayerDefaults.speeds.indexOfFirst { it == PlayerDefaults.DEFAULT_SPEED }
+    val playerUiVisible = effectiveShowControls
     val resolvedQualityLabel =
         selectedQuality ?: qualities.lastOrNull()?.label
         ?: stringResource(Res.string.player_auto_quality)
@@ -343,7 +372,7 @@ fun VideoPlayerUi(
     val latestDurationMs by rememberUpdatedState(durationMs)
     val latestProgressSensitivity by rememberUpdatedState(progressGestureSensitivity)
     val latestOnProgressGesture by rememberUpdatedState(onProgressGesture)
-    val latestOnVolumeChange by rememberUpdatedState(onVolumeChange)
+    val latestOnVolumeChange by rememberUpdatedState(volumeChangeWithHud)
     val latestOnBrightnessChange by rememberUpdatedState(onBrightnessChange)
     val latestIsPlaying by rememberUpdatedState(isPlaying)
     val latestOnLongPressStart by rememberUpdatedState(onLongPressStart)
@@ -351,22 +380,23 @@ fun VideoPlayerUi(
 
     // 静音前的音量（M 键来回切时用它恢复，避免"取消静音直接拉满"）
     var volumeBeforeMute by remember { mutableFloatStateOf(1f) }
-    // 键盘快捷键：动作集用「最新值」语义组装（修饰符只装一次，回调会变）
+    // 键盘快捷键：动作集用「最新值」语义组装（修饰符只装一次，回调会变）。
+    // 音量三件套走带 pill 的包装（Kazumi 调音量必亮 pill）。
     val keyActions = rememberPlayerKeyActions(
         onTogglePlay = onPlayClick,
         onSeekBy = onSeekBy,
         onVolumeUp = { fine ->
-            onVolumeChange((latestVolume + if (fine) 0.01f else 0.05f).coerceIn(0f, 1f))
+            volumeChangeWithHud((latestVolume + if (fine) 0.01f else 0.05f).coerceIn(0f, 1f))
         },
         onVolumeDown = { fine ->
-            onVolumeChange((latestVolume - if (fine) 0.01f else 0.05f).coerceIn(0f, 1f))
+            volumeChangeWithHud((latestVolume - if (fine) 0.01f else 0.05f).coerceIn(0f, 1f))
         },
         onToggleMute = {
             if (latestVolume > 0f) {
                 volumeBeforeMute = latestVolume
-                onVolumeChange(0f)
+                volumeChangeWithHud(0f)
             } else {
-                onVolumeChange(volumeBeforeMute)
+                volumeChangeWithHud(volumeBeforeMute)
             }
         },
         onToggleFullscreen = onFullscreenClick,
@@ -374,30 +404,15 @@ fun VideoPlayerUi(
     )
 
 
-    // ── M5 埋点：手势 / 侧栏面板 ──────────────────────────────────
-    // 这两个都是本 composable 的**局部 UI 状态**（不需要上提到 ViewModel），
+    // ── M5 埋点：手势 ────────────────────────────────────────────
+    // 本 composable 的**局部 UI 状态**（不需要上提到 ViewModel），
     // 按"谁拥有状态谁负责副作用"，埋点就放在这里，而不是在屏幕边界镜像一份状态。
     LaunchedEffect(gestureType) {
         gestureType?.let { PlayerTrace.event("gesture", it.name) }
     }
-    LaunchedEffect(activeSidePanel) {
-        activeSidePanel?.let { PlayerTrace.event("panel", it.name) }
-    }
 
     LaunchedEffect(isPlaying) {
         if (!isPlaying) isLongPressSpeedActive = false
-    }
-
-    LaunchedEffect(activeSidePanel) {
-        if (activeSidePanel != null) {
-            showControlsState = true
-        }
-    }
-
-    LaunchedEffect(effectiveShowControls, isLocked) {
-        if (!effectiveShowControls || isLocked) {
-            activeSidePanel = null
-        }
     }
 
     LaunchedEffect(isLocked, unlockButtonTimeoutToken) {
@@ -732,15 +747,18 @@ fun VideoPlayerUi(
             isFullscreen = isFullscreen,
             title = title,
             deviceTime = deviceTime,
-            superResolutionLabel = superResolutionLabel,
-            superResolutionOptions = superResolutionOptions,
             frameCaptureEnabled = frameCaptureEnabled,
             onCaptureScreenshot = onCaptureScreenshot,
             onOpenGifCapture = onOpenGifCapture,
-            onOpenSuperResolutionPanel = { activeSidePanel = PlayerSidePanel.SuperResolution },
             onBackClick = onBackClick,
             onHomeClick = onHomeClick,
-            bilibiliStyle = bilibiliStyle,
+            isFav = isFavVideo,
+            onToggleFavorite = onToggleFavoriteVideo,
+            showSidebarToggle = showSidebarToggle,
+            sidebarVisible = sidebarVisible,
+            onToggleSidebar = onToggleSidebar,
+            expanded = expanded,
+            onMenuOpenChange = { topMenuOpen = it },
         )
 
         AnimatedVisibility(
@@ -768,7 +786,6 @@ fun VideoPlayerUi(
 
         PlayerBufferingOverlay(
             isLocked = isLocked,
-            activeSidePanel = activeSidePanel,
             gestureType = gestureType,
             isPlaybackEnded = isPlaybackEnded,
             showLoading = showLoading,
@@ -777,7 +794,6 @@ fun VideoPlayerUi(
 
         PlayerCenterControls(
             isLocked = isLocked,
-            activeSidePanel = activeSidePanel,
             gestureType = gestureType,
             isPlaybackEnded = isPlaybackEnded,
             showLoading = showLoading,
@@ -788,6 +804,25 @@ fun VideoPlayerUi(
             onPlayClick = onPlayClick,
             onLockClick = onLockClick,
             bilibiliStyle = bilibiliStyle,
+            // 截图悬浮钮只在 expanded 下出现（对齐 animeko `expanded && Desktop` 的限定，
+            // 能力判定仍走 frameCaptureEnabled，见调用方）。
+            showScreenshotButton = frameCaptureEnabled && expanded,
+            onScreenshotClick = { onCaptureScreenshot?.invoke() },
+        )
+
+        // Kazumi 音量 pill：手势/键盘/pill 滑块调音量时弹顶栏下方，1 秒后收起。
+        VolumePill(
+            visible = volumeHudVisible && !isLocked,
+            volume = currentVolume,
+            onVolumeChange = volumeChangeWithHud,
+            onToggleMute = {
+                if (currentVolume > 0f) {
+                    volumeBeforeMute = currentVolume
+                    volumeChangeWithHud(0f)
+                } else {
+                    volumeChangeWithHud(volumeBeforeMute)
+                }
+            },
         )
 
         PlayerBottomBar(
@@ -817,14 +852,20 @@ fun VideoPlayerUi(
             totalTime = totalTime,
             playbackSpeed = playbackSpeed,
             resolvedQualityLabel = resolvedQualityLabel,
+            qualities = qualities,
+            qualitySelectedIndex = qualitySelectedIndex.takeIf { it >= 0 },
+            onQualitySelected = onQualitySelected,
             fullscreenEnabled = fullscreenEnabled,
             onFullscreenClick = onFullscreenClick,
-            onOpenSpeedPanel = { activeSidePanel = PlayerSidePanel.Speed },
-            onOpenQualityPanel = { activeSidePanel = PlayerSidePanel.Quality },
-            bilibiliStyle = bilibiliStyle,
+            onPlaybackSpeedSelected = onPlaybackSpeedSelected,
+            superResolutionOptions = superResolutionOptions,
+            selectedSuperResolutionIndex = selectedSuperResolutionIndex,
+            onSuperResolutionSelected = onSuperResolutionSelected,
             onNextClick = onNextClick,
+            isFullscreen = isFullscreen,
             durationMs = durationMs,
             expanded = expanded,
+            onMenuOpenChange = { bottomMenuOpen = it },
             hoverInteractionSource = bottomBarHoverSource,
         )
 
@@ -833,25 +874,10 @@ fun VideoPlayerUi(
             isPlaybackEnded = isPlaybackEnded,
             showRetry = showRetry,
             isLocked = isLocked,
-            activeSidePanel = activeSidePanel,
             errorMessage = errorMessage,
             onResumeClick = onResumeClick,
             onReplay = onReplay,
             onRetry = onRetry,
-        )
-
-        PlayerSidePanelHost(
-            activeSidePanel = activeSidePanel,
-            playbackSpeed = playbackSpeed,
-            speedSelectedIndex = speedSelectedIndex,
-            qualitySelectedIndex = qualitySelectedIndex,
-            selectedSuperResolutionIndex = selectedSuperResolutionIndex,
-            superResolutionOptions = superResolutionOptions,
-            qualities = qualities,
-            onDismissPanel = { activeSidePanel = null },
-            onPlaybackSpeedSelected = onPlaybackSpeedSelected,
-            onQualitySelected = onQualitySelected,
-            onSuperResolutionSelected = onSuperResolutionSelected,
         )
     }
 }

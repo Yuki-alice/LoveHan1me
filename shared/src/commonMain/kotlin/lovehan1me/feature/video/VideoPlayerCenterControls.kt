@@ -89,7 +89,6 @@ import kotlinx.coroutines.launch
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
-import lovehan1me.Res
 import lovehan1me.cancel
 import lovehan1me.confirm
 import lovehan1me.core.platform.currentEpochMillis
@@ -103,7 +102,9 @@ import lovehan1me.feature.player.PlayerDefaults
 import lovehan1me.feature.player.posterBlur
 import lovehan1me.gif_capture
 import lovehan1me.here_is_empty
+import lovehan1me.Res
 import lovehan1me.ic_arrow_back_ios
+import lovehan1me.ic_camera
 import lovehan1me.ic_fast_forward
 import lovehan1me.ic_fast_rewind
 import lovehan1me.ic_fullscreen
@@ -112,8 +113,8 @@ import lovehan1me.ic_light_mode
 import lovehan1me.ic_lock
 import lovehan1me.ic_pause
 import lovehan1me.ic_play_arrow
-import lovehan1me.ic_refresh
 import lovehan1me.ic_unlock
+import lovehan1me.ic_refresh
 import lovehan1me.ic_volume_up
 import lovehan1me.playback_finished
 import lovehan1me.player_anime4k_label
@@ -145,15 +146,14 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 
 /**
- * 播放器中央控件：大号播放/暂停键、播放中自动隐藏时的小暂停键、锁定按钮。
+ * 播放器中央控件：大号播放/暂停键、播放中自动隐藏时的小暂停键、右侧悬浮钮（截图/锁定）。
  *
  * 从 `VideoPlayerUi` 主函数提取；三块都只读主函数状态（零改写），
- * 锁定按钮的 `align(CenterEnd)` 需要 BoxScope 接收者。
+ * 右侧悬浮钮的 `align(CenterEnd)` 需要 BoxScope 接收者。
  */
 @Composable
 internal fun BoxScope.PlayerCenterControls(
     isLocked: Boolean,
-    activeSidePanel: PlayerSidePanel?,
     gestureType: GestureIndicatorType?,
     isPlaybackEnded: Boolean,
     showLoading: Boolean,
@@ -169,6 +169,12 @@ internal fun BoxScope.PlayerCenterControls(
      * 锁定按钮不受影响（Kazumi 右侧锁照样有）。
      */
     bilibiliStyle: Boolean = false,
+    /**
+     * 右侧截图悬浮钮（对齐 animeko `ScreenshotButton` 的位置与样式）。
+     * 调用方按"能抓帧 && expanded"置位；窄屏非全屏恒 false。
+     */
+    showScreenshotButton: Boolean = false,
+    onScreenshotClick: () -> Unit = {},
 ) {
     // B 站风下中央大键与 minimal 小暂停键都不画（与上面的大键互斥的 minimal 键同理）。
     val showCenterPlayControls = !bilibiliStyle
@@ -179,7 +185,7 @@ AnimatedVisibility(
     visible =
         showCenterPlayControls &&
                 !isLocked &&
-                activeSidePanel == null &&
+                
                 gestureType == null &&
                 !isPlaybackEnded &&
                 !showLoading &&
@@ -236,8 +242,7 @@ AnimatedVisibility(
         showCenterPlayControls &&
                 isPlaying &&
                 !effectiveShowControls &&
-                !isLocked &&
-                activeSidePanel == null,
+                !isLocked,
     enter = fadeIn(),
     exit = fadeOut(),
 ) {
@@ -263,7 +268,9 @@ AnimatedVisibility(
 }
 
 /**
- * 锁定按钮 —— 交给具名槽位 [PlayerGestureLockButton]（实现见文件末尾）。
+ * 右侧悬浮钮 —— 交给具名槽位 [PlayerGestureLockButton]（实现见文件末尾）。
+ * 对齐 animeko `VideoScaffold` 的 `rhsButtons` + `gestureLock` 槽：
+ * 截图与锁竖排、垂直居中、距右 16dp。
  * 保留这一行调用是为了让三个中央控件的**可见性条件**能在同一屏里读完。
  */
 PlayerGestureLockButton(
@@ -271,23 +278,22 @@ PlayerGestureLockButton(
     showUnlockButton = showUnlockButton,
     playerUiVisible = playerUiVisible,
     onLockClick = onLockClick,
+    showScreenshotButton = showScreenshotButton,
+    onScreenshotClick = onScreenshotClick,
 )
 }
 
 /**
- * 手势锁槽位（对应 animeko `VideoScaffold` 的 `gestureLock` 具名槽）。
+ * 右侧悬浮钮槽位（对应 animeko `VideoScaffold` 的 `rhsButtons` + `gestureLock` 具名槽）。
+ *
+ * 样式对原型：48dp、`RoundedCornerShape(16.dp)`（圆角矩形**不是圆**）、
+ * 黑 5% 底 + 0.5dp 描边（`outline.slightlyWeaken()`），竖排 gap 8dp，
+ * 距右 16dp、播放器内垂直居中。锁定时锁图标 tint 切 primary。
  *
  * **可见性规则**（两侧源码逐个核对后的实情）：
- * - 未锁定：跟 [playerUiVisible] 一起显隐 —— 它就是"控件的一部分"；
- * - 已锁定：**点屏**才亮 [showUnlockButton] 那一下（3s），其余时间收起。
- *
- * 第 2 条与 animeko 完全一致：那边 `ControllerVisibility.Invisible.gestureLock = false`，
- * 而 `withGestureLocked(true)` 只关 topBar / bottomBar / rhsBar / detachedSlider、
- * **不动 gestureLock** —— 所以锁定态的路径是"点屏 → 只剩锁钮可见 → 超时收起"。
- * （曾误记为"animeko 锁定时锁钮常驻"，核对 `PlayerControllerState.kt:126-180` 后已纠正。）
- *
- * 之所以仍抽成独立具名槽位：位置与显隐规则要能独立于"中央大键""最小暂停键"阅读，
- * 免得以后调锁交互时又被大键的可见性条件带着走。
+ * - 截图钮：跟 [playerUiVisible] 一起显隐（未锁定时）—— 它就是"控件的一部分"；
+ * - 锁钮未锁定：跟 [playerUiVisible] 一起显隐；
+ * - 锁钮已锁定：**点屏**才亮 [showUnlockButton] 那一下（3s），其余时间收起。
  */
 @Composable
 internal fun BoxScope.PlayerGestureLockButton(
@@ -295,30 +301,80 @@ internal fun BoxScope.PlayerGestureLockButton(
     showUnlockButton: Boolean,
     playerUiVisible: Boolean,
     onLockClick: () -> Unit,
+    showScreenshotButton: Boolean = false,
+    onScreenshotClick: () -> Unit = {},
 ) {
-    AnimatedVisibility(
-        visible = if (isLocked) showUnlockButton else playerUiVisible,
-        modifier = Modifier.align(Alignment.CenterEnd),
-        enter = fadeIn(),
-        exit = fadeOut(),
+    val lockVisible = if (isLocked) showUnlockButton else playerUiVisible
+    Column(
+        modifier = Modifier
+            .align(Alignment.CenterEnd)
+            .padding(end = HanimeDefaults.Spacing.extraLarge),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
     ) {
-        FilledIconButton(
-            onClick = onLockClick,
-            modifier = Modifier
-                .padding(end = HanimeDefaults.Spacing.extraLarge)
-                .size(HanimeDefaults.PlayerSizes.lockButton),
-            colors = IconButtonDefaults.filledIconButtonColors(
-                containerColor = HanimeDefaults.Overlay.lockButton
-            )
+        AnimatedVisibility(
+            visible = showScreenshotButton && playerUiVisible && !isLocked,
+            enter = fadeIn(),
+            exit = fadeOut(),
         ) {
-            Icon(
-                painter = if (isLocked)
-                    painterResource(Res.drawable.ic_lock)
-                else
-                    painterResource(Res.drawable.ic_unlock),
-                contentDescription = null,
-                tint = HanimeDefaults.Overlay.onScrim
-            )
+            RhsFloatButton(onClick = onScreenshotClick) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_camera),
+                    contentDescription = null,
+                    tint = HanimeDefaults.Overlay.onScrim
+                )
+            }
+        }
+        AnimatedVisibility(
+            visible = lockVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            RhsFloatButton(onClick = onLockClick) {
+                Icon(
+                    painter = painterResource(if (isLocked) Res.drawable.ic_lock
+                    else Res.drawable.ic_unlock),
+                    contentDescription = null,
+                    tint = if (isLocked) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        HanimeDefaults.Overlay.onScrim
+                    }
+                )
+            }
         }
     }
 }
+
+/**
+ * 右侧悬浮单钮（原型 `.float-btn`）：48dp / 16dp 圆角 / 黑 5% / 0.5dp 描边。
+ */
+@Composable
+private fun RhsFloatButton(
+    onClick: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val haptic = rememberHapticFeedback()
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+    Box(
+        modifier = Modifier
+            .size(HanimeDefaults.PlayerSizes.lockButton)
+            .clip(shape)
+            .background(HanimeDefaults.Overlay.backdrop.copy(alpha = 0.05f))
+            .border(
+                0.5.dp,
+                HanimeDefaults.Overlay.onScrim.copy(alpha = WEAKEN_SLIGHTLY),
+                shape,
+            )
+            .clickable {
+                haptic()
+                onClick()
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        content()
+    }
+}
+
+/** animeko `slightlyWeaken()` = 0.618（描边透明度，见 SPEC §2.1）。 */
+private const val WEAKEN_SLIGHTLY = 0.618f

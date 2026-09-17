@@ -23,6 +23,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import lovehan1me.data.SettingsRepository
+import lovehan1me.ui.adaptive.WindowHeightBreakpoints
 import lovehan1me.ui.adaptive.WindowWidthBreakpoints
 import lovehan1me.ui.adaptive.rememberContentWidthDp
 import lovehan1me.ui.adaptive.rememberWindowHeightDp
@@ -151,16 +152,14 @@ fun VideoRouteHostScreen(
     }
     val playbackController = remember(playbackEngine) { ComposePlaybackController(playbackEngine) }
     val playbackState by playbackController.state.collectAsStateWithLifecycle()
-    // 单栏 / 双栏判定：**只由内容区可用宽度决定**（P0 起）。
-    // 演进链：`tabletMode && isLandscapeOrientation()`（用户开关 + 物理方向双重门控）
-    // → 内容区宽 ≥ 840dp。
-    //   - 删开关：自适应不该被用户开关门控；宽屏双栏形态已在详情页宽屏重构中
-    //     照 animeko `EpisodeScreenTabletVeryWide` 定稿，原「布局风格」设置项删除。
-    //   - 删方向：iOS 侧 `isLandscapeOrientation()` 恒为 false，等于 iPad 永远拿不到
-    //     双栏；而「横屏手机」的宽度本就会超过 840dp，宽度已经隐含了方向语义。
+    // 单栏 / 双栏判定：对齐 animeko `EpisodePage.showExpandedUI`
+    // （`showExpandedUI = (w >= 840) || (w >= 600 && h < 480)`）。
+    // 宽度用内容区可用宽度（常驻抽屉占宽已扣，见 ProvideContentWidth），
+    // 高度用整窗高 —— 第二项覆盖"横屏手机"（宽够高不够），此前这档被误判成窄屏。
     val contentWidth = rememberContentWidthDp()
-    val isDualPane = contentWidth >= WindowWidthBreakpoints.ExpandedDp
     val windowHeight = rememberWindowHeightDp()
+    val isDualPane = contentWidth >= WindowWidthBreakpoints.ExpandedDp ||
+        (contentWidth >= WindowWidthBreakpoints.MediumDp && windowHeight < WindowHeightBreakpoints.CompactDp)
     val hostUiState by viewModel.videoHostUiStateFlow.collectAsStateWithLifecycle()
     val videoState by viewModel.hanimeVideoStateFlow.collectAsStateWithLifecycle()
     val video = viewModel.hanimeVideoFlow.collectAsStateWithLifecycle().value
@@ -195,6 +194,9 @@ fun VideoRouteHostScreen(
     var videoTitle by remember(route.videoCode, route.localUri) { mutableStateOf("") }
     var isFullscreen by remember { mutableStateOf(false) }
     var isPlayerLocked by remember { mutableStateOf(false) }
+    // animeko 右栏折叠（EpisodeViewModel.sidebarVisible）：宽屏下顶栏按钮切换，
+    // 换片不重置（与选集/tab 状态同级，会话级 UI 状态）。
+    var sidebarVisible by remember { mutableStateOf(true) }
     var volume by remember { mutableStateOf(1f) }
     var brightness by remember { mutableStateOf(platformHost.currentBrightness()) }
     var previousScreenBrightness by remember { mutableStateOf<Float?>(null) }
@@ -739,6 +741,12 @@ fun VideoRouteHostScreen(
         isDualPane = isDualPane,
         isInPipMode = hostUiState.isInPipMode,
         isFullscreen = isFullscreen,
+        sidebarVisible = sidebarVisible,
+        onToggleSidebar = { sidebarVisible = it },
+        isFavVideo = video?.isFav == true,
+        onToggleFavoriteVideo = {
+            video?.let(actions::toggleFavorite)
+        },
         playerHeightDp = resolvedPlayerHeightDp,
         playbackEngine = playbackEngine,
         posterUrl = video?.coverUrl,

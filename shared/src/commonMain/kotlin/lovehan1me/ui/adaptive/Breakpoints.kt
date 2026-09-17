@@ -68,6 +68,17 @@ fun windowWidthSizeClassOf(width: Dp): WindowWidthSizeClass = when {
 }
 
 /**
+ * 高度断点。对齐 animeko `currentWindowAdaptiveInfo1` 的高度语义（compact = h < 480），
+ * 目前只有视频页的 `showExpandedUI` 判定在用（横屏手机：宽够高不够 → 照样走宽屏双栏）。
+ */
+object WindowHeightBreakpoints {
+    /** compact 高度上界（dp）：低于此值视为横屏矮窗。 */
+    const val Compact = 480
+
+    val CompactDp = Compact.dp
+}
+
+/**
  * 按最小项宽推算可容纳列数（宽屏网格的统一公式）。
  *
  * 保留 [minColumns] 下限，避免极窄窗口（分屏）退化成 1 列。

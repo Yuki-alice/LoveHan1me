@@ -86,8 +86,8 @@ object HanimeDefaults {
         const val divider = 0.12f
         /** 进度轨道底。 */
         const val track = 0.14f
-        /** 已缓冲进度。 */
-        const val trackBuffered = 0.32f
+        /** 已缓冲进度。对齐 animeko（`onSurface.weaken()` = 50%）。 */
+        const val trackBuffered = 0.5f
         /** thumb 外圈光晕。 */
         const val thumbGlow = 0.22f
         /** 顶栏 scrim 起点（渐变最深端）。 */
@@ -195,14 +195,14 @@ object HanimeDefaults {
         val lockButton = 48.dp
         /** 顶栏/底栏的次级图标（返回、主页…）。20 → **24**：对齐 animeko 顶栏的 24dp。 */
         val iconLarge = 24.dp
-        /** 底栏主图标（播放/暂停、下一集）。animeko 用 36dp，取 32 保住信息密度又不显小。 */
-        val bottomPrimaryIcon = 32.dp
-        /** 底栏次级图标（全屏）。animeko 用 32dp，这里与主图标拉开一档做层级。 */
-        val bottomSecondaryIcon = 26.dp
+        /** 底栏主图标（播放/暂停、下一集）。对齐 animeko `PlaybackIcon`/`NextEpisodeIcon` 的 36dp。 */
+        val bottomPrimaryIcon = 36.dp
+        /** 底栏次级图标（全屏）。对齐 animeko `FullscreenIcon` 的 32dp，与主图标拉开一档做层级。 */
+        val bottomSecondaryIcon = 32.dp
         /** 侧栏面板宽度。 */
         val panelWidth = 156.dp
-        /** 进度轨道厚度（视觉）。3 → **5**：animeko 6dp，取 5 既看清又保住"细轨"观感。 */
-        val track = 5.dp
+        /** 进度轨道厚度（视觉）。对齐 animeko（6dp）。 */
+        val track = 6.dp
         /** 轨道容器高（thumb 光晕的容纳盒）。18 → **22**：对齐 animeko 的 22dp 容器。 */
         val trackBox = 22.dp
         /** 轨道触摸区高（Media3：进度触摸 48dp）。 */
@@ -211,8 +211,8 @@ object HanimeDefaults {
         val thumbBox = 16.dp
         /** thumb 光晕。15 → **18**。 */
         val thumbGlow = 18.dp
-        /** thumb（实心）。9 → **12**：animeko 自绘 12×24，取 12 保住圆形形制。 */
-        val thumb = 12.dp
+        /** thumb（实心）。对齐 animeko（半径 8dp 即直径 16dp 的 primary 圆，无光晕）。 */
+        val thumb = 16.dp
     }
 
     object Widths {

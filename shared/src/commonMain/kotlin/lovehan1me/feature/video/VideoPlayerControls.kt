@@ -18,11 +18,15 @@ import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.material3.LinearProgressIndicator
@@ -42,15 +46,17 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
+import lovehan1me.ic_fast_forward
+import lovehan1me.ic_fast_rewind
+import lovehan1me.ic_light_mode
+import lovehan1me.ic_volume_down
+import lovehan1me.ic_volume_off
+import lovehan1me.ic_volume_up
 import lovehan1me.player_progress_percent
 import lovehan1me.player_gesture_volume
 import lovehan1me.player_gesture_progress
 import lovehan1me.player_seek_release_to_cancel
 import lovehan1me.player_gesture_brightness
-import lovehan1me.ic_volume_up
-import lovehan1me.ic_light_mode
-import lovehan1me.ic_fast_rewind
-import lovehan1me.ic_fast_forward
 // ⚠️ 必须**显式**导入：同包的 `VideoRouteHostScreen.kt` 里有一个 file-private 的
 // `formatPlaybackTime`，同名会让解析器选中它并报"private in file"。
 // 显式导入的优先级高于同包声明，因此这一行是必需的，不是冗余。
@@ -72,7 +78,9 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsHoveredAsState
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -103,6 +111,8 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.boundsInWindow
+import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
@@ -156,6 +166,7 @@ import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlin.math.abs
+import kotlin.math.roundToInt
 import kotlin.math.roundToInt
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -225,51 +236,6 @@ internal fun Modifier.playerHitTarget(
     }
 }
 
-@Composable
-internal fun PlayerMenuChip(
-    label: String,
-    onClick: () -> Unit,
-    onLongClick: (() -> Unit)? = null,
-) {
-    val shape = MaterialTheme.shapes.medium
-    // 命中层：M3 要求可点控件 ≥48dp。药丸外壳（视觉）保持原尺寸，多出来的命中区向外扩。
-    Box(
-        modifier = Modifier
-            .playerHitTarget()
-            .clip(shape)
-            .combinedClickable(
-                interactionSource = null,
-                indication = null,
-                onClick = onClick,
-                onLongClick = onLongClick,
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        // 视觉外壳：与改动前逐像素一致（clip / 底色 / 描边 / 内边距）
-        Box(
-            modifier = Modifier
-                .clip(shape)
-                .background(HanimeDefaults.Overlay.glass)
-                .border(
-                    1.dp,
-                    HanimeDefaults.Overlay.border,
-                    shape,
-                )
-                .padding(
-                    horizontal = HanimeDefaults.Spacing.medium,
-                    vertical = HanimeDefaults.Spacing.small,
-                ),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(
-                text = label,
-                color = HanimeDefaults.Overlay.textSecondary,
-                style = MaterialTheme.typography.labelSmall,
-            )
-        }
-    }
-}
-
 /** 双击左右跳转的步长（毫秒）。10 秒是 YouTube / 哔哩哔哩的通行值。 */
 internal const val DOUBLE_TAP_SEEK_STEP_MS = 10_000L
 
@@ -282,77 +248,6 @@ internal const val CONTROLS_AUTO_HIDE_MS = 5_000L
 /** 画面缩放下限/上限（双指缩放 / Ctrl+滚轮）。 */
 internal const val VIDEO_SCALE_MIN = 0.5f
 internal const val VIDEO_SCALE_MAX = 4f
-
-internal enum class PlayerSidePanel {
-    Speed,
-    SuperResolution,
-    Quality,
-}
-
-/**
- * 面板选项列表：原自绘侧栏的**内容**原样搬进 M3 ModalBottomSheet。
- *
- * 单选高亮、选项来源与回调不变；行高补到 M3 的 48dp 触控目标；
- * 关闭统一「先播收起动画，动画结束后再摘状态」，避免面板瞬移消失。
- */
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-internal fun PlayerSidePanelBottomSheet(
-    options: List<String>,
-    selectedIndex: Int?,
-    onDismiss: () -> Unit,
-    onSelected: (Int) -> Unit,
-) {
-    val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    val scope = rememberCoroutineScope()
-
-    ModalBottomSheet(
-        // 返回键（含预测性返回）/ 点 scrim / 下滑手势都走这里 —— M3 自带 BackHandler
-        onDismissRequest = onDismiss,
-        sheetState = sheetState,
-    ) {
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = HanimeDefaults.Spacing.small),
-        ) {
-            itemsIndexed(options) { index, option ->
-                val isSelected = index == selectedIndex
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .heightIn(min = HanimeDefaults.PlayerSizes.minTouchTarget)
-                        .clickable {
-                            // 选中即关：先播收起动画，动画结束再回调
-                            scope.launch { sheetState.hide() }.invokeOnCompletion { onSelected(index) }
-                        }
-                        .background(
-                            if (isSelected) {
-                                MaterialTheme.colorScheme.secondaryContainer
-                            } else {
-                                Color.Transparent
-                            }
-                        )
-                        .padding(vertical = 11.dp, horizontal = 10.dp),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Text(
-                        text = option,
-                        color = if (isSelected) {
-                            MaterialTheme.colorScheme.onSecondaryContainer
-                        } else {
-                            HanimeDefaults.Overlay.onScrim
-                        },
-                        textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-                        style = MaterialTheme.typography.bodyLarge,
-                        modifier = Modifier.fillMaxWidth(),
-                    )
-                }
-            }
-        }
-    }
-}
-
 
 /** 进度条时间预览气泡离进度条上沿的间距。 */
 private val SliderPreviewGap = 6.dp
@@ -512,11 +407,13 @@ fun PlayerSlider(
             value = value,
             onValueChange = onValueChange,
             onValueChangeFinished = onValueChangeFinished,
-            // 轨道/thumb 都给足高度：命中区由外层 Box 的 48dp 保证，这里让轨道垂直居中
-            modifier = Modifier.fillMaxSize(),
+            // 只占满宽度、高度取 Slider 自身固有高度（≈48dp 触控行高）：
+            // `fillMaxSize` 在自适应高度的父容器里会一路吃到根的最大高度，
+            // 把整列撑爆、操作行挤出屏幕（离屏渲染实测 slider 高达 936px、controlRow 高 0）。
+            modifier = Modifier.fillMaxWidth(),
 
             /**
-             * Thumb
+             * Thumb —— 对齐 animeko（primary 实心圆，直径 16dp，无光晕）。
              */
             thumb = {
                 Box(
@@ -524,19 +421,6 @@ fun PlayerSlider(
                         .size(HanimeDefaults.PlayerSizes.thumbBox),
                     contentAlignment = Alignment.Center
                 ) {
-
-                    /**
-                     * Glow
-                     */
-                    Box(
-                        modifier = Modifier
-                            .size(HanimeDefaults.PlayerSizes.thumbGlow)
-                            .background(
-                                HanimeDefaults.Overlay.thumbGlow,
-                                CircleShape
-                            )
-                    )
-
                     /**
                      * Real Thumb
                      */
@@ -544,7 +428,7 @@ fun PlayerSlider(
                         modifier = Modifier
                             .size(HanimeDefaults.PlayerSizes.thumb)
                             .background(
-                                HanimeDefaults.Overlay.onScrim,
+                                MaterialTheme.colorScheme.primary,
                                 CircleShape
                             )
                     )
@@ -590,7 +474,7 @@ fun PlayerSlider(
                     )
 
                     /**
-                     * Active Track
+                     * Active Track —— 对齐 animeko（纯 primary，无渐变）。
                      */
                     Box(
                         modifier = Modifier
@@ -598,12 +482,7 @@ fun PlayerSlider(
                             .height(HanimeDefaults.PlayerSizes.track)
                             .clip(HanimeDefaults.Corners.pill)
                             .background(
-                                Brush.horizontalGradient(
-                                    colors = listOf(
-                                        MaterialTheme.colorScheme.primary,
-                                        MaterialTheme.colorScheme.primary.copy(alpha = HanimeDefaults.Alpha.secondary)
-                                    )
-                                )
+                                MaterialTheme.colorScheme.primary
                             )
                     )
                 }
@@ -688,14 +567,14 @@ internal fun GestureIndicatorOverlay(
                         horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
                     ) {
                         Icon(
-                            painter = when (type) {
-                                GestureIndicatorType.Brightness -> painterResource(Res.drawable.ic_light_mode)
-                                GestureIndicatorType.Volume -> painterResource(Res.drawable.ic_volume_up)
+                            painter = painterResource(when (type) {
+                                GestureIndicatorType.Brightness -> Res.drawable.ic_light_mode
+                                GestureIndicatorType.Volume -> Res.drawable.ic_volume_up
                                 GestureIndicatorType.Progress -> when (progressDirection) {
-                                    ProgressGestureDirection.Backward -> painterResource(Res.drawable.ic_fast_rewind)
-                                    else -> painterResource(Res.drawable.ic_fast_forward)
+                                    ProgressGestureDirection.Backward -> Res.drawable.ic_fast_rewind
+                                    else -> Res.drawable.ic_fast_forward
                                 }
-                            },
+                            }),
                             contentDescription = null,
                             tint = MaterialTheme.colorScheme.onSurface,
                             modifier = Modifier.size(20.dp)
@@ -799,14 +678,14 @@ internal fun GestureIndicatorOverlay(
                 ) {
 
                     Icon(
-                        painter = when (type) {
-                            GestureIndicatorType.Brightness -> painterResource(Res.drawable.ic_light_mode)
-                            GestureIndicatorType.Volume -> painterResource(Res.drawable.ic_volume_up)
+                        painter = painterResource(when (type) {
+                            GestureIndicatorType.Brightness -> Res.drawable.ic_light_mode
+                            GestureIndicatorType.Volume -> Res.drawable.ic_volume_up
                             GestureIndicatorType.Progress -> when (progressDirection) {
-                                ProgressGestureDirection.Backward -> painterResource(Res.drawable.ic_fast_rewind)
-                                else -> painterResource(Res.drawable.ic_fast_forward)
+                                ProgressGestureDirection.Backward -> Res.drawable.ic_fast_rewind
+                                else -> Res.drawable.ic_fast_forward
                             }
-                        },
+                        }),
                         contentDescription = null,
                         tint = HanimeDefaults.Overlay.onScrim,
                         modifier = Modifier.size(36.dp)
@@ -857,4 +736,296 @@ internal fun formatDeviceTime(epochMillis: Long): String {
     val hour = dateTime.hour.toString().padStart(2, '0')
     val minute = dateTime.minute.toString().padStart(2, '0')
     return "$hour:$minute"
+}
+
+// ── Kazumi 式功能选择弹窗 ──────────────────────────────────────────────
+// 对应 Kazumi `PlayerPanelHoldMenuAnchor` + `_menuLabel`：白字触发按钮 +
+// 锚定在按钮上方的选择卡（圆角 12dp、行高 48dp、min 112dp、选中项 primary 色）。
+// 取代此前的 BottomSheet（`PlayerSidePanel*` 已删除）：点外部关闭，选中即关。
+
+/** 锚定位置：弹窗贴在锚点上方、右对齐，窗口内夹住不越界。 */
+private class MenuAboveAnchorProvider(
+    private val gapPx: Int,
+) : PopupPositionProvider {
+    override fun calculatePosition(
+        anchorBounds: IntRect,
+        windowSize: IntSize,
+        layoutDirection: LayoutDirection,
+        popupContentSize: IntSize,
+    ): IntOffset {
+        val maxX = (windowSize.width - popupContentSize.width).coerceAtLeast(0)
+        val maxY = (windowSize.height - popupContentSize.height).coerceAtLeast(0)
+        return IntOffset(
+            x = (anchorBounds.right - popupContentSize.width).coerceIn(0, maxX),
+            y = (anchorBounds.top - popupContentSize.height - gapPx).coerceIn(0, maxY),
+        )
+    }
+}
+
+/** 锚定位置：弹窗贴在锚点下方、右对齐（顶栏更多菜单用）。 */
+private class MenuBelowAnchorProvider(
+    private val gapPx: Int,
+) : PopupPositionProvider {
+    override fun calculatePosition(
+        anchorBounds: IntRect,
+        windowSize: IntSize,
+        layoutDirection: LayoutDirection,
+        popupContentSize: IntSize,
+    ): IntOffset {
+        val maxX = (windowSize.width - popupContentSize.width).coerceAtLeast(0)
+        val maxY = (windowSize.height - popupContentSize.height).coerceAtLeast(0)
+        return IntOffset(
+            x = (anchorBounds.right - popupContentSize.width).coerceIn(0, maxX),
+            y = (anchorBounds.bottom + gapPx).coerceIn(0, maxY),
+        )
+    }
+}
+
+@Composable
+internal fun KazumiMenuPopup(
+    anchor: IntRect,
+    above: Boolean,
+    onDismiss: () -> Unit,
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
+) {
+    val gapPx = with(LocalDensity.current) { 8.dp.roundToPx() }
+    Popup(
+        popupPositionProvider = if (above) {
+            MenuAboveAnchorProvider(gapPx)
+        } else {
+            MenuBelowAnchorProvider(gapPx)
+        },
+        onDismissRequest = onDismiss,
+        properties = PopupProperties(focusable = true),
+    ) {
+        Surface(
+            shape = RoundedCornerShape(12.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHigh,
+            shadowElevation = 8.dp,
+        ) {
+            androidx.compose.foundation.layout.Column(
+                modifier = Modifier
+                    .width(IntrinsicSize.Max)
+                    .widthIn(min = 112.dp)
+                    .padding(vertical = 8.dp),
+                content = content,
+            )
+        }
+    }
+}
+
+@Composable
+internal fun androidx.compose.foundation.layout.ColumnScope.KazumiMenuOption(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit,
+) {
+    val haptic = rememberHapticFeedback()
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clickable {
+                haptic()
+                onClick()
+            }
+            .padding(horizontal = 16.dp),
+        contentAlignment = Alignment.CenterStart,
+    ) {
+        Text(
+            text = label,
+            color = if (selected) {
+                MaterialTheme.colorScheme.primary
+            } else {
+                MaterialTheme.colorScheme.onSurface
+            },
+            style = MaterialTheme.typography.bodyLarge,
+            maxLines = 1,
+        )
+    }
+}
+
+/**
+ * 白字文字触发钮 + 上方弹窗（底栏超分辨率 / 倍速 / 清晰度入口）。
+ * 尺寸对 Flutter TextButton 默认：高 40dp、min-width 64dp。
+ */
+@Composable
+internal fun RowScope.KazumiTextMenu(
+    label: String,
+    options: List<String>,
+    selectedIndex: Int?,
+    onSelected: (Int) -> Unit,
+    onOpenChange: (Boolean) -> Unit = {},
+) {
+    var open by remember { mutableStateOf(false) }
+    var anchor by remember { mutableStateOf(IntRect.Zero) }
+    val haptic = rememberHapticFeedback()
+    fun setOpen(value: Boolean) {
+        open = value
+        onOpenChange(value)
+    }
+    Box(
+        modifier = Modifier.onGloballyPositioned {
+            anchor = with(it.boundsInWindow()) {
+                IntRect(
+                    left.roundToInt(),
+                    top.roundToInt(),
+                    right.roundToInt(),
+                    bottom.roundToInt(),
+                )
+            }
+        },
+    ) {
+        androidx.compose.material3.TextButton(
+            onClick = {
+                haptic()
+                setOpen(true)
+            },
+            modifier = Modifier
+                .height(40.dp)
+                .widthIn(min = 64.dp),
+            colors = ButtonDefaults.textButtonColors(
+                contentColor = HanimeDefaults.Overlay.onScrim,
+            ),
+        ) {
+            Text(
+                text = label,
+                maxLines = 1,
+                style = MaterialTheme.typography.labelMedium,
+            )
+        }
+    }
+    if (open) {
+        KazumiMenuPopup(
+            anchor = anchor,
+            above = true,
+            onDismiss = { setOpen(false) },
+        ) {
+            options.forEachIndexed { index, option ->
+                KazumiMenuOption(
+                    label = option,
+                    selected = index == selectedIndex,
+                    onClick = {
+                        setOpen(false)
+                        onSelected(index)
+                    },
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 图标触发钮 + 下方弹窗（顶栏更多菜单用）。
+ */
+@Composable
+internal fun KazumiIconMenu(
+    icon: @Composable () -> Unit,
+    onOpenChange: (Boolean) -> Unit = {},
+    content: @Composable androidx.compose.foundation.layout.ColumnScope.(close: () -> Unit) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+    var anchor by remember { mutableStateOf(IntRect.Zero) }
+    fun setOpen(value: Boolean) {
+        open = value
+        onOpenChange(value)
+    }
+    Box(
+        modifier = Modifier.onGloballyPositioned {
+            anchor = with(it.boundsInWindow()) {
+                IntRect(
+                    left.roundToInt(),
+                    top.roundToInt(),
+                    right.roundToInt(),
+                    bottom.roundToInt(),
+                )
+            }
+        },
+    ) {
+        IconButton(
+            onClick = { setOpen(true) },
+            content = icon,
+        )
+    }
+    if (open) {
+        KazumiMenuPopup(
+            anchor = anchor,
+            above = false,
+            onDismiss = { setOpen(false) },
+        ) {
+            content { setOpen(false) }
+        }
+    }
+}
+
+// ── Kazumi 式音量 pill ─────────────────────────────────────────────────
+// 对应 Kazumi `PlayerAdjustmentHud`（volume 型）：200dp 宽胶囊（圆角 30dp），
+// `surfaceContainerHighest` 底 + `outlineVariant` 34% 描边；内装 32dp primary
+// 圆钮（20dp 音量图标，按音量分档）+ 横向滑块（激活 primary / 未激活
+// secondaryContainer）。缺省动画用淡入淡出代替 Kazumi 的位移+缩放组合。
+@Composable
+internal fun BoxScope.VolumePill(
+    visible: Boolean,
+    volume: Float,
+    onVolumeChange: (Float) -> Unit,
+    onToggleMute: () -> Unit,
+) {
+    AnimatedVisibility(
+        visible = visible,
+        modifier = Modifier
+            .align(Alignment.TopCenter)
+            .padding(top = 76.dp),
+        enter = fadeIn(),
+        exit = fadeOut(),
+    ) {
+        Surface(
+            modifier = Modifier.width(200.dp),
+            shape = RoundedCornerShape(30.dp),
+            color = MaterialTheme.colorScheme.surfaceContainerHighest,
+            border = androidx.compose.foundation.BorderStroke(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.34f),
+            ),
+            shadowElevation = 8.dp,
+        ) {
+            Row(
+                modifier = Modifier.padding(vertical = 4.dp, horizontal = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                val haptic = rememberHapticFeedback()
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .clip(CircleShape)
+                        .background(MaterialTheme.colorScheme.primary)
+                        .clickable {
+                            haptic()
+                            onToggleMute()
+                        },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        painter = painterResource(when {
+                                volume <= 0f -> Res.drawable.ic_volume_off
+                                volume < 0.45f -> Res.drawable.ic_volume_down
+                                else -> Res.drawable.ic_volume_up
+                            }),
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onPrimary,
+                        modifier = Modifier.size(20.dp),
+                    )
+                }
+                Spacer(modifier = Modifier.width(8.dp))
+                Slider(
+                    value = volume.coerceIn(0f, 1f),
+                    onValueChange = onVolumeChange,
+                    modifier = Modifier.weight(1f),
+                    colors = SliderDefaults.colors(
+                        activeTrackColor = MaterialTheme.colorScheme.primary,
+                        inactiveTrackColor = MaterialTheme.colorScheme.secondaryContainer,
+                    ),
+                )
+            }
+        }
+    }
 }

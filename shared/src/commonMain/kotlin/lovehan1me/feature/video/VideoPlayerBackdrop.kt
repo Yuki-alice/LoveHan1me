@@ -225,7 +225,6 @@ AnimatedVisibility(
 @Composable
 internal fun BoxScope.PlayerBufferingOverlay(
     isLocked: Boolean,
-    activeSidePanel: PlayerSidePanel?,
     gestureType: GestureIndicatorType?,
     isPlaybackEnded: Boolean,
     showLoading: Boolean,
@@ -242,7 +241,7 @@ internal fun BoxScope.PlayerBufferingOverlay(
 AnimatedVisibility(
     visible =
         !isLocked &&
-                activeSidePanel == null &&
+                
                 gestureType == null &&
                 !isPlaybackEnded &&
                 showLoading &&
