@@ -103,9 +103,9 @@ class PlayerBarRenderTest {
         }
     }
 
-
     @Test
-    fun `窄屏非expanded_底栏`() {        renderScene("narrow-collapsed", 780, 1400) {
+    fun `窄屏非expanded_底栏`() {
+        renderScene("narrow-collapsed", 780, 1400) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()

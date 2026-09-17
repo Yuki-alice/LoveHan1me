@@ -241,7 +241,6 @@ internal fun BoxScope.PlayerBufferingOverlay(
 AnimatedVisibility(
     visible =
         !isLocked &&
-                
                 gestureType == null &&
                 !isPlaybackEnded &&
                 showLoading &&

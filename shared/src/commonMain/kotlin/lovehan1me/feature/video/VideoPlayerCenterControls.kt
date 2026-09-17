@@ -185,7 +185,6 @@ AnimatedVisibility(
     visible =
         showCenterPlayControls &&
                 !isLocked &&
-                
                 gestureType == null &&
                 !isPlaybackEnded &&
                 !showLoading &&
