@@ -1,0 +1,53 @@
+root = true
+
+# 与 .gitattributes 的 `* text=auto eol=lf` 保持一致：工作区恒 LF。
+# 换行符若被 IDE 改回 CRLF，会让 git 把整个文件判为改动。
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.{kt,kts}]
+indent_style = space
+indent_size = 4
+# 存量代码里有相当多 100~130 列的行，设 100 会逼出大面积重排；
+# 先按 120 收口，新代码不超即可。（对标 animeko 的 100，但它是从一开始就按 100 写的）
+max_line_length = 120
+ij_kotlin_continuation_indent_size = 4
+ij_kotlin_import_nested_classes = false
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
+ij_continuation_indent_size = 4
+
+[*.{java}]
+indent_style = space
+indent_size = 4
+max_line_length = 120
+
+[*.{xml}]
+indent_style = space
+indent_size = 4
+# Android 资源 XML 的续行缩进按 Android Studio 默认
+ij_continuation_indent_size = 4
+
+[*.{json,json5}]
+indent_style = space
+indent_size = 2
+
+[*.{yml,yaml}]
+indent_style = space
+indent_size = 2
+# YAML 里行尾空格有时有语义，且缩进是语法的一部分，不自动裁剪
+trim_trailing_whitespace = false
+
+[*.md]
+# Markdown 的行尾双空格是硬换行，不能裁
+trim_trailing_whitespace = false
+
+[*.{gradle,properties}]
+indent_style = space
+indent_size = 4
+
+[Makefile]
+indent_style = tab

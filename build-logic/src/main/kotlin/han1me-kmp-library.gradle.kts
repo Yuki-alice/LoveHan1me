@@ -56,6 +56,10 @@ configure<KotlinMultiplatformExtension> {
         androidResources {
             enable = true
         }
+        // 启用 Android 宿主单测（androidUnitTest / androidDeviceTest 的"host test"）。
+        // 不开的话 commonTest 只会被编译进 desktop / iOS，**Android 侧零覆盖**，
+        // 迁移到 commonTest 的意义就废了一半。（Gradle 会打 WARNING 提示这一项）
+        withHostTest {}
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
         }
