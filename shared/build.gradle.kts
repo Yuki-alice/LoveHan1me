@@ -172,6 +172,20 @@ kotlin {
             implementation(libs.ktor.client.darwin)
         }
 
+        // 阶段 B：跨平台测试源集。
+        // 此前**所有**测试都塞在 desktopTest，导致 Parser 这类 pure-Kotlin 逻辑
+        // 在 iOS / Android 侧永远不被覆盖。commonTest 的代码会被编译进每个 target
+        // 的 test compilation —— Windows 上仍通过 `:shared:desktopTest` 跑，
+        // 但同一份用例在 iOS / Android 上也会执行。
+        // 依赖要显式声明：commonMain 用的是 implementation，不传递给 test 源集。
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+            // 字节流 / 夹具读写走 okio（与 commonMain 的备份 I/O 同一套，不用 java.io）
+            implementation(libs.okio)
+            // GIF 录制等用例用到 runBlocking
+            implementation(libs.coroutines.core)
+        }
+
         // M7-4：iOS 播放引擎真实验证（iosSimulatorArm64Test 跑在模拟器上）
         val iosTest by getting {
             dependencies {

@@ -1,9 +1,8 @@
 package lovehan1me.feature.library
 
 import lovehan1me.core.util.LogUtil
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewModelScope
 import lovehan1me.data.NetworkRepo
+import lovehan1me.ui.foundation.AbstractViewModel
 import lovehan1me.core.domain.model.MySubscriptions
 import lovehan1me.core.domain.model.SubscriptionItem
 import lovehan1me.core.domain.model.SubscriptionVideosItem
@@ -17,7 +16,7 @@ import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.launch
 
-class MySubscriptionsViewModel : ViewModel() {
+class MySubscriptionsViewModel : AbstractViewModel() {
 
     private val _subscriptionsState = MutableStateFlow<WebsiteState<MySubscriptions>>(WebsiteState.Loading)
     val subscriptionsState: StateFlow<WebsiteState<MySubscriptions>> = _subscriptionsState.asStateFlow()
@@ -47,7 +46,9 @@ class MySubscriptionsViewModel : ViewModel() {
         }
         isLoadingMore = true
 
-        viewModelScope.launch {
+        // 网络请求 + 解析放 backgroundScope（Default 线程 + SupervisorJob），
+        // 不再占 viewModelScope 的 UI 线程，且失败不会牵连同 VM 的其他协程。
+        backgroundScope.launch {
             NetworkRepo.getMySubscriptions(page = currentPage)
                 .onStart {
                     if (currentPage == 1) {
