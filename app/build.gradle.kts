@@ -2,6 +2,9 @@
 
 import com.android.build.api.variant.impl.VariantOutputImpl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import java.time.Clock
+import java.time.Year
+import java.time.ZoneId
 
 plugins {
     alias(libs.plugins.com.android.application)
@@ -14,13 +17,24 @@ plugins {
     id("com.github.ben-manes.versions") version "0.59.0"
 }
 
+// SDK 版本统一从 gradle.properties 读（与 :shared 的约定插件一致，消除硬编码）。
+// 为什么是 37 而不是 36，见 gradle.properties 里 han1me.android.appCompileSdk 的注释。
+val appCompileSdk = providers.gradleProperty("han1me.android.appCompileSdk").getOrElse("37").toInt()
+val appTargetSdk = providers.gradleProperty("han1me.android.appTargetSdk").getOrElse("37").toInt()
+val appMinSdk = providers.gradleProperty("han1me.android.appMinSdk").getOrElse("29").toInt()
+
+// 原 buildSrc 的 `Config.thisYear`（UTC+8 时区的当前年，搜索年份上限）。
+// buildSrc 只为这一组常量存在，却要在每次构建前先编译一遍、拖慢配置期
+// ⇒ 就地计算，等价替换后删除 buildSrc。
+val searchYearEnd = Year.now(Clock.system(ZoneId.of("UTC+8"))).value
+
 android {
-    compileSdk = 37
+    compileSdk = appCompileSdk
 
     defaultConfig {
         applicationId = "me.lovehan1me"
-        minSdk = 29
-        targetSdk = 37
+        minSdk = appMinSdk
+        targetSdk = appTargetSdk
         versionCode = 260805
         versionName = "26.3.2"
 
@@ -28,7 +42,7 @@ android {
 
         buildConfigField("String", "VERSION_NAME", "\"${versionName}\"")
         buildConfigField("int", "VERSION_CODE", "$versionCode")
-        buildConfigField("int", "SEARCH_YEAR_RANGE_END", "${Config.thisYear}")
+        buildConfigField("int", "SEARCH_YEAR_RANGE_END", "$searchYearEnd")
     }
 
     // NDK/CMake 已移除：src/main/cpp（chino.cpp / kaffu.c）为死代码，全仓无 System.loadLibrary 引用；
@@ -136,8 +150,6 @@ dependencies {
     debugImplementation(libs.compose.ui.ui.tooling)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
-    implementation(libs.coil.compose)
-    implementation(libs.coil.network.okhttp)
     implementation(libs.aboutlibraries.compose.m3)
 
     implementation(libs.datetime)
@@ -145,12 +157,14 @@ dependencies {
     implementation(libs.jsoup)
 
     // P3：网络层已迁至 :shared（ServiceCreator/拦截器链 → jvmMain，5 个 Service → commonMain Ktor）。
-    // :app 移除 retrofit/converter-serialization/okhttp-dns-over-https；仍保留 okhttp（worker/settings/Coil 直接使用）。
+    // :app 移除 retrofit/converter-serialization/okhttp-dns-over-https。
+    //
+    // ⚠️ okhttp **不是残留、必须保留**：HanimeDownloadWorker 的断点续传下载链路直接使用
+    // okhttp3.Request/Response/ResponseBody（Range 请求、续传、closeQuietly），改用 Ktor
+    // 是另一个量级的改造。okhttp-dns-over-https 确实已不需要（HanimeDns 已下沉 shared jvmMain）。
     // :app 侧代码引用 Ktor HttpResponse/bodyAsText 等类型，补 ktor-client-core。
     implementation(libs.okhttp)
     implementation(libs.ktor.client.core)
-
-    implementation(libs.coil)
 
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.hls)

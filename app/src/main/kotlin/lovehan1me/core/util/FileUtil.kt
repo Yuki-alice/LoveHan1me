@@ -1,27 +1,20 @@
 package lovehan1me.core.util
 
-import android.graphics.Bitmap
-import android.graphics.drawable.Drawable
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import androidx.core.content.FileProvider
-import androidx.core.graphics.drawable.toBitmapOrNull
 import androidx.core.net.toUri
 import lovehan1me.FILE_PROVIDER_AUTHORITY
-import lovehan1me.data.HJson
-import kotlinx.serialization.ExperimentalSerializationApi
-import kotlinx.serialization.json.decodeFromStream
 import java.io.File
-import java.io.OutputStream
 
-val File?.folderSize: Long
-    get() {
-        var size = 0L
-        val files = this?.listFiles()
-        files?.forEach { file -> size += if (file.isDirectory) file.folderSize else file.length() }
-        return size
-    }
+// E1 收尾清理说明：
+// 本文件原有 5 个成员，其中 3 个已确认为死代码并删除（全仓 grep 零引用，
+// 且 shared 侧各有替代实现）：
+//   - `File?.folderSize`        → shared `HomePlatformActions.getCacheDirSize()`
+//   - `Drawable.saveTo()`       → 唯一调用点是封面写盘，已改为 `CoverImageFetcher` 直写字节
+//   - `loadAssetAs<T>()`        → shared `ComposeAssetsSync.decodeComposeAsset`
+// 保留下来的两个仍在使用，见各自调用点。
 
 fun File.createFileIfNotExists(): Boolean {
     return if (!exists()) {
@@ -30,23 +23,6 @@ fun File.createFileIfNotExists(): Boolean {
     } else {
         isFile
     }
-}
-
-fun Drawable.saveTo(
-    outputStream: OutputStream,
-    format: Bitmap.CompressFormat = Bitmap.CompressFormat.PNG,
-    quality: Int = 100,
-): Boolean {
-    return toBitmapOrNull()?.run {
-        try {
-            outputStream.buffered().use { stream ->
-                compress(format, quality, stream)
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            false
-        }
-    } == true
 }
 
 /**
@@ -79,10 +55,3 @@ fun Context.getDownloadedHanimeVideoUri(
     }
     return FileProvider.getUriForFile(this, FILE_PROVIDER_AUTHORITY, videoFile)
 }
-
-@OptIn(ExperimentalSerializationApi::class)
-inline fun <reified T> loadAssetAs(filePath: String): T? = runCatching {
-    applicationContext.assets.open(filePath).use { inputStream ->
-        HJson.decodeFromStream<T>(inputStream)
-    }
-}.getOrNull()

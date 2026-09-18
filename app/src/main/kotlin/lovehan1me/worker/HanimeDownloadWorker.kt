@@ -43,11 +43,10 @@ import lovehan1me.data.database.entity.download.DownloadGroupEntity
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import lovehan1me.data.network.ServiceCreator
 import lovehan1me.core.domain.state.DownloadState
-import lovehan1me.core.util.HImageMeower
+import lovehan1me.core.util.CoverImageFetcher
 import lovehan1me.core.util.SafFileManager
 import lovehan1me.core.util.await
 import lovehan1me.core.util.createFileIfNotExists
-import lovehan1me.core.util.saveTo
 import lovehan1me.core.util.AppToast
 import lovehan1me.core.util.toastText
 import kotlinx.coroutines.CoroutineScope
@@ -564,11 +563,17 @@ class HanimeDownloadWorker(
 
     private fun CoroutineScope.updateCoverImage(entity: HanimeDownloadEntity) {
         launch {
-            val imgRes = HImageMeower.execute(entity.coverUrl)
+            val pngBytes = CoverImageFetcher.fetchAsPng(entity.coverUrl)
             val (os, uri) = SafFileManager.openOutputStreamForCover(
                 context, entity.videoCode, entity.title
             )
-            val isSuccess = os?.use { out -> imgRes.drawable?.saveTo(out) == true } ?: false
+            // 写入失败不抛：沿用旧行为（原 Drawable.saveTo 内部 catch 后返回 false）
+            val isSuccess = if (pngBytes != null && os != null) {
+                runCatching { os.use { it.write(pngBytes) } }.isSuccess
+            } else {
+                os?.close()
+                false
+            }
             if (isSuccess && uri != null) {
                 val coverUriStr = uri.toString()
                 withContext(Dispatchers.IO) {
