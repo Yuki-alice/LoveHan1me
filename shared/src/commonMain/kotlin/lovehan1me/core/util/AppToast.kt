@@ -25,6 +25,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.channels.ChannelResult
 import kotlinx.coroutines.launch
 import lovehan1me.Res
+import lovehan1me.close
 import lovehan1me.ic_check
 import lovehan1me.ic_close
 import lovehan1me.ic_error_outline
@@ -32,6 +33,7 @@ import lovehan1me.ic_info
 import lovehan1me.ic_warning
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * 应用内唯一的 Toast 入口（官方 M3 `Snackbar` 实现）。
@@ -95,7 +97,8 @@ object AppToast {
                     IconButton(onClick = { data.dismiss() }) {
                         Icon(
                             painter = painterResource(Res.drawable.ic_close),
-                            contentDescription = null,
+                            // 纯图标的关闭按钮，读屏需要知道它是"关闭"
+                            contentDescription = stringResource(Res.string.close),
                         )
                     }
                 },

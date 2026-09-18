@@ -6,7 +6,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,6 +21,7 @@ import lovehan1me.h_chan_speechless
 import lovehan1me.h_chan_sad
 import lovehan1me.core.domain.state.PageLoadingState
 import lovehan1me.ui.component.content.EmptyContent
+import lovehan1me.ui.component.content.SkeletonVideoGrid
 import lovehan1me.ui.component.rememberRandomLoadingHint
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
@@ -138,21 +138,19 @@ fun SearchStateIndicator(
 ) {
     val loadingHint = rememberRandomLoadingHint()
     when (state) {
-        is PageLoadingState.Loading -> if (resultCount == 0) Box(
-            modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(16.dp),
-                modifier = Modifier.padding(horizontal = 32.dp)
-            ) {
-                LoadingIndicator()
+        is PageLoadingState.Loading -> if (resultCount == 0) {
+            // 骨架屏替代转圈：先给出最终布局形状（网格 + 卡片比例），
+            // 让用户知道"要来的是什么"，而不是盯着一个圈。趣味文案退到底部小字。
+            Column(modifier = modifier.fillMaxSize()) {
+                SkeletonVideoGrid(modifier = Modifier.weight(1f))
                 Text(
                     text = loadingHint,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
-                    textAlign = TextAlign.Center
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 32.dp, vertical = 16.dp),
                 )
             }
         }

@@ -55,8 +55,6 @@
     <string name="expand">Expand</string>
     <string name="series_video">Series Videos</string>
     <string name="related_video">Related Videos</string>
-    <string name="danmaku_input_hint">Send a friendly danmaku…</string>
-    <string name="danmaku_send">Send</string>
     <string name="now_playing">Now Playing</string>
     <string name="view_more_replies">View %1$d replies</string>
     <string name="comment_not_found">Comments Not Found</string>
@@ -193,6 +191,7 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="doh_timeout_seconds_summary">Connect/read timeout for DoH requests. 5–15 seconds is recommended.</string>
     <string name="doh_disabled_summary">Disabled</string>
     <string name="password">Password</string>
+    <string name="toggle_password_visibility">Show or hide password</string>
     <string name="try_login_here">Try logging in here</string>
     <string name="email">Email</string>
     <string name="login_failed">Login Failed</string>
@@ -288,7 +287,7 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="extremely_low">Extremely Low</string>
     <string name="slightly_high">Slightly High</string>
     <string name="extremely_high">Extremely High</string>
-    <string name="domain_change_tips">Changing the domain name requires restarting the program, otherwise it will not take effect!\n
+    <string name="domain_change_tips">Switching the domain name reloads the app immediately — no restart needed!\n
 Different domains do not share the same cookies, so after changing the domain name, you need to log in again.\n
 So, except for hanime1.me, other domain names may redirect back to hanime1.me at certain times, which may cause cookies to expire\n
 \n

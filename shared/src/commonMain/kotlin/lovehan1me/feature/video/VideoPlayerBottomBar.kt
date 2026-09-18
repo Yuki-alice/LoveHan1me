@@ -7,7 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.hoverable
 import androidx.compose.foundation.interaction.MutableInteractionSource
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
@@ -20,19 +19,14 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.layout.widthIn
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -40,11 +34,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import lovehan1me.Res
@@ -53,16 +45,11 @@ import lovehan1me.ic_fullscreen_exit
 import lovehan1me.ic_pause
 import lovehan1me.ic_play_arrow
 import lovehan1me.ic_skip
-import lovehan1me.danmaku_input_hint
-import lovehan1me.danmaku_send
 import lovehan1me.feature.player.PlaybackQuality
 import lovehan1me.feature.player.PlayerDefaults
 import lovehan1me.player_speed_format
 import lovehan1me.speed
-import lovehan1me.temporarily_unavailable
 import lovehan1me.ui.component.IconButton
-import lovehan1me.ui.component.rememberHapticFeedback
-import lovehan1me.core.util.AppToast
 import lovehan1me.ui.theme.HanimeDefaults
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -220,17 +207,9 @@ internal fun BoxScope.PlayerBottomBar(
                             maxLines = 1,
                             modifier = Modifier.padding(start = 10.dp),
                         )
-                        // 中间位：弹幕框居中、max 500dp（Kazumi `_desktopDanmakuControls` 同法）。
-                        Box(
-                            modifier = Modifier.weight(1f),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            KazumiDanmakuField(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .widthIn(max = 500.dp),
-                            )
-                        }
+                        // 中间位留白：项目没有弹幕后端（弹幕已定为废案，占位输入控件已移除），
+                        // 保留弹性空白以维持 [时间 | 空白 | 菜单组] 的三段式骨架。
+                        Spacer(modifier = Modifier.weight(1f))
                         KazumiTextMenu(
                             label = superResolutionOptions.getOrNull(
                                 selectedSuperResolutionIndex
@@ -412,69 +391,3 @@ private fun PlayerTimeText(currentTime: String, totalTime: String) {
     }
 }
 
-/**
- * Kazumi 式弹幕输入区（宽屏中间位）：高 33dp、8dp 圆角、白 38% 底、
- * 15sp 白字、右侧 `发送` 胶囊钮（primaryContainer 底）。
- *
- * 没有弹幕后端：输入框恒为关闭态配色，「发送」只提示暂未开放。
- */
-@Composable
-private fun KazumiDanmakuField(modifier: Modifier = Modifier) {
-    var text by remember { mutableStateOf("") }
-    val haptic = rememberHapticFeedback()
-    val unavailableMessage = stringResource(Res.string.temporarily_unavailable)
-
-    Row(
-        modifier = modifier
-            .height(33.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(Color.White.copy(alpha = 0.38f))
-            .padding(start = 8.dp, top = 8.dp, bottom = 8.dp, end = 0.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        BasicTextField(
-            value = text,
-            onValueChange = { text = it },
-            textStyle = MaterialTheme.typography.bodyMedium.copy(
-                fontSize = 15.sp,
-                color = HanimeDefaults.Overlay.onScrim.copy(alpha = 0.6f),
-            ),
-            cursorBrush = SolidColor(HanimeDefaults.Overlay.onScrim.copy(alpha = 0.8f)),
-            singleLine = true,
-            modifier = Modifier.weight(1f),
-            decorationBox = { innerField ->
-                Box(contentAlignment = Alignment.CenterStart) {
-                    if (text.isEmpty()) {
-                        Text(
-                            text = stringResource(Res.string.danmaku_input_hint),
-                            color = HanimeDefaults.Overlay.onScrim.copy(alpha = 0.6f),
-                            style = MaterialTheme.typography.bodyMedium.copy(fontSize = 15.sp),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
-                    }
-                    innerField()
-                }
-            },
-        )
-        Spacer(modifier = Modifier.width(8.dp))
-        TextButton(
-            onClick = {
-                if (text.isNotBlank()) {
-                    haptic()
-                    text = ""
-                    AppToast.info(unavailableMessage)
-                }
-            },
-            colors = ButtonDefaults.textButtonColors(
-                contentColor = HanimeDefaults.Overlay.onScrim.copy(alpha = 0.6f),
-            ),
-        ) {
-            Text(
-                text = stringResource(Res.string.danmaku_send),
-                maxLines = 1,
-                style = MaterialTheme.typography.labelMedium,
-            )
-        }
-    }
-}

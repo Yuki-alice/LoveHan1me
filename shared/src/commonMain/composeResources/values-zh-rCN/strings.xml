@@ -55,8 +55,6 @@
     <string name="expand">展开</string>
     <string name="series_video">系列影片</string>
     <string name="related_video">相关影片</string>
-    <string name="danmaku_input_hint">发个友善的弹幕，见证当下</string>
-    <string name="danmaku_send">发送</string>
     <string name="now_playing">现正播放</string>
     <string name="view_more_replies">查看 %1$d 条回复</string>
     <string name="comment_not_found">未发现评论</string>
@@ -193,6 +191,7 @@
     <string name="doh_timeout_seconds_summary">DoH 请求的连接和读取超时，建议 5–15 秒</string>
     <string name="doh_disabled_summary">已关闭</string>
     <string name="password">密码</string>
+    <string name="toggle_password_visibility">显示或隐藏密码</string>
     <string name="try_login_here">试试在这里登录</string>
     <string name="email">电邮</string>
     <string name="login_failed">登录失败</string>
@@ -289,7 +288,7 @@
     <string name="extremely_low">极低</string>
     <string name="slightly_high">稍高</string>
     <string name="extremely_high">极高</string>
-    <string name="domain_change_tips">修改域名需要重启程序，否则不起作用！\n
+    <string name="domain_change_tips">切换域名后会立即重新加载，无需重启程序！\n
 不同域名不共通 Cookie，所以更换域名后需要重新进行登录操作。\n
 所以除 hanime1.me 以外的域名可能在某些时间段会重定向回 hanime1.me，这可能导致 Cookie 失效\n
 \n

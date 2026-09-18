@@ -22,10 +22,8 @@ import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontFamily
-import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
-import androidx.compose.ui.window.WindowPosition
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import lovehan1me.app.App
@@ -147,16 +145,24 @@ fun main() {
             }
         }
 
+        // 阶段 D：恢复上次的窗口几何（尺寸 / 位置 / 最大化）。
+        // 默认 1280x800 是横屏 16:10 —— 480x800 那种手机竖屏尺寸会让桌面端
+        // 永远进不去宽屏两栏布局（那些断点都按宽度判定）。
+        val savedGeometry = remember { WindowStateStore.load() }
+        val windowState = rememberWindowState(
+            size = savedGeometry.size,
+            position = savedGeometry.position,
+            placement = savedGeometry.placement,
+        )
+
         Window(
             onCloseRequest = ::exitApplication,
             title = "LoveHan1me",
-            // 桌面窗口按横屏比例（16:10）：480x800 是手机竖屏尺寸，桌面端用它会得到一个又高又窄的窗，
-            // 宽屏的两栏/侧栏自适应布局根本进不去（那些断点都按宽度判定）。
-            state = rememberWindowState(
-                size = DpSize(1280.dp, 800.dp),
-                position = WindowPosition(Alignment.Center),
-            ),
+            state = windowState,
         ) {
+            // 窗口真正销毁时落盘（用 onDispose 而非 onCloseRequest：后者将来可能被
+            // "最小化到托盘"之类的逻辑提前拦截，导致几何永远存不下来）。
+            RememberWindowGeometry(windowState)
             when (val state = startup) {
                 DesktopStartup.Pending -> StartupWaitingContent()
 

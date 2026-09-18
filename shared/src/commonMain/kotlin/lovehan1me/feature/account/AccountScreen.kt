@@ -77,6 +77,7 @@ import lovehan1me.change_avatar
 import lovehan1me.account_stats_summary
 import lovehan1me.ic_visibility_off
 import lovehan1me.ic_visibility
+import lovehan1me.toggle_password_visibility
 import lovehan1me.ic_person
 import lovehan1me.ic_mail
 import lovehan1me.ic_lock
@@ -461,7 +462,8 @@ private fun AccountContent(
                                 painter = if (oldPasswordVisible) painterResource(Res.drawable.ic_visibility) else painterResource(
                                     Res.drawable.ic_visibility_off
                                 ),
-                                contentDescription = null
+                                // 这是纯图标按钮（无文字标签），读屏必须能说出它是什么
+                                contentDescription = stringResource(Res.string.toggle_password_visibility)
                             )
                         }
                     },
@@ -487,7 +489,7 @@ private fun AccountContent(
                                 painter = if (newPasswordVisible) painterResource(Res.drawable.ic_visibility) else painterResource(
                                     Res.drawable.ic_visibility_off
                                 ),
-                                contentDescription = null
+                                contentDescription = stringResource(Res.string.toggle_password_visibility)
                             )
                         }
                     },
@@ -513,7 +515,7 @@ private fun AccountContent(
                                 painter = if (confirmPasswordVisible) painterResource(Res.drawable.ic_visibility) else painterResource(
                                     Res.drawable.ic_visibility_off
                                 ),
-                                contentDescription = null
+                                contentDescription = stringResource(Res.string.toggle_password_visibility)
                             )
                         }
                     },

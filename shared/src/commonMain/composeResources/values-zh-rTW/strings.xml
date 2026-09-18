@@ -55,8 +55,6 @@
     <string name="expand">展開</string>
     <string name="series_video">系列影片</string>
     <string name="related_video">相關影片</string>
-    <string name="danmaku_input_hint">發個友善的彈幕，見證當下</string>
-    <string name="danmaku_send">發送</string>
     <string name="now_playing">正在播放</string>
     <string name="view_more_replies">查看 %1$d 則回覆</string>
     <string name="comment_not_found">找不到留言</string>
@@ -191,6 +189,7 @@
     <string name="doh_timeout_seconds_summary">DoH 請求的連線與讀取逾時時間，建議 5–15 秒</string>
     <string name="doh_disabled_summary">已停用</string>
     <string name="password">密碼</string>
+    <string name="toggle_password_visibility">顯示或隱藏密碼</string>
     <string name="try_login_here">嘗試在此登入</string>
     <string name="email">電子郵件</string>
     <string name="login_failed">登入失敗</string>
@@ -287,7 +286,7 @@
     <string name="extremely_low">極低</string>
     <string name="slightly_high">稍高</string>
     <string name="extremely_high">極高</string>
-    <string name="domain_change_tips">修改網域需要重新啟動程式，否則不會生效！\n不同網域不共用 Cookie，因此更換網域後需要重新登入。\n所以除了 hanime1.me 以外的網域可能在某些時段重新導向回 hanime1.me，這可能導致 Cookie 失效\n\n建議如下：\n· 無 VPN 使用者，使用 hanime1.me 並開啟內建 Hosts\n· 日本使用者，使用 hanime1.com\n· 其他地區使用者，使用 hanime1.me 並關閉內建 Hosts</string>
+    <string name="domain_change_tips">切換網域後會立即重新載入，無需重新啟動程式！\n不同網域不共用 Cookie，因此更換網域後需要重新登入。\n所以除了 hanime1.me 以外的網域可能在某些時段重新導向回 hanime1.me，這可能導致 Cookie 失效\n\n建議如下：\n· 無 VPN 使用者，使用 hanime1.me 並開啟內建 Hosts\n· 日本使用者，使用 hanime1.com\n· 其他地區使用者，使用 hanime1.me 並關閉內建 Hosts</string>
     <string name="not_logged_in_currently">目前未登入</string>
     <string name="login_state_expired">登入狀態已失效，已自動登出，請重新登入</string>
     <string name="parse_error_msg">這個網址可能有不同的解析方式…</string>
