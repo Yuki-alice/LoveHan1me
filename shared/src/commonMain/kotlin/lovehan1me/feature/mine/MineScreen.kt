@@ -250,11 +250,14 @@ private fun CheckInCard(
  * 登录账户卡。
  *
  * 已登录 → 点整卡进账号页（账号页里有登出）；未登录 → 点整卡或按钮都进登录页。
- * 未登录时右侧恒显示「登录」按钮；已登录时不再显示（避免「已登录还能点登录」）。
  *
- * 副标题槽位复用：未登录显示 [Res.string.login_sync_hint]（引导登录）；
- * 已登录显示当前数据源站点名 + [SwitchSiteButton] —— 对齐上游 Han1meViewer
- * 把「切换站点」放在我的页账号卡上的做法。
+ * **与登录态无关的两个元素**（对齐上游 `MainDrawerHeader.kt:142-183`）：
+ * - 副标题恒显示当前数据源站点名，未登录时其下再补一行 [Res.string.login_sync_hint]；
+ * - [SwitchSiteButton] 恒显示。
+ *
+ * ⚠️ 曾误按「仅已登录才给切换按钮」实现 —— 上游那处 `when { isLoading / isLoggedIn /
+ * else }` **只管标题文字**，`currentSite` 与切换按钮都在条件分支之外，未登录照常可见。
+ * 未登录时切站会触发重新登录，但这正是上游行为，不该由我们收紧。
  */
 @Composable
 private fun AccountCard(
@@ -305,6 +308,16 @@ private fun AccountCard(
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
+                // 副标题恒显示站点名，未登录时在其下再补一行登录引导 ——
+                // 对齐上游 `MainDrawerHeader.kt:142-148`：`currentSite` **不在**
+                // 登录态条件分支里，未登录也照常显示当前数据源。
+                Text(
+                    text = currentSiteName,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
                 if (!isLoggedIn) {
                     Text(
                         text = stringResource(Res.string.login_sync_hint),
@@ -313,23 +326,20 @@ private fun AccountCard(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
-                } else {
-                    Text(
-                        text = currentSiteName,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                    )
                 }
             }
-            when {
-                !isLoggedIn -> Button(onClick = onOpenLogin) {
+            // 「切换站点」**无条件渲染**，与登录态无关 —— 对齐上游
+            // `MainDrawerHeader.kt:150-183`：那里的切换按钮在任何登录态下都可见
+            // （上游那处 `when { isLoading / isLoggedIn / else }` 只管标题文字，
+            // 站点名与切换按钮都在条件分支之外）。
+            //
+            // 未登录显示「登录」按钮 + 切换按钮并存：切站确实会触发重新登录，
+            // 但这正是用户预期 —— 上游同样允许未登录时切站。
+            SwitchSiteButton(onClick = onSwitchSite)
+            if (!isLoggedIn) {
+                Button(onClick = onOpenLogin) {
                     Text(stringResource(Res.string.login))
                 }
-                // 已登录才给「切换站点」。未登录时切站会立刻触发重新登录，语义混乱；
-                // 且上游此处也是登录后才显示。
-                else -> SwitchSiteButton(onClick = onSwitchSite)
             }
         }
     }
