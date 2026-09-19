@@ -39,10 +39,15 @@ import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import lovehan1me.Res
+import lovehan1me.cancel
+import lovehan1me.confirm
+import lovehan1me.confirm_switch_site
 import lovehan1me.ic_add
 import lovehan1me.ic_search
 import lovehan1me.login_first
 import lovehan1me.search
+import lovehan1me.site.SiteSwitcher
+import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.component.rememberHapticFeedback
 import lovehan1me.ui.transition.LocalSharedTransitionScope
@@ -115,6 +120,11 @@ fun SharedTopNavigation(
     }
     // 头像裁剪结果在 AccountRoute 与 AvatarCropRoute 之间传递（原 :app TopNavigation 同构）
     var pendingAvatarCropResult by remember { mutableStateOf<String?>(null) }
+
+    // 「切换站点」确认框。状态必须提升到 NavDisplay 之外：NavDisplay 的 entry 会随
+    // 转场被卸载/重建，放在 entry<MineTab> 里会在切站瞬间被一起销毁，导致
+    // `onBeforeRecompose` 还没来得及撤下对话框、整棵树已经重建（用户看到弹窗卡住）。
+    var showSiteSwitchConfirm by remember { mutableStateOf(false) }
 
     // 审计 P1：转场规格必须在 composable 上下文先算好再交给 NavDisplay ——
     // `transitionSpec {}` / entry metadata 的 lambda 都不是 @Composable，
@@ -205,6 +215,7 @@ fun SharedTopNavigation(
                 },
                 onOpenCheckIn = { backStack.add(DailyCheckInRoute) },
                 onNavigateToSection = { section -> backStack.add(section.route) },
+                onSwitchSite = { showSiteSwitchConfirm = true },
             )
         }
         entry<WatchHistoryRoute> {
@@ -546,6 +557,27 @@ fun SharedTopNavigation(
             )
         }
         },
+    )
+
+    // 「切换站点」确认框。放在 NavDisplay **之后**：AlertDialog 自带独立 window/overlay，
+    // 不依赖所在位置；放这里只是为了让状态与 NavDisplay 同级，切站重建时一起撤掉。
+    ConfirmDialog(
+        visible = showSiteSwitchConfirm,
+        title = stringResource(Res.string.confirm_switch_site),
+        message = "",
+        confirmText = stringResource(Res.string.confirm),
+        dismissText = stringResource(Res.string.cancel),
+        cancelable = false,
+        onConfirm = {
+            scope.launch {
+                // onBeforeRecompose 里撤对话框：切站会 ++generation 触发整棵树重建，
+                // 若不在这里先置 false，重建后新树会带着 showSiteSwitchConfirm=true 的
+                // 记忆状态（rememberSaveable 无关，是同一个 composition 内 remember 未
+                // 被销毁时读取的旧值）而把弹窗留在屏幕上。
+                SiteSwitcher.toggle(onBeforeRecompose = { showSiteSwitchConfirm = false })
+            }
+        },
+        onDismiss = { showSiteSwitchConfirm = false },
     )
     }
     }

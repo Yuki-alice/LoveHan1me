@@ -36,6 +36,7 @@ import lovehan1me.check_in_today_count
 import lovehan1me.h_chan_default_avatar
 import lovehan1me.ic_calendar_month
 import lovehan1me.ic_settings
+import lovehan1me.ic_switch
 import lovehan1me.loading
 import lovehan1me.login
 import lovehan1me.login_or_register
@@ -43,6 +44,7 @@ import lovehan1me.login_sync_hint
 import lovehan1me.my_content
 import lovehan1me.refresh_page_or_login_expired
 import lovehan1me.settings
+import lovehan1me.switch_site
 import lovehan1me.ui.component.CardContainerSurface
 import lovehan1me.ui.component.HanimeAsyncImage
 import lovehan1me.ui.component.IconButton
@@ -99,11 +101,15 @@ fun MineScreen(
     checkInStreakDays: Int,
     checkInTodayCount: Int,
     entries: List<MineEntry>,
+    /** 当前数据源站点名（host，如 `hanime1.me` / `javchu.com`），显示在账号卡副标题。 */
+    currentSiteName: String,
     onOpenSettings: () -> Unit,
     onOpenAccount: () -> Unit,
     onOpenLogin: () -> Unit,
     onOpenCheckIn: () -> Unit,
     onCheckIn: () -> Unit,
+    /** 账号卡右侧「切换站点」：一键切到另一个数据源（走 `SiteSwitcher.toggle`）。 */
+    onSwitchSite: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     HanimeScaffold(
@@ -145,8 +151,10 @@ fun MineScreen(
                     loading = accountLoading,
                     avatarUrl = avatarUrl,
                     username = username,
+                    currentSiteName = currentSiteName,
                     onOpenAccount = onOpenAccount,
                     onOpenLogin = onOpenLogin,
+                    onSwitchSite = onSwitchSite,
                 )
             }
             item {
@@ -243,6 +251,10 @@ private fun CheckInCard(
  *
  * 已登录 → 点整卡进账号页（账号页里有登出）；未登录 → 点整卡或按钮都进登录页。
  * 未登录时右侧恒显示「登录」按钮；已登录时不再显示（避免「已登录还能点登录」）。
+ *
+ * 副标题槽位复用：未登录显示 [Res.string.login_sync_hint]（引导登录）；
+ * 已登录显示当前数据源站点名 + [SwitchSiteButton] —— 对齐上游 Han1meViewer
+ * 把「切换站点」放在我的页账号卡上的做法。
  */
 @Composable
 private fun AccountCard(
@@ -250,8 +262,10 @@ private fun AccountCard(
     loading: Boolean,
     avatarUrl: String?,
     username: String?,
+    currentSiteName: String,
     onOpenAccount: () -> Unit,
     onOpenLogin: () -> Unit,
+    onSwitchSite: () -> Unit,
 ) {
     val title = when {
         loading -> stringResource(Res.string.loading)
@@ -299,13 +313,55 @@ private fun AccountCard(
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )
+                } else {
+                    Text(
+                        text = currentSiteName,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
             }
-            if (!isLoggedIn) {
-                Button(onClick = onOpenLogin) {
+            when {
+                !isLoggedIn -> Button(onClick = onOpenLogin) {
                     Text(stringResource(Res.string.login))
                 }
+                // 已登录才给「切换站点」。未登录时切站会立刻触发重新登录，语义混乱；
+                // 且上游此处也是登录后才显示。
+                else -> SwitchSiteButton(onClick = onSwitchSite)
             }
+        }
+    }
+}
+
+/**
+ * 账号卡右侧的「切换站点」按钮。
+ *
+ * 用 [IconButton]（项目既有组件）而非 `OutlinedButton`：图标 + 文案竖向堆叠，
+ * 在 52dp 头像行高内不抢宽度，也不会像文本按钮那样把用户名挤成省略号。
+ * 样式一律走 token（`MaterialTheme.colorScheme` / `typography`），不写死色值。
+ */
+@Composable
+private fun SwitchSiteButton(onClick: () -> Unit) {
+    IconButton(
+        shapes = IconButtonDefaults.shapes(),
+        onClick = onClick,
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(2.dp),
+        ) {
+            Icon(
+                painter = painterResource(Res.drawable.ic_switch),
+                contentDescription = stringResource(Res.string.switch_site),
+                modifier = Modifier.size(20.dp),
+            )
+            Text(
+                text = stringResource(Res.string.switch_site),
+                style = MaterialTheme.typography.labelSmall,
+                maxLines = 1,
+            )
         }
     }
 }

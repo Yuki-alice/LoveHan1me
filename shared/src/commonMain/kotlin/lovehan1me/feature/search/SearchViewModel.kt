@@ -3,7 +3,7 @@ package lovehan1me.feature.search
 import lovehan1me.core.util.LogUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import lovehan1me.core.constant.HanimeConstants.AV_URL
+import lovehan1me.site.SiteIdentity
 import lovehan1me.core.constant.HanimeConstants.HANIME_URL
 import lovehan1me.data.SettingsRepository
 import lovehan1me.site.hanime1.HanimeAdvancedSearchRepo
@@ -61,7 +61,7 @@ class SearchViewModel() : ViewModel() {
     var brandMap = mutableMapOf<Int, Set<SearchOption>>()
 
     val genres by unsafeLazy {
-        decodeComposeAsset<List<SearchOption>>(if (SettingsRepository.baseUrl == AV_URL) "files/search_options/genre_av.json" else "files/search_options/genre.json").orEmpty()
+        decodeComposeAsset<List<SearchOption>>(if (SiteIdentity.isAvSite) "files/search_options/genre_av.json" else "files/search_options/genre.json").orEmpty()
     }
 
     val tags by unsafeLazy {

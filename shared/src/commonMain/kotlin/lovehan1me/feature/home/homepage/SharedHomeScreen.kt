@@ -27,7 +27,7 @@ import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import lovehan1me.core.constant.HA1_GITHUB_URL
-import lovehan1me.core.constant.HanimeConstants
+import lovehan1me.site.SiteIdentity
 import lovehan1me.Res
 import lovehan1me.checking_for_updates
 import lovehan1me.data.AppUpdateState
@@ -76,7 +76,7 @@ fun SharedHomeScreen(
     // 状态栏下面；再加一次就是双倍空白（iPhone 上凭空多出约 60pt，之前圈出来的那截）。
     // 桌面端 statusBars 本来就是 0，改前后无变化；Android 同理收紧一截状态栏高度。
     val contentTopPadding = 72.dp
-    val isAVSite = SettingsRepository.baseUrl == HanimeConstants.AV_URL
+    val isAVSite = SiteIdentity.isAvSite
 
     // 门控改用 settings 驱动而非 Unit：桌面/iOS 的 DataStore 初始化时机与 composition
     // 存在竞态（iOS 还是后台线程初始化），VM 内部有 initializationJob 去重守卫，可重复调用。

@@ -17,6 +17,7 @@ import lovehan1me.feature.home.homepage.HomePageViewModel
 import lovehan1me.feature.mine.MineEntry
 import lovehan1me.feature.mine.MineScreen
 import lovehan1me.my_account
+import lovehan1me.site.SiteIdentity
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -60,9 +61,15 @@ fun MineRouteScreen(
     onLockedSection: () -> Unit,
     onOpenCheckIn: () -> Unit,
     onNavigateToSection: (MineSection) -> Unit,
+    /** 账号卡右侧「切换站点」：一键切到另一个数据源（走 `SiteSwitcher.toggle`）。 */
+    onSwitchSite: () -> Unit,
 ) {
     val isLoggedIn by SettingsRepository.loginStateFlow.collectAsStateWithLifecycle()
     val checkInEnabled by SettingsRepository.checkInEnabledFlow.collectAsStateWithLifecycle()
+
+    // 当前数据源（用户选的站点，非镜像地址）。切站后靠 SiteSwitcher 的世代号重建整棵树，
+    // 但这里仍显式订阅一次 domainName，避免将来若去掉世代号时静默显示旧站点名。
+    val domainName = SettingsRepository.domainName
 
     // 与 SharedHomeRouteScreen 同构：开关关掉时不建 VM，避免白起一个 Room 查询。
     val checkInViewModel: CheckInCalendarViewModel? =
@@ -81,6 +88,9 @@ fun MineRouteScreen(
     val accountLoading = isLoggedIn && homeState is PageState.Loading
 
     val todayDate: LocalDate = remember { today() }
+    // 站点名从 domainName 提 host，**不用 baseUrl** —— 开了自定义镜像后 baseUrl 返回的是
+    // 镜像地址，会把镜像 host 当成站点名显示（详见 SiteIdentity 的说明）。
+    val currentSiteName = remember(domainName) { SiteIdentity.toHostName(domainName) }
     val records: Map<LocalDate, Int> = checkInUiState?.records ?: emptyMap()
     val checkInDoneToday = (records[todayDate] ?: 0) > 0
     val checkInStreakDays = remember(records, todayDate) {
@@ -99,6 +109,7 @@ fun MineRouteScreen(
         accountLoading = accountLoading,
         avatarUrl = avatarUrl,
         username = username,
+        currentSiteName = currentSiteName,
         checkInVisible = checkInEnabled,
         checkInDoneToday = checkInDoneToday,
         checkInStreakDays = checkInStreakDays,
@@ -119,6 +130,7 @@ fun MineRouteScreen(
         onOpenAccount = onOpenAccount,
         onOpenLogin = onOpenLogin,
         onOpenCheckIn = onOpenCheckIn,
+        onSwitchSite = onSwitchSite,
         onCheckIn = {
             checkInViewModel?.addRecord(
                 date = todayDate,

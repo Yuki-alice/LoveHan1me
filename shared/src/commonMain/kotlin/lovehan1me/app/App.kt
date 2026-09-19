@@ -5,14 +5,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import lovehan1me.data.SettingsRepository
@@ -29,6 +33,7 @@ import lovehan1me.app.navigation.main.VideoRoute
 import lovehan1me.core.util.LogUtil
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.feature.home.homepage.HomePageViewModel
+import lovehan1me.site.SiteSwitcher
 import lovehan1me.ui.theme.HanimeTheme
 import lovehan1me.app.sharedViewModel
 import lovehan1me.core.util.AppToast
@@ -102,74 +107,115 @@ fun App(
             )
             return@HanimeTheme
         }
+
+        // Toast 宿主刻意留在 `key(generation)` **之外**。
+        // 它是进程级单例（`AppToast.Host` 内部持 SnackbarHostState），一旦被包进
+        // key 作用域，切站重建 composition 时正在显示的提示会被一起销毁 ——
+        // 而"切站成功"这类提示恰恰是切换动作的反馈，最不该在切换瞬间消失。
         AppToast.Host()
-        val homeViewModel: HomePageViewModel = sharedViewModel(::HomePageViewModel)
-        // 复用 ViewModel 持有的回退栈：平台壳（Android intent 导航 / 返回键）与
-        // 共享导航必须操作同一实例，否则会出现两套互不感知的栈。
-        val backStack = homeViewModel.mainBackStack
-        val scope = rememberCoroutineScope()
 
-        LaunchedEffect(homeViewModel) {
-            homeViewModel.sessionExpiredMessage.collect { event ->
-                event.message?.let(AppToast::error)
-                    ?: AppToast.error(getString(event.fallbackResId))
+        // ---- 软重启支点（详见 AppViewModelStore / SiteSwitcher）----
+        // 1) 订阅代次：`SiteSwitcher.switchTo` 完成清理后 ++generation；
+        // 2) `remember(generation)` 里把进程级 store 对齐到新代次（幂等 + 单调，
+        //    因为 remember 的计算块在组合被取消后会重跑）；
+        // 3) `key(generation)` 重建整棵 composition —— UI 侧的状态（含 nav 栈上各
+        //    路由 VM 的按条目 store）全部重置；
+        // 4) 把新 owner 提供给 LocalViewModelStoreOwner，使 `sharedViewModel(...)`
+        //    解析到新一代的 App 级 VM。
+        //
+        // ⚠️ 这里**故意不写** `DisposableEffect { onDispose { storeOwner.viewModelStore.clear() } }`：
+        //    Activity 的 `configChanges` 不覆盖 locale/uiMode/fontScale，这些变更会重建
+        //    Activity（进程不死）→ composition 被 dispose → 若在此清 store，用户改个
+        //    夜间模式就会丢掉整个 `mainBackStack`。store 的释放只走两条路：
+        //    代次前进（`alignTo` 内清上一代）与进程退出。
+        val generation by SiteSwitcher.generation.collectAsStateWithLifecycle()
+        val storeOwner = remember(generation) { AppViewModelStore.alignTo(generation) }
+
+        CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
+            key(generation) {
+                AppContent(onExit, platformScreens, autoNavigateVideoCode, autoNavigateExitAfterMs)
             }
         }
+    }
+}
 
-        // CF 挑战统一恢复入口：NetworkRepo 判定挑战页时经总线送达，此处压栈各端
-        // 既有验证 UI（桌面 KCEF 弹窗 / iOS WKWebView / Android WebView）。
-        // 去重：栈上已有 CF 页不再压（Android 拦截器链路自带开屏，重试失败才到这里）。
-        LaunchedEffect(backStack) {
-            CloudflareChallenges.requests.collect { challenge ->
-                if (backStack.backStack.none { it is CloudflareRoute }) {
-                    backStack.add(CloudflareRoute(challenge.url, challenge.host))
+/**
+ * `App()` 的主体内容 —— 抽出来的唯一目的是让 `key(generation)` 能整块包裹它
+ * （含 `remember` 状态与 `LaunchedEffect`），从而在切站时彻底重置。
+ */
+@Composable
+private fun AppContent(
+    onExit: () -> Unit,
+    platformScreens: PlatformScreens,
+    autoNavigateVideoCode: String?,
+    autoNavigateExitAfterMs: Long,
+) {
+    val homeViewModel: HomePageViewModel = sharedViewModel(::HomePageViewModel)
+    // 复用 ViewModel 持有的回退栈：平台壳（Android intent 导航 / 返回键）与
+    // 共享导航必须操作同一实例，否则会出现两套互不感知的栈。
+    val backStack = homeViewModel.mainBackStack
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(homeViewModel) {
+        homeViewModel.sessionExpiredMessage.collect { event ->
+            event.message?.let(AppToast::error)
+                ?: AppToast.error(getString(event.fallbackResId))
+        }
+    }
+
+    // CF 挑战统一恢复入口：NetworkRepo 判定挑战页时经总线送达，此处压栈各端
+    // 既有验证 UI（桌面 KCEF 弹窗 / iOS WKWebView / Android WebView）。
+    // 去重：栈上已有 CF 页不再压（Android 拦截器链路自带开屏，重试失败才到这里）。
+    LaunchedEffect(backStack) {
+        CloudflareChallenges.requests.collect { challenge ->
+            if (backStack.backStack.none { it is CloudflareRoute }) {
+                backStack.add(CloudflareRoute(challenge.url, challenge.host))
+            }
+        }
+    }
+
+    var showOnboarding by remember { mutableStateOf(!SettingsRepository.usageNoticeAccepted) }
+    var appAccessGranted by remember {
+        mutableStateOf(SettingsRepository.usageNoticeAccepted)
+    }
+
+    if (appAccessGranted) {
+        // 导航外壳：Bar / Rail 的选择、全屏路由（视频详情 / 设置）摘掉 chrome、
+        // 内容宽度的测量与下发（扣除 Rail 占宽）全部收在 MainScaffold 内部。
+        MainScaffold(
+            backStack = backStack,
+            homeViewModel = homeViewModel,
+            platformScreens = platformScreens,
+        )
+    } else {
+        // 首次启动向导未完成时，下面叠加向导页。
+        // 此前这里**什么都不画** —— 用户看到的是"白窗 + 弹窗浮在半空"，
+        // 分不清"应用在启动"还是"界面挂了"。给一层主题化底衬（不改门控语义）。
+        StartupGateBackdrop()
+    }
+
+    // 性能探针：首页就绪后自动进视频详情页（见 App 参数 KDoc）。
+    autoNavigateVideoCode?.let { code ->
+        LaunchedEffect(code) {
+            delay(4000)
+            LogUtil.i("AutoVideoProbe", "进入视频页 $code")
+            backStack.add(VideoRoute(code), launchSingleTop = true)
+            delay(autoNavigateExitAfterMs)
+            onExit()
+        }
+    }
+
+    if (showOnboarding) {
+        OnboardingWizard(
+            onFinished = {
+                scope.launch {
+                    SettingsRepository.setUsageNoticeAccepted(true)
+                    showOnboarding = false
+                    appAccessGranted = true
+                    homeViewModel.initializeHomePage()
                 }
-            }
-        }
-
-        var showOnboarding by remember { mutableStateOf(!SettingsRepository.usageNoticeAccepted) }
-        var appAccessGranted by remember {
-            mutableStateOf(SettingsRepository.usageNoticeAccepted)
-        }
-
-        if (appAccessGranted) {
-            // 导航外壳：Bar / Rail 的选择、全屏路由（视频详情 / 设置）摘掉 chrome、
-            // 内容宽度的测量与下发（扣除 Rail 占宽）全部收在 MainScaffold 内部。
-            MainScaffold(
-                backStack = backStack,
-                homeViewModel = homeViewModel,
-                platformScreens = platformScreens,
-            )
-        } else {
-            // 首次启动向导未完成时，下面叠加向导页。
-            // 此前这里**什么都不画** —— 用户看到的是"白窗 + 弹窗浮在半空"，
-            // 分不清"应用在启动"还是"界面挂了"。给一层主题化底衬（不改门控语义）。
-            StartupGateBackdrop()
-        }
-
-        // 性能探针：首页就绪后自动进视频详情页（见 App 参数 KDoc）。
-        autoNavigateVideoCode?.let { code ->
-            LaunchedEffect(code) {
-                delay(4000)
-                LogUtil.i("AutoVideoProbe", "进入视频页 $code")
-                backStack.add(VideoRoute(code), launchSingleTop = true)
-                delay(autoNavigateExitAfterMs)
-                onExit()
-            }
-        }
-
-        if (showOnboarding) {
-            OnboardingWizard(
-                onFinished = {
-                    scope.launch {
-                        SettingsRepository.setUsageNoticeAccepted(true)
-                        showOnboarding = false
-                        appAccessGranted = true
-                        homeViewModel.initializeHomePage()
-                    }
-                },
-                onExit = onExit,
-            )
-        }
+            },
+            onExit = onExit,
+        )
     }
 }

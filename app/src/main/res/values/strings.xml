@@ -258,7 +258,7 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="extremely_low">Extremely Low</string>
     <string name="slightly_high">Slightly High</string>
     <string name="extremely_high">Extremely High</string>
-    <string name="domain_change_tips">Changing the domain name requires restarting the program, otherwise it will not take effect!\n
+    <string name="domain_change_tips">Switching the domain name reloads the app immediately — no restart needed!\n
 Different domains do not share the same cookies, so after changing the domain name, you need to log in again.\n
 So, except for hanime1.me, other domain names may redirect back to hanime1.me at certain times, which may cause cookies to expire\n
 \n

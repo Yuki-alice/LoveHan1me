@@ -28,7 +28,6 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import lovehan1me.app.App
 import lovehan1me.HanimeCacheManager
 import lovehan1me.Res
-import lovehan1me.confirm_switch_site
 import lovehan1me.detect_ha1_related_link_in_clipboard
 import lovehan1me.enter
 import lovehan1me.ext_player
@@ -69,11 +68,15 @@ import org.jetbrains.compose.resources.stringResource
  * 原 `MainActivityContent` 同时承担三件事：
  * 1. 三段门控（使用须知 / 来源确认 / 非法来源警告）→ 已由共享 `App()` 承担；
  * 2. 导航装配（35 路由）→ 已由 `SharedTopNavigation` 承担，路由表与之一致；
- * 3. Android 专属覆盖层（应用锁遮罩 / 剪贴板检测 / intent 导航 / 站点切换与登出对话框）。
+ * 3. Android 专属覆盖层（应用锁遮罩 / 剪贴板检测 / intent 导航 / 登出对话框）。
  *
  * P2：抽屉（`MainDrawerContent` / `DrawerHost` / `drawerContent` 槽位）已整体退役，
  * 导航形态改由共享 [lovehan1me.app.navigation.main.MainScaffold] 提供（Compact 贴底
- * NavigationBar / Medium+ WideNavigationRail）。登出仍在账号页；切换站点仍在设置。
+ * NavigationBar / Medium+ WideNavigationRail）。登出仍在账号页。
+ *
+ * 「切换站点」已迁到共享导航（`SharedTopNavigation` 的 `entry<MineTab>` → 我的页账号卡
+ * 右侧按钮），因此本壳**不再**承载站点切换对话框与相关回调 —— 否则 Android 会多出一个
+ * 走 `restartApp` 的旧入口，与热切换并存造成两个行为不一致的按钮。
  *
  * 这里只保留第 3 件，并通过 [PlatformScreens] 把 6 个依赖 Android 硬能力的页面
  * （WebView 登录、CF 验证、头像 picker + cropper、SAF 下载设置、WorkManager 下载）
@@ -83,11 +86,7 @@ import org.jetbrains.compose.resources.stringResource
 fun MainActivityShell(
     activity: MainActivity,
     pendingNavigationRequests: Flow<Intent>,
-    showSiteSwitchConfirm: Boolean,
     logoutDialogCloseCurrentPage: Boolean?,
-    onSwitchSiteClick: () -> Unit,
-    onDismissSiteSwitch: () -> Unit,
-    onConfirmSiteSwitch: () -> Unit,
     onDismissLogout: () -> Unit,
     onConfirmLogout: () -> Unit,
 ) {
@@ -98,10 +97,7 @@ fun MainActivityShell(
         AndroidOverlays(
             activity = activity,
             pendingNavigationRequests = pendingNavigationRequests,
-            showSiteSwitchConfirm = showSiteSwitchConfirm,
             logoutDialogCloseCurrentPage = logoutDialogCloseCurrentPage,
-            onDismissSiteSwitch = onDismissSiteSwitch,
-            onConfirmSiteSwitch = onConfirmSiteSwitch,
             onDismissLogout = onDismissLogout,
             onConfirmLogout = onConfirmLogout,
         )
@@ -198,10 +194,7 @@ private fun platformScreens(activity: MainActivity): PlatformScreens = PlatformS
 private fun BoxScope.AndroidOverlays(
     activity: MainActivity,
     pendingNavigationRequests: Flow<Intent>,
-    showSiteSwitchConfirm: Boolean,
     logoutDialogCloseCurrentPage: Boolean?,
-    onDismissSiteSwitch: () -> Unit,
-    onConfirmSiteSwitch: () -> Unit,
     onDismissLogout: () -> Unit,
     onConfirmLogout: () -> Unit,
 ) {
@@ -240,15 +233,6 @@ private fun BoxScope.AndroidOverlays(
             .padding(16.dp),
     )
 
-    ConfirmDialog(
-        visible = showSiteSwitchConfirm,
-        title = stringResource(Res.string.confirm_switch_site),
-        message = "",
-        confirmText = stringResource(Res.string.sure),
-        dismissText = stringResource(Res.string.no),
-        onConfirm = onConfirmSiteSwitch,
-        onDismiss = onDismissSiteSwitch,
-    )
     ConfirmDialog(
         visible = logoutDialogCloseCurrentPage != null,
         title = stringResource(Res.string.sure_to_logout),

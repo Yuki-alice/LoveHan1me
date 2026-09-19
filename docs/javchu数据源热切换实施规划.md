@@ -417,6 +417,67 @@ P0–P4 已落地，P5 单测已加；三端冷/热切换人工冒烟尚待跑�
 
 ---
 
+## 10. 恢复记录（2026-09-19）：多设备覆盖事故
+
+### 10.0 事故经过
+
+多设备开发期间，本轮成果**只提交了一部分**（`7f46102`），另一部分仍留在工作树里未提交；随后被另一次 git 操作覆盖回旧版。§9 是按"改完了"写的记录，**与当时的仓库实际状态不符** —— 以本节为准。
+
+### 10.1 事故后盘点：`7f46102` 里到底有什么
+
+**确实提交了的（存活）**：`site/SiteIdentity.kt`、`site/SiteSwitcher.kt`、`app/AppViewModelStore.kt`、`NetworkConstants` 具名常量、`SettingsRepository.domainName`、`HanimeNetwork.rebuildNetwork()` 补 `subscriptionService`、`TagLocalizer` 的 `invalidate()` + AV genre 修复、`PreviewCommentPrefetcher.reset()`、测试、文档。
+
+**没进提交、被覆盖回旧版的（本次重做）**：
+
+| # | 文件 | 被覆盖成了什么 | 为什么致命 |
+| --- | --- | --- | --- |
+| 1 | `app/App.kt` | 仍是 `sharedViewModel(::HomePageViewModel)`，**无** `generation` 订阅 / `LocalViewModelStoreOwner` / `key(generation)` | **头号缺口**。这是软重启的支点 —— 少了它，`generation++` 没有任何订阅者，切站后 UI 完全不重建，整套机制形同虚设 |
+| 2 | `site/hanime1/Parser.kt:80` | `SettingsRepository.baseUrl == AV_URL` | AV 站首页解析退化成番剧站分支（14 行下标全体错位） |
+| 3 | `feature/home/homepage/SharedHomeScreen.kt:79` | `SettingsRepository.baseUrl == HanimeConstants.AV_URL` | 首页 AV 分支失效 |
+| 4 | `feature/search/SearchViewModel.kt:63` | `SettingsRepository.baseUrl == AV_URL` | 搜索筛选项载入 `genre.json` 而非 `genre_av.json` |
+| 5 | `feature/video/VideoRouteHostScreen.kt:180-189` | `remember/LaunchedEffect(SettingsRepository.baseUrl)` + `baseUrl == ...AV_URL` | 播放页标签词典按错站载入；且 key 用 `baseUrl` 会被镜像地址误触发 |
+| 6 | `app/navigation/settings/HomeSettingsRoute.kt:557` | `SettingsRepository.baseUrl == HanimeConstants.AV_URL` | 首页分类标题不切 AV 版 |
+| 7 | `app/navigation/main/MineRoute.kt` | 无 `onSwitchSite` / `currentSiteName` | 「我的」页没有切站入口 |
+| 8 | `feature/mine/MineScreen.kt` | `AccountCard` 无站点名副标题、无 `SwitchSiteButton` | 同上 |
+| 9 | `app/navigation/main/SharedTopNavigation.kt` | `entry<MineTab>` 无确认框接线 | 同上 |
+| 10 | `jvmMain/.../NetworkSettingsRoute.kt` | 仍 `update + logout + restartApp(killProcess = true)` | 网域设置页还在杀进程重启，与热切换并存 = 两条行为不一致的路径 |
+| 11 | `:app` `MainActivity.kt` | `by viewModels<HomePageViewModel>()` + 死的 `confirmSiteSwitch()` | `by viewModels` 绑 Activity 自己的 store，与 `App()` 内的 owner 不是同一个 ⇒ `mainBackStack` 分叉，深链 / 返回键失效 |
+| 12 | `:app` `app/main/AndroidShell.kt` | 残留 `showSiteSwitchConfirm` / `onSwitchSiteClick` / 对话框 | 旧切换入口的残链 |
+| 13 | `app/src/main/res/values{,-zh-rCN,-zh-rTW}/strings.xml` | 仍是「需要重启程序」 | 文案与实际行为不符 |
+| 14 | `app/src/main/AndroidManifest.xml` | 缺 `host="javchu.com"` | javchu 的 `/watch` 链接唤不起应用 |
+
+### 10.2 本次恢复的分工边界
+
+- **`App.kt`**：拆出 `AppContent()`；`AppToast.Host()` 留在 `key(generation)` **之外**；
+  **刻意不写** `DisposableEffect { onDispose { clear() } }` —— `configChanges` 不覆盖 locale/uiMode/fontScale，那些变更会重建 Activity（进程不死），若在 `onDispose` 里清 store，改个夜间模式就会丢掉整个 `mainBackStack`。释放只走「代次前进」与「进程退出」两条路。
+- **`MineScreen` 的切站按钮**：已登录才显示（未登录切站会立刻要求重新登录，语义混乱；上游同此）。
+- **`currentSiteName`** 从 `domainName` 提 host（新增 `SiteIdentity.toHostName`），**不用 `baseUrl`** —— 否则开镜像时会把镜像 host 当站点名显示。
+- **确认框状态提升**到 `NavDisplay` 之外：放在 `entry<MineTab>` 里会在切站重建瞬间被一起销毁。
+
+### 10.3 验证（本次重做后）
+
+| 项 | 结果 |
+| --- | --- |
+| `:shared:compileKotlinDesktop` | ✅ |
+| `:app:compileDebugKotlin` | ✅（含 `:shared:compileAndroidMain`） |
+| `:desktopApp:compileKotlin` | ✅ |
+| `:shared:desktopTest`（全量） | ✅ **285 tests / 0 failures / 0 errors / 0 skipped** |
+| 全仓残留扫描 | ✅ 已无任何**活代码**在用 `baseUrl ==` 做站点判定（仅剩 KDoc / 测试注释） |
+| 6 份文案 XML | ✅ `ElementTree` 校验通过，首句均已更新 |
+| ❌ 未验证 | iOS 编译（本机无 K/N 工具链）；三端人工冒烟 |
+
+### 10.4 操作规程（防止再犯）
+
+本次事故的根因是「改完不提交」+「多设备并发操作工作树」。约定：
+
+1. 每完成一个可编译的完整阶段**立即提交**，不留长尾在工作树；
+2. 提交用 `git commit -F msg.txt -- <显式路径>`，**禁止 `git add -A`**（并发会话会带走无关文件）；
+3. `git pull` 后若打印 `Fast-forward` 但 `shared/src` 文件数骤降（如 787 → 62），说明工作树被 ff 覆盖，**立即 `git restore --worktree .`** 抢救；
+4. 恢复工作以「全仓 grep 旧模式 + 编译 + 全量测试」收尾，不靠记忆判断哪处改过。
+
+
+---
+
 ## 附：关联文件索引
 
 **必改**

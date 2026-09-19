@@ -74,6 +74,9 @@
                 <data android:host="hanime1.com" />
                 <data android:host="hanime1.me" />
                 <data android:host="hanimeone.me" />
+                <!-- AV 站数据源（javchu.com）。不加这条的话，在浏览器点开 javchu 的
+                     视频链接不会唤起本应用、也就走不到热切换后的 AV 分支。 -->
+                <data android:host="javchu.com" />
                 <data android:path="/watch" />
             </intent-filter>
             <intent-filter>

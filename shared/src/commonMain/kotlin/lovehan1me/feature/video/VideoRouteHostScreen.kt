@@ -23,6 +23,7 @@ import androidx.lifecycle.repeatOnLifecycle
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import lovehan1me.data.SettingsRepository
+import lovehan1me.site.SiteIdentity
 import lovehan1me.ui.adaptive.WindowHeightBreakpoints
 import lovehan1me.ui.adaptive.WindowWidthBreakpoints
 import lovehan1me.ui.adaptive.rememberContentWidthDp
@@ -177,12 +178,14 @@ fun VideoRouteHostScreen(
     val stringLongPressShare = stringResource(Res.string.long_press_share_to_copy)
     val pipPlayPauseText = stringResource(Res.string.play_pause)
     // 词典 JSON 移出组合：磁盘 IO 不许卡首帧，进场后异步装，到了重组 actions 即可。
-    var genres by remember(SettingsRepository.baseUrl) { mutableStateOf(emptyList<SearchOption>()) }
-    LaunchedEffect(SettingsRepository.baseUrl) {
+    // key 用 domainName 而非 baseUrl：开了自定义镜像时 baseUrl 会变成镜像地址，
+    // 用它作 key 会让切镜像也触发一次无谓的词典重载、且判定本身不可靠（见 SiteIdentity）。
+    var genres by remember(SettingsRepository.domainName) { mutableStateOf(emptyList<SearchOption>()) }
+    LaunchedEffect(SettingsRepository.domainName) {
         // Native 侧没有 Dispatchers.IO（JVM-only）：词典 JSON 解码放 Default，一样不在主线程。
         genres = withContext(Dispatchers.Default) {
             decodeComposeAsset<List<SearchOption>>(
-                if (SettingsRepository.baseUrl == lovehan1me.core.constant.HanimeConstants.AV_URL) {
+                if (SiteIdentity.isAvSite) {
                     "files/search_options/genre_av.json"
                 } else {
                     "files/search_options/genre.json"

@@ -68,4 +68,17 @@ object SiteIdentity {
     /** 指定网域是否等价于"番剧站"（[HanimeConstants.ANIME_URL] 中的任意一个）。 */
     fun isAnimeSite(domainName: String): Boolean =
         HanimeConstants.ANIME_URL.any { normalize(domainName) == normalize(it) }
+
+    /**
+     * 从网域里提取**用于展示的 host**（如 `https://javchu.com/` → `javchu.com`）。
+     *
+     * 只做轻量解析，不引 `Uri`/`URL`（commonMain 里没有统一实现）。取不到 host 时
+     * 退回原串去掉协议前缀 —— 宁可显示得难看一点，也不要显示空白。
+     */
+    fun toHostName(domainName: String): String {
+        val withoutScheme = domainName.trim()
+            .substringAfter("://", domainName.trim())
+        val host = withoutScheme.substringBefore('/')
+        return host.substringBefore('?').ifBlank { domainName.trim() }
+    }
 }

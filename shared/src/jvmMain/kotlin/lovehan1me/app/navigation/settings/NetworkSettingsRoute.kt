@@ -57,7 +57,7 @@ import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.data.network.HanimeNetwork
 import lovehan1me.data.network.ServiceCreator
 import lovehan1me.core.domain.state.WebsiteState
-import lovehan1me.data.logout
+import lovehan1me.site.SiteSwitcher
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.feature.settings.DelayResultUi
 import lovehan1me.feature.settings.DohTestResultUi
@@ -389,17 +389,18 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
         cancelable = false,
         onConfirm = {
             coroutineScope.launch {
-                SettingsRepository.update {
-                    it.copy(
-                        domainName = pendingDomainValue.ifEmpty { it.domainName },
-                        selectedBaseUrl = pendingDomainValue.ifEmpty { it.selectedBaseUrl },
+                // 走热切换的唯一入口。`selectedBaseUrl` 由 SiteSwitcher 内部按站点身份决定，
+                // 这里**不要**再显式写 —— 上游把它当"回程目标"记，直接覆写会让「切换站点」
+                // 按钮原地打转（详见 SiteSwitcher.switchTo 的注释）。
+                SiteSwitcher.switchTo(
+                    domain = pendingDomainValue.ifEmpty { SettingsRepository.domainName },
+                    mirror = SiteSwitcher.MirrorSettings(
                         useCustomMirrorSite = pendingUseCustomMirrorSite,
                         customMirrorSite = pendingCustomMirrorSite,
                         appendCustomMirrorPath = pendingAppendCustomMirrorPath,
-                    )
-                }
-                logout()
-                restartApp(killProcess = true)
+                    ),
+                    onBeforeRecompose = { showDomainRestartConfirm = false },
+                )
             }
         },
         onDismiss = {

@@ -13,18 +13,16 @@ import android.os.Looper
 import android.view.ViewTreeObserver
 import lovehan1me.core.util.LogUtil
 import lovehan1me.core.util.StartupTrace
-import androidx.activity.viewModels
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
-import lovehan1me.core.constant.HanimeConstants.ANIME_URL
-import lovehan1me.core.constant.HanimeConstants.AV_URL
 import lovehan1me.BuildConfig
 import lovehan1me.data.SettingsRepository
 import lovehan1me.R
 import lovehan1me.data.logout
+import lovehan1me.app.AppViewModelStore
 import lovehan1me.app.bridge.VideoPageHost
 import lovehan1me.app.navigation.main.AccountRoute
 import lovehan1me.app.navigation.main.HanimeScreen
@@ -35,15 +33,25 @@ import lovehan1me.app.navigation.main.registerArtistSearchNavigator
 import lovehan1me.app.navigation.main.VideoRoute
 import lovehan1me.app.main.MainActivityShell
 import lovehan1me.feature.home.homepage.HomePageViewModel
-import lovehan1me.core.util.ActivityManager
 import lovehan1me.core.util.isX86_64Device
 import kotlinx.coroutines.flow.MutableSharedFlow
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : BaseActivity() {
 
-    val viewModel by viewModels<HomePageViewModel>()
+    /**
+     * App 级 VM 必须从**进程级**单例取，不能用 `by viewModels()`。
+     *
+     * 热切换（`SiteSwitcher`）通过换 `ViewModelStoreOwner` 重建 App 级 VM，而
+     * `by viewModels()` 绑的是 ComponentActivity 自己的 store —— 它既不认识切换后的
+     * 新世代，也和 `App()` 内部 `LocalViewModelStoreOwner` 提供的那个不是同一个。
+     * 两边一旦分叉，`mainBackStack` 就会出现"Activity 读到的"与"UI 渲染的"不是同一个，
+     * 深层链接 / 返回键会莫名失效。
+     *
+     * 因此统一走 [AppViewModelStore.homePageViewModel]：`App()` 与这里解析到的是
+     * 同一个 owner、同一个 VM 实例。
+     */
+    val viewModel: HomePageViewModel get() = AppViewModelStore.homePageViewModel()
 
     val mainBackStack: TopLevelBackStack<HanimeScreen>
         get() = viewModel.mainBackStack
@@ -52,7 +60,6 @@ class MainActivity : BaseActivity() {
         extraBufferCapacity = 1,
     )
     private var currentVideoHost: VideoPageHost? = null
-    private var showSiteSwitchConfirm by mutableStateOf(false)
     private var logoutDialogCloseCurrentPage by mutableStateOf<Boolean?>(null)
 
     companion object {
@@ -76,11 +83,7 @@ class MainActivity : BaseActivity() {
             MainActivityShell(
                 activity = this@MainActivity,
                 pendingNavigationRequests = pendingNavigationRequests,
-                showSiteSwitchConfirm = showSiteSwitchConfirm,
                 logoutDialogCloseCurrentPage = logoutDialogCloseCurrentPage,
-                onSwitchSiteClick = { showSiteSwitchConfirm = true },
-                onDismissSiteSwitch = { showSiteSwitchConfirm = false },
-                onConfirmSiteSwitch = ::confirmSiteSwitch,
                 onDismissLogout = { logoutDialogCloseCurrentPage = null },
                 onConfirmLogout = ::confirmLogout,
             )
@@ -151,21 +154,6 @@ class MainActivity : BaseActivity() {
             true
         } else {
             super.onSupportNavigateUp()
-        }
-    }
-
-    private fun confirmSiteSwitch() {
-        showSiteSwitchConfirm = false
-        val currentSite = SettingsRepository.baseUrl
-        val avSite = AV_URL
-        val selectedBaseUrl = SettingsRepository.selectedBaseUrl
-        lifecycleScope.launch {
-            SettingsRepository.update {
-                if (currentSite in ANIME_URL) it.copy(selectedBaseUrl = currentSite, domainName = avSite)
-                else it.copy(selectedBaseUrl = selectedBaseUrl, domainName = selectedBaseUrl)
-            }
-            delay(500)
-            ActivityManager.restart(killProcess = true)
         }
     }
 
