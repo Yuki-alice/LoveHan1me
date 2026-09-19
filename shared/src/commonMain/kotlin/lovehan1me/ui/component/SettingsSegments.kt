@@ -75,10 +75,11 @@ fun SettingsAnimatedVisibility(
 // 调用方改传 titleRes = Res.string.x（15 个标题已随迁 shared）。
 fun AnimatedLazyListScope.segmentedSection(
     titleRes: StringResource? = null,
+    descriptionRes: StringResource? = null,
     content: AnimatedLazyListScope.() -> Unit,
 ) {
-    if (titleRes != null) {
-        item { SettingsSectionTitle(titleRes = titleRes) }
+    if (titleRes != null || descriptionRes != null) {
+        item { SettingsSectionTitle(titleRes = titleRes, descriptionRes = descriptionRes) }
     }
     content()
     item { Spacer(Modifier.size(HanimeDefaults.Spacing.small)) }
@@ -87,16 +88,32 @@ fun AnimatedLazyListScope.segmentedSection(
 @Composable
 fun SettingsSectionTitle(
     titleRes: StringResource? = null,
+    descriptionRes: StringResource? = null,
 ) {
-    Text(
-        text = titleRes?.let { stringResource(it) }.orEmpty(),
-        style = MaterialTheme.typography.labelLarge,
-        color = MaterialTheme.colorScheme.primary,
+    Column(
         modifier = Modifier
             .padding(
                 top = 12.dp,
                 bottom = 8.dp,
             )
             .padding(horizontal = HanimeDefaults.Spacing.contentVertical),
-    )
+    ) {
+        if (titleRes != null) {
+            Text(
+                text = stringResource(titleRes),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.primary,
+            )
+        }
+        // 有些分组需要一段"为什么/怎么用"的说明，它不属于任何单独一行，
+        // 塞进某一行的 summary 会让那一行显得比实际重要。
+        if (descriptionRes != null) {
+            Text(
+                text = stringResource(descriptionRes),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp),
+            )
+        }
+    }
 }

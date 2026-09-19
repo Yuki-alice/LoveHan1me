@@ -34,4 +34,7 @@ actual object Han1meDatabases {
     actual val localList: LocalListDatabase by lazy {
         createLocalListDatabase(dbPath("local_list.db"))
     }
+    actual val danmaku: DanmakuDatabase by lazy {
+        createDanmakuDatabase(dbPath("danmaku.db"))
+    }
 }

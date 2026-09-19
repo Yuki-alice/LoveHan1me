@@ -3,6 +3,13 @@ package lovehan1me.feature.video
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.unit.dp
+import lovehan1me.Res
+import lovehan1me.ic_panel_close
+import lovehan1me.ic_panel_open
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -156,9 +163,8 @@ class PlayerBarRenderTest {
                     .fillMaxSize()
                     .background(Color.Black)
             ) {
-                // 锚点放在底栏超分辨率按钮的大致位置，验证卡片贴在锚点上方、右对齐。
+                // 贴在给定位置上方、右对齐（锚点即 Popup 父布局，见源码注释）。
                 KazumiMenuPopup(
-                    anchor = androidx.compose.ui.unit.IntRect(1100, 830, 1250, 870),
                     above = true,
                     onDismiss = {},
                 ) {
@@ -184,6 +190,49 @@ class PlayerBarRenderTest {
                     onVolumeChange = {},
                     onToggleMute = {},
                 )
+            }
+        }
+    }
+
+    @Test
+    fun `右侧悬浮钮加面板图标`() {
+        renderScene("rhs-and-panel", 800, 800) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+            ) {
+                PlayerGestureLockButton(
+                    isLocked = false,
+                    showUnlockButton = false,
+                    playerUiVisible = true,
+                    onLockClick = {},
+                    showScreenshotButton = true,
+                    onScreenshotClick = {},
+                )
+                // 面板折叠图标放大检视（左=收起态，右=展开态）。
+                androidx.compose.foundation.layout.Row(
+                    modifier = Modifier.align(Alignment.BottomStart)
+                        .padding(24.dp),
+                    horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(
+                        24.dp
+                    ),
+                ) {
+                    androidx.compose.foundation.Image(
+                        painter = org.jetbrains.compose.resources.painterResource(
+                            lovehan1me.Res.drawable.ic_panel_close
+                        ),
+                        contentDescription = null,
+                        modifier = Modifier.size(96.dp),
+                    )
+                    androidx.compose.foundation.Image(
+                        painter = org.jetbrains.compose.resources.painterResource(
+                            lovehan1me.Res.drawable.ic_panel_open
+                        ),
+                        contentDescription = null,
+                        modifier = Modifier.size(96.dp),
+                    )
+                }
             }
         }
     }

@@ -171,8 +171,7 @@ fun RenderVideoCommentContent(
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(videoCode) {
-        viewModel.code = videoCode
-        viewModel.getComment(VIDEO_COMMENT_PREFIX, videoCode)
+        viewModel.ensureComments(VIDEO_COMMENT_PREFIX, videoCode)
     }
 
     LaunchedEffect(Unit) {

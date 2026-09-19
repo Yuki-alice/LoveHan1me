@@ -180,6 +180,60 @@ data class AppSettings(
      * 移动网络下尤其重要（此前是一进去就播，配上"移动数据提醒"才勉强兜住）。
      */
     val autoPlayOnEnter: Boolean = false,
+
+    /**
+     * 弹幕总开关。默认 **true**：接入方式由构建内置（见 [DanmakuBuildCredentials]），
+     * 不再需要用户先配凭据，所以没有理由默认关。
+     *
+     * 未内置凭据的构建（`local.properties` 里没这两行）会因 `DanmakuProvider.from`
+     * 返回 null 而整条链路不构造，届时状态条显示「未配置·去设置」，不会白屏。
+     */
+    val danmakuEnabled: Boolean = true,
+    /**
+     * 站内评论投影为主源（默认开）：随视频页本来就要拉评论，边际成本为 0，
+     * 且不消耗弹弹play 共享额度。关掉后回到纯弹弹链路。
+     */
+    val danmakuCommentEnabled: Boolean = true,
+    /**
+     * 弹弹play API 代理地址（空 = 直连官方 + 内置凭据签名）。
+     *
+     * 这里只作为**用户自己运维的代理**的填入口：填了就走它、并且**不发**签名头
+     * （由代理自己代签）。按 URL 前缀拼接，不是 HTTP 代理 —— iOS 侧是 Darwin
+     * 引擎，套不进 OkHttp 的代理链。
+     */
+    val danmakuProxyBase: String = "",
+    /** 构建期注入，源码里恒为空；用户在设置页填的值优先。 */
+    val danmakuAppId: String = DanmakuBuildCredentials.APP_ID,
+    /**
+     * 同上。设备上的这一份只存本地：
+     * [lovehan1me.data.datastore.DataStoreManager] 的 AUTH_KEYS 已把它排除在备份导出之外。
+     */
+    val danmakuAppSecret: String = DanmakuBuildCredentials.APP_SECRET,
+    /**
+     * 弹幕字号（sp）。默认 18：15sp 在横屏 720p 上要凑近才读得清，
+     * 而行高／车道数都由它推出来（见 `DanmakuLayer`），调它就等于同时调整了密度。
+     */
+    val danmakuFontSizeSp: Int = 18,
+    /** 弹幕不透明度（百分比）。80 是"压得住亮场景、又不遮剧情"的那一档；100 会糊成人墙。 */
+    val danmakuOpacityPercent: Int = 80,
+    /**
+     * 弹幕可用高度占画面的比例（百分比）。50 = 上半屏，与主流弹幕观看习惯一致。
+     *
+     * 下限不给到 25：手机横屏的可用高度本就一两百像素，两三条轨道会让引擎
+     * 频繁"满载丢弃"（找不到车道是直接丢，不排队），用户看到的就是弹幕莫名稀少。
+     */
+    val danmakuDisplayAreaPercent: Int = 50,
+    /** 弹幕速度（百分比，100 = 标准 = 一条弹幕 10 秒走完一个视口宽度）。 */
+    val danmakuSpeedPercent: Int = 100,
+    /**
+     * 按类型显示：滚动 / 顶部 / 底部。
+     *
+     * 默认底部关闭 —— 与 Kazumi、animeko 一致：底部常驻字幕最挡剧情，
+     * 且本项目的评论投影全是滚动，关底部不影响主源。
+     */
+    val danmakuShowScroll: Boolean = true,
+    val danmakuShowTop: Boolean = true,
+    val danmakuShowBottom: Boolean = false,
     val mpvProfile: String = "fast",
     val enableGpuNextRenderer: Boolean = false,
     val mpvInterpolation: Boolean = false,

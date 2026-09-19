@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light" data-page-node-id="T3RTE9sYEqOFPVM0yb0P3H">
+<head data-page-node-id="F6qUG8RbpbwEbtXQJb2nYi">
+<meta charset="utf-8" data-page-node-id="VPD44Ca7EPO4eDxnUa3Oii">
+<meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="A0wJjGVrfhjBxIoOEBLHXG">
+<title>漫画 Tab · 设计原型</title>
+<style>
+/* ============================================================
+   设计真值全部取自项目代码，不是自拟：
+   - 配色：ui/theme/GeneratedThemeBoards.kt  sakura 槽位 light/dark 两套
+   - 圆角：ui/theme/Shape.kt  AppShapes 4/8/12/16/20/28/32/48
+   - 间距：ui/theme/Defaults.kt  Spacing 4/8/12/16/24/32
+   - 断点：ui/adaptive/Breakpoints.kt  600/840/1200/1600
+   - 边距：ui/adaptive/PageMetrics.kt  marginFor 16/24/24/32/40
+   - 矩阵：ui/adaptive/PageMetrics.kt  matrixFor 2×4 / 3×3 / 4×2 / 5×2
+   - 卡宽：ui/adaptive/PageMetrics.kt  NormalCardMinWidths 145/160/180/200
+   - 导航：app/navigation/main/MainScaffold.kt  Rail 80/220、底栏 80
+   ============================================================ */
+:root{
+  --surface:#FFF8F7; --on-surface:#373132; --on-surface-variant:#645D5E;
+  --s-lowest:#FFFFFF; --s-low:#FAF2F2; --s-container:#F4ECEC;
+  --s-high:#EFE6E6; --s-highest:#EAE0E0; --s-dim:#E2D7D8;
+  --primary:#8A4D5A; --on-primary:#FFF7F7;
+  --primary-container:#FCAFBE; --on-primary-container:#632D3A;
+  --secondary:#76575C; --secondary-container:#FFD9DF; --on-secondary-container:#674A4F;
+  --tertiary:#755478; --tertiary-container:#FCD2FE;
+  --outline:#807979; --outline-variant:#B9B0B0; --error:#9F403D; --error-container:#FE8983;
+  --gallery:#E8E4E1; --frame-ring:rgba(0,0,0,.10);
+  --reader-bg:#100E0E;
+}
+html[data-theme="dark"]{
+  --surface:#100E0E; --on-surface:#EDE3E3; --on-surface-variant:#B2A9A9;
+  --s-lowest:#000000; --s-low:#151313; --s-container:#1C1919;
+  --s-high:#231F1F; --s-highest:#2A2525; --s-dim:#0B0A0A;
+  --primary:#F5B6C1; --on-primary:#5F333D;
+  --primary-container:#74454F; --on-primary-container:#FFDAE0;
+  --secondary:#E4BDC3; --secondary-container:#4F3439; --on-secondary-container:#DCB6BC;
+  --tertiary:#FFE7FD; --tertiary-container:#FCD2FE;
+  --outline:#7B7474; --outline-variant:#4D4647; --error:#EE7D77; --error-container:#7F2927;
+  --gallery:#0A0909; --frame-ring:rgba(255,255,255,.12);
+  --reader-bg:#100E0E;
+}
+*{box-sizing:border-box}
+body{
+  margin:0; background:var(--gallery); color:var(--on-surface);
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Microsoft YaHei",sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+/* ---------- 页面外壳 ---------- */
+.page{max-width:1640px;margin:0 auto;padding:32px 40px 64px}
+.pagehd{display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end;justify-content:space-between;margin-bottom:8px}
+.pagehd h1{font-size:22px;font-weight:500;margin:0 0 6px}
+.pagehd p{margin:0;font-size:14px;line-height:22px;color:var(--on-surface-variant);max-width:760px}
+.tools{display:flex;gap:8px}
+.tools button{
+  font:inherit;font-size:12px;padding:8px 16px;border-radius:12px;cursor:pointer;
+  background:var(--s-highest);color:var(--on-surface);border:1px solid transparent;
+}
+.tools button[aria-pressed="true"]{background:var(--primary-container);color:var(--on-primary-container)}
+
+.secttl{display:flex;align-items:baseline;gap:12px;margin:40px 0 16px}
+.secttl h2{font-size:16px;font-weight:700;margin:0}
+.secttl span{font-size:12px;color:var(--on-surface-variant)}
+
+.frames{display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start}
+.figure{margin:0}
+.figure figcaption{margin-top:12px;max-width:380px}
+.figure figcaption b{display:block;font-size:14px;font-weight:500;margin-bottom:4px}
+.figure figcaption span{font-size:12px;line-height:18px;color:var(--on-surface-variant)}
+.frame{
+  border-radius:28px;overflow:hidden;position:relative;
+  border:1px solid var(--frame-ring);background:var(--surface);
+}
+.frame.phone{width:393px;height:852px;border-radius:36px}
+.frame.tablet{width:840px;height:640px}
+.frame.desktop{width:1280px;height:800px}
+/* 缩放：桌面/平板框按外壳宽度等比缩，保证一屏看得下 */
+.scaler{transform-origin:top left}
+
+/* ---------- 通用组件 ---------- */
+.app{display:flex;width:100%;height:100%;background:var(--surface);color:var(--on-surface);overflow:hidden}
+.col{display:flex;flex-direction:column;min-width:0;flex:1}
+.statusbar{height:28px;display:flex;align-items:center;justify-content:space-between;padding:0 20px;font-size:12px;font-weight:500;flex:none}
+.statusbar .icons{display:flex;gap:4px;align-items:center;opacity:.9}
+
+.topbar{height:64px;display:flex;align-items:center;gap:8px;padding:0 8px 0 16px;flex:none;background:var(--surface)}
+.topbar h1{font-size:22px;font-weight:500;margin:0;flex:1}
+.iconbtn{
+  width:40px;height:40px;border-radius:999px;display:grid;place-items:center;flex:none;
+  background:transparent;color:var(--on-surface-variant);border:0;cursor:default;
+}
+.iconbtn.filled{background:var(--s-highest);color:var(--on-surface)}
+
+.scroll{flex:1;overflow:hidden;padding:0 16px}
+.scroll.p24{padding:0 24px}
+.scroll.p32{padding:0 32px}
+.scroll.p40{padding:0 40px}
+
+.section{margin-top:24px}
+.section:first-child{margin-top:8px}
+.sechd{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:8px}
+.sechd h3{font-size:16px;font-weight:700;margin:0}
+.sechd a{font-size:12px;color:var(--primary);text-decoration:none}
+
+/* 卡片：封面 3:4，圆角 20（largeIncreased），底色 surfaceContainerLow */
+.grid{display:grid;gap:8px}
+.card{min-width:0}
+.card .cover{
+  aspect-ratio:3/4;border-radius:20px;overflow:hidden;position:relative;
+  background:var(--s-low);
+}
+.card .cover>svg{position:absolute;inset:0;width:100%;height:100%}
+.card .t{
+  font-size:14px;line-height:20px;margin-top:4px;padding:0 10px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+  min-height:40px;
+}
+.chip{
+  display:inline-flex;align-items:center;gap:4px;height:32px;padding:0 12px;border-radius:12px;
+  background:var(--s-highest);color:var(--on-surface);font-size:12px;white-space:nowrap;
+}
+.chip.onset{background:var(--primary-container);color:var(--on-primary-container)}
+.chiprow{display:flex;flex-wrap:wrap;gap:8px}
+
+/* 继续阅读：手机单卡，宽屏三卡一行 */
+.resume{display:grid;gap:8px}
+.resume .r{
+  display:flex;gap:12px;align-items:center;padding:12px;border-radius:20px;
+  background:var(--s-low);border:1px solid var(--outline-variant);
+}
+.resume .rc{width:52px;height:69px;border-radius:8px;overflow:hidden;flex:none;position:relative}
+.resume .rc>svg{position:absolute;inset:0;width:100%;height:100%}
+.resume .rb{flex:1;min-width:0}
+.resume .rb b{display:block;font-size:14px;font-weight:500;line-height:20px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.resume .rb small{font-size:12px;color:var(--on-surface-variant)}
+.bar{height:4px;border-radius:999px;background:var(--s-highest);margin:6px 0 4px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--primary);border-radius:999px}
+.btn{
+  font-size:12px;height:36px;padding:0 16px;border-radius:4px;display:inline-flex;align-items:center;gap:6px;
+  background:var(--primary);color:var(--on-primary);border:0;
+}
+.btn.ghost{background:transparent;color:var(--primary);border:1px solid var(--outline-variant)}
+.btn.tonal{background:var(--s-highest);color:var(--on-surface)}
+
+/* 分类入口宫格 */
+.matrix{display:grid;gap:12px}
+.mx{
+  display:flex;flex-direction:column;gap:8px;padding:16px;border-radius:20px;
+  background:var(--s-low);border:1px solid var(--outline-variant);
+}
+.mx .mi{width:32px;height:32px;border-radius:8px;background:var(--secondary-container);color:var(--on-secondary-container);display:grid;place-items:center}
+.mx b{font-size:14px;font-weight:500}
+.mx small{font-size:12px;color:var(--on-surface-variant);line-height:16px}
+
+/* 底部导航：M3 NavigationBar 80dp，4 项 */
+.navbar{height:80px;display:grid;grid-template-columns:repeat(4,1fr);flex:none;background:var(--s-container);padding:12px 0 16px}
+.navbar .n{display:flex;flex-direction:column;align-items:center;gap:4px;color:var(--on-surface-variant)}
+.navbar .n .pill{width:64px;height:32px;border-radius:999px;display:grid;place-items:center}
+.navbar .n.on{color:var(--on-surface)}
+.navbar .n.on .pill{background:var(--secondary-container);color:var(--on-secondary-container)}
+.navbar .n span{font-size:12px}
+
+/* 宽屏 Rail：展开 220 / 折叠 80 */
+.rail{width:220px;flex:none;display:flex;flex-direction:column;gap:4px;padding:16px 12px;background:var(--s-low)}
+.rail .ritem{display:flex;align-items:center;gap:12px;height:56px;padding:0 16px;border-radius:999px;color:var(--on-surface-variant);font-size:14px}
+.rail .ritem.on{background:var(--secondary-container);color:var(--on-secondary-container);font-weight:500}
+.rail .spacer{flex:1}
+.rail.narrow{width:80px;padding:16px 8px;align-items:center}
+.rail.narrow .ritem{width:56px;padding:0;justify-content:center;gap:0}
+.rail.narrow .ritem span{display:none}
+
+/* 宽屏内容：contentSheet 左上 28 圆角 + 与 chrome 的底色差 */
+.sheet{flex:1;min-width:0;background:var(--surface);border-top-left-radius:28px;display:flex;flex-direction:column;overflow:hidden}
+.dual{display:flex;gap:24px;min-width:0}
+.dual .main{flex:1;min-width:0}
+.pane{width:360px;flex:none}
+
+/* 详情页 */
+.hero{display:flex;gap:16px;margin-top:8px}
+.hero .cv{width:132px;height:176px;border-radius:20px;overflow:hidden;flex:none;position:relative}
+.hero .cv>svg{position:absolute;inset:0;width:100%;height:100%}
+.hero .hb{flex:1;min-width:0}
+.hero h2{font-size:22px;line-height:30px;font-weight:500;margin:0}
+.hero .sub{font-size:14px;color:var(--on-surface-variant);margin-top:6px;line-height:22px}
+.metaline{display:flex;gap:16px;margin-top:10px;font-size:12px;color:var(--on-surface-variant)}
+.metaline b{color:var(--on-surface);font-weight:500}
+.grp{display:flex;gap:12px;margin-top:16px}
+.grp>label{width:44px;flex:none;font-size:12px;color:var(--on-surface-variant);padding-top:8px}
+.grp .val{font-size:14px;line-height:32px;color:var(--primary)}
+.grp.cond>label{color:var(--tertiary)}
+.grp.cond .val{color:var(--tertiary)}
+.actions{display:flex;gap:8px;margin-top:20px;flex-wrap:wrap}
+.actions .btn{height:48px;padding:0 24px;font-size:14px;border-radius:12px}
+
+/* 相关作品紧凑行 */
+.relrow{display:flex;gap:12px;padding:8px 0}
+.relrow .rc{width:44px;height:59px;border-radius:8px;overflow:hidden;flex:none;position:relative}
+.relrow .rc>svg{position:absolute;inset:0;width:100%;height:100%}
+.relrow b{display:block;font-size:14px;font-weight:400;line-height:20px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+/* 阅读器：全屏沉浸 */
+.reader{position:absolute;inset:0;background:var(--reader-bg);color:#EDE3E3;display:flex;flex-direction:column}
+.reader .rtop{
+  height:64px;display:flex;align-items:center;gap:8px;padding:0 8px 0 12px;flex:none;
+  background:linear-gradient(180deg,rgba(0,0,0,.75),rgba(0,0,0,0));position:absolute;top:0;left:0;right:0;z-index:2;
+}
+.reader .rtop h1{font-size:14px;font-weight:400;margin:0;flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:.95}
+.reader .rtop .pg{font-size:12px;opacity:.72;margin-right:8px}
+.reader .rtop .ib{width:40px;height:40px;border-radius:999px;display:grid;place-items:center;background:rgba(255,255,255,.08)}
+.reader .pages{flex:1;overflow:hidden;padding:64px 0 96px;display:flex;flex-direction:column;gap:8px;align-items:center}
+.pgblock{width:88%;aspect-ratio:1/1.42;border-radius:8px;position:relative;overflow:hidden;
+  background:linear-gradient(170deg,#F2ECEA,#D8CDCB);color:#6b6260;display:grid;place-items:center;font-size:12px}
+html[data-theme="dark"] .pgblock{background:linear-gradient(170deg,#252120,#171414);color:#8d8380}
+.reader .rbot{
+  position:absolute;left:0;right:0;bottom:0;padding:12px 16px 20px;z-index:2;
+  background:linear-gradient(0deg,rgba(0,0,0,.82),rgba(0,0,0,0));
+}
+.reader .rbot .rbar{height:6px;border-radius:999px;background:rgba(255,255,255,.14);overflow:hidden;margin-bottom:12px}
+.reader .rbot .rbar>i{display:block;height:100%;width:32%;background:#EDE3E3;border-radius:999px}
+.reader .rbot .rrow{display:flex;align-items:center;justify-content:space-between}
+.rseg{display:flex;border-radius:999px;background:rgba(255,255,255,.08);padding:2px}
+.rseg .s{font-size:12px;padding:6px 14px;border-radius:999px;opacity:.72}
+.rseg .s.on{background:rgba(255,255,255,.18);opacity:1}
+
+/* 注释条：标出"这是条件字段 / 这是新造组件" */
+.ann{display:inline-flex;align-items:center;gap:6px;font-size:11px;padding:3px 10px;border-radius:999px;
+  background:var(--tertiary-container);color:#4A1B0C;vertical-align:middle}
+html[data-theme="dark"] .ann{color:#FFF;background:#513355}
+.ann.pink{background:var(--secondary-container);color:var(--on-secondary-container)}
+.notes{margin-top:48px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:24px}
+.note{background:var(--s-low);border:1px solid var(--outline-variant);border-radius:20px;padding:20px}
+.note h3{font-size:14px;font-weight:700;margin:0 0 10px}
+.note ul{margin:0;padding-left:18px;font-size:13px;line-height:22px}
+.note ul li{margin-bottom:4px}
+.note code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;background:var(--s-highest);padding:1px 5px;border-radius:4px}
+table{border-collapse:collapse;font-size:12px;width:100%}
+th,td{text-align:left;padding:6px 8px;border-bottom:1px solid var(--outline-variant)}
+th{color:var(--on-surface-variant);font-weight:500}
+</style>
+</head>
+<body data-page-node-id="H97k0TW2ueTYI1GOXbm2gH">
+<div class="page" data-page-node-id="PLEQMx6CizeDGEctH9IMKU">
+
+  <div class="pagehd" data-page-node-id="5iVkINQfYX6Ucj62WZbaI0">
+    <div data-page-node-id="4AAuGwS0vxT8L7qLa7tG9D">
+      <h1 data-page-node-id="nOxEIeYwqS1sJ9BcC4p9hN">漫画 Tab · 设计原型</h1>
+      <p data-page-node-id="4GuiHuoVs21UDKEY3jQ6BX">按 <b data-page-node-id="gECV19aRafb91KkMFDVH5l">Compose Multiplatform</b> 现有设计系统还原，非另起一套。配色取 <code data-page-node-id="C6WEGt97SkCaRknp4rYt0b">sakura</code> 槽位明暗两套预生成值，
+         圆角/间距/断点/边距/矩阵全部照抄代码真值。卡片用 <b data-page-node-id="J1fzUuBMhVB2V3bG5ei32z">3:4 竖卡</b>与视频的 16:9 横卡天然区分。
+         封面为占位渐变，标题为示例文案 —— 原型只表达布局与层级，不涉及任何站点内容。</p>
+    </div>
+    <div class="tools" data-page-node-id="IdINp8t9DN9i5pAqXSvDC3">
+      <button id="themeBtn" aria-pressed="false" data-page-node-id="wmvXZmKb6zh024rME9QgYY">深色</button>
+    </div>
+  </div>
+
+  <!-- ================= 手机 ================= -->
+  <div class="secttl" data-page-node-id="ECVYWlBfg2ZLRsSqVLtdaE"><h2 data-page-node-id="2yL0gXRXs9m8keANQvfCgI">手机 393dp · Compact</h2><span data-page-node-id="xDNdqDEWvmkDzhphBHyxwf">边距 16 · 分类矩阵 2×4 · 卡片最小宽 145 → 2 列</span></div>
+  <div class="frames" data-page-node-id="kVg179uJEgOzH3D5TYhK3t">
+
+    <!-- ① 漫画首页 -->
+    <figure class="figure" data-page-node-id="Ocxb0QL6LalfbKJTYMQtA6">
+      <div class="frame phone" data-page-node-id="j02eB7VFbGpzgP4K9sJ7MW">
+        <div class="app" data-page-node-id="O8WapCDk8WmODdat4lsGEH"><div class="col" data-page-node-id="fW2WHackx72ga1PwYogPc6">
+          <div class="statusbar" data-page-node-id="CAQGmK5und4xzoU3gXvOFZ"><span data-page-node-id="c072RViv1O4kNs7mLM1iuD">9:41</span><span class="icons" data-page-node-id="ah0G7yfuv2xJZ0uGYDD16Y">
+            <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor" data-page-node-id="AifDKWXBNHdg5vnU5NfZ89"><rect x="0" y="7" width="2.5" height="4" rx=".6" data-page-node-id="yyLKcSWB6m42mN1By5yc3J"/><rect x="4" y="5" width="2.5" height="6" rx=".6" data-page-node-id="IttXuZevDkkjXonoCtZA5m"/><rect x="8" y="2.5" width="2.5" height="8.5" rx=".6" data-page-node-id="46eDx0CId9kKmE9XngDVtF"/><rect x="12" y="0" width="2.5" height="11" rx=".6" data-page-node-id="cNJAEAJC6s4UMtzFOe3b4m"/></svg>
+            <svg width="22" height="11" viewBox="0 0 22 11" fill="none" stroke="currentColor" stroke-width="1.2" data-page-node-id="yIZNmzDyPsUVqjaZofqsk1"><rect x=".6" y=".6" width="17" height="9.8" rx="2.4" data-page-node-id="2sUFfkb4x7dtV5FHAarcHJ"/><rect x="2.2" y="2.2" width="12" height="6.6" rx="1.4" fill="currentColor" stroke="none" data-page-node-id="8kVQ6yoCFMaWDBBz95WKUW"/><path d="M19.4 4v3" data-page-node-id="6VExFVSSOyIQF1kRhnr7iI"/></svg>
+          </span></div>
+          <div class="topbar" data-page-node-id="siTIvzWlDMrrzF6nAKSS3f">
+            <h1 data-page-node-id="0jylqUTuOHWETQojVtM9En">漫画</h1>
+            <div class="iconbtn" data-page-node-id="R82s5D0rpSGMgaB89gfx5I"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="UFC18GSUFlSzhjyGAjinvB"><circle cx="10.5" cy="10.5" r="6.5" data-page-node-id="gxmxD2jPZEiqEbA5xLLDlA"/><path d="M15.5 15.5L21 21" data-page-node-id="EaozL8DL4GajBXFtqSR15N"/></svg></div>
+            <div class="iconbtn" data-page-node-id="vF16MTkCsTS8a04iajDUA6"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="1CGpmlzz9ILJIhT1LAuU4d"><path d="M3 7h4l2.5 10L12 5l2.5 12L17 7h4" data-page-node-id="JMjywfAnYa72IJYDAgijGk"/></svg></div>
+          </div>
+          <div class="scroll" data-page-node-id="qllPrgTyaKu4SexUiyoDJx">
+
+            <div class="section" data-page-node-id="jdmWEMZpEP2viV27izK4ph">
+              <div class="sechd" data-page-node-id="RC5Qheugl0B2yx20t63mSs"><h3 data-page-node-id="RJbn63hGkuWC31WDvAIrIJ">继续阅读</h3><a data-page-node-id="EkZLNaLWYbX9dZYENL0HuT">更多</a></div>
+              <div class="resume" style="grid-template-columns:1fr" data-page-node-id="qblMYRyqxLER9GORrlSVEF">
+                <div class="r" data-page-node-id="rk95HkLgcbRYFZ6JRGvKLE">
+                  <div class="rc" data-page-node-id="TGZDOogHrvPuKkalPZVYqt"><svg viewBox="0 0 52 69" preserveAspectRatio="none" data-page-node-id="dxlYd2AAuD8K74b6OlQFiC"><rect width="52" height="69" fill="url(#g0)" data-page-node-id="SDV6uFvoZf8J614gG1lNrz"/></svg></div>
+                  <div class="rb" data-page-node-id="wkeLbEaE5hTrKsdkodPd9D">
+                    <b data-page-node-id="h52Jgdcr5mQQ0B09uBJ09Y">示例作品标题一</b>
+                    <small data-page-node-id="bkraORWZkAWZvttScBDnC2">第 12 / 38 页</small>
+                    <div class="bar" data-page-node-id="tA2YFTlUGkr2GL12kpYdDp"><i style="width:32%" data-page-node-id="Hb6DHRB9bgAfR64WPDmdiY"></i></div>
+                  </div>
+                  <div class="btn" data-page-node-id="PsMAhoP1tmxqDsdUf0TLpz">继续</div>
+                </div>
+              </div>
+            </div>
+
+            <div class="section" data-page-node-id="S9DQmYrjaAd3lIbBe8T5wY">
+              <div class="sechd" data-page-node-id="L4Umf2FAc4AmbFUFSwU5N3"><h3 data-page-node-id="wyDYgWO8u5p5VgvhsfNAjC">分类</h3><a data-page-node-id="K5UBeWnxoARnb3KZx4fQgX">全部</a></div>
+              <div class="matrix" style="grid-template-columns:repeat(2,1fr)" data-page-node-id="jDZAij7k5DKB472kJa14FA">
+                <div class="mx" data-page-node-id="yLEecHeOrYvGzbtWjenMW2"><div class="mi" data-page-node-id="z8iKxEAWDdBdnHtSCpc3b3"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="1Z88d3Cy22OKOrlMCl20bd"><path d="M4 5h16v6H4zM4 13h7v6H4zM13 13h7v6h-7z" data-page-node-id="sTnriXdoo14arNYAzBMmqX"/></svg></div><b data-page-node-id="mJHYWRYFdSZKMRQBcle2XF">标签</b><small data-page-node-id="ZiD7XIuRn5NCFUY0FgcUnC">按题材筛选</small></div>
+                <div class="mx" data-page-node-id="ZQruGNRGTreFDN7qHdxIu4"><div class="mi" data-page-node-id="BFi6YykCfPyz9xdC9x3U1b"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="JorsuRUVljA5tTA6HEzaBd"><circle cx="12" cy="8.5" r="3.5" data-page-node-id="6IKYO1xk5lg7QIcr1Uon6F"/><path d="M4.5 20c1.6-3.6 4.3-5.4 7.5-5.4S17.9 16.4 19.5 20" data-page-node-id="Vnu9CaZ03ugnwz8Ha8AsGq"/></svg></div><b data-page-node-id="vNZLybkc9gWsM1d6Ao8u6Y">作者</b><small data-page-node-id="tNCPZnivlv2Kjrykkf1ACb">按画师找人</small></div>
+                <div class="mx" data-page-node-id="4ITrcgem7NlOD1hYWjeRYw"><div class="mi" data-page-node-id="dQpVnwBDEahM8XpZmiev5Q"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="8k8gNH9U5nAvDPBjpSxaDk"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z" data-page-node-id="qKsg4ayXnzmzvAPoEDlCx4"/></svg></div><b data-page-node-id="Wbo4o6XdzMOkzZfgbO9rJv">角色</b><small data-page-node-id="c756BQdaLGPs9qNrkFoTlF">条件字段</small></div>
+                <div class="mx" data-page-node-id="GZcB9tGGCEA2E6lNkSt1jF"><div class="mi" data-page-node-id="sMJDyDf1H1RS0zdE5ddmiK"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="qQYyui2mm0MHIKuhnDRlIt"><path d="M4 6.5c2.7-1.3 5.3-1.3 8 0 2.7-1.3 5.3-1.3 8 0v11c-2.7-1.3-5.3-1.3-8 0-2.7-1.3-5.3-1.3-8 0z" data-page-node-id="BQBNTKCZeeJBAAccZCDaTa"/><path d="M12 6.5v11" data-page-node-id="GC7jfKdUT7wmgXeeA6ilMh"/></svg></div><b data-page-node-id="e9Hcp0SPK3UGnzO910xqBn">同人</b><small data-page-node-id="Ac7pPUD1iH7gkYLt5V9x8L">条件字段</small></div>
+                <div class="mx" data-page-node-id="kA8BDjsQiDAHqUc6ysVyYX"><div class="mi" data-page-node-id="HUF76VG1kOGZ0eeQ4kFc7F"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="JR9rtAA9AlCIUSlqrCpVBq"><path d="M4 20V9l8-5 8 5v11" data-page-node-id="7LzD4nbGUEkcH1b98V1xnR"/><path d="M9.5 20v-6h5v6" data-page-node-id="8U7tRUDiQ0wTkuSXUzS2C5"/></svg></div><b data-page-node-id="Aol1Ghi1O1XUFOtLKpNCZx">社团</b><small data-page-node-id="JEbjNnhpxBAYuQ2YV3D3lZ">条件字段</small></div>
+                <div class="mx" data-page-node-id="uzcXZWVHIMS3dSN6KykIoW"><div class="mi" data-page-node-id="vzsW1lAJxQGbNfLonCLb1a"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="CwFlufapUgnxvwvHHB0zJK"><path d="M3 7h4l2.5 10L12 5l2.5 12L17 7h4" data-page-node-id="MUID9KQEHGqY1Ftf5h0cBI"/></svg></div><b data-page-node-id="a3iMHpGqD2guJ2Cit63M8O">随机</b><small data-page-node-id="vLSIMeFx9nRDpFYwmNfrkY">直接翻一部</small></div>
+              </div>
+            </div>
+
+            <div class="section" data-page-node-id="Nb5RDnhvyCBGavSx8GvxED">
+              <div class="sechd" data-page-node-id="hujf5HJbNFDtHOQBxV7EKZ"><h3 data-page-node-id="IuRjlOadBk3vHdNRv1SLCQ">最新</h3><a data-page-node-id="VZHoc6tuWHe0BGYlYs4K1x">更多</a></div>
+              <div class="grid" style="grid-template-columns:repeat(2,1fr)" data-page-node-id="PuVGgu1imVaCMuyBbQGwe1">
+                <div class="card" data-page-node-id="knHKINk7BZeSHjwUb1R96P"><div class="cover" data-page-node-id="bTgaxIglPZNoL31M0B0SyK"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="YQId79ttCxXInHtoaIXHb4"><rect width="3" height="4" fill="url(#g1)" data-page-node-id="xsXBK03xdsLCiA7QLcDGFn"/></svg></div><div class="t" data-page-node-id="ZC9E1BwYGYNt0hyhWvnI4v">示例作品标题二，两行以内截断</div></div>
+                <div class="card" data-page-node-id="mNZHGz2RYHaN08foFqVVJI"><div class="cover" data-page-node-id="cg6XvgfWL4qfb0RnMyyYBx"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="mwJoXhenz6hAsCFFiVbcXN"><rect width="3" height="4" fill="url(#g2)" data-page-node-id="FjEo0DcN3jINWAp2YpifyX"/></svg></div><div class="t" data-page-node-id="rF1jWgWroH11gX7nJO18X8">示例作品标题三</div></div>
+                <div class="card" data-page-node-id="ERe767cpd5xTMpJeP1aMoL"><div class="cover" data-page-node-id="c3gV36Pg3Jck1CwgQDf3MB"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="7RgjFEPqRaGHDCDDYAzfOS"><rect width="3" height="4" fill="url(#g3)" data-page-node-id="CNpthrxBSx5G7K2eETBTW8"/></svg></div><div class="t" data-page-node-id="CJNWKyaSQu5qlEHwUMj7am">示例作品标题四</div></div>
+                <div class="card" data-page-node-id="I49C6C3wixynT4DGQijMTb"><div class="cover" data-page-node-id="b9P7dVIhUhhZVUxqkflcts"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="Ti1wuDtRZL9pttRO6hNXM5"><rect width="3" height="4" fill="url(#g4)" data-page-node-id="coQUjj5yMZkN9aMdCsHKwU"/></svg></div><div class="t" data-page-node-id="E4FhFVREypdoDcewshyyVe">示例作品标题五</div></div>
+              </div>
+            </div>
+
+          </div>
+          <div class="navbar" data-page-node-id="hIY0C02Y48OxMe6zBOno00">
+            <div class="n" data-page-node-id="9DFsgifXFRT79W3EExI6y4"><div class="pill" data-page-node-id="TZH3se3lnEM0NxXDJWEQmk"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="2HUjtiC0HFtOsKp2IkETrO"><path d="M4 10.5L12 4l8 6.5V20H4z" data-page-node-id="xstL17W0XU83TzNaqrgSno"/></svg></div><span data-page-node-id="F45lkdezIM8sce9Y8NuKzF">首页</span></div>
+            <div class="n on" data-page-node-id="N3idv7bMUDUuUcFvsk2us5"><div class="pill" data-page-node-id="8431tbSMd8Pm7zr9rJ0bvn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="ts2QCgMMYBkbA1vlxJpoWF"><path d="M4 5.5c2.7-1.2 5.3-1.2 8 0 2.7-1.2 5.3-1.2 8 0v13c-2.7-1.2-5.3-1.2-8 0-2.7-1.2-5.3-1.2-8 0z" data-page-node-id="ZjoFNiQApDjENVHSwCNd5J"/><path d="M12 5.5v13" data-page-node-id="C4GHORAONIwoZSWOZraGUw"/></svg></div><span data-page-node-id="4VfDaw3yXh6CwvaZhR70Pm">漫画</span></div>
+            <div class="n" data-page-node-id="ZSswfEcrIefGVsfSQXKM3w"><div class="pill" data-page-node-id="aomlFzuEPmmw1tMM8wd8dZ"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="PlT00NlsszlBbjshLCMl2k"><circle cx="12" cy="12" r="8.5" data-page-node-id="L2oi3OdEZ7A49C4XtWHJvz"/><path d="M15.5 8.5l-2 5-5 2 2-5z" data-page-node-id="fYjR9VY6SPlVApTZv0W7Rc"/></svg></div><span data-page-node-id="UNlWX4bwTr2iCee425ggF7">发现</span></div>
+            <div class="n" data-page-node-id="SDiZmTKv0G29D8kcpCRycD"><div class="pill" data-page-node-id="eMJlGyQgTd35ZB5DWxHKUT"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="RHDzKPulqriQc0jgZp0S1C"><circle cx="12" cy="8.5" r="3.5" data-page-node-id="X3TKUFCL606YP7vbqJZZ6q"/><path d="M4.5 20c1.6-3.6 4.3-5.4 7.5-5.4S17.9 16.4 19.5 20" data-page-node-id="Ly0Pu9OxGqseeCKmUYm7sU"/></svg></div><span data-page-node-id="IU80ZYfxh25Dcx0nyGvp9m">我的</span></div>
+          </div>
+        </div></div>
+      </div>
+      <figcaption data-page-node-id="DLwQzSOdT2GiJBA6TNEZtM"><b data-page-node-id="k8gw05aUuSfGX45wdWUyXy">① 漫画首页</b><span data-page-node-id="iiYE1YcH5EqQ8cNF4nWp3u">站点没有漫画首页，所以这一屏是**自造**的，且只用站点给得出的数据：继续阅读（本地进度）、分类入口（对齐站点导航的 6 项）、最新（列表页默认顺序）。<b data-page-node-id="aCqjsvBu0KbeJ8hMLsmz6q">不做推荐流</b> —— 站点没有任何排序或热度数据，硬做就是编。</span></figcaption>
+    </figure>
+
+    <!-- ② 详情页 -->
+    <figure class="figure" data-page-node-id="iJQUYuw4BA7bE59JOGoNUf">
+      <div class="frame phone" data-page-node-id="KYMxJc6mBnW4e5ERZznuAR">
+        <div class="app" data-page-node-id="SN4ENJmiGUYMNs08fcMil5"><div class="col" data-page-node-id="AtoObISUidfCVKOBUURhQj">
+          <div class="statusbar" data-page-node-id="GMNCBuEtjk9GHLYLXHXbrV"><span data-page-node-id="P5P5FfdALXOcov7EWPYa4S">9:41</span><span class="icons" data-page-node-id="orjmRZxfVlYm8vcCmdu201">
+            <svg width="15" height="11" viewBox="0 0 15 11" fill="currentColor" data-page-node-id="RVM9OiXE0lEHq2dlVnvkPi"><rect x="0" y="7" width="2.5" height="4" rx=".6" data-page-node-id="BLciArcQhtLe2KwHDIDW2D"/><rect x="4" y="5" width="2.5" height="6" rx=".6" data-page-node-id="tQ01EAJT9daTQFC15qsJii"/><rect x="8" y="2.5" width="2.5" height="8.5" rx=".6" data-page-node-id="AdNZ7zHeZncvodYIK62FD9"/><rect x="12" y="0" width="2.5" height="11" rx=".6" data-page-node-id="hSAEv6dfSl9TvUA2cL86mu"/></svg>
+            <svg width="22" height="11" viewBox="0 0 22 11" fill="none" stroke="currentColor" stroke-width="1.2" data-page-node-id="NF7UOkoQER7fxI6EkEnuK6"><rect x=".6" y=".6" width="17" height="9.8" rx="2.4" data-page-node-id="IQw0gBFQz68rpvw9nw9AD5"/><rect x="2.2" y="2.2" width="12" height="6.6" rx="1.4" fill="currentColor" stroke="none" data-page-node-id="7SZFPV1BvHp3jkvrCAnF9m"/><path d="M19.4 4v3" data-page-node-id="hBVwDrJgfYOCpPHQKDmbie"/></svg>
+          </span></div>
+          <div class="topbar" data-page-node-id="YeO83o6BgPJm2VJyUEFUbT">
+            <div class="iconbtn filled" data-page-node-id="3AelHZyYvr5K7isZyJQJ0W"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="JO6vwIk7MXoxLURUHrHlJW"><path d="M14.5 5L7.5 12l7 7" data-page-node-id="hd6SLjhaecV1TUXA8NpSuz"/></svg></div>
+            <h1 data-page-node-id="LLO4F9BWGPF4mgBt4mzh89"></h1>
+            <div class="iconbtn" data-page-node-id="AjIs24IMMqp2UDHGqHqZ9r"><svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="8jpt1IRKyeCdxMGjwj4Iaj"><circle cx="5" cy="12" r="1.8" data-page-node-id="L3vrgvsLVTFiP5XDNsSlpM"/><circle cx="12" cy="12" r="1.8" data-page-node-id="4MWsUVjReKe6mZ1JcQezWK"/><circle cx="19" cy="12" r="1.8" data-page-node-id="PsFNvBtdYtC0zXFSQy8NcL"/></svg></div>
+          </div>
+          <div class="scroll" data-page-node-id="AsovKTDwjrvD3BVBI38vsD">
+
+            <div class="hero" data-page-node-id="feRJ4sGGYCWiMXCsJNCSsI">
+              <div class="cv" data-page-node-id="isFWSq3erfDAEXkNxC1kE5"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="FCRBan0BccyFMcl9u5kcEY"><rect width="3" height="4" fill="url(#g3)" data-page-node-id="EIyTmac3eC0x6sfjCmc9sp"/></svg></div>
+              <div class="hb" data-page-node-id="IHo2TWQ1lWbnyV88qE6TGR">
+                <h2 data-page-node-id="yXzGa0v3roC6mThaKGvBFb">示例作品标题</h2>
+                <div class="sub" data-page-node-id="PY0IzNMdEsoprnqDQyVFsM">示例副标题 · 原文名占位</div>
+                <div class="metaline" data-page-node-id="YH0LR4HQWO7kHhvPnIC2Nz"><span data-page-node-id="bL13PVYmDhYVYNpVhXt8Ab">页数 <b data-page-node-id="dvhqG2ljJoWd8n1YnIMLBN">38</b></span><span data-page-node-id="KPygFjciiHNgF4kFPyoDB7">上传 <b data-page-node-id="X09CQU9HZlt9M9MEJYgrAB">3 年前</b></span><span data-page-node-id="c8XECrTnHDNXvoqDPi7HpY">#100671</span></div>
+              </div>
+            </div>
+
+            <div class="actions" data-page-node-id="0nZRdj3Cn3ZY4M6h3AMSDk">
+              <div class="btn" style="flex:1;justify-content:center" data-page-node-id="PuySrx97zgmxoHjbpicGne">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="DcshfbJktcshLQMScbxHAy"><path d="M8 5.5v13l11-6.5z" data-page-node-id="2z7qezGxwsFeyEZI5LiePZ"/></svg>开始阅读
+              </div>
+              <div class="btn tonal" data-page-node-id="MPO33ENWKWBae3vCXZinSw"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="IY9c0OG7YXEle6FTsbeZqI"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14" data-page-node-id="HrHYamubNpEgx8w1zEsACs"/></svg>离线</div>
+            </div>
+
+            <div class="grp" data-page-node-id="QerwPkYB59KZRvAot9KTCB"><label data-page-node-id="A24OK4JWwu8FnjZYnYdEzJ">标签</label><div class="chiprow" data-page-node-id="5T9IgGuEbF7G7iRLhJwkkV">
+              <span class="chip" data-page-node-id="zEBFtpeiWn49sM1tB5lTCV">示例题材一</span><span class="chip" data-page-node-id="1L0sCFLutTQM64JZVC7QBY">示例题材二</span><span class="chip" data-page-node-id="IDm9hrL2PXAuw5NSjRVgJ4">示例题材三</span>
+              <span class="chip" data-page-node-id="3pL5Dc23A9PHFrTGIOTP26">示例题材四</span><span class="chip" data-page-node-id="CcwgQcFFBwR5HBwMgp7Mu5">示例题材五</span><span class="chip" data-page-node-id="0opGECWEsSvBgxXCgOSdGl">+3</span>
+            </div></div>
+
+            <div class="grp" data-page-node-id="hq4kPJ3hMVQMRz1tAGghDv"><label data-page-node-id="lKrd9FXHHrrhn3vb1bp8EX">作者</label><div class="val" data-page-node-id="LbcXamkaI2lrZlMJNDyI7u">示例作者</div></div>
+            <div class="grp" data-page-node-id="jwSQTxQKvbmU8SmjuaOaCS"><label data-page-node-id="p5HC1Nng5DfwWrtvAtNhdW">语言</label><div class="val" data-page-node-id="qEE33gtd5p0guEeBGIcrEA">翻译 · 中文</div></div>
+            <div class="grp" data-page-node-id="JN9Tm0PowEzNQQBFmardJ4"><label data-page-node-id="YQSNTkLPfwuWryGMrudjI9">分类</label><div class="val" data-page-node-id="D9rDHszuICZtiCTJOvsQJq">漫画</div></div>
+
+            <div class="grp cond" data-page-node-id="4yKB48Sra28ujc88JDmiWc"><label data-page-node-id="E54r5yoIaUbuGx97YzabIJ">角色</label><div class="val" data-page-node-id="XyNmfm6dTsRABmbZCgEuhf">示例角色 A · 示例角色 B <span class="ann" data-page-node-id="bLCH98gGEXLBYFQKvLF4G6">条件字段</span></div></div>
+            <div class="grp cond" data-page-node-id="qeyBdBiiBC50WfpSA0oInc"><label data-page-node-id="YqCZnxdlbEtq9VrC1oW29v">同人</label><div class="val" data-page-node-id="Nxoks2Vk5reLuIBigrIJyL">示例原作 <span class="ann" data-page-node-id="IDLBX0FctK5mepAMBvO8eW">条件字段</span></div></div>
+            <div class="grp cond" data-page-node-id="nikmPsJkUCFf5Meh6TPYZ1"><label data-page-node-id="uvs972AAUDCATTnM9p9gsY">社团</label><div class="val" data-page-node-id="E7VYyMxGY3lA7C2e81mEqe">示例社团 <span class="ann" data-page-node-id="nJAOpVbko8BfQ8wsbTYl5U">条件字段</span></div></div>
+
+            <div class="section" data-page-node-id="bcXVqffh5pOj7bkl9EAQ8c">
+              <div class="sechd" data-page-node-id="3mpknw4H5t6LIsYz9MLR2j"><h3 data-page-node-id="GN2n5FFfUd1fQURMyq1Jjz">相关作品</h3><a data-page-node-id="LTSVTn50PAbOAOfPSXyyqO">更多</a></div>
+              <div class="grid" style="grid-template-columns:repeat(3,1fr)" data-page-node-id="gFbAZIuyMExoETNOKK9Hjr">
+                <div class="card" data-page-node-id="3VDZ1WqB2g97XwoGW1awKw"><div class="cover" data-page-node-id="OI8JGC3WM8uJ0V1ToBM0m7"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="mNoYrNS0HW1B4ZX4kcXOO9"><rect width="3" height="4" fill="url(#g5)" data-page-node-id="RST8KptPjPha1fY4BduGYT"/></svg></div><div class="t" style="padding:0;font-size:12px" data-page-node-id="ezMJQDsS3ImtVeTPR2DYkP">示例标题</div></div>
+                <div class="card" data-page-node-id="3Xro3oy6bkheK29OabsTV8"><div class="cover" data-page-node-id="agWZ2zCs5HK91R1WmROEub"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="DyCkvJtCGGLvDKlicmTBPV"><rect width="3" height="4" fill="url(#g6)" data-page-node-id="6G9fZXkXKFNkRwJNJKoulm"/></svg></div><div class="t" style="padding:0;font-size:12px" data-page-node-id="BNe4ac920B4zMeMqJPQUdz">示例标题</div></div>
+                <div class="card" data-page-node-id="nLI0eAtk1GediVV9EpBD1M"><div class="cover" data-page-node-id="R9q8aiiY4ucfcrka5dYfHT"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="hzP9PWJIN2EBTTNGeUbz0z"><rect width="3" height="4" fill="url(#g7)" data-page-node-id="5jJYGJpP92isAHcAWjvOkn"/></svg></div><div class="t" style="padding:0;font-size:12px" data-page-node-id="SP5A1fhCrOa5Poz0HpSMUh">示例标题</div></div>
+              </div>
+            </div>
+
+            <div class="grp" style="margin-top:20px" data-page-node-id="tDZIojImM0tM1SXWMuwViz"><label data-page-node-id="bdFh7CrcKfWu9K1wRkGabJ"></label>
+              <div class="val" style="display:flex;align-items:center;gap:6px;font-size:12px" data-page-node-id="mAJQLQNiJtGt9esdo6byPR">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="L6YQl7jmj7cb7cbwR4ox71"><path d="M12 4v11m0 0l-4.5-4.5M12 15l4.5-4.5M5 19h14" data-page-node-id="sZQf5OjReCEkavkpwPOV7g"/></svg>原站下载
+              </div>
+            </div>
+
+          </div>
+        </div></div>
+      </div>
+      <figcaption data-page-node-id="z2jFOkYggbBE9abk3IsUOA"><b data-page-node-id="pk50RgHlNFDsBg47l6GfUm">② 详情页</b><span data-page-node-id="HoDbXmtggdQJzNGaV7vL7O">字段与站点一一对应：标签/作者/语言/分类/页数/上传 是固定字段；<b data-page-node-id="Wr3zXGfEu7NXpg8ZA7FWpA">角色/同人/社团是条件字段</b>，只在作品有数据时出现 —— 所以这一栏必须能整行消失，不能占位留白。<br data-page-node-id="ZJXQOdWysYy3oAoOh413ES">「上传」站点只给相对时间（"3 年前"），且全页没有 <code data-page-node-id="JZ3KsimePqIrTvLcSJVNRR">&lt;time&gt;</code> 绝对时间戳，因此<b data-page-node-id="9jOZuIZ06PVwz1vUERzwEi">不做按时间排序</b>。</span></figcaption>
+    </figure>
+
+    <!-- ③ 阅读器 -->
+    <figure class="figure" data-page-node-id="7XcN81UbIVPERu9FpIGOSy">
+      <div class="frame phone" data-page-node-id="SVA1v0G7OGmMhtccCyuZNr">
+        <div class="reader" data-page-node-id="bgFJrJm94Lzki2RVb4njKB">
+          <div class="rtop" data-page-node-id="UNLyniweEGOfExpZSAlfmj">
+            <div class="ib" data-page-node-id="qanrTSXmfbteh9O8u41GEF"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="1AAE8BphQeoFVR5kWt2SD4"><path d="M14.5 5L7.5 12l7 7" data-page-node-id="aEVkn3AfT1k0IF9d8Hau1A"/></svg></div>
+            <h1 data-page-node-id="eaNYxgcXnI4pZlpzaiPIP6">示例作品标题</h1>
+            <span class="pg" data-page-node-id="tvUiXVhi9KCNouhYbfPFgP">12 / 38</span>
+            <div class="ib" data-page-node-id="lGv2xW60SdhHxwCm42X8e9"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="HE5CReptT4pGUKeSpvM1sH"><circle cx="11" cy="11" r="6.5" data-page-node-id="QM8rEphyky5zXrIBdibBgF"/><path d="M15.8 15.8L20.5 20.5" data-page-node-id="PyLSz558lzhnX5dBd8lYin"/></svg></div>
+          </div>
+          <div class="pages" data-page-node-id="zIltDBr5vTAs0HEszCPWJA">
+            <div class="pgblock" data-page-node-id="0h4irw5Fxf6nsnGeoe66DA">第 10 页</div>
+            <div class="pgblock" data-page-node-id="eVIP0F7MgIhas6zxCLlFgG">第 11 页</div>
+            <div class="pgblock" style="outline:2px solid rgba(255,255,255,.28);outline-offset:-2px" data-page-node-id="ZSNwbWmfb9g5vHnDJF6XGD">第 12 页 · 当前</div>
+          </div>
+          <div class="rbot" data-page-node-id="yyNBawnWyYbrJzanTixL4w">
+            <div class="rbar" data-page-node-id="4Sphvr1lilPQwSyd0U7hjD"><i data-page-node-id="BntkHEKjxcjivPbUR2BGw4"></i></div>
+            <div class="rrow" data-page-node-id="5ZOIFOECQ2P7ljjWtiCm5v">
+              <div class="rseg" data-page-node-id="uM9mjgudc7zEHFimLsKnB2"><span class="s on" data-page-node-id="9yPsHYwy6EoFPNde5bjfHB">连续</span><span class="s" data-page-node-id="232axEOYt8610GZZfmjV9l">单页</span></div>
+              <div style="display:flex;gap:8px;align-items:center" data-page-node-id="Qqg3xNJQYQBANyKP34GH3h">
+                <span style="font-size:12px;opacity:.72" data-page-node-id="6zIfVqDMqzTAH1ck6ZMoGe">亮度</span>
+                <div class="ib" style="width:36px;height:36px;border-radius:999px;background:rgba(255,255,255,.08);display:grid;place-items:center" data-page-node-id="jaLro0GWPDdL5TRu9IH5j8">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="d76Vt72lDV4AHNyYRbWxmL"><circle cx="12" cy="12" r="4" data-page-node-id="ANHHHEPWoC5u0F2c1EMjCB"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2" data-page-node-id="PJeuX1XQGgOYAQNmn0VcOI"/></svg>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <figcaption data-page-node-id="ZpjouAN655DExEcgXklDa0"><b data-page-node-id="BPNv25bTKvWGfLQ1jDZBWV">③ 阅读器</b><span data-page-node-id="DCOIs2xrOu9UcLYbBBCPHw">全屏沉浸，隐藏全部导航 chrome（沿用 <code data-page-node-id="7hEcno2L3tmfD5hrWqh4yW">VideoRoute</code> 的 <code data-page-node-id="ZSVVfQXn7uhkTpkjaDXDIe">hidesNavigationChrome</code> 模式）。阅读器固定用深底，不跟随主题 —— 看图的场景下亮底会晃眼。<br data-page-node-id="XpgwhOCQOQlPMVQYstEERX">默认<b data-page-node-id="cvRGfjCq7EVPMEZBw8Q0Qg">连续纵向滚动</b>，可切单页。站点阅读器只有单页 + 缩放，没有全屏、双页、连续滚动，也没有进度记忆。</span></figcaption>
+    </figure>
+  </div>
+
+  <!-- ================= 平板 ================= -->
+  <div class="secttl" data-page-node-id="GCpCsg1DGkvXTurCTBET5Y"><h2 data-page-node-id="sKgYCTixKWPC5eeVK7xwn9">平板 840dp · Expanded</h2><span data-page-node-id="pSiPCpzHjp4ixzIW3x13xK">边距 24 · 分类矩阵 4×2 · 卡片最小宽 160 → 4 列</span></div>
+  <div class="frames" data-page-node-id="mk9H5sEtULXhu11un8bsG3">
+    <figure class="figure" data-page-node-id="itbBu2IlVQAeqAALDZBu7L">
+      <div class="frame tablet" data-page-node-id="LDHlEyubv1mcANv1KQvZcS">
+        <div class="app" data-page-node-id="jVLLthrMYeDAZpjFrtDzE5">
+          <div class="rail narrow" data-page-node-id="QOvjKkGFoLvcq7Zr2erpzv">
+            <div class="ritem" data-page-node-id="imXT59zjMpOCYFDaGS8mhb"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="wSgmSMDQe0O4ecYDbMiSrn"><path d="M4 10.5L12 4l8 6.5V20H4z" data-page-node-id="GtUXLQulFxs888wqFFA73v"/></svg><span data-page-node-id="WYHCxfKc9wCn9vJ3tYgO9i">首页</span></div>
+            <div class="ritem on" data-page-node-id="TFq2nyLgBsCmr8z7zBZRIn"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="UOcYMJxmBVSqhwDXRxAHML"><path d="M4 5.5c2.7-1.2 5.3-1.2 8 0 2.7-1.2 5.3-1.2 8 0v13c-2.7-1.2-5.3-1.2-8 0-2.7-1.2-5.3-1.2-8 0z" data-page-node-id="R3LMNRfCmeiqiK4hKWGyf8"/><path d="M12 5.5v13" data-page-node-id="N6boIfqEbWHlJ8ORbsjay4"/></svg><span data-page-node-id="OCj4zDKOdnToEuFF7czpz8">漫画</span></div>
+            <div class="ritem" data-page-node-id="Q2rXhZQC9SLZNu4Rgk73mr"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="foN5pWRZAA7li4HCZAnXVY"><circle cx="12" cy="12" r="8.5" data-page-node-id="UKrSCLSwiTFvfhXDZA73j6"/><path d="M15.5 8.5l-2 5-5 2 2-5z" data-page-node-id="dXUBR6TAsteJLWKDHM3jbc"/></svg><span data-page-node-id="mlfZOe2htF3Spkr27RfL6T">发现</span></div>
+            <div class="ritem" data-page-node-id="PaEQGcMflEPnMNgEtXDRWg"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="4M20j7IdSIikGCkhIcebQz"><circle cx="12" cy="8.5" r="3.5" data-page-node-id="IA7nyG8JNTB5bkjVRNBQ4h"/><path d="M4.5 20c1.6-3.6 4.3-5.4 7.5-5.4S17.9 16.4 19.5 20" data-page-node-id="ZHgDmWJVp4giMNTaKKNV7G"/></svg><span data-page-node-id="uu1z2ALwBTasQ71F1G8mBA">我的</span></div>
+            <div class="spacer" data-page-node-id="UJsYYxVwewvk1HANcXZibq"></div>
+            <div class="ritem" data-page-node-id="2AYLuDqDaTmjfEQARjqjaA"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="SwbG9CMetlKadprBxgBwvX"><circle cx="12" cy="12" r="3.2" data-page-node-id="w5cRwfBjVeO24uT4ADCHzm"/><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2" data-page-node-id="Sixwem2072oDLqtstGfF0Z"/></svg><span data-page-node-id="i4L7t6HMzkhJ31LvkGJTQv">设置</span></div>
+          </div>
+          <div class="sheet" data-page-node-id="A5A1mISQW39FVMBzR2oJGH">
+            <div class="topbar" style="padding-left:24px" data-page-node-id="9o8iZYKmKp0SMLX4aoCW0E"><h1 style="font-size:16px;font-weight:700" data-page-node-id="sk7J4jCotObRoxAUf1bYMU">标签 · 示例题材</h1></div>
+            <div class="scroll p24" data-page-node-id="SiA8u7XpIq2sKS7pYNA7Rm">
+              <div class="chiprow" style="margin-top:8px" data-page-node-id="0SI7Sza3AUH6ut4cx5CypH">
+                <span class="chip onset" data-page-node-id="K40oAH5K28yiwOAHHaUIvL">全部</span><span class="chip" data-page-node-id="bbL1YQzbC8p2STXksO7fjH">标签</span><span class="chip" data-page-node-id="2Yo3FjR6W3jlDGVCw0AFGu">作者</span>
+                <span class="chip" data-page-node-id="Z0FD6siAS0BmigdwWzg0FR">角色</span><span class="chip" data-page-node-id="vAdKA5GWpzP3XkeKhwQ7X3">同人</span><span class="chip" data-page-node-id="rgYmTiIHmQ3hkm5y2FDncG">社团</span>
+              </div>
+              <div class="sechd" style="margin-top:20px" data-page-node-id="g02RgLmbSBHaBnWGvTHbEE"><h3 data-page-node-id="bSp3NnivAF21QQqLYaxrdl">共 128 部</h3><a data-page-node-id="dnXSCFHpmXHznhO1V6fGKd">排序不可用</a></div>
+              <div class="grid" style="grid-template-columns:repeat(4,1fr)" data-page-node-id="B5AcmSrmUvqKdBhmyhUNEH">
+                <div class="card" data-page-node-id="DVQQ6705z62HZyjW3yLTwO"><div class="cover" data-page-node-id="ZBfZvB6XImeekKOamzQnkQ"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="QeEfEGrxJ1BqA2Evzrby5G"><rect width="3" height="4" fill="url(#g0)" data-page-node-id="iGeLVwoiWgiTNc9i4fXAkF"/></svg></div><div class="t" data-page-node-id="YGxa86hADJQUQSEF8rUgrx">示例作品标题一</div></div>
+                <div class="card" data-page-node-id="BK99xcIobvtE7pU8vJCQGp"><div class="cover" data-page-node-id="tCjrj7rUoJy4zesbbsxvMr"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="Fvs9gHJ4INnigVjM1U1htu"><rect width="3" height="4" fill="url(#g2)" data-page-node-id="cxrCgMSGP9oyXznV04aU6i"/></svg></div><div class="t" data-page-node-id="c0ZrRU4BE2x1GZklgQ2w5m">示例作品标题二，两行截断演示</div></div>
+                <div class="card" data-page-node-id="e3Txc93p5ZZHHBiuvVtHHp"><div class="cover" data-page-node-id="c2CFNNil96WyzDUBawnrtZ"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="SnSohsUXrHxvwEBzArymAT"><rect width="3" height="4" fill="url(#g4)" data-page-node-id="0AYswZQm1kkSnkIXAWbDre"/></svg></div><div class="t" data-page-node-id="UQ71aZDAtNqE4HYZ8595ck">示例作品标题三</div></div>
+                <div class="card" data-page-node-id="4QxVPmWabrRnjQRl6wnSAQ"><div class="cover" data-page-node-id="hhjejKypEqQ6zB7mtESnje"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="4P5RrxSJwTBBzzt8ULxnbI"><rect width="3" height="4" fill="url(#g6)" data-page-node-id="nBDRivmWW94Va3dUBexlap"/></svg></div><div class="t" data-page-node-id="uwPvhntNtMjkdbAxlBLpYW">示例作品标题四</div></div>
+                <div class="card" data-page-node-id="CDIT0F02ynvjwJ4Yo9Ekdf"><div class="cover" data-page-node-id="gNY9twewoOivsiJfn4iRzh"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="SYQcD6OCxSp0Y8FgBGd7GB"><rect width="3" height="4" fill="url(#g1)" data-page-node-id="sxH8HH1QoabtLqypulIUBN"/></svg></div><div class="t" data-page-node-id="QaCsVvoU2fwPJCXZ6e82EV">示例作品标题五</div></div>
+                <div class="card" data-page-node-id="ZgV4MV5JEGSGGDhVim401F"><div class="cover" data-page-node-id="HXYfpr84cdRIUBG3U5Dj3v"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="u40uH2N0vrzHJz0VFQrXBV"><rect width="3" height="4" fill="url(#g3)" data-page-node-id="V6Immit1Eb6ZYwzCCTqaid"/></svg></div><div class="t" data-page-node-id="aYexSmBWBqDcpmDGqNsbNe">示例作品标题六</div></div>
+                <div class="card" data-page-node-id="AqSCAMroCmUJkidChoBCrc"><div class="cover" data-page-node-id="vAmyoq887kbqSjfOw0VJAc"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="LOfgEqbOvhzYGrbf7qjzSC"><rect width="3" height="4" fill="url(#g5)" data-page-node-id="yUdYxkQ3LDPw0HwTvchb7O"/></svg></div><div class="t" data-page-node-id="5HJNk2SG5OZgLiONKA6XSx">示例作品标题七</div></div>
+                <div class="card" data-page-node-id="9CpjXWHDtSGVXpA7K2txla"><div class="cover" data-page-node-id="eG4NPt0s9c5tmzVBIviCV7"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="R7uidmd9eDuwFlLDXXcySn"><rect width="3" height="4" fill="url(#g7)" data-page-node-id="szGnKmg0HoXGSgydiwM7eW"/></svg></div><div class="t" data-page-node-id="IodGzMlTydbwKorjYUOBKh">示例作品标题八</div></div>
+              </div>
+              <div style="display:flex;justify-content:center;padding:24px 0;font-size:12px;color:var(--on-surface-variant)" data-page-node-id="zygIH9wu3YqB05lqpBcodt">加载中…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <figcaption data-page-node-id="inovxn3WnO0CL82yVL5YtZ"><b data-page-node-id="mk98rbBhObGBW3CyTSzJE9">④ 分类浏览（平板）</b><span data-page-node-id="oNfsmD08TWHHtPddDGhq3z">分类筛选走站点的 <code data-page-node-id="nTbNef4k3eJZgRQ8iwMYom">/tags/X</code> 这类路由，每页 30 条。列表用既有的 <code data-page-node-id="6xxrwXak81pWLwhRKGRSKn">LoadMoreFooter</code> 做加载更多，不做页码器。<br data-page-node-id="PSGafU0LzV5loihI9PmpzZ"><b data-page-node-id="ncIrmPvfNyi5CfRFoCTfQp">注意</b>：站点列表没有任何排序控件，所以这里没有排序入口 —— 不是漏了，是没有数据支撑。</span></figcaption>
+    </figure>
+  </div>
+
+  <!-- ================= 桌面 ================= -->
+  <div class="secttl" data-page-node-id="GdBoLMy03c5GghTKS5yx3t"><h2 data-page-node-id="hB212zcc7fzipVwcZUEBaz">桌面 1280dp · Large</h2><span data-page-node-id="EtNFN52pD69s8jitEAfdHg">Rail 220 · 边距 32 · 分类矩阵 5×2 · 卡片最小宽 180 → 6 列</span></div>
+  <div class="frames" data-page-node-id="Byx2iKwyuAKW354kuZHv2z">
+    <figure class="figure" data-page-node-id="ci2Rf514VbFEThigaYPjiv">
+      <div class="frame desktop" style="transform:scale(.78);transform-origin:top left;margin-bottom:-176px" data-page-node-id="iAV46ukJe2DDyluHgqj9SQ">
+        <div class="app" data-page-node-id="lBJXNUqDy6dbChyzzvADuN">
+          <div class="rail" data-page-node-id="0u2TCU0dEXZqixQLVY5dxU">
+            <div class="ritem" data-page-node-id="DOjVAnA4JTn8D0PfApiv0x"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="JegSzqWK0RJ9eT9261Mnsf"><path d="M4 10.5L12 4l8 6.5V20H4z" data-page-node-id="csuyathdGZtB0LjVXigQdZ"/></svg><span data-page-node-id="XGEhfC5kpQheRaI80TMNvc">首页</span></div>
+            <div class="ritem on" data-page-node-id="ZtU11NoQUn2ZK9XuCidEVQ"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="IFSNvSJCkynFDOry9oBVV7"><path d="M4 5.5c2.7-1.2 5.3-1.2 8 0 2.7-1.2 5.3-1.2 8 0v13c-2.7-1.2-5.3-1.2-8 0-2.7-1.2-5.3-1.2-8 0z" data-page-node-id="ggGlQKHe5UCpqMxQXGJfR5"/><path d="M12 5.5v13" data-page-node-id="ioKUOYdKqWadxmOghAhC61"/></svg><span data-page-node-id="OKtQYEp4KrGGcVkK3VlH6H">漫画</span></div>
+            <div class="ritem" data-page-node-id="YZDsKu6qHejASxFyIjOFc7"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="C5RVwI2H4Dr8wihbi5yFC7"><circle cx="12" cy="12" r="8.5" data-page-node-id="y60I27ObZ1Jli7P6zFKhot"/><path d="M15.5 8.5l-2 5-5 2 2-5z" data-page-node-id="vALUocswRu16XkM54Laof6"/></svg><span data-page-node-id="Fp9x6EsR5UnhmJfgiRC5n3">发现</span></div>
+            <div class="ritem" data-page-node-id="lstJsFfCup7LoRvetM1dxg"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="PyaRFtkDEU38DWqcHKdvEo"><circle cx="12" cy="8.5" r="3.5" data-page-node-id="fBBA5wbzunceW28ITBo3NE"/><path d="M4.5 20c1.6-3.6 4.3-5.4 7.5-5.4S17.9 16.4 19.5 20" data-page-node-id="YgXuuL2RZJBCevc3uvSuTo"/></svg><span data-page-node-id="VGbMDUm7nbIxJD4Cg2Xu7g">我的</span></div>
+            <div class="spacer" data-page-node-id="poNigvHtC6BReqqDX2YHpU"></div>
+            <div class="ritem" data-page-node-id="CnrftaZ33oNAsqUdUADaO8"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="NfrBE8iK9CBDNuUcBa4ry1"><circle cx="12" cy="12" r="3.2" data-page-node-id="vIaYKBUzc2j7upgsW8CmBq"/><path d="M12 3.5v3M12 17.5v3M3.5 12h3M17.5 12h3M6 6l2 2M16 16l2 2M18 6l-2 2M8 16l-2 2" data-page-node-id="vqOykemaoCag04HeCOuHXv"/></svg><span data-page-node-id="iEOJmQlTZCVg01yE1N04wU">设置</span></div>
+          </div>
+          <div class="sheet" data-page-node-id="cDNQUJFpWCcAVazu7QNq1w">
+            <div class="topbar" style="padding-left:40px" data-page-node-id="e35z9MQoaxdxEda9qw97i8"><h1 data-page-node-id="FnfyhcXEusN98QeXaRmLDJ">漫画</h1>
+              <div class="iconbtn" data-page-node-id="GCcNOLnFfAXT7kZpFT9PEE"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="RxE1lBqRh4tMkBnLnSGobC"><circle cx="10.5" cy="10.5" r="6.5" data-page-node-id="PUNaJTBixWnqwidxKcomyQ"/><path d="M15.5 15.5L21 21" data-page-node-id="p9aYVfvFa7KnlmnET0Hun6"/></svg></div>
+            </div>
+            <div class="scroll p40" data-page-node-id="bqbXyg63AGRsdxROsR2yIT">
+              <div class="section" data-page-node-id="aIHnzr8QkYyUQwRKKJlhLZ">
+                <div class="sechd" data-page-node-id="kY0MpCEsLAHEdQnF6XRxrp"><h3 data-page-node-id="BabWeZNOEGotIKzhCMHMzi">继续阅读</h3><a data-page-node-id="NqHmTA2UQ8XJPEjF1hXDAD">更多</a></div>
+                <div class="resume" style="grid-template-columns:repeat(3,1fr)" data-page-node-id="2nXjZLdbRGzYecVxINB0vR">
+                  <div class="r" data-page-node-id="SslmA1zzRqejL4u2zkVeaz"><div class="rc" data-page-node-id="rlIHrh3yBBUvEFqkOyOThT"><svg viewBox="0 0 52 69" preserveAspectRatio="none" data-page-node-id="6wzqUpGj2FuYrf662THCox"><rect width="52" height="69" fill="url(#g0)" data-page-node-id="BwDQUB2cInjM9jMy9CdTzF"/></svg></div>
+                    <div class="rb" data-page-node-id="kn4AimMSqBEfA0QBKsLElH"><b data-page-node-id="BUAPUI9f2Iek91MGZzKwCy">示例作品标题一</b><small data-page-node-id="o1yCEXcGAMrlK1RhZYh8qD">第 12 / 38 页</small><div class="bar" data-page-node-id="sKxJpjGszLRBqUFegKQ0Ur"><i style="width:32%" data-page-node-id="0JIbov3Do9AcBJgbQluNiJ"></i></div></div></div>
+                  <div class="r" data-page-node-id="maIFaooNiZ73tnPjbnELKr"><div class="rc" data-page-node-id="15C54QSElBEBqGi6uRxypr"><svg viewBox="0 0 52 69" preserveAspectRatio="none" data-page-node-id="XS5AhQWohCWyJG3ITmAXUp"><rect width="52" height="69" fill="url(#g3)" data-page-node-id="FkRg8tAhCFNiRI5ZzPJF8j"/></svg></div>
+                    <div class="rb" data-page-node-id="Ke4XqXOEFpUWV39Ccd8KnF"><b data-page-node-id="pX4RKsNl8Jg7s6lbEl9K17">示例作品标题二</b><small data-page-node-id="p3yrTXqkcAW2FOMhrmEMXg">第 4 / 120 页</small><div class="bar" data-page-node-id="WIZNHoR2HhRpznvASCRdfz"><i style="width:3%" data-page-node-id="VQceqasCqkRuWIQkbWar4e"></i></div></div></div>
+                  <div class="r" data-page-node-id="2AcwSeRQKS6Lb3TOofDygp"><div class="rc" data-page-node-id="v3Zjz5sTZYomJKUseMJFwA"><svg viewBox="0 0 52 69" preserveAspectRatio="none" data-page-node-id="bPZ2ZKDRqP7tFWi1rx67Hx"><rect width="52" height="69" fill="url(#g6)" data-page-node-id="AWwlS8N8Mr097EpkFbmviq"/></svg></div>
+                    <div class="rb" data-page-node-id="HpYzehX4PDm4VlHELpf0yR"><b data-page-node-id="wFIHXdyLDMKrsBavevk8xt">示例作品标题三</b><small data-page-node-id="EFUeEWxralWopVh9up0O84">第 96 / 210 页</small><div class="bar" data-page-node-id="NNcSR3wQMGeRHnqc9NeIe6"><i style="width:46%" data-page-node-id="qbhFKz5eEVbQXHtxNw0yBc"></i></div></div></div>
+                </div>
+              </div>
+              <div class="section" data-page-node-id="hDAxBtkYeTqBCWfHrqiGSh">
+                <div class="sechd" data-page-node-id="0EUqDZ7JcnCtn3wVa95WAL"><h3 data-page-node-id="NwlPIElCFjscpmyPrwy86G">分类</h3><a data-page-node-id="Xg1JJ9l0hjwin6iZsdTkcB">全部</a></div>
+                <div class="matrix" style="grid-template-columns:repeat(5,1fr);gap:20px" data-page-node-id="5lh7dXu8wIlRlbwjQ9ABPB">
+                  <div class="mx" data-page-node-id="3tXCViYlHlFiLc9CcEr3Te"><div class="mi" data-page-node-id="jcUjU2kdS6s8pGf7SjPc99"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="sCoMpVlcB18VV1X82tr6BR"><path d="M4 5h16v6H4zM4 13h7v6H4zM13 13h7v6h-7z" data-page-node-id="ZF10mdmyvXOIxsBYBuVARD"/></svg></div><b data-page-node-id="DFqKTtxG4fB1VErC32dd6h">标签</b><small data-page-node-id="DtCH2ZHrVObafmQCso0YUs">按题材筛选</small></div>
+                  <div class="mx" data-page-node-id="gz1ju9xkFvXiF1brRBhNYM"><div class="mi" data-page-node-id="WwUA29jvn3NgqvK6Xw4HYU"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="iPdPRTojRwPr6EgE5BAkTr"><circle cx="12" cy="8.5" r="3.5" data-page-node-id="vDWf2w8EECiohoyx4cdHZV"/><path d="M4.5 20c1.6-3.6 4.3-5.4 7.5-5.4S17.9 16.4 19.5 20" data-page-node-id="Bs7QTxlwMTILA7P16SfnqN"/></svg></div><b data-page-node-id="obmwUmCzPvUhLiHf5IP472">作者</b><small data-page-node-id="jcmbpKZOHaB5ymQhG5J6KC">按画师找人</small></div>
+                  <div class="mx" data-page-node-id="JjjrSGoikRZCmSDSDsKFb4"><div class="mi" data-page-node-id="mp9D43fivcwFUoyTIuALgw"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="E5nAyNV85VAxc9LTXHXxFe"><path d="M12 3.5l2.6 5.4 5.9.8-4.3 4.1 1 5.9-5.2-2.8-5.2 2.8 1-5.9L3.5 9.7l5.9-.8z" data-page-node-id="igoQMXflAcrxNtDJHQDrPd"/></svg></div><b data-page-node-id="U2515wXd2BOWbAcnI4YSYg">角色</b><small data-page-node-id="kICf4wHdckkL9HCioRcm45">条件字段</small></div>
+                  <div class="mx" data-page-node-id="GEdTon7SLcX7rTyI28Uk0h"><div class="mi" data-page-node-id="VzXF9t2zFTmebDOviazHrv"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="vjVeIAsGD13BDAfoQcFtYZ"><path d="M4 6.5c2.7-1.3 5.3-1.3 8 0 2.7-1.3 5.3-1.3 8 0v11c-2.7-1.3-5.3-1.3-8 0-2.7-1.3-5.3-1.3-8 0z" data-page-node-id="e3PtvWI7GDAfT3aWHLPPal"/><path d="M12 6.5v11" data-page-node-id="mTukCubMgoAVJEBAOphrPd"/></svg></div><b data-page-node-id="GSFYdbqJrC3cldqPof6TGm">同人</b><small data-page-node-id="a9Dsyt4VIiiUkUyTEoGQ03">条件字段</small></div>
+                  <div class="mx" data-page-node-id="qI0L09BwoeoFB2U4cQ8Lq5"><div class="mi" data-page-node-id="urbbOmqPEEeppUWXRrloUi"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="flb4g5haZYuHRE2iBoAxzk"><path d="M4 20V9l8-5 8 5v11" data-page-node-id="xzSGIsxnhWI4BtckmQs9cN"/><path d="M9.5 20v-6h5v6" data-page-node-id="d0P4CFu3lgL9eJ1BcESZos"/></svg></div><b data-page-node-id="7xcIWzOoXKDSUqHgaH0VFZ">社团</b><small data-page-node-id="Qx59OncG0r3d6wA6rzrEET">条件字段</small></div>
+                </div>
+              </div>
+              <div class="section" data-page-node-id="p4Hzj8W7pmVvJcWqBOsEEK">
+                <div class="sechd" data-page-node-id="sno19UnDggC3ni0DiCJbc8"><h3 data-page-node-id="JhJWUXR0lBfZy3LlorqEze">最新</h3><a data-page-node-id="tu2pZ0xBbEKivg4fDsYBMM">更多</a></div>
+                <div class="grid" style="grid-template-columns:repeat(6,1fr)" data-page-node-id="yTxIaGPaKcxoI7XPRkc8Fr">
+                  <div class="card" data-page-node-id="zsrCY3g5ogGOdt13ziSMv4"><div class="cover" data-page-node-id="T0DYrW9Eikry3KI2RD1zJn"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="A9jTF9tpECmPPeWKyM9VAp"><rect width="3" height="4" fill="url(#g1)" data-page-node-id="oHWReT4pKq5XA1BeWjHwKG"/></svg></div><div class="t" data-page-node-id="qSxqIasNternCjoVnnAMDz">示例作品标题一</div></div>
+                  <div class="card" data-page-node-id="z2yhiybgjSm4cshZjQmAlj"><div class="cover" data-page-node-id="2gGEdDwEmlfS47PaeUf8Dr"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="v0g1YCtw0JPKim5n27fNWn"><rect width="3" height="4" fill="url(#g2)" data-page-node-id="TK0DVUdBeXC8iR3jVYQpKf"/></svg></div><div class="t" data-page-node-id="9ZxhgjmVUiq2vRveEPWxdT">示例作品标题二</div></div>
+                  <div class="card" data-page-node-id="oKfCmLBLyyBzSWk6HeGEX4"><div class="cover" data-page-node-id="rLPpoLGRyjnnIFetmzZ6Xb"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="sBmXNjhh4Pslum1cUjgGkP"><rect width="3" height="4" fill="url(#g3)" data-page-node-id="qXMEUaFcHb7sg2tbqTwznK"/></svg></div><div class="t" data-page-node-id="mKKKQAGmg9AhPunQ60jxVr">示例作品标题三</div></div>
+                  <div class="card" data-page-node-id="4WlYPQQ9JYYADhx2FBDnF5"><div class="cover" data-page-node-id="ldcXBaEwvvRkxjA7AAYMCI"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="nqxEDKJ8Pwz6lbtt9YX6YI"><rect width="3" height="4" fill="url(#g4)" data-page-node-id="Tpzl11yVsyZ842cHOgFQiI"/></svg></div><div class="t" data-page-node-id="Bh1psRnHPXyH4GZbo8b0Hb">示例作品标题四</div></div>
+                  <div class="card" data-page-node-id="2ojoBGWzX6tHmQplaIifsE"><div class="cover" data-page-node-id="LNr8C4oOFlDI3Yj22kMwYm"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="d1sOADiCDVhlFpDpZ8Ocj5"><rect width="3" height="4" fill="url(#g5)" data-page-node-id="Xd2vPcdr8GiMSFO8vQ4Fwj"/></svg></div><div class="t" data-page-node-id="ihQ9sxdaxTrEEkN8QM2MQG">示例作品标题五</div></div>
+                  <div class="card" data-page-node-id="onEZELwO03G5vQCfDYBCyB"><div class="cover" data-page-node-id="SYgGtv6yDK2OPNbcP7kOGk"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="NpBz7TuGBCcyP8yJRFpDt5"><rect width="3" height="4" fill="url(#g6)" data-page-node-id="XebSA8CpmmoXRCgzH96V8X"/></svg></div><div class="t" data-page-node-id="8cqciY7q9hrKOAACJCBeZ9">示例作品标题六</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <figcaption data-page-node-id="UFQnO1ZTqGktymP1ransfd"><b data-page-node-id="saYmjPHJZnsN9d0u4crX3I">⑤ 漫画首页（桌面）</b><span data-page-node-id="kaa8vMYgVSFKZ2hrkOL9Na">Rail 展开 220dp，内容区走 <code data-page-node-id="lSmP2egAiFEACSI1O9oSGj">contentSheet</code>（左上 28dp 圆角 + 与 chrome 的底色差）。分类矩阵吃到 5 列一档，「继续阅读」由单卡变三卡一行 —— 同一份数据，两种密度。</span></figcaption>
+    </figure>
+
+    <figure class="figure" data-page-node-id="MycYhLeCXh5WdIfa4SNtTO">
+      <div class="frame desktop" style="transform:scale(.78);transform-origin:top left;margin-bottom:-176px" data-page-node-id="jrEv0FbUrDYeX3xZ4DDCwq">
+        <div class="app" data-page-node-id="YcTRzb2H6eiSlXt9NnIjji">
+          <div class="rail narrow" data-page-node-id="kwHqBflz0HT04r5TzMb490">
+            <div class="ritem" data-page-node-id="8ly6AC4RHCq8Ol2lcuFApN"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="nYinZOT319XTVJB34DRTh5"><path d="M4 10.5L12 4l8 6.5V20H4z" data-page-node-id="U5rHi4DPVyW1Hk1CBQaa9c"/></svg></div>
+            <div class="ritem on" data-page-node-id="hjQffyKZTCBKhi9lSHdQbT"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="CUAdAg3LOsFxHrnjtL9HLD"><path d="M4 5.5c2.7-1.2 5.3-1.2 8 0 2.7-1.2 5.3-1.2 8 0v13c-2.7-1.2-5.3-1.2-8 0-2.7-1.2-5.3-1.2-8 0z" data-page-node-id="V3lxnXy2iM9Fqg14buibrH"/><path d="M12 5.5v13" data-page-node-id="P66LWmfjWiiWCkXe1H4BNH"/></svg></div>
+            <div class="ritem" data-page-node-id="CTiXhKZIFQRtIGovLTW0Bb"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="Leap01vBsSqGz581BLTzqD"><circle cx="12" cy="12" r="8.5" data-page-node-id="PuJHWXVO1Obf9bfT6mxN1p"/><path d="M15.5 8.5l-2 5-5 2 2-5z" data-page-node-id="nCp45k4O6AqzbQ1w9lCbE2"/></svg></div>
+            <div class="ritem" data-page-node-id="OlFaEWyRhzOwSJ6h1JzRiq"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" data-page-node-id="MEGwNNOZ5FQP6maWdfu8Mb"><circle cx="12" cy="8.5" r="3.5" data-page-node-id="FowExfIsAsyRO9qFmJhviI"/><path d="M4.5 20c1.6-3.6 4.3-5.4 7.5-5.4S17.9 16.4 19.5 20" data-page-node-id="GyYEaRdGa0zvHJaVxaFEOC"/></svg></div>
+          </div>
+          <div class="sheet" data-page-node-id="731DwkqqVkUaSNQ8q2cdvD">
+            <div class="topbar" style="padding-left:32px" data-page-node-id="XCSuFCq0ZUuAKC0MLUhIrx">
+              <div class="iconbtn filled" data-page-node-id="VZt5bjBBJ2zulmaAWbVRNX"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" data-page-node-id="Ckbte3BumWox5Ap6LXaVVV"><path d="M14.5 5L7.5 12l7 7" data-page-node-id="ZdDSoAyA8cJDj4rwPKRIEq"/></svg></div>
+              <h1 style="font-size:16px" data-page-node-id="kDmy8kUDZS29ujr6qy5B3X"></h1>
+            </div>
+            <div class="scroll p32" data-page-node-id="NtEFNHn2ktNahdazSQyAvo">
+              <div class="dual" data-page-node-id="G6weCEnckMYdSaVJtk0ZZG">
+                <div class="main" data-page-node-id="v7qeX9zKJ693BZlS0Lin4W">
+                  <div class="hero" style="margin-top:8px" data-page-node-id="EPoCRWYC6la0ZABA48yRCX">
+                    <div class="cv" style="width:208px;height:277px" data-page-node-id="ZaeiSoUjgDt1DZcgfMBjLD"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="OJ51dzTrEmARF7C5qAU9Hb"><rect width="3" height="4" fill="url(#g3)" data-page-node-id="5tOJHCsw3CKQ2tzsOd92dd"/></svg></div>
+                    <div class="hb" data-page-node-id="MkoHmMMSlJ8XDqFzjr0GOc">
+                      <h2 style="font-size:28px;line-height:36px" data-page-node-id="Y2UIwFeLoo15pdn57aZuM5">示例作品标题</h2>
+                      <div class="sub" data-page-node-id="GLDoIDtqRXFo497oHvirtD">示例副标题 · 原文名占位</div>
+                      <div class="metaline" data-page-node-id="CpwKulgOt0Pv6cpJWHBzRs"><span data-page-node-id="PWbVBMRCvjm1vyGyF8PXv6">页数 <b data-page-node-id="SET5DGUQHrgtJmUE7WtSKK">38</b></span><span data-page-node-id="fkZeVwJkzzKVQXUIWoIJY4">上传 <b data-page-node-id="GJsjG9t3gCQ6YzfnSd04tm">3 年前</b></span><span data-page-node-id="bSJKFEw5dL1DlHEOnNn3iq">#100671</span></div>
+                      <div class="actions" style="margin-top:16px" data-page-node-id="1fnGXEAkGGArJwLrUhTlaT">
+                        <div class="btn" data-page-node-id="8sTME2BYhbNJk2WvhXdp14"><svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="4WpXV6qj2Gz8Wno1CpWgIk"><path d="M8 5.5v13l11-6.5z" data-page-node-id="jeFk2BbOu1VF8dsOaL5G8u"/></svg>开始阅读</div>
+                        <div class="btn tonal" data-page-node-id="eTijMNTuBrA5GlTD0e7tVC">离线整篇</div>
+                        <div class="btn ghost" data-page-node-id="TGkAtdV7LWTMRjqZJK5dd1">原站下载</div>
+                      </div>
+                      <div class="chiprow" style="margin-top:16px" data-page-node-id="bKGu6jxB9ClPzlJ4Ifkm7W">
+                        <span class="chip" data-page-node-id="mlqJsrgz7MUOocVtQLiT42">示例题材一</span><span class="chip" data-page-node-id="MINK5V7xHMHrLJzGMt21Xk">示例题材二</span><span class="chip" data-page-node-id="NC4yGxLFZTb0fOwq2IRN6a">示例题材三</span><span class="chip" data-page-node-id="BfhijzCzEDkcxwexJo0VN7">+5</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="sechd" style="margin-top:24px" data-page-node-id="wTVj0AQRJTzVbvJatNmsB0"><h3 data-page-node-id="fuT8HwTLIp7Z1tkn3UPahZ">相关作品</h3><a data-page-node-id="cAJdee0VxUSe282c6YGatd">更多</a></div>
+                  <div class="grid" style="grid-template-columns:repeat(6,1fr)" data-page-node-id="wxBsVAHzDtIvtweKB8kLBC">
+                    <div class="card" data-page-node-id="3rM9khHFF5SbnHfBV7UolZ"><div class="cover" data-page-node-id="OFrr6my3q0OSkRBO92vYdx"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="eBRkt3IHOCnFvELUJi9Vk8"><rect width="3" height="4" fill="url(#g0)" data-page-node-id="e0E2N9F0D6TFmxuZpCbJUD"/></svg></div></div>
+                    <div class="card" data-page-node-id="Flu2ZiWRxTK84DAuOLmVYL"><div class="cover" data-page-node-id="U3AfMHJo18vNYQCuuhe8GY"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="u9nAzM9yom8CtqkmhwRIq2"><rect width="3" height="4" fill="url(#g2)" data-page-node-id="4C2RZWPkwtC4TArNMw13Ru"/></svg></div></div>
+                    <div class="card" data-page-node-id="dPO6plavlnqbVpyZf7P5nt"><div class="cover" data-page-node-id="z2Fe83a3UGby2kAeEtSdFH"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="ublCri7oqpPNdfL1cihbdt"><rect width="3" height="4" fill="url(#g4)" data-page-node-id="kI8qTFsOHSPsQ11v01rEiA"/></svg></div></div>
+                    <div class="card" data-page-node-id="FSiE9BSJOYLzV79B05mPTd"><div class="cover" data-page-node-id="r6AmJEs7QIBxxEP660WHSO"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="lAGNGwmyUJIIjhF5KnxUPZ"><rect width="3" height="4" fill="url(#g5)" data-page-node-id="RzafP3S4EpdiaaM9eNgFu6"/></svg></div></div>
+                    <div class="card" data-page-node-id="1EHuS2ODxgvLtEtbsLf9V0"><div class="cover" data-page-node-id="xEGaHSBbJZvmaHEYM08C2K"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="6RXn26nCJDNyL8PgEd1FCH"><rect width="3" height="4" fill="url(#g6)" data-page-node-id="L7QN2kEpJHpvdMVWV2hk1f"/></svg></div></div>
+                    <div class="card" data-page-node-id="9BVZlhpPGftul2NvmHtWNF"><div class="cover" data-page-node-id="nyy6JCSsTAyfExJ8u19niy"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="XBCNLnt58ALKzA2aNaTZWX"><rect width="3" height="4" fill="url(#g7)" data-page-node-id="XcaFlrG26kWnR0tFEPTcTR"/></svg></div></div>
+                  </div>
+                  <div class="grp" style="margin-top:24px" data-page-node-id="jbotadEegDjsPXknArg7DW"><label data-page-node-id="B1OV0EfuWjrNwIWX8AQw9x">作者</label><div class="val" data-page-node-id="f9qH8eDQY993Ibhk3TLeR3">示例作者</div></div>
+                  <div class="grp" data-page-node-id="if4FBONCfbBspO6Pw3wPPX"><label data-page-node-id="sGyNRPErADgknJEaHlhBHj">语言</label><div class="val" data-page-node-id="Nuym9S7kDub3TCNj9qXxNI">翻译 · 中文</div></div>
+                  <div class="grp" data-page-node-id="UmzqqMorvwYolfZ2lmqtVq"><label data-page-node-id="fsNyY1aGgocobfYq9tewnw">分类</label><div class="val" data-page-node-id="KjNMzYVNITTS5D2A95HTs2">漫画</div></div>
+                  <div class="grp cond" data-page-node-id="xsrpvikV3E1kx4FHXllgih"><label data-page-node-id="koz8ft3f7rjD2ZAhHUF836">角色</label><div class="val" data-page-node-id="GPzCHnux8dpvsjxWR3Q6RL">示例角色 A · 示例角色 B <span class="ann" data-page-node-id="uITaHWjuyRhYUW24be4rMU">条件字段，缺则不渲染</span></div></div>
+                  <div class="grp cond" data-page-node-id="F8UaoEEF0ATvR3C3MknHBd"><label data-page-node-id="h6ukq19SqI5Q2Jcdk9TeVV">同人</label><div class="val" data-page-node-id="RSBnTcptADF9Psav6ByNYP">示例原作 <span class="ann" data-page-node-id="YESBj7xlRnzxCSVHyLF776">条件字段</span></div></div>
+                </div>
+                <div class="pane" data-page-node-id="ZFMBqLrDVrtbkB0wC9aBmV">
+                  <div class="sechd" style="margin-top:8px" data-page-node-id="kNddxRAPGAoWvRDfD2mIGH"><h3 style="font-size:14px" data-page-node-id="c0xK6Cs8oLhXrnh15mVSzF">继续阅读</h3></div>
+                  <div class="r" style="display:flex;gap:12px;align-items:center;padding:12px;border-radius:20px;background:var(--s-low);border:1px solid var(--outline-variant)" data-page-node-id="ubHNZEHkiZm2G3i2OEMydD">
+                    <div class="rc" style="width:52px;height:69px;border-radius:8px;overflow:hidden;flex:none;position:relative" data-page-node-id="BiND2WIkqxGCAhfRQJl9qb">
+                      <svg viewBox="0 0 52 69" preserveAspectRatio="none" style="position:absolute;inset:0;width:100%;height:100%" data-page-node-id="1xf0oxPB5emtEjUleypIIW"><rect width="52" height="69" fill="url(#g3)" data-page-node-id="vnYfckg3SQ4iM4RUGltMmd"/></svg>
+                    </div>
+                    <div style="flex:1;min-width:0" data-page-node-id="vz9M65ILH13QqmOfGseVl4">
+                      <b style="display:block;font-size:14px;font-weight:500" data-page-node-id="SBlmghZSdcu8Nn9Tn7tRtl">示例作品标题</b>
+                      <small style="font-size:12px;color:var(--on-surface-variant)" data-page-node-id="L4iDnCC0laFicoc8Asn7OF">第 12 / 38 页</small>
+                      <div class="bar" data-page-node-id="XPXmdv0EQ7Ai8wR1Pw5gjp"><i style="width:32%" data-page-node-id="IxO3laUzHlaIvkCqxvSzJj"></i></div>
+                    </div>
+                  </div>
+                  <div class="sechd" style="margin-top:24px" data-page-node-id="qQzIn6jIC8MZBtir4KWOF2"><h3 style="font-size:14px" data-page-node-id="DXqfGx59F4DJ1QobQY27gR">同作者</h3></div>
+                  <div class="relrow" data-page-node-id="1sLuJFkPvvkvZSNazQwLf6"><div class="rc" data-page-node-id="BDz7B9Ob29L5cmif8S2CpQ"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="gv5bQF0BEnxWdNNtcIFxcc"><rect width="3" height="4" fill="url(#g1)" data-page-node-id="hUaIkvXuiR1N8w1pEv0HbX"/></svg></div><b data-page-node-id="ED62N6qjffIH5iHdiXhiYg">示例作品标题六，两行截断演示文本</b></div>
+                  <div class="relrow" data-page-node-id="Cn2Km0vYHOaG3dEE8LLS3n"><div class="rc" data-page-node-id="tUrOpkUZBcKGudZvl0Y1sz"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="7AuCIAAhWHvhl9bOXek4s3"><rect width="3" height="4" fill="url(#g4)" data-page-node-id="UZAVOxWQsUdwh0LQu0RMcx"/></svg></div><b data-page-node-id="crxOkAFjKR09T7yxq0KfCn">示例作品标题七</b></div>
+                  <div class="relrow" data-page-node-id="qS6MwaZmZ4AWv2UAPN2Sjy"><div class="rc" data-page-node-id="JXtzZRQfeUyiuw8HYuYdSG"><svg viewBox="0 0 3 4" preserveAspectRatio="none" data-page-node-id="80cJV9bMI8b442LuQuRSLC"><rect width="3" height="4" fill="url(#g6)" data-page-node-id="y78IFQFPxqbr6OGypsxjmt"/></svg></div><b data-page-node-id="01O19stZGFZ0ASePUBQDOs">示例作品标题八</b></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <figcaption data-page-node-id="zi1FCoUfRcwAtahJsvGQ8Q"><b data-page-node-id="ig6Lsv0IjGrnoMB3d7Iv1W">⑥ 详情页（桌面双栏）</b><span data-page-node-id="8zCzlcDOFItQ8ecGCuXSUr">沿用视频详情页的宽屏双栏先例：主栏放封面 + 标题 + 操作 + 相关作品，右侧 360dp 固定侧栏放「继续阅读」与同作者。<br data-page-node-id="TFkte67zXo4A8jBAPqtRFi">侧栏宽度取 <code data-page-node-id="xQBYoTED8NrK6R8AeUORXl">PageMetrics.relatedPaneWidthFor</code>，固定值而非百分比 —— 否则 1920 窗口下侧栏会抢走注意力。</span></figcaption>
+    </figure>
+  </div>
+
+  <!-- ================= 说明 ================= -->
+  <div class="notes" data-page-node-id="x8xGfJspxGwuGC83O0Jmk0">
+    <div class="note" data-page-node-id="UKJxXRIHN2ajJk0vMXFcNq">
+      <h3 data-page-node-id="03DsGqIaoiSuquAB8WxpF1">用了代码里的哪些真值</h3>
+      <table data-page-node-id="V3F7yzk6npP76vO7EbloFH">
+        <tr data-page-node-id="vDksJTuSV6XeQVacbmBEDq"><th data-page-node-id="49Btnb4QHSbi2T9hTb5yFH">项</th><th data-page-node-id="NiltPznCsjFtn8v18dkB1r">取值</th></tr>
+        <tr data-page-node-id="OS20aew5ph3iz8nDdsuCnC"><td data-page-node-id="2ZaGvJkxM8LJGHZcf5WEN9">配色</td><td data-page-node-id="SPp1aJga2AO05AaG4jSlNx">sakura 槽位 light / dark 预生成值</td></tr>
+        <tr data-page-node-id="hJpwrvSIfd46ZpOtHmGrJH"><td data-page-node-id="4gwPE44yCSWbUcABAiyCtU">圆角</td><td data-page-node-id="vTovGwYyQ6l9AFibCJEmfO">chips 12 · 卡片 20 · sheet 左上 28 · 按钮 4/12</td></tr>
+        <tr data-page-node-id="AH5azpHtA2S9BwHdwRC5ZE"><td data-page-node-id="ATQm3Nul89LAa8v9VbORur">间距</td><td data-page-node-id="sGb7YtWpsTYNrHY09j2i8l">4 / 8 / 12 / 16 / 24 / 32</td></tr>
+        <tr data-page-node-id="U3nKzrnwZ6TXCE9JaCf8FM"><td data-page-node-id="TEnxGM1eoUF9vlbVPxhb0S">断点</td><td data-page-node-id="sGIZqmODClKeyF3FCbe7z1">600 / 840 / 1200 / 1600</td></tr>
+        <tr data-page-node-id="hE8DIjsqe1yew0rOGXaYUY"><td data-page-node-id="wmYNXUNmGbswCSN2HKMCoI">页边距</td><td data-page-node-id="Odrs5zBHHIhMY0VIDOgILB">16 / 24 / 24 / 32 / 40</td></tr>
+        <tr data-page-node-id="s81LpNefNtyW5XBorgAcxO"><td data-page-node-id="i3aLdXPDNbFZjgZopNU0jh">分类矩阵</td><td data-page-node-id="MMnUiukLphyGNvNUiftsZ1">2×4 · 3×3 · 4×2 · 5×2</td></tr>
+        <tr data-page-node-id="cKivSPBAH6icgOFCFkbzHD"><td data-page-node-id="hhy5l92oJnXKzLB38DvOmv">卡最小宽</td><td data-page-node-id="L5D9tkvEUcKwegcKI1gaY3">145 / 160 / 180 / 200</td></tr>
+        <tr data-page-node-id="MNYwSbmHeYKoiJio2ITvGr"><td data-page-node-id="S21o3c6lmmyDvTiWZ2C3oD">Rail</td><td data-page-node-id="jq19wWPliDLYMBEvcPIMRI">折叠 80 · 展开 220</td></tr>
+        <tr data-page-node-id="qflg50U3dp9hdaMxj4J2JK"><td data-page-node-id="U0EIS5YHERBJCeOeEjvhDv">底栏</td><td data-page-node-id="wU4dXa3Yj4a7Q3ZNox1KuF">80dp，4 项</td></tr>
+      </table>
+    </div>
+
+    <div class="note" data-page-node-id="ykj7Ipn577bi7m0khedd4b">
+      <h3 data-page-node-id="VED3rqtMkNPbxKfbGiB5Xz">直接复用 vs 需要新造</h3>
+      <ul data-page-node-id="yPJq5JPFqkEXWQo0SUAqP8">
+        <li data-page-node-id="ynUqiy33oQa6EPsntBqFeS"><b data-page-node-id="7zYSZzUTxjfbf8H3SHHDoA">复用</b>：卡片（<code data-page-node-id="HjJSvTYYA5UciABmhCPEBu">VideoCardItem</code> 已支持 3:4 竖卡）、chip、顶栏、空/错/加载态、骨架屏、<code data-page-node-id="npJ2mc3AnirxIqR1GLqum2">ContentColumn</code>、分类矩阵、网格、<code data-page-node-id="QuxSgJMIkUFBwuHn2il3oy">LoadMoreFooter</code>、Rail/底栏（遍历 <code data-page-node-id="hFoN0CBE6mhWXfXtBlW3wG">MainTab.entries</code> 自动加项）、转场动效。</li>
+        <li data-page-node-id="GNrfUOMXFD6RXVRuJHksyh"><b data-page-node-id="SzDqex6mKfRtbWs0YtiC2i">新造</b>：①「继续阅读」卡片（首页没有横滑/续读先例）；② 阅读器（全屏沉浸页完全无先例）；③ 一级导航加「漫画」项（要新 icon + 文案，并接进全屏判定）。</li>
+      </ul>
+    </div>
+
+    <div class="note" data-page-node-id="6ZKjh5rUyLdFyVEVWIzhyV">
+      <h3 data-page-node-id="pEuzZJs2MIHdREvnjyWNrk">需要你拍的三个决定</h3>
+      <ul data-page-node-id="CcfiUhqe8Z0Pe3DDN4JGDl">
+        <li data-page-node-id="P9pabLtr5zV0UyxHVYB07C"><b data-page-node-id="V1fFxSTt2oPWTNz76WWrmo">导航顺序</b>：现按「首页 / 漫画 / 发现 / 我的」排 —— 两个内容首屏相邻、搜索居中、我的收尾。也可以放「发现」之后。</li>
+        <li data-page-node-id="q0airedqM5ITiGpMnDdCpa"><b data-page-node-id="dF3bUA9xLqC4uBmgBKCayu">最新用无限滚动还是页码器</b>：站点是 <code data-page-node-id="T2z1C7d8G4ztm32CsvmdHN">?page=N</code> 数字分页。原型按现有 <code data-page-node-id="O7SKVwGXFXgtzGd2MH26Vm">LoadMoreFooter</code> 走无限滚动。</li>
+        <li data-page-node-id="4rSttsQfwGEm3mBvHioh8u"><b data-page-node-id="3Z76C99axkigWp1ALjpqAf">阅读器默认模式</b>：原型默认连续纵向滚动。要不要把「单页」作为默认（更接近站点习惯）？</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- 封面占位渐变：不随主题变化（真实封面是图片，也不该随主题变） -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" data-page-node-id="5rTjVWGWjWMvtLczJgBakA"><defs data-page-node-id="crDMkfAiSSRyI3lLbwKYEQ">
+  <linearGradient id="g0" x1="0" y1="0" x2="1" y2="1" data-page-node-id="YUByWxAkCpJBGxVbXgICds"><stop offset="0" stop-color="#E8D5D9" data-page-node-id="sqWBBIclYs8iPDMaCLAMS8"/><stop offset="1" stop-color="#C9A7AE" data-page-node-id="vpYV80POQQ50CLYNX4a4Eo"/></linearGradient>
+  <linearGradient id="g1" x1="0" y1="0" x2="1" y2="1" data-page-node-id="M4Pf16Zncycjx4GE63FoIz"><stop offset="0" stop-color="#D9D3E3" data-page-node-id="q7hrvunLC7TMEEavdpy6GJ"/><stop offset="1" stop-color="#AFA6C4" data-page-node-id="EhBEX8EJvyre3qWUC2b3qH"/></linearGradient>
+  <linearGradient id="g2" x1="0" y1="0" x2="1" y2="1" data-page-node-id="z0H3zubDpkAoU3uKF83TN8"><stop offset="0" stop-color="#DCE3D9" data-page-node-id="Zb7BgaBbN8MnDbYMSCeOE9"/><stop offset="1" stop-color="#A9BBA4" data-page-node-id="G5XaF4ZeciHntZpuwpD3n1"/></linearGradient>
+  <linearGradient id="g3" x1="0" y1="0" x2="1" y2="1" data-page-node-id="Vpx2g38GtLy2JM0R29RE9W"><stop offset="0" stop-color="#E3DCCF" data-page-node-id="eADHT2GjtLPGMHKxzHJNhK"/><stop offset="1" stop-color="#C2B49A" data-page-node-id="KKMjg8RsUjzRZgnXQYUNXJ"/></linearGradient>
+  <linearGradient id="g4" x1="0" y1="0" x2="1" y2="1" data-page-node-id="NfHaiHSmLYIiEFH7OVh7pB"><stop offset="0" stop-color="#D5E0E6" data-page-node-id="ULxUlTkFmJBU9wlUH6aHeE"/><stop offset="1" stop-color="#9FB7C4" data-page-node-id="n37fAHEVbidvC9tv0O5Q7d"/></linearGradient>
+  <linearGradient id="g5" x1="0" y1="0" x2="1" y2="1" data-page-node-id="UTgr0fwWmbDEs4sRoV2yWM"><stop offset="0" stop-color="#E6D6D2" data-page-node-id="r6CV9oj7wVWcnc176GrBDs"/><stop offset="1" stop-color="#C79E96" data-page-node-id="BLUGM1He8bzJJ6UmDXEjHF"/></linearGradient>
+  <linearGradient id="g6" x1="0" y1="0" x2="1" y2="1" data-page-node-id="kMBeokrtzGqjKDiAMaXd2W"><stop offset="0" stop-color="#D8DADF" data-page-node-id="z44Z16pyVUTBB1A96yMT3m"/><stop offset="1" stop-color="#A8ADB6" data-page-node-id="AbhBbDT2nFRE2aclyTlZLe"/></linearGradient>
+  <linearGradient id="g7" x1="0" y1="0" x2="1" y2="1" data-page-node-id="I6nVBcd8ylpDMl9jC67IoE"><stop offset="0" stop-color="#E4D9E6" data-page-node-id="UYWx7gQt8YwGHCAtDIyNRG"/><stop offset="1" stop-color="#BBA6C0" data-page-node-id="lVHpvLCBC0GNLF21jmeeMn"/></linearGradient>
+</defs></svg>
+
+<script>
+  document.getElementById('themeBtn').addEventListener('click', function () {
+    var root = document.documentElement;
+    var dark = root.getAttribute('data-theme') === 'dark';
+    root.setAttribute('data-theme', dark ? 'light' : 'dark');
+    this.setAttribute('aria-pressed', String(!dark));
+    this.textContent = dark ? '深色' : '浅色';
+  });
+</script>
+</body>
+</html>

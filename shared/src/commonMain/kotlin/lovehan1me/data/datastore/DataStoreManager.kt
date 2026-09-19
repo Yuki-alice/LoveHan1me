@@ -154,6 +154,8 @@ object DataStoreManager : SettingsStore {
         videoLanguage = string("video_language", defaults.videoLanguage), videoQuality = string("default_video_quality", defaults.videoQuality), showPlayedIndicator = bool("show_played_indicator", defaults.showPlayedIndicator),
         allowResumePlayback = bool("allow_resume_playback", defaults.allowResumePlayback),
         autoPlayOnEnter = bool("auto_play_on_enter", defaults.autoPlayOnEnter),
+        danmakuEnabled = bool("danmaku_enabled", defaults.danmakuEnabled), danmakuCommentEnabled = bool("danmaku_comment_enabled", defaults.danmakuCommentEnabled), danmakuProxyBase = string("danmaku_proxy_base", defaults.danmakuProxyBase), danmakuAppId = danmakuCredentials().first, danmakuAppSecret = danmakuCredentials().second,
+        danmakuFontSizeSp = int("danmaku_font_size", defaults.danmakuFontSizeSp), danmakuOpacityPercent = int("danmaku_opacity", defaults.danmakuOpacityPercent), danmakuDisplayAreaPercent = int("danmaku_display_area", defaults.danmakuDisplayAreaPercent), danmakuSpeedPercent = int("danmaku_speed", defaults.danmakuSpeedPercent), danmakuShowScroll = bool("danmaku_show_scroll", defaults.danmakuShowScroll), danmakuShowTop = bool("danmaku_show_top", defaults.danmakuShowTop), danmakuShowBottom = bool("danmaku_show_bottom", defaults.danmakuShowBottom),
         mpvProfile = string("mpv_profile", defaults.mpvProfile), enableGpuNextRenderer = bool("mpv_gpu_next_render", defaults.enableGpuNextRenderer), mpvInterpolation = bool("mpv_interpolation", defaults.mpvInterpolation),
         mpvDeband = bool("mpv_deband", defaults.mpvDeband), mpvFramedrop = bool("mpv_framedrop", defaults.mpvFramedrop), mpvHwdec = string("mpv_hwdecx", defaults.mpvHwdec),
         mpvCacheSecs = int("mpv_cache_secs", defaults.mpvCacheSecs), mpvTlsVerify = bool("mpv_tls_verify", defaults.mpvTlsVerify), mpvNetworkTimeout = int("mpv_network_timeout", defaults.mpvNetworkTimeout), customMpvParams = string("mpv_custom_parameters", defaults.customMpvParams),
@@ -185,6 +187,12 @@ object DataStoreManager : SettingsStore {
         put("domain_name", domainName); put("selectedBaseUrl", selectedBaseUrl); put("use_custom_mirror_site", useCustomMirrorSite); put("custom_mirror_site", customMirrorSite); put("append_custom_mirror_path", appendCustomMirrorPath); put("use_built_in_hosts", useBuiltInHosts); put("custom_hosts_data", customHostsData); put("use_doh", useDoH); put("doh_preset", dohPreset); put("doh_custom_url", dohCustomUrl); put("doh_bootstrap_ips", dohBootstrapIps); put("doh_timeout_seconds", dohTimeoutSeconds); put("proxy_type", proxyType.id); put("proxy_ip", proxyIp); put("proxy_port", proxyPort)
         cachedUpdateJson?.let { put("app_update_cached_json", it) }; put("app_update_ignored_version_code", ignoredVersionCode); put("download_count_limit", downloadCountLimit); put("download_speed_limit", downloadSpeedLimitIndex); put("use_private_storage", usePrivateStorage); safDownloadPath?.let { put("saf_download_path", it) }; put("collapse_downloaded_group", collapseDownloadedGroup)
         put("switch_player_kernel", playerKernel.value); put("player_speed", playerSpeed.toString()); put("slide_sensitivity", slideSensitivity); put("long_press_speed_times", longPressSpeedTime.toString()); put("video_language", videoLanguage); put("default_video_quality", videoQuality); put("show_played_indicator", showPlayedIndicator); put("allow_resume_playback", allowResumePlayback); put("auto_play_on_enter", autoPlayOnEnter)
+        put("danmaku_enabled", danmakuEnabled); put("danmaku_comment_enabled", danmakuCommentEnabled); put("danmaku_proxy_base", danmakuProxyBase)
+        put("danmaku_font_size", danmakuFontSizeSp); put("danmaku_opacity", danmakuOpacityPercent); put("danmaku_display_area", danmakuDisplayAreaPercent); put("danmaku_speed", danmakuSpeedPercent); put("danmaku_show_scroll", danmakuShowScroll); put("danmaku_show_top", danmakuShowTop); put("danmaku_show_bottom", danmakuShowBottom)
+        val (storedAppId, storedAppSecret) = danmakuCredentialsToPersist(
+            danmakuAppId, danmakuAppSecret, defaults.danmakuAppId, defaults.danmakuAppSecret,
+        )
+        put("danmaku_app_id", storedAppId); put("danmaku_app_secret", storedAppSecret)
         put("mpv_profile", mpvProfile); put("mpv_gpu_next_render", enableGpuNextRenderer); put("mpv_interpolation", mpvInterpolation); put("mpv_deband", mpvDeband); put("mpv_framedrop", mpvFramedrop); put("mpv_hwdecx", mpvHwdec); put("mpv_cache_secs", mpvCacheSecs); put("mpv_tls_verify", mpvTlsVerify); put("mpv_network_timeout", mpvNetworkTimeout); put("mpv_custom_parameters", customMpvParams)
         put("search_artist_ignore_video_type", searchArtistIgnoreVideoType); put("disable_mobile_data_warning", disableMobileDataWarning); put("fun_loading_hints", funLoadingHints); put("check_in_enabled", checkInEnabled)
         put("search_grid_columns_compact", searchGridColumnsCompact); put("search_grid_columns_medium", searchGridColumnsMedium); put("search_grid_columns_expanded", searchGridColumnsExpanded); put("search_grid_columns_large", searchGridColumnsLarge)
@@ -217,6 +225,68 @@ object DataStoreManager : SettingsStore {
     private fun Preferences.string(name: String, default: String) = nullableString(name) ?: default
     private fun Preferences.nullableString(name: String) = runCatching { this[stringPreferencesKey(name)] }.getOrNull()
     private fun Preferences.floatString(name: String, default: Float) = nullableString(name)?.toFloatOrNull() ?: default
+    private fun Preferences.danmakuCredentials(): Pair<String, String> = resolveDanmakuCredentials(
+        storedAppId = nullableString("danmaku_app_id"),
+        storedAppSecret = nullableString("danmaku_app_secret"),
+        builtInAppId = defaults.danmakuAppId,
+        builtInAppSecret = defaults.danmakuAppSecret,
+    )
     private fun MutablePreferences.putRaw(name: String, value: Any) { when (value) { is Boolean -> this[booleanPreferencesKey(name)] = value; is Int -> this[intPreferencesKey(name)] = value; is String -> this[stringPreferencesKey(name)] = value } }
-    private val AUTH_KEYS = setOf("already_login", "saved_user_id", "cookie", "cf_cookie", "cf_cookie_host")
+    /**
+     * 备份导出/导入都跳过这些键。
+     *
+     * 弹幕 AppID 单独导出去没有意义（签名需要 secret 才成立），留着反而会让
+     * 导入方出现"填了 ID 却总是鉴权失败"的半截配置，故与 secret 成对排除。
+     */
+    private val AUTH_KEYS = setOf(
+        "already_login", "saved_user_id", "cookie", "cf_cookie", "cf_cookie_host",
+        "danmaku_app_id", "danmaku_app_secret",
+    )
 }
+
+/**
+ * 弹幕凭据的读法：**盘面上的空串不能把内置凭据顶掉**。
+ *
+ * [DataStoreManager.initialize] 首启就把全部默认值落盘（`write(initial)`），
+ * 而 `string()` 只要键存在就返回盘上的值。于是"凭据改为构建期注入"之前
+ * 跑过一次的那份数据，会留下 `danmaku_app_id=""`，此后无论构建里注了什么
+ * 都读成空 —— `DanmakuProvider.from` 判为未配置，播放器上表现为"根本没有弹幕"。
+ *
+ * 两项**都**空才回落到内置（清空 = 用内置，与设置页文案同一套语义）；
+ * 只填了一项则原样交出去，让 `DanmakuProvider.from` 按"配对不成立"处理 ——
+ * 把用户手填的 ID 和项目的内置 secret 拼成一对四不像，报的会是更难查的 403。
+ */
+internal fun resolveDanmakuCredentials(
+    storedAppId: String?,
+    storedAppSecret: String?,
+    builtInAppId: String,
+    builtInAppSecret: String,
+): Pair<String, String> =
+    if (storedAppId.isNullOrBlank() && storedAppSecret.isNullOrBlank()) {
+        builtInAppId to builtInAppSecret
+    } else {
+        storedAppId.orEmpty() to storedAppSecret.orEmpty()
+    }
+
+/**
+ * 弹幕凭据的写法：[resolveDanmakuCredentials] 的反向操作 —— **内置那对不落盘**。
+ *
+ * 读侧把盘上的空值补成内置凭据，写侧若原样回写就把内置凭据伪装成了"用户自己填的"：
+ * 下一次构建换了注入的那对，旧值仍然非空 ⇒ 继续顶在新值上面，弹幕会静默 403 且
+ * 界面上看不出原因。顺带一个好处是明文密钥不再进 `settings.preferences_pb`
+ * （那个文件不受 [DataStoreManager] 的备份排除保护）。
+ *
+ * 写空串而不是删键：读侧本来就按"空白 = 未配置"处理，于是老存档里已经写进去的
+ * 那份也会在下次启动时被洗掉。
+ */
+internal fun danmakuCredentialsToPersist(
+    appId: String,
+    appSecret: String,
+    builtInAppId: String,
+    builtInAppSecret: String,
+): Pair<String, String> =
+    if (appId == builtInAppId && appSecret == builtInAppSecret) {
+        "" to ""
+    } else {
+        appId to appSecret
+    }

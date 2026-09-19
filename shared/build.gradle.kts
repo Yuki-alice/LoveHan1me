@@ -1,6 +1,8 @@
 @file:Suppress("UnstableApiUsage")
 
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinNativeTarget
+// 必须 import：Gradle Kotlin DSL 里写 `java.util.Properties` 会被解析成 project 的 java 扩展
+import java.util.Properties
 
 // KMP 共享模块。
 // target / 源集层级 / Android 命名空间等全部由 build-logic 的 han1me-kmp-library
@@ -219,4 +221,65 @@ kotlin {
 compose.resources {
     publicResClass = true
     packageOfResClass = "lovehan1me"
+}
+
+// ---------- 弹弹play 凭据：构建期注入（与 animeko 同一手法） ----------
+// 值放在**根目录 local.properties**（已在 .gitignore 里），或 CI 用 -P 传；
+// 生成一个常量文件喂给 commonMain。没配时生成空串，链路退回「未配置·去设置」，
+// 于是：发行包/本地调试打开即用，而源码与 git 历史里永远没有密钥。
+// 设置页依然可覆盖 —— 那是给自带 AppID 的用户留的，不再是必经步骤。
+val danmakuLocalProperties = Properties().apply {
+    val propertiesFile = rootProject.file("local.properties")
+    if (propertiesFile.exists()) propertiesFile.inputStream().use { load(it) }
+}
+
+fun danmakuCredential(name: String): String =
+    danmakuLocalProperties.getProperty(name) ?: providers.gradleProperty(name).orNull ?: ""
+
+/** 只处理会改变字面量边界的三个字符；凭据本身是 `[A-Za-z0-9_-]`。 */
+fun String.asKotlinStringLiteral(): String = buildString {
+    append('"')
+    for (ch in this@asKotlinStringLiteral) {
+        when (ch) {
+            '\\' -> append("\\\\")
+            '"' -> append("\\\"")
+            '$' -> append("\\$")
+            else -> append(ch)
+        }
+    }
+    append('"')
+}
+
+val generateDanmakuCredentials = tasks.register("generateDanmakuCredentials") {
+    // 转义在配置期做完：doLast 里若调用脚本顶层函数，会把 build script 对象一起序列化，
+    // 配置缓存直接拒绝。任务动作里只留 String 与 Provider。
+    val appIdLiteral = danmakuCredential("han1me.danmaku.dandan.app.id").asKotlinStringLiteral()
+    val appSecretLiteral = danmakuCredential("han1me.danmaku.dandan.app.secret").asKotlinStringLiteral()
+    val outputDir = layout.buildDirectory.dir("generated/danmakuCredentials/kotlin")
+
+    inputs.property("appId", appIdLiteral)
+    inputs.property("appSecret", appSecretLiteral)
+    outputs.dir(outputDir)
+
+    doLast {
+        val packageDir = outputDir.get().asFile.resolve("lovehan1me/core/domain/model").apply { mkdirs() }
+        packageDir.resolve("DanmakuBuildCredentials.kt").writeText(
+            """
+            |package lovehan1me.core.domain.model
+            |
+            |// 由 :shared:generateDanmakuCredentials 生成，勿手改。
+            |// 值来自根目录 local.properties（gitignore）或 -P；缺省为空串 = 本构建未内置凭据。
+            |// 官方对开源客户端的要求正是"源码里用占位符"，所以真实值只存在于构建产物。
+            |// 放在 AppSettings 同包：core 不该为了读一个常量去依赖 data 层。
+            |internal object DanmakuBuildCredentials {
+            |    const val APP_ID: String = $appIdLiteral
+            |    const val APP_SECRET: String = $appSecretLiteral
+            |}
+            |""".trimMargin(),
+        )
+    }
+}
+
+kotlin.sourceSets.named("commonMain") {
+    kotlin.srcDir(generateDanmakuCredentials)
 }

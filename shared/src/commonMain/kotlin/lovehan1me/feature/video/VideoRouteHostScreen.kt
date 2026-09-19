@@ -57,6 +57,7 @@ import lovehan1me.local_list_notice_message
 import lovehan1me.do_not_show_again
 import lovehan1me.continues
 import lovehan1me.data.getHanimeVideoLink
+import lovehan1me.core.constant.VIDEO_COMMENT_PREFIX
 import lovehan1me.data.DatabaseRepo
 import lovehan1me.data.database.entity.WatchHistoryEntity
 import lovehan1me.core.domain.exception.ParseException
@@ -81,6 +82,10 @@ import lovehan1me.feature.player.PlaybackQuality
 import lovehan1me.feature.player.PlayerKernel
 import lovehan1me.feature.player.createPlaybackEngine
 import lovehan1me.feature.player.isActiveNetworkMetered
+import lovehan1me.feature.danmaku.DanmakuLayer
+import lovehan1me.feature.danmaku.DanmakuControls
+import lovehan1me.feature.danmaku.rememberDanmakuRenderOptions
+import lovehan1me.feature.danmaku.rememberDanmakuSession
 import lovehan1me.feature.video.CommentViewModel
 import lovehan1me.feature.video.VideoViewModel
 import lovehan1me.app.sharedViewModel
@@ -128,6 +133,8 @@ fun VideoRouteHostScreen(
     onNavigateToVideo: (String) -> Unit,
     onOpenSearchRoute: (SearchRoute) -> Unit,
     onEnqueueDownload: (EnqueueDownloadRequest) -> Unit,
+    /** 弹幕「去设置」：跳到播放器设置页（弹幕分组在那里）。 */
+    onOpenDanmakuSettings: () -> Unit = {},
 ) {
     val lifecycleOwner = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
@@ -737,6 +744,30 @@ fun VideoRouteHostScreen(
         )
     }
 
+    // ── 弹幕（评论主源 + 弹弹增强层）─────────────────────────────────
+    // 关联表的键：本地播放 videoCode 恒 "-1"，直接拿它当键会让**所有**本地文件
+    // 共用同一条关联（换一部片子还留着上一部的弹幕源）。
+    val danmakuVideoCode = route.videoCode.takeIf { it != "-1" }
+        ?: route.localUri?.let { "local:$it" }
+    // 评论流复用评论区的同一份 StateFlow：不为弹幕单开请求。
+    // 评论 Tab 打开时也会调 ensureComments（命中 Success 直接返回），两边共享一次加载。
+    val danmakuComments by commentViewModel.videoCommentFlow.collectAsStateWithLifecycle()
+    danmakuVideoCode?.let { code ->
+        LaunchedEffect(code) {
+            if (SettingsRepository.current.danmakuCommentEnabled) {
+                commentViewModel.ensureComments(VIDEO_COMMENT_PREFIX, code)
+            }
+        }
+    }
+    val danmakuSession = danmakuVideoCode?.let { code ->
+        rememberDanmakuSession(
+            videoCode = code,
+            title = videoTitle,
+            playbackState = playbackState,
+            comments = danmakuComments,
+        )
+    }
+
     VideoShellContent(
         isDualPane = isDualPane,
         isInPipMode = hostUiState.isInPipMode,
@@ -886,6 +917,30 @@ fun VideoRouteHostScreen(
             playbackState.engine.videoWidth.toFloat() / playbackState.engine.videoHeight.toFloat()
         } else {
             16f / 9f
+        },
+        // 首帧未到不画：弹幕飘在海报上是穿帮。PiP 由 VideoShellContent 统一收掉。
+        danmakuLayer = danmakuSession?.takeIf {
+            playbackState.engine.hasRenderedFirstFrame
+        }?.let { session ->
+            @Composable {
+                // 在 lambda **内**取：设置变了只重组弹幕这一槽，不动整个播放器组合
+                val danmakuOptions = rememberDanmakuRenderOptions()
+                DanmakuLayer(
+                    session = session,
+                    modifier = Modifier.fillMaxSize(),
+                    options = danmakuOptions,
+                )
+            }
+        },
+        // 双钮不等首帧：开关与设置在海报阶段就该能点（关联动作不依赖画面）。
+        // 连关联键都没有时不摆——点了也没东西可关联，那才是假动作。
+        danmakuControls = danmakuVideoCode?.let {
+            @Composable {
+                DanmakuControls(
+                    session = danmakuSession,
+                    onOpenSettings = onOpenDanmakuSettings,
+                )
+            }
         },
         onPlayerBoundsChanged = { platformHost.setPipSourceRect(it) },
         onNextClick = nextPlaylistItem?.let { item ->

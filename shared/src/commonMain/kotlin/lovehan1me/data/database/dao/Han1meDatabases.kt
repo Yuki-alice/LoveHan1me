@@ -1,7 +1,7 @@
 package lovehan1me.data.database.dao
 
 /**
- * 四库统一入口（P4b：DatabaseRepo/ViewModel 下沉 commonMain 的前置）。
+ * 五库统一入口（P4b：DatabaseRepo/ViewModel 下沉 commonMain 的前置）。
  *
  * 各平台 actual 用 `by lazy { createXxxDatabase(<平台路径>) }` 提供懒加载单例：
  *  - androidMain：路径与 :app 原 `XxxDatabaseInstance.kt` 完全一致（getDatabasePath(<文件名>)），
@@ -17,4 +17,5 @@ expect object Han1meDatabases {
     val download: DownloadDatabase
     val checkInRecord: CheckInRecordDatabase
     val localList: LocalListDatabase
+    val danmaku: DanmakuDatabase
 }

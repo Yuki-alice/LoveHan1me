@@ -113,6 +113,22 @@ class CommentViewModel : ViewModel() {
     fun clearCommentData(){
         _videoCommentFlow.value = emptyList()
     }
+
+    /**
+     * 有缓存就用缓存：同一部片子（`code` 一致）且上次成功时直接返回，
+     * 播放器页（弹幕主源预热）与评论 Tab 共享一次 `loadComment`。
+     * 下拉刷新与点赞等写操作走各自的原方法，不受影响。
+     */
+    fun ensureComments(type: String, code: String) {
+        if (::code.isInitialized && this.code == code &&
+            _videoCommentStateFlow.value is WebsiteState.Success
+        ) {
+            return
+        }
+        this.code = code
+        getComment(type, code)
+    }
+
     fun getComment(type: String, code: String) {
         viewModelScope.launch {
             _videoCommentStateFlow.value = WebsiteState.Loading

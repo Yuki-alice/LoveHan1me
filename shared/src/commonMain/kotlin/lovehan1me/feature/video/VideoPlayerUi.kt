@@ -139,6 +139,7 @@ import lovehan1me.ic_volume_up
 import lovehan1me.ic_light_mode
 import lovehan1me.ic_fast_rewind
 import lovehan1me.core.util.AppToast
+import lovehan1me.core.util.LogUtil
 import androidx.compose.runtime.rememberCoroutineScope
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
@@ -226,6 +227,20 @@ fun VideoPlayerUi(
     onProgressGesture: (Float) -> Unit = onProgressChange,
     progressGestureSensitivity: Float = PlayerDefaults.DEFAULT_PROGRESS_SLIDE_SENSITIVITY.toFloat(),
     videoAspectRatio: Float = 16f / 9f,
+    /**
+     * 弹幕绘制层插槽。null = 不画（未配置数据源、PiP、首帧未到都由调用方决定）。
+     *
+     * 给的是插槽而不是 `DanmakuSession`：绘制层的字号/透明度/区域来自设置，
+     * session 的生命周期也归屏幕边界，本组件只知道**画面矩形在哪**。
+     */
+    danmakuLayer: (@Composable () -> Unit)? = null,
+    /**
+     * 弹幕**双钮**插槽：放在底栏中间位（原假输入框的位置）。
+     *
+     * 与 [danmakuLayer] 分开传，因为可见条件不同：绘制层要等首帧，双钮不该等
+     * （开关与设置在海报阶段就该能点）。
+     */
+    danmakuControls: (@Composable () -> Unit)? = null,
     /**
      * Kazumi 哔哩哔哩风总开关（顶/底 scrim、白字入口、无中央大键、小手势 HUD）。
      * 调用方按 `isDualPane || isFullscreen` 置位：窄屏竖屏恒 false → 零视觉变化。
@@ -532,6 +547,16 @@ fun VideoPlayerUi(
                     .fillMaxHeight()
                     .aspectRatio(safeAspectRatio)
             }
+            // 诊断：弹幕/画面矩形只取决于这三个数。线上错位先看这条日志，
+            // 再决定是容器量错了、引擎报的尺寸错了，还是 surface 在内部又套了黑边。
+            // remember 限流：值不变不重打，进度条的重组刷不到这里。
+            remember(safeAspectRatio, maxWidth, maxHeight) {
+                LogUtil.d(
+                    "DanmakuPlacement",
+                    "container=${maxWidth.value.toInt()}x${maxHeight.value.toInt()} " +
+                        "videoAspect=$safeAspectRatio letterbox=${safeAspectRatio < containerAspectRatio}",
+                )
+            }
 
             if (playbackEngine != null) {
                 key(playbackEngine, safeAspectRatio) {
@@ -555,6 +580,14 @@ fun VideoPlayerUi(
                 Box(
                     modifier = videoModifier.background(HanimeDefaults.Overlay.backdrop)
                 )
+            }
+
+            // 弹幕层：**与画面同一个矩形**（不是整个播放器 Box），否则黑边上也会有字。
+            // 刻意不套 `.scale(scale)`：用户放大画面时弹幕该留在屏幕尺寸上，
+            // 跟着放大只会看到字变糊变大。它在控件层之前，也吃不到任何手势
+            // （绘制层自身没有 pointerInput）。
+            danmakuLayer?.let { layer ->
+                Box(modifier = videoModifier) { layer() }
             }
         }
         Box(
@@ -867,6 +900,7 @@ fun VideoPlayerUi(
             expanded = expanded,
             onMenuOpenChange = { bottomMenuOpen = it },
             hoverInteractionSource = bottomBarHoverSource,
+            danmakuControls = danmakuControls,
         )
 
         PlayerStateCards(

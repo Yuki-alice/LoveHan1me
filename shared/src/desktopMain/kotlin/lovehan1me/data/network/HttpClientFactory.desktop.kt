@@ -15,6 +15,8 @@ actual fun createGetchuHttpClient(): HttpClient = HttpClient(OkHttp) {
     engine { preconfigured = ServiceCreator.getchuClient }
 }
 
+actual fun createPlainHttpClient(): HttpClient = HttpClient(OkHttp)
+
 internal actual fun rebuildHttpClients() {
     ServiceCreator.rebuildOkHttpClient()
 }

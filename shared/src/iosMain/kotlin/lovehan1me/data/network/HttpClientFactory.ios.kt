@@ -11,6 +11,12 @@ actual fun createDownloadHttpClient(): HttpClient = createDarwinHttpClient()
 
 actual fun createGetchuHttpClient(): HttpClient = createDarwinHttpClient()
 
+actual fun createPlainHttpClient(): HttpClient = HttpClient(Darwin) {
+    install(HttpTimeout) {
+        requestTimeoutMillis = 15_000
+    }
+}
+
 internal actual fun rebuildHttpClients() {
     // iOS 无 ServiceCreator/OkHttp 层，重建即重建上面的 Darwin client，无需额外动作
 }

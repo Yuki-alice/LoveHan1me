@@ -50,7 +50,6 @@ import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
@@ -346,7 +345,11 @@ internal fun BoxScope.PlayerGestureLockButton(
 }
 
 /**
- * 右侧悬浮单钮（原型 `.float-btn`）：48dp / 16dp 圆角 / 黑 5% / 0.5dp 描边。
+ * 右侧悬浮单钮：48dp / 16dp 圆角 / 深色 5% 底 + 0.5dp 暗灰描边。
+ *
+ * 对齐 animeko `PlayerFloatingButtonBox`：底是深色 `background` 的 5%
+ * （播放器恒深色域，取纯黑 5% 等价），描边是深色域 `outline`（#938F99）
+ * 的 61.8%（`slightlyWeaken`）—— 不是纯白，纯白在暗画面上会显得过亮。
  */
 @Composable
 private fun RhsFloatButton(
@@ -362,7 +365,7 @@ private fun RhsFloatButton(
             .background(HanimeDefaults.Overlay.backdrop.copy(alpha = 0.05f))
             .border(
                 0.5.dp,
-                HanimeDefaults.Overlay.onScrim.copy(alpha = WEAKEN_SLIGHTLY),
+                FLOAT_BUTTON_BORDER,
                 shape,
             )
             .clickable {
@@ -377,3 +380,7 @@ private fun RhsFloatButton(
 
 /** animeko `slightlyWeaken()` = 0.618（描边透明度，见 SPEC §2.1）。 */
 private const val WEAKEN_SLIGHTLY = 0.618f
+
+/** 悬浮钮描边：深色域 outline（#938F99）× 61.8%，见上注释。 */
+private val FLOAT_BUTTON_BORDER = androidx.compose.ui.graphics.Color(0xFF938F99)
+    .copy(alpha = WEAKEN_SLIGHTLY)

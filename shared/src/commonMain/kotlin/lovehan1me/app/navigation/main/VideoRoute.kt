@@ -22,6 +22,8 @@ fun VideoRouteScreen(
     onNavigateToVideo: (String) -> Unit,
     onOpenSearchRoute: (SearchRoute) -> Unit,
     onEnqueueDownload: (EnqueueDownloadRequest) -> Unit,
+    /** 弹幕「去设置」：状态条在没配置数据源时只有这一个动作。 */
+    onOpenDanmakuSettings: () -> Unit = {},
 ) {
     VideoRouteHostScreen(
         route = route,
@@ -32,5 +34,6 @@ fun VideoRouteScreen(
         onNavigateToVideo = onNavigateToVideo,
         onOpenSearchRoute = onOpenSearchRoute,
         onEnqueueDownload = onEnqueueDownload,
+        onOpenDanmakuSettings = onOpenDanmakuSettings,
     )
 }

@@ -530,6 +530,8 @@ fun SharedTopNavigation(
                 onNavigateHome = { backStack.addTopLevel(HomeRoute) },
                 onNavigateToVideo = onNavigateToVideo,
                 onOpenSearchRoute = { searchRoute -> backStack.add(searchRoute) },
+                // 弹幕状态条的「去设置」：播放器设置页里有弹幕分组
+                onOpenDanmakuSettings = { backStack.add(PlayerSettingsRoute) },
                 onEnqueueDownload = { request ->
                     scope.launch {
                         downloadWorkController().addTask(

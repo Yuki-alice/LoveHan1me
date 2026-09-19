@@ -101,10 +101,23 @@ fun VideoShellContent(
     progressGestureSensitivity: Float,
     videoAspectRatio: Float,
     onPlayerBoundsChanged: (Rect) -> Unit,
+    /**
+     * 弹幕绘制层插槽（null = 不画）。
+     *
+     * PiP 在这里统一折算成 null，而不是让每个调用方记得判断：画中画只有几百分宽，
+     * 弹幕上去就是一糊，而且 PiP 期间没有帧循环驱动时钟，弹幕会定在原地。
+     */
+    danmakuLayer: (@Composable () -> Unit)? = null,
+    /**
+     * 弹幕状态条插槽（底栏中间位）。null = 该位置留空。
+     *
+     * 与 [danmakuLayer] 一起在 PiP 下被收掉：PiP 的底栏不是这套控件。
+     */
+    danmakuControls: (@Composable () -> Unit)? = null,
     tabsContent: @Composable () -> Unit,
     /**
      * 宽屏右栏 Tab（详情｜评论），null = 回退到 [tabsContent]。
-     * 窄屏/经典双栏传 null。弹幕输入条在播放器底栏（BilibiliBottomBar），不挂这里。
+     * 窄屏/经典双栏传 null。弹幕相关控件在播放器底栏（见 [danmakuControls]），不挂这里。
      */
     railTabsContent: (@Composable () -> Unit)? = null,
     /**
@@ -134,6 +147,11 @@ fun VideoShellContent(
     // 与 bilibiliStyle **当前同源但语义不同**——那是皮肤，这是行结构，
     // 所以各自派生一次，将来要拆开时只改这一行。
     val expandedBottomBar = (isDualPane || isFullscreen) && !isInPipMode
+    // PiP 不给弹幕层（见参数文档）；其余三条布局路径共用同一个插槽。
+    val resolvedDanmakuLayer: (@Composable () -> Unit)? =
+        if (isInPipMode) null else danmakuLayer
+    val resolvedDanmakuControls: (@Composable () -> Unit)? =
+        if (isInPipMode) null else danmakuControls
 
     // 播放器内容：单一组合路径，**刻意不再使用 movableContentOf**。
     // 本组合函数持有 progress / currentTime / isPlaying 等逐帧变化的参数，会持续高频重组；
@@ -146,6 +164,8 @@ fun VideoShellContent(
     fun PlayerBox(playerModifier: Modifier) {
         VideoPlayerUi(
             modifier = playerModifier,
+            danmakuLayer = resolvedDanmakuLayer,
+            danmakuControls = resolvedDanmakuControls,
             playbackEngine = playbackEngine,
             posterUrl = posterUrl,
             title = title,

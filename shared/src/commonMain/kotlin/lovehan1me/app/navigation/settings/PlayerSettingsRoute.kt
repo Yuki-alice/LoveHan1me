@@ -114,6 +114,54 @@ fun PlayerSettingsRouteScreen(
             coroutineScope.launch { SettingsRepository.setSlideSensitivity(it) }
         },
         onOpenMpvSettings = onNavigateToMpvSettings,
+        onDanmakuEnabledChange = { enabled ->
+            coroutineScope.launch {
+                SettingsRepository.update { it.copy(danmakuEnabled = enabled) }
+            }
+        },
+        onDanmakuCommentEnabledChange = { enabled ->
+            coroutineScope.launch {
+                SettingsRepository.update { it.copy(danmakuCommentEnabled = enabled) }
+            }
+        },
+        onDanmakuProxyChange = { url ->
+            coroutineScope.launch {
+                SettingsRepository.update { it.copy(danmakuProxyBase = url) }
+            }
+        },
+        onDanmakuAppIdChange = { appId ->
+            coroutineScope.launch {
+                SettingsRepository.update { it.copy(danmakuAppId = appId) }
+            }
+        },
+        onDanmakuAppSecretChange = { secret ->
+            coroutineScope.launch {
+                SettingsRepository.update { it.copy(danmakuAppSecret = secret) }
+            }
+        },
+        // 观感四项不在这儿夹取：滑杆本来就拖不出区间，而越界的历史值由
+        // `DanmakuRenderOptions` 的派生属性在进引擎前统一夹回（读侧夹一次就够，
+        // 写侧再夹会出现"存进去的值和显示的值不是同一个"）。
+        onDanmakuFontSizeChange = { value ->
+            coroutineScope.launch {
+                SettingsRepository.update { it.copy(danmakuFontSizeSp = value) }
+            }
+        },
+        onDanmakuOpacityChange = { value ->
+            coroutineScope.launch {
+                SettingsRepository.update { it.copy(danmakuOpacityPercent = value) }
+            }
+        },
+        onDanmakuDisplayAreaChange = { value ->
+            coroutineScope.launch {
+                SettingsRepository.update { it.copy(danmakuDisplayAreaPercent = value) }
+            }
+        },
+        onDanmakuSpeedChange = { value ->
+            coroutineScope.launch {
+                SettingsRepository.update { it.copy(danmakuSpeedPercent = value) }
+            }
+        },
     )
 }
 
@@ -139,6 +187,8 @@ private fun buildPlayerSettingsUiState(
     slideSensitivitySummary: String,
 ): PlayerSettingsUiState {
     val kernel = SettingsRepository.switchPlayerKernel
+    // 弹幕四项同源于一个快照：分四次读 `settings.value` 会读到跨写入的中间态
+    val danmaku = SettingsRepository.current
     val currentSpeed = SettingsRepository.playerSpeed
     val currentLongPressSpeed = SettingsRepository.longPressSpeedTime
     val speedLabels = PlayerDefaults.speedLabels
@@ -161,5 +211,14 @@ private fun buildPlayerSettingsUiState(
         longPressSpeedTimesLabel = longPressDisplay,
         slideSensitivity = SettingsRepository.slideSensitivity,
         slideSensitivitySummary = slideSensitivitySummary,
+        danmakuEnabled = danmaku.danmakuEnabled,
+        danmakuCommentEnabled = danmaku.danmakuCommentEnabled,
+        danmakuProxyBase = danmaku.danmakuProxyBase,
+        danmakuAppId = danmaku.danmakuAppId,
+        danmakuAppSecret = danmaku.danmakuAppSecret,
+        danmakuFontSizeSp = danmaku.danmakuFontSizeSp,
+        danmakuOpacityPercent = danmaku.danmakuOpacityPercent,
+        danmakuDisplayAreaPercent = danmaku.danmakuDisplayAreaPercent,
+        danmakuSpeedPercent = danmaku.danmakuSpeedPercent,
     )
 }

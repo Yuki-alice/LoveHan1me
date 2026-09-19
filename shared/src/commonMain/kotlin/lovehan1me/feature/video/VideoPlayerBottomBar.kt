@@ -12,13 +12,11 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
@@ -31,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeJoin
@@ -59,12 +56,13 @@ import org.jetbrains.compose.resources.stringResource
  * + `PlayerTransportBar` 非 compact 分支）。
  *
  * 宽屏（expanded）单行结构（按钮之间**无间距**，48dp 按钮紧贴）：
- * `[播放 25dp][下一集 24dp][时间 16sp] [弹幕框(居中, max 500dp)] [超分辨率][倍速][清晰度][全屏 24dp]`
+ * `[播放 25dp][下一集 24dp][时间 16sp] [弹幕状态条(居中)] [超分辨率][倍速][清晰度][全屏 24dp]`
  * 上方一条全宽进度条，下方留 6dp。
  *
  * - 时间 inline 在 next 后面（Kazumi `afterPlaybackButtons`），16sp 全白等宽，无描边；
- * - 弹幕框：高 33dp、8dp 圆角、白 38% 底、15sp、右侧 `发送` 胶囊钮；
- *   没有弹幕后端，"发送"只提示暂未开放（输入框/按钮走关闭态配色）；
+ * - 中间位是 [danmakuControls] 插槽（由屏幕边界给，通常是 `DanmakuControls` 双钮）。
+ *   此前这里是自建的假输入框 + "发送"钮（点了只提示暂未开放），已随弹幕接入删除；
+ *   再之前是状态胶囊 —— 状态要说的话搬进了设置弹窗的"状况"段，中间位只留动作。
  * - 超分辨率 / 倍速 / 清晰度：白字 TextButton + Kazumi 式上方弹窗
  *   （取代此前的 BottomSheet；清晰度是 Hanime 刚需，原 Kazumi 该槽位是画面比例图标）；
  * - 窄屏（!expanded）保持现状：时间独占一行 + 单行内联进度条（此前已验证无误，不动）。
@@ -108,6 +106,12 @@ internal fun BoxScope.PlayerBottomBar(
      * 悬停交互源：**底栏容器**上的 hover 用来"请求控件常亮"。
      */
     hoverInteractionSource: MutableInteractionSource = remember { MutableInteractionSource() },
+    /**
+     * 弹幕双钮插槽（宽屏底栏中间位，原假输入框的位置）。null = 中间位留空。
+     *
+     * 窄屏不画它：窄屏底栏没有中间位，且弹幕语义（B 站风宽屏）本就与窄屏皮肤无关。
+     */
+    danmakuControls: (@Composable () -> Unit)? = null,
 ) {
     val speedLabel = if (playbackSpeed == 1f) {
         stringResource(Res.string.speed)
@@ -207,9 +211,16 @@ internal fun BoxScope.PlayerBottomBar(
                             maxLines = 1,
                             modifier = Modifier.padding(start = 10.dp),
                         )
-                        // 中间位留白：项目没有弹幕后端（弹幕已定为废案，占位输入控件已移除），
-                        // 保留弹性空白以维持 [时间 | 空白 | 菜单组] 的三段式骨架。
-                        Spacer(modifier = Modifier.weight(1f))
+                        // 中间位：弹幕双钮（开关 + 设置；状态与选集收进设置弹窗）。
+                        // 这里原来是「KazumiDanmakuField」假输入框：v1 不发弹幕，它能做的只有
+                        // 弹一句"暂未开放"，那是假动作，所以整块换掉。
+                        // 宽度不必另设上限：weight(1f) 已经限死这一格，居中子项撑不过它。
+                        Box(
+                            modifier = Modifier.weight(1f),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            danmakuControls?.let { controls -> controls() }
+                        }
                         KazumiTextMenu(
                             label = superResolutionOptions.getOrNull(
                                 selectedSuperResolutionIndex
@@ -390,4 +401,3 @@ private fun PlayerTimeText(currentTime: String, totalTime: String) {
         )
     }
 }
-

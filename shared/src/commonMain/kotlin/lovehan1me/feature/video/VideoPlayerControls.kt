@@ -106,8 +106,6 @@ import androidx.compose.ui.input.pointer.PointerEventPass
 import androidx.compose.ui.input.pointer.PointerEventType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.layout.boundsInWindow
-import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.IntRect
@@ -777,7 +775,6 @@ private class MenuBelowAnchorProvider(
 
 @Composable
 internal fun KazumiMenuPopup(
-    anchor: IntRect,
     above: Boolean,
     onDismiss: () -> Unit,
     content: @Composable androidx.compose.foundation.layout.ColumnScope.() -> Unit,
@@ -852,24 +849,15 @@ internal fun RowScope.KazumiTextMenu(
     onOpenChange: (Boolean) -> Unit = {},
 ) {
     var open by remember { mutableStateOf(false) }
-    var anchor by remember { mutableStateOf(IntRect.Zero) }
     val haptic = rememberHapticFeedback()
     fun setOpen(value: Boolean) {
         open = value
         onOpenChange(value)
     }
-    Box(
-        modifier = Modifier.onGloballyPositioned {
-            anchor = with(it.boundsInWindow()) {
-                IntRect(
-                    left.roundToInt(),
-                    top.roundToInt(),
-                    right.roundToInt(),
-                    bottom.roundToInt(),
-                )
-            }
-        },
-    ) {
+    // 注意：Popup 必须放在锚点 Box **内部** —— PopupPositionProvider 收到的
+    // anchorBounds 永远是 Popup 父布局的 bounds，传外部量到的 rect 进去是没用的
+    // （之前量了 boundsInWindow 却没用上，弹窗相对整行定位导致整体偏移）。
+    Box {
         androidx.compose.material3.TextButton(
             onClick = {
                 haptic()
@@ -888,22 +876,21 @@ internal fun RowScope.KazumiTextMenu(
                 style = MaterialTheme.typography.labelMedium,
             )
         }
-    }
-    if (open) {
-        KazumiMenuPopup(
-            anchor = anchor,
-            above = true,
-            onDismiss = { setOpen(false) },
-        ) {
-            options.forEachIndexed { index, option ->
-                KazumiMenuOption(
-                    label = option,
-                    selected = index == selectedIndex,
-                    onClick = {
-                        setOpen(false)
-                        onSelected(index)
-                    },
-                )
+        if (open) {
+            KazumiMenuPopup(
+                above = true,
+                onDismiss = { setOpen(false) },
+            ) {
+                options.forEachIndexed { index, option ->
+                    KazumiMenuOption(
+                        label = option,
+                        selected = index == selectedIndex,
+                        onClick = {
+                            setOpen(false)
+                            onSelected(index)
+                        },
+                    )
+                }
             }
         }
     }
@@ -919,35 +906,23 @@ internal fun KazumiIconMenu(
     content: @Composable androidx.compose.foundation.layout.ColumnScope.(close: () -> Unit) -> Unit,
 ) {
     var open by remember { mutableStateOf(false) }
-    var anchor by remember { mutableStateOf(IntRect.Zero) }
     fun setOpen(value: Boolean) {
         open = value
         onOpenChange(value)
     }
-    Box(
-        modifier = Modifier.onGloballyPositioned {
-            anchor = with(it.boundsInWindow()) {
-                IntRect(
-                    left.roundToInt(),
-                    top.roundToInt(),
-                    right.roundToInt(),
-                    bottom.roundToInt(),
-                )
-            }
-        },
-    ) {
+    // Popup 必须在锚点 Box 内部（同 KazumiTextMenu 注释）。
+    Box {
         IconButton(
             onClick = { setOpen(true) },
             content = icon,
         )
-    }
-    if (open) {
-        KazumiMenuPopup(
-            anchor = anchor,
-            above = false,
-            onDismiss = { setOpen(false) },
-        ) {
-            content { setOpen(false) }
+        if (open) {
+            KazumiMenuPopup(
+                above = false,
+                onDismiss = { setOpen(false) },
+            ) {
+                content { setOpen(false) }
+            }
         }
     }
 }
