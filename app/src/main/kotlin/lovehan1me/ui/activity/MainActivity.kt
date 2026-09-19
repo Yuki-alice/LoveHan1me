@@ -20,7 +20,7 @@ import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
 import lovehan1me.core.constant.HanimeConstants.ANIME_URL
-import lovehan1me.core.constant.HanimeConstants.HANIME_URL
+import lovehan1me.core.constant.HanimeConstants.AV_URL
 import lovehan1me.BuildConfig
 import lovehan1me.data.SettingsRepository
 import lovehan1me.R
@@ -157,7 +157,7 @@ class MainActivity : BaseActivity() {
     private fun confirmSiteSwitch() {
         showSiteSwitchConfirm = false
         val currentSite = SettingsRepository.baseUrl
-        val avSite = HANIME_URL[3]
+        val avSite = AV_URL
         val selectedBaseUrl = SettingsRepository.selectedBaseUrl
         lifecycleScope.launch {
             SettingsRepository.update {

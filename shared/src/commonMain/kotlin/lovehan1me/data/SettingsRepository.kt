@@ -64,6 +64,15 @@ object SettingsRepository : SettingsStore {
         }
         return current.domainName
     }
+
+    /**
+     * 用户在网域设置里**选中**的站点（形如 `https://hanime1.me/`）。
+     *
+     * 与 [baseUrl] 的差别：`baseUrl` 在开启自定义镜像时返回**镜像地址**，本属性永远返回
+     * 用户选中的那个站点。语义上镜像只是"同站的另一个入口"，不改变站点身份 ——
+     * 因此**站点身份判定只认本属性**（见 `lovehan1me.site.SiteIdentity`）。
+     */
+    val domainName get() = current.domainName
     val homeUrl get() = if (current.useCustomMirrorSite && current.customMirrorSite.isNotBlank()) current.customMirrorSite else baseUrl
     val useCustomMirrorSite get() = current.useCustomMirrorSite
     val customMirrorSite get() = current.customMirrorSite

@@ -182,7 +182,7 @@ fun VideoRouteHostScreen(
         // Native 侧没有 Dispatchers.IO（JVM-only）：词典 JSON 解码放 Default，一样不在主线程。
         genres = withContext(Dispatchers.Default) {
             decodeComposeAsset<List<SearchOption>>(
-                if (SettingsRepository.baseUrl == lovehan1me.core.constant.HanimeConstants.HANIME_URL[3]) {
+                if (SettingsRepository.baseUrl == lovehan1me.core.constant.HanimeConstants.AV_URL) {
                     "files/search_options/genre_av.json"
                 } else {
                     "files/search_options/genre.json"

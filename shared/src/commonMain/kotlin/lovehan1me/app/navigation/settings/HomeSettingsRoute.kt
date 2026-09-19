@@ -554,7 +554,7 @@ private fun buildHomeSettingsUiState(
         homeCategoryItems = defaultHomeCategoryPreferenceItems,
         homeCategoryOrder = homeCategoryOrder,
         hiddenHomeCategoryKeys = hiddenHomeCategoryKeys,
-        useAvHomeCategoryTitles = SettingsRepository.baseUrl == HanimeConstants.HANIME_URL[3],
+        useAvHomeCategoryTitles = SettingsRepository.baseUrl == HanimeConstants.AV_URL,
         alwaysShowUpdateCard = SettingsRepository.alwaysShowUpdateCard,
         displayDensityPercent = SettingsRepository.displayDensity.percent,
         // 平台能力 → 可见性。四个开关在三端并非同等可用（详见 SettingsPlatformCapabilities

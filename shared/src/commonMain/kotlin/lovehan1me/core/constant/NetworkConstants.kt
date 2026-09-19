@@ -26,6 +26,18 @@ object HanimeConstants {
     val HANIME_HOSTNAME = arrayOf("hanime1.me","hanime1.com","hanimeone.me","javchu.com")
     val HANIME_URL = arrayOf("https://hanime1.me/","https://hanime1.com/","https://hanimeone.me/","https://javchu.com/")
     val ANIME_URL = arrayOf("https://hanime1.me/","https://hanime1.com/","https://hanimeone.me/")
+
+    /**
+     * AV 站（javchu）网域。
+     *
+     * 与 [HANIME_URL] / [ANIME_URL] 的分工：后两者是"番剧站"备选表，本常量是**唯一的 AV 站**。
+     * 之所以单独取名而不写 `HANIME_URL[3]`：下标会被"往数组里插一个镜像"这类改动静默错位，
+     * 而错位后代码不报错、只是把 AV 站当番剧站跑。
+     *
+     * 站点身份判定请统一走 `lovehan1me.site.SiteIdentity`，不要在业务层直接比字符串 ——
+     * 直比 [lovehan1me.data.SettingsRepository.baseUrl] 会被自定义镜像覆盖。
+     */
+    val AV_URL = HANIME_URL[3]
 }
 
 val HANIME_LOGIN_URL: String

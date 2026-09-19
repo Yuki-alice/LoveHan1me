@@ -50,6 +50,21 @@ class PreviewCommentPrefetcher private constructor(
                 }
             }
         }
+
+        /**
+         * 无条件丢弃当前 prefetcher，不理会 [Scope] 计数。
+         *
+         * 与 [bye] 的区别：[bye] 是"某个界面退出了"，按位清标记、还有人用就留着；
+         * 本方法是"这份 prefetcher 整个作废"，因为**它内部持有旧代的 `CommentViewModel`**，
+         * 切站后那个 VM 已在旧 `ViewModelStoreOwner` 里被 `clear()`，继续复用会往一个
+         * 已死的 VM 里塞新站评论。
+         *
+         * 调用时机：数据源热切换（见 `SiteSwitcher`）。
+         */
+        fun reset() {
+            prefetcher = null
+            LogUtil.i(TAG, "reset executed successfully")
+        }
     }
 
     private var activityMask = 0

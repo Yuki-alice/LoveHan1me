@@ -2,6 +2,7 @@ package lovehan1me.site.hanime1
 
 import lovehan1me.core.util.LogUtil
 import lovehan1me.core.constant.EMPTY_STRING
+import lovehan1me.core.constant.HanimeConstants.AV_URL
 import lovehan1me.core.constant.HanimeConstants.HANIME_URL
 import lovehan1me.site.hanime1.HanimeResolution
 import lovehan1me.core.constant.LOCAL_DATE_FORMAT
@@ -76,7 +77,7 @@ object Parser {
     }
 
     suspend fun homePageVer2(body: String): WebsiteState<HomePage> {
-        val isAVSite = SettingsRepository.baseUrl == HANIME_URL[3]
+        val isAVSite = SettingsRepository.baseUrl == AV_URL
         val parseBody = Ksoup.parse(body).body()
         val csrfToken = parseBody.selectFirst("input[name=_token]")?.attr("value") // csrf token
         val homePageParse = parseBody.select("div[id=home-rows-wrapper] > div")

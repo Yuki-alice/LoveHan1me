@@ -2,6 +2,7 @@ package lovehan1me.app.navigation.settings
 
 import androidx.annotation.IntRange
 import lovehan1me.cache_usage_summary
+import lovehan1me.core.constant.HanimeConstants.AV_URL
 import lovehan1me.core.constant.HanimeConstants.HANIME_HOSTNAME
 import lovehan1me.core.constant.HanimeConstants.HANIME_URL
 import lovehan1me.Res
@@ -18,7 +19,7 @@ fun buildDomainOptions(defaultLabel: String, alternativeLabel: String): List<Pai
     "${HANIME_HOSTNAME[0]} ($defaultLabel)" to HANIME_URL[0],
     "${HANIME_HOSTNAME[1]} ($alternativeLabel)" to HANIME_URL[1],
     "${HANIME_HOSTNAME[2]} ($alternativeLabel)" to HANIME_URL[2],
-    "${HANIME_HOSTNAME[3]} (av)" to HANIME_URL[3],
+    "${HANIME_HOSTNAME[3]} (av)" to AV_URL,
 )
 
 suspend fun generateClearCacheSummary(size: Long): String {

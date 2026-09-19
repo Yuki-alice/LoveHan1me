@@ -50,6 +50,20 @@ object TagLocalizer {
         return tagMappings.searchKeys[normalizedTag] ?: normalizedTag
     }
 
+    /**
+     * 丢弃语言缓存，下次查表时按当前 [LanguageHelper.preferredLanguage] 重建。
+     *
+     * `tagOptions`（JSON 资产）**不重建** —— 它只随 App 版本变化，运行期恒定。
+     * 需要重置的是 [cachedLanguageTag] / [cachedMappings] 这对"语言快照"。
+     *
+     * 调用时机：数据源热切换（见 `SiteSwitcher`）。切站会重建整棵 composition，
+     * 但本 object 活过重组，若不失效就会把旧站语种下算出的映射带进新站。
+     */
+    fun invalidate() {
+        cachedLanguageTag = null
+        cachedMappings = null
+    }
+
     private fun buildTagMappings(options: List<SearchOption>): TagMappings {
         val labels = mutableMapOf<String, String>()
         val searchKeys = mutableMapOf<String, String>()
