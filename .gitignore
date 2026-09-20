@@ -24,6 +24,8 @@ out/
 # 绝对路径机器相关，绝不能进仓库）
 .dsh/
 .agents/
+# Qoder 本地 skill 副本（.qoder/skills 系本机 ~/.claude/skills 拷贝，机器相关，不入库）
+.qoder/
 
 # Reference projects (external repos for study, 214M)
 reference/
