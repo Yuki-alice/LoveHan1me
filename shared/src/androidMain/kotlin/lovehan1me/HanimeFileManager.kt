@@ -2,13 +2,14 @@ package lovehan1me
 import android.content.Context
 import android.os.Environment
 import lovehan1me.core.util.LogUtil
+import lovehan1me.core.constant.DEF_VIDEO_TYPE
+import lovehan1me.core.constant.DEF_VIDEO_COVER_TYPE
 import java.io.File
 
 object HanimeFileManager {
 
     const val HANIME_DOWNLOAD_FOLDER = "hanime_download"
-    const val DEF_VIDEO_TYPE = "mp4"
-    const val DEF_VIDEO_COVER_TYPE = "png"
+    // 默认后缀唯一源见 lovehan1me.core.constant.DEF_VIDEO_TYPE / DEF_VIDEO_COVER_TYPE。
     val illegalCharsRegex = Regex("""["*/:<>?\\|\x00-\x1F\x7F]""")
 
 

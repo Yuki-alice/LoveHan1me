@@ -30,7 +30,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.documentfile.provider.DocumentFile
 import lovehan1me.data.SettingsRepository
-import lovehan1me.R
 import lovehan1me.Res
 import lovehan1me.directory_saved
 import lovehan1me.no_directory_selected

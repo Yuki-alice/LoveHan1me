@@ -3,7 +3,6 @@ package lovehan1me.app.main
 import android.content.ClipData
 import android.content.Intent
 import lovehan1me.core.util.getDownloadedHanimeVideoUri
-import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,14 +30,11 @@ import lovehan1me.Res
 import lovehan1me.detect_ha1_related_link_in_clipboard
 import lovehan1me.enter
 import lovehan1me.ext_player
-import lovehan1me.data.SettingsRepository
-import lovehan1me.core.domain.state.PageState
 import lovehan1me.no
 import lovehan1me.save_failed_message
 import lovehan1me.save_failed_title
 import lovehan1me.sure
 import lovehan1me.sure_to_logout
-import lovehan1me.ui.activity.MainActivity
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.app.navigation.main.AvatarCropRoute
 import lovehan1me.app.navigation.main.CloudflareRoute
@@ -81,10 +77,14 @@ import org.jetbrains.compose.resources.stringResource
  * 这里只保留第 3 件，并通过 [PlatformScreens] 把 6 个依赖 Android 硬能力的页面
  * （WebView 登录、CF 验证、头像 picker + cropper、SAF 下载设置、WorkManager 下载）
  * 注入共享导航，从而在功能零损失的前提下消除导航双轨。
+ *
+ * G1-1B：随壳层下沉 shared。唯一对 `:app` 的耦合（`MainActivity`）改由 [MainActivityHost]
+ * 承担：`openLogin` / `showLogoutConfirmDialog` / `showVideoDetailFragment` /
+ * `mainBackStack` 走接口方法，需要 Activity/Context 本身的两处走 [MainActivityHost.componentActivity]。
  */
 @Composable
 fun MainActivityShell(
-    activity: MainActivity,
+    activity: MainActivityHost,
     pendingNavigationRequests: Flow<Intent>,
     logoutDialogCloseCurrentPage: Boolean?,
     onDismissLogout: () -> Unit,
@@ -109,10 +109,10 @@ fun MainActivityShell(
  * 可直接访问 `onBack` / `backStack` / `homeViewModel`。
  */
 @Composable
-private fun platformScreens(activity: MainActivity): PlatformScreens = PlatformScreens(
+private fun platformScreens(activity: MainActivityHost): PlatformScreens = PlatformScreens(
     // M5-2：恢复 Android 窗口能力（下沉后该宿主无人注入而成死代码）
     videoPageHost = rememberAndroidVideoPageHost(
-        activity = activity,
+        activity = activity.componentActivity,
         pipToggleDescription = stringResource(Res.string.play_pause),
     ),
     download = {
@@ -142,7 +142,7 @@ private fun platformScreens(activity: MainActivity): PlatformScreens = PlatformS
     },
     account = { pendingAvatarCropResult, onAvatarCropResultConsumed ->
         val accountViewModel: UserAccountViewModel = viewModel()
-        // M5-4：头像选择器留在 :app（ActivityResult），经参数注入共享账号页
+        // M5-4：头像选择器留在壳层（ActivityResult），经参数注入共享账号页
         val avatarPickerLauncher = rememberLauncherForActivityResult(
             ActivityResultContracts.PickVisualMedia()
         ) { uri ->
@@ -192,7 +192,7 @@ private fun platformScreens(activity: MainActivity): PlatformScreens = PlatformS
 
 @Composable
 private fun BoxScope.AndroidOverlays(
-    activity: MainActivity,
+    activity: MainActivityHost,
     pendingNavigationRequests: Flow<Intent>,
     logoutDialogCloseCurrentPage: Boolean?,
     onDismissLogout: () -> Unit,
@@ -207,7 +207,7 @@ private fun BoxScope.AndroidOverlays(
             ?.clipData
             ?.takeIf { it.itemCount > 0 }
             ?.getItemAt(0)
-            ?.coerceToText(activity)
+            ?.coerceToText(activity.componentActivity)
         val videoCode = clipboardText?.toString()?.let { videoUrlRegex.find(it)?.groupValues?.get(1) }
         if (videoCode != null) {
             val result = snackbarHostState.showSnackbar(

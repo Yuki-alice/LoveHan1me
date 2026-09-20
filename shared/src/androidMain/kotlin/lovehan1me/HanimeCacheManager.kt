@@ -5,6 +5,7 @@ import lovehan1me.data.HJson
 
 import android.content.Context
 import lovehan1me.core.util.LogUtil
+import lovehan1me.core.constant.DEF_VIDEO_TYPE
 import androidx.annotation.WorkerThread
 import lovehan1me.data.DatabaseRepo
 import lovehan1me.site.hanime1.HanimeLink
@@ -153,7 +154,7 @@ object HanimeCacheManager {
                     base.copy(
                         videoUrls = linkedMapOf(
                             entity.quality to HanimeLink(
-                                entity.videoUri, HanimeFileManager.DEF_VIDEO_TYPE
+                                entity.videoUri, DEF_VIDEO_TYPE
                             )
                         ),
                         coverUrl = entity.coverUri ?: entity.coverUrl

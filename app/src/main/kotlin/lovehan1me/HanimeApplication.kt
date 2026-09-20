@@ -20,12 +20,11 @@ import lovehan1me.ui.activity.MainActivity
 import lovehan1me.app.crash.CrashHandler
 import lovehan1me.core.util.AnimeShaders
 import lovehan1me.core.util.AppLanguageManager
-import lovehan1me.core.util.ActivityManager
+import lovehan1me.core.platform.CurrentActivityHolder
 import lovehan1me.core.util.LogUtil
 import lovehan1me.core.util.StartupTrace
-import lovehan1me.core.util.applicationContext as globalApplicationContext
+import lovehan1me.core.util.setApplicationContext
 import `is`.xyz.mpv.MPVLib
-import java.lang.ref.WeakReference
 import java.net.ProxySelector
 
 /**
@@ -41,7 +40,7 @@ class HanimeApplication : Application(), Application.ActivityLifecycleCallbacks 
 
     override fun attachBaseContext(base: Context) {
         super.attachBaseContext(base)
-        globalApplicationContext = this
+        setApplicationContext(this)
         // LogUtil 已下沉共享层（commonMain 拿不到 BuildConfig），在此恢复原来的 DEBUG 开关语义
         LogUtil.enabled = BuildConfig.DEBUG
     }
@@ -103,7 +102,7 @@ class HanimeApplication : Application(), Application.ActivityLifecycleCallbacks 
     override fun onActivityStarted(activity: Activity) = Unit
 
     override fun onActivityResumed(activity: Activity) {
-        ActivityManager.currentActivity = WeakReference(activity)
+        CurrentActivityHolder.set(activity)
     }
 
     override fun onActivityPaused(activity: Activity) = Unit

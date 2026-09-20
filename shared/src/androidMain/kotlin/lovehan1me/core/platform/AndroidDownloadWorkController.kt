@@ -12,7 +12,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
-/** M6：Android 引擎 = WorkManager 转发；SAF 导入经 CurrentActivityHolder 取 Context。 */
+/** Android 引擎 = WorkManager 转发；SAF 导入经 CurrentActivityHolder 取 Context。 */
 object AndroidDownloadWorkController : DownloadWorkController {
     override fun prune() {
         WorkManager.getInstance(application).pruneWork()

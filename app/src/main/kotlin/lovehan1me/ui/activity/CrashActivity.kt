@@ -16,7 +16,7 @@ import lovehan1me.copy_to_clipboard
 import lovehan1me.crash_no_logs
 import lovehan1me.app.crash.CrashHandler
 import lovehan1me.app.crash.CrashScreen
-import lovehan1me.core.util.ActivityManager
+import lovehan1me.core.platform.restartApp
 import lovehan1me.core.util.AppToast
 import lovehan1me.core.util.toastText
 import lovehan1me.core.util.rememberCopyTextToClipboard
@@ -56,7 +56,7 @@ class CrashActivity : BaseActivity() {
                     copyTextToClipboard(report)
                     scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
                 },
-                onRestartApp = { ActivityManager.restart(killProcess = true) },
+                onRestartApp = { restartApp(killProcess = true) },
                 onExitApp = exitApp,
             )
         }

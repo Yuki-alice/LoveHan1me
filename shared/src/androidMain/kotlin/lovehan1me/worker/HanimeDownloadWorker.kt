@@ -22,9 +22,9 @@ import androidx.work.WorkerParameters
 import androidx.work.workDataOf
 import lovehan1me.DOWNLOAD_NOTIFICATION_CHANNEL
 import lovehan1me.core.constant.EMPTY_STRING
+import lovehan1me.core.constant.DEF_VIDEO_TYPE
 import lovehan1me.HanimeFileManager
 import lovehan1me.HanimeFileManager.createVideoName
-import lovehan1me.R
 import lovehan1me.Res
 import lovehan1me.download_error_cancelled
 import lovehan1me.download_error_connect
@@ -79,7 +79,7 @@ import kotlin.random.Random
 /**
  * @project LoveHan1me
  * @author Yenaly Liew（上游原作者，见 NOTICE）
- * @time 2022/08/06 006 11:42
+ * @time 2022-08-06 006 11:42
  */
 class HanimeDownloadWorker(
     private val context: Context,
@@ -179,7 +179,7 @@ class HanimeDownloadWorker(
 
     private val hanimeName by inputData(HANIME_NAME, EMPTY_STRING)
     private val downloadUrl by inputData(DOWNLOAD_URL, EMPTY_STRING)
-    private val videoType by inputData(VIDEO_TYPE, HanimeFileManager.DEF_VIDEO_TYPE)
+    private val videoType by inputData(VIDEO_TYPE, DEF_VIDEO_TYPE)
     private val quality by inputData(QUALITY, EMPTY_STRING)
     private val videoCode by inputData(VIDEO_CODE, EMPTY_STRING)
     private val coverUrl by inputData(COVER_URL, EMPTY_STRING)
@@ -588,7 +588,9 @@ class HanimeDownloadWorker(
 
     private suspend fun createDownloadNotification(progress: Int = 0): Notification {
         return NotificationCompat.Builder(context, DOWNLOAD_NOTIFICATION_CHANNEL)
-            .setSmallIcon(R.mipmap.ic_launcher_new)
+            // G1-1B：原 `R.mipmap.ic_launcher_new`（:app 资源）。下沉后改用运行时
+            // applicationInfo.icon（= 当前变体的启动图标），去掉对 :app R 的编译期依赖。
+            .setSmallIcon(context.applicationInfo.icon)
             .setOngoing(true)
             .setOnlyAlertOnce(true)
             .setContentTitle(getString(Res.string.downloading_s, hanimeName))

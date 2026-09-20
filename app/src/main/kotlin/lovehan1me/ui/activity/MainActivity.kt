@@ -31,13 +31,16 @@ import lovehan1me.app.navigation.main.TopLevelBackStack
 import lovehan1me.app.navigation.main.SearchRoute
 import lovehan1me.app.navigation.main.registerArtistSearchNavigator
 import lovehan1me.app.navigation.main.VideoRoute
+import lovehan1me.app.main.ACTION_TOGGLE_PLAY
+import lovehan1me.app.main.MainActivityHost
 import lovehan1me.app.main.MainActivityShell
+import androidx.activity.ComponentActivity
 import lovehan1me.feature.home.homepage.HomePageViewModel
 import lovehan1me.core.util.isX86_64Device
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 
-class MainActivity : BaseActivity() {
+class MainActivity : BaseActivity(), MainActivityHost {
 
     /**
      * App 级 VM 必须从**进程级**单例取，不能用 `by viewModels()`。
@@ -53,7 +56,9 @@ class MainActivity : BaseActivity() {
      */
     val viewModel: HomePageViewModel get() = AppViewModelStore.homePageViewModel()
 
-    val mainBackStack: TopLevelBackStack<HanimeScreen>
+    override val componentActivity: ComponentActivity get() = this
+
+    override val mainBackStack: TopLevelBackStack<HanimeScreen>
         get() = viewModel.mainBackStack
     private val pendingNavigationRequests = MutableSharedFlow<Intent>(
         replay = 1,
@@ -61,10 +66,6 @@ class MainActivity : BaseActivity() {
     )
     private var currentVideoHost: VideoPageHost? = null
     private var logoutDialogCloseCurrentPage by mutableStateOf<Boolean?>(null)
-
-    companion object {
-        const val ACTION_TOGGLE_PLAY = "lovehan1me.ui.activity.ACTION_TOGGLE_PLAY"
-    }
 
     private val pipActionReceiver = object : BroadcastReceiver() {
         override fun onReceive(context: Context?, intent: Intent?) {
@@ -157,11 +158,11 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    fun openLogin() {
+    override fun openLogin() {
         mainBackStack.add(LoginRoute, launchSingleTop = true)
     }
 
-    fun showLogoutConfirmDialog(closeCurrentPageOnConfirm: Boolean = false) {
+    override fun showLogoutConfirmDialog(closeCurrentPageOnConfirm: Boolean) {
         logoutDialogCloseCurrentPage = closeCurrentPageOnConfirm
     }
 
@@ -181,7 +182,7 @@ class MainActivity : BaseActivity() {
         }
     }
 
-    fun showVideoDetailFragment(videoCode: String, fileUri: String? = null) {
+    override fun showVideoDetailFragment(videoCode: String, fileUri: String?) {
         mainBackStack.add(VideoRoute(videoCode, fileUri))
     }
 

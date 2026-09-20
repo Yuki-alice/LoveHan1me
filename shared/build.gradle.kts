@@ -137,6 +137,14 @@ kotlin {
 
             // P6d-1-C：动态取色（Kyant0 m3color，无 KMP 坐标，仅 androidMain；坐标从 :app 照搬）
             implementation(libs.kyant.m3color)
+
+            // G1-1A：SafFileManager 下沉 androidMain——DocumentFile
+            implementation(libs.androidx.documentfile)
+            // G1-1A：Networks.kt 下沉 androidMain——ListenableFuture.await（WorkManager 链路）
+            implementation(libs.guava)
+            // G1-1B：worker（HanimeDownloadManager/Worker）下沉 androidMain——WorkManager + LiveData
+            implementation(libs.work.runtime.ktx)
+            implementation(libs.lifecycle.livedata.core)
         }
 
         // jvm("desktop") 是自定义目标名，Gradle 不生成类型化访问器，需用 by getting

@@ -13,6 +13,7 @@ import android.os.Build
 import android.provider.Settings
 import android.util.Rational
 import android.view.WindowManager
+import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -26,11 +27,11 @@ import androidx.compose.ui.geometry.Rect as ComposeRect
 import androidx.core.content.ContextCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
-import lovehan1me.R
+import lovehan1me.shared.R
 import lovehan1me.Res
+import lovehan1me.app.main.ACTION_TOGGLE_PLAY
 import lovehan1me.data.SettingsRepository
 import lovehan1me.reason_for_download_notification
-import lovehan1me.ui.activity.MainActivity
 import lovehan1me.app.bridge.VideoPageHost
 import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.launch
@@ -39,13 +40,14 @@ import org.jetbrains.compose.resources.getString
 /**
  * M3：Android 侧 [VideoPageHost] 实现 + 组合记忆入口。
  *
- * 原 `:app` `VideoRouteHostScreen` 内的窗口操作代码（PiP RemoteAction、常亮锁、
- * requestedOrientation、systemBars、亮度读写、host 注册、通知权限申请）原样归位，
- * 仅 `activity` 改构造参数、`R` 仍为 `:app` 资源。
+ * G1-1B：随壳层下沉 shared —— 构造参数从 `MainActivity` 收窄为 `ComponentActivity`
+ * （PiP / window / orientation / contentResolver 全是 Activity/Context 能力），
+ * 广播 action 改用 shared 顶层 [ACTION_TOGGLE_PLAY]，PiP RemoteAction 图标改用
+ * shared androidMain 的 [lovehan1me.shared.R] 资源（ic_pause / ic_play_arrow）。
  */
 @Composable
 fun rememberAndroidVideoPageHost(
-    activity: MainActivity,
+    activity: ComponentActivity,
     pipToggleDescription: String,
 ): AndroidVideoPageHost {
     var showNotificationPermissionReason by remember { mutableStateOf(false) }
@@ -86,7 +88,7 @@ fun rememberAndroidVideoPageHost(
 }
 
 class AndroidVideoPageHost(
-    private val activity: MainActivity,
+    private val activity: ComponentActivity,
     private val pipToggleDescription: String,
     private val restoreLightSystemBars: Boolean,
     private val onRequestNotificationPermission: () -> Unit,
@@ -109,7 +111,7 @@ class AndroidVideoPageHost(
         val intent = PendingIntent.getBroadcast(
             activity,
             0,
-            android.content.Intent(MainActivity.ACTION_TOGGLE_PLAY)
+            android.content.Intent(ACTION_TOGGLE_PLAY)
                 .setPackage(activity.packageName),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )
@@ -139,7 +141,7 @@ class AndroidVideoPageHost(
         val intent = PendingIntent.getBroadcast(
             activity,
             0,
-            android.content.Intent(MainActivity.ACTION_TOGGLE_PLAY)
+            android.content.Intent(ACTION_TOGGLE_PLAY)
                 .setPackage(activity.packageName),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
         )

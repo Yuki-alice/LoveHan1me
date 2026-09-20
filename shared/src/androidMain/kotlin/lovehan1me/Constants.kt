@@ -1,15 +1,12 @@
 package lovehan1me
 
-import kotlinx.datetime.LocalDate
-import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.format.char
+import lovehan1me.core.util.applicationContext
 
 // EMPTY_STRING 与 LOCAL_DATE_FORMAT 已下沉 shared commonMain（BasicConstants.kt）
 
 const val APP_NAME = "LoveHan1me"
 
 // 标准时间格式
-
 
 // 網絡常量已下沉 shared commonMain（NetworkConstants.kt）：USER_AGENT / DESKTOP_USER_AGENT /
 // HANIME_BASE_URL / HanimeConstants / HANIME_LOGIN_URL / GETCHU_BASE_URL
@@ -35,7 +32,10 @@ const val ALREADY_LOGIN = "already_login"
 
 const val DOWNLOAD_NOTIFICATION_CHANNEL = "download_channel"
 
-
 // File
 
-const val FILE_PROVIDER_AUTHORITY = "${BuildConfig.APPLICATION_ID}.fileProvider"
+// G1-1A：原为 `${BuildConfig.APPLICATION_ID}.fileProvider`。shared 库插件不支持 buildConfig，
+// 改在运行时取 packageName（= 各变体的 applicationId，debug 含 .debug 后缀），与 manifest
+// `${applicationId}.fileProvider` 保持一致。
+val FILE_PROVIDER_AUTHORITY: String
+    get() = "${applicationContext.packageName}.fileProvider"

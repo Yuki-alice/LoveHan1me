@@ -9,7 +9,7 @@ import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.documentfile.provider.DocumentFile
 import lovehan1me.APP_NAME
-import lovehan1me.HanimeFileManager.DEF_VIDEO_COVER_TYPE
+import lovehan1me.core.constant.DEF_VIDEO_COVER_TYPE
 import lovehan1me.HanimeFileManager.HANIME_DOWNLOAD_FOLDER
 import lovehan1me.HanimeFileManager.createVideoCoverName
 import lovehan1me.HanimeFileManager.getAppDownloadFolder
@@ -31,7 +31,7 @@ import java.io.OutputStream
 /**
  * SAF (Storage Access Framework)
  * @author misaka10032w
- * @time 2025/08/16
+ * @time 2025-08-16
  * 提供通过Android存储访问框架(SAF)进行文件操作的封装，主要功能包括：
  * - 管理持久化的URI权限
  * - 创建和维护应用下载目录结构

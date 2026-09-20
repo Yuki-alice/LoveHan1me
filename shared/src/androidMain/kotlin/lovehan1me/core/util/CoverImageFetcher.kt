@@ -26,8 +26,11 @@ import java.util.concurrent.TimeUnit
  * - `ImageView.loadUnhappily()` —— Android View 体系，本项目已全面 Compose。
  *
  * ⚠️ 保留 `HanimeDns`：站点域名在本机常被 DNS 污染，走系统解析拿不到图。
+ *
+ * G1-1A：原 `internal`（仅 :app 可见）。下沉后调用方 `HanimeDownloadWorker` 暂留 :app，
+ * 故放开为 public；G1-1B worker 一起下沉后可再收回。
  */
-internal object CoverImageFetcher {
+object CoverImageFetcher {
     private const val TAG = "CoverImageFetcher"
     private const val CONNECT_TIMEOUT_SECONDS = 5L
 
