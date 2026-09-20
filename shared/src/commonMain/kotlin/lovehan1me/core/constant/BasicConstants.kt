@@ -46,3 +46,7 @@ const val HA1_GITHUB_FORUM_URL = "$HA1_GITHUB_URL/discussions"
  * 仅供「关于页 → 上游项目」致谢条目展示；**不作为更新通道**。
  */
 const val UPSTREAM_GITHUB_URL = "https://github.com/daisukiKaffuChino/Han1meViewer"
+
+// G1-1：视频/封面默认后缀（原 HanimeFileManager.DEF_*；commonMain 内联点与 androidMain 共用同一源）
+const val DEF_VIDEO_TYPE = "mp4"
+const val DEF_VIDEO_COVER_TYPE = "png"

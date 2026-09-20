@@ -8,6 +8,7 @@ import androidx.room.PrimaryKey
 import androidx.room.TypeConverter
 import androidx.room.TypeConverters
 import lovehan1me.core.domain.state.DownloadState
+import lovehan1me.core.constant.DEF_VIDEO_TYPE
 import kotlinx.serialization.Serializable
 
 /**
@@ -96,9 +97,8 @@ data class HanimeDownloadEntity(
 
     val isDownloading get() = state == DownloadState.Downloading
 
-    // 原为 HanimeFileManager.DEF_VIDEO_TYPE；HanimeFileManager 依赖 Context/Environment/java.io.File，
-    // 仍留在 :app，故此处内联同值常量（"mp4"），待 HanimeFileManager 下沉后回填引用。
-    val suffix get() = videoUri.substringAfterLast(".", "mp4")
+    // 默认后缀唯一源见 lovehan1me.core.constant.DEF_VIDEO_TYPE。
+    val suffix get() = videoUri.substringAfterLast(".", DEF_VIDEO_TYPE)
 
     /**
      * 排序方式

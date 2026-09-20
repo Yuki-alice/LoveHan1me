@@ -374,10 +374,7 @@ class DanmakuSession(
             mutableStatus.value = DanmakuStatus.Disabled
             return
         }
-        val visible = visibleLocations
-        val merged = (dandanItems + commentItems)
-            .filter { it.location in visible }
-            .sortedWith(compareBy({ it.playTimeMillis }, { it.id }))
+        val merged = mergeDanmakuItems(dandanItems, commentItems, visibleLocations)
         engine.setItems(merged, startPositionMs = lastPositionMs)
         refreshStatus()
     }
@@ -394,15 +391,15 @@ class DanmakuSession(
             return
         }
         val episode = dandanEpisode
-        mutableStatus.value = when {
-            episode != null && (dandanItems.isNotEmpty() || commentItems.isNotEmpty()) ->
-                DanmakuStatus.Linked(episode, dandanItems.size, commentItems.size)
-            episode != null -> DanmakuStatus.NoDanmaku
-            commentItems.isNotEmpty() -> DanmakuStatus.CommentOnly(commentItems.size)
-            dandanFailed -> DanmakuStatus.Unavailable
-            loadAttempted && loadJob?.isActive != true -> DanmakuStatus.Unmatched
-            else -> DanmakuStatus.Loading
-        }
+        mutableStatus.value = resolveDanmakuStatus(
+            enabled = enabled,
+            episode = episode,
+            dandanCount = dandanItems.size,
+            commentCount = commentItems.size,
+            dandanFailed = dandanFailed,
+            loadAttempted = loadAttempted,
+            jobActive = loadJob?.isActive == true,
+        )
     }
 
     /**
@@ -426,5 +423,46 @@ class DanmakuSession(
 
     companion object {
         private const val TAG = "Danmaku"
+    }
+}
+
+/**
+ * 双源合并（纯函数，单测见 DanmakuMergeTest）。
+ *
+ * 引擎的发射扫描是"游标 + 二分"，输入必须按 `(playTimeMillis, id)` 升序 ——
+ * 排序由这里保证，各源实现不再各自负责。
+ */
+internal fun mergeDanmakuItems(
+    dandanItems: List<DanmakuItem>,
+    commentItems: List<DanmakuItem>,
+    visible: Set<DanmakuLocation>,
+): List<DanmakuItem> = (dandanItems + commentItems)
+    .filter { it.location in visible }
+    .sortedWith(compareBy({ it.playTimeMillis }, { it.id }))
+
+/**
+ * 状态优先级判定（纯函数，单测见 DanmakuStatusTest）。
+ *
+ * 有关联就说关联（评论数一并报），没关联但有评论就说评论，
+ * 都没有才说没关联/不可用。
+ */
+internal fun resolveDanmakuStatus(
+    enabled: Boolean,
+    episode: DanmakuEpisodeRef?,
+    dandanCount: Int,
+    commentCount: Int,
+    dandanFailed: Boolean,
+    loadAttempted: Boolean,
+    jobActive: Boolean,
+): DanmakuStatus {
+    if (!enabled) return DanmakuStatus.Disabled
+    return when {
+        episode != null && (dandanCount > 0 || commentCount > 0) ->
+            DanmakuStatus.Linked(episode, dandanCount, commentCount)
+        episode != null -> DanmakuStatus.NoDanmaku
+        commentCount > 0 -> DanmakuStatus.CommentOnly(commentCount)
+        dandanFailed -> DanmakuStatus.Unavailable
+        loadAttempted && !jobActive -> DanmakuStatus.Unmatched
+        else -> DanmakuStatus.Loading
     }
 }

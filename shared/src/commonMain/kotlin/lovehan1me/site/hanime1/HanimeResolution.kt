@@ -1,13 +1,14 @@
 package lovehan1me.site.hanime1
 
 import kotlinx.serialization.Serializable
+import lovehan1me.core.constant.DEF_VIDEO_TYPE
 
 /**
  * P4：自 :app HanimeResolution.kt 下沉（包名不变）。
  * 两处 android 依赖已替换（语义等价）：
  *  - okhttp MediaType 解析 → 字符串按 '/' 切分（commonMain 不依赖 okhttp）；
- *  - HanimeLink.suffix 的 HanimeFileManager.DEF_VIDEO_TYPE（:app，= "mp4"）→ 内联常量（同 P2b
- *    HanimeDownloadEntity 处理方式），待 HanimeFileManager 下沉后回填。
+ *  - HanimeLink.suffix 的默认后缀取 lovehan1me.core.constant.DEF_VIDEO_TYPE
+ *   （与 androidMain HanimeFileManager 同一源，同 P2b HanimeDownloadEntity 处理方式）。
  */
 typealias ResolutionLinkMap = LinkedHashMap<String, HanimeLink>
 
@@ -80,7 +81,6 @@ data class HanimeLink(
             "ogg" -> "ogv"
             "mp2t" -> "ts"
             "webm" -> "webm"
-            // TODO: HanimeFileManager.DEF_VIDEO_TYPE 下沉后回填
-            else -> "mp4"
+            else -> DEF_VIDEO_TYPE
         }
 }
