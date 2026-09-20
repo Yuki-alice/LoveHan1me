@@ -19,10 +19,19 @@ import lovehan1me.feature.video.PreviewCommentPrefetcher
  *
  * ### 它等价于上游的「改配置 + restart(killProcess = true)」
  *
- * 上游（Han1meViewer）切站靠重启进程来清状态（`ActivityManager.restart`）。重启清掉的
- * 只有**进程内状态** —— Room / DataStore / 磁盘缓存一个都不清（重启后还是同一份文件）。
- * 所以这里做的事就是：**在进程内把那些状态逐个重建掉**，效果等价于一次重启，但不退进程、
- * 不用等冷启动、也不会出现「起一下就被自己杀掉」的闪退观感。
+ * 上游（Han1meViewer）切站靠重启进程来清状态。已核对
+ * `references/Han1meViewer-main/.../utils/ActivityManager.kt:13-21`：
+ *
+ * ```kotlin
+ * fun restart(killProcess: Boolean = true) {
+ *     ...startActivity(launchIntent)   // 只是重新拉起 Activity
+ *     if (killProcess) exitProcess(0)  // 然后杀进程
+ * }
+ * ```
+ *
+ * **通篇没有一行碰 Room / DataStore / 磁盘缓存** —— 所以重启清掉的只有**进程内状态**
+ * （重启后读写的是同一份文件）。本对象做的事就是：**在进程内把那些状态逐个重建掉**，
+ * 效果等价于一次重启，但不退进程、不用等冷启动、也不会出现「起一下就被自己杀掉」的观感。
  *
  * ### 执行顺序不能换
  *
@@ -36,8 +45,9 @@ import lovehan1me.feature.video.PreviewCommentPrefetcher
  *
  * ### 持久层为什么不动
  *
- * 与上游一致：Room 四个库（历史 / 下载 / 收藏 / 打卡）、DataStore、OkHttp 磁盘缓存、
- * 下载文件**全部保留**。实测两站 videoCode 数值区间重叠但内容互不覆盖
+ * 与上游一致（依据同 `ActivityManager.kt:13-21`：重启不清任何持久状态，故"等价于重启"
+ * 就意味着持久层也该原样保留）：Room 四个库（历史 / 下载 / 收藏 / 打卡）、DataStore、
+ * OkHttp 磁盘缓存、下载文件**全部保留**。实测两站 videoCode 数值区间重叠但内容互不覆盖
  * （hanime1 的 code 在 javchu 上返回 302），因此不会"点开看到另一个视频"，
  * 最坏只是列表里混着另一站的条目。跨站隔离是独立议题，不在热切换范围内。
  *
@@ -80,9 +90,19 @@ object SiteSwitcher {
     ) {
         val previous = SettingsRepository.domainName
 
-        // 1) 落配置。selectedBaseUrl 的语义对齐上游 MainActivity.kt:163-166：
-        //    只在「从番剧站离开」时记住旧站，作为「切换站点」按钮的回程目标；
-        //    从 AV 站切回时不覆写，否则会把回程目标也写成 AV 站、原地打转。
+        // 1) 落配置。selectedBaseUrl 的语义对齐上游 `MainActivity.kt:212-225`
+        //    （`confirmSiteSwitch`，真行号；本注释此前误写成 `:163-166`，那里其实是
+        //    生物识别代码 —— 引用上游务必核对，别凭印象写行号）：
+        //      if (currentSite in ANIME_URL) it.copy(selectedBaseUrl = currentSite, domainName = avSite)
+        //      else it.copy(selectedBaseUrl = selectedBaseUrl, domainName = selectedBaseUrl)
+        //    即**只在「从番剧站离开」时记住旧站**，作为回程目标；从 AV 站切回时不覆写，
+        //    否则会把回程目标也写成 AV 站、原地打转。
+        //
+        //    与上游的**路径差异**（语义等价，实现更显式）：上游在同一个 `if/else` 里
+        //    同时算 domainName 与 selectedBaseUrl，回程时 domainName 取自 selectedBaseUrl；
+        //    本实现把「目标是谁」提到 `resolveToggleTarget()` 先算好、由 `domain` 传入，
+        //    这里只负责「要不要记住旧站」。好处是兜底逻辑（回程目标为空/指向 AV 站时
+        //    退回番剧主站）只在一处，调用方（网域下拉、切站按钮）共用同一条路径。
         //    判定用 domainName 而非 baseUrl —— 后者会被自定义镜像覆盖（见 SiteIdentity）。
         SettingsRepository.update {
             it.copy(
