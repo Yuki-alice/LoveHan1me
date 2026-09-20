@@ -83,10 +83,8 @@ fun main() {
     // DesktopMpvPlaybackEngine.preloadAsync 文档）：趁用户还在启动页/首页浏览，
     // 后台线程把 ~49MB dylib 的解压 + dlopen 消化掉。越早越好，放在 main() 里。
     DesktopMpvPlaybackEngine.preloadAsync()
-    // M6-2：下载引擎端到端冒烟（HAN1ME_SMOKE=download，跑完即退）
+    // 下载引擎端到端冒烟（HAN1ME_SMOKE=download，跑完即退）
     if (runSmokeIfRequested()) return
-    // M7-2：CF cookie 落盘冒烟（HAN1ME_SMOKE=cookie-write / cookie-read，跑完即退）
-    if (runCookieSmokeIfRequested()) return
     // 主题预生成（HAN1ME_GEN_BOARDS=1，跑完即退，输出进 shared/.../ui/theme/）
     if (runGenBoardsIfRequested()) return
 
@@ -257,7 +255,7 @@ private suspend fun initializeDesktop() {
     }.getOrNull()
     LogUtil.d("Desktop", "main: proxyType=${SettingsRepository.proxyType} -> $effectiveProxy")
 
-    // M6-2：恢复未完成的下载队列（Room 里的 Downloading/Queued 任务）
+    // 恢复未完成的下载队列（Room 里的 Downloading/Queued 任务）
     initializeDesktopDownloadQueue()
     StartupTrace.mark("download-queue")
     LogUtil.d("Desktop", "main: download queue restored")

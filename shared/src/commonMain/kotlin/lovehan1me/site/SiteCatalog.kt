@@ -1,10 +1,10 @@
 package lovehan1me.site
 
 /**
- * 站点目录（M6 契约，单站实现的注册表）。
+ * 站点目录（单站实现的注册表；Gate2-站点纵深扩展时以此为落点）。
  *
  * 现阶段仅作契约落点，不接管现有 [lovehan1me.core.constant.HanimeConstants] / [lovehan1me.core.constant.HANIME_BASE_URL]；
- * M6 Parser 重写时，解析器改为通过 [SiteCatalog] 拿配置，网络层不再直接依赖 SettingsRepository 的 baseUrl 字符串。
+ * Parser 重写时，解析器改为通过 [SiteCatalog] 拿配置，网络层不再直接依赖 SettingsRepository 的 baseUrl 字符串。
  */
 object SiteCatalog {
     val Hanime1 = SiteConfig(

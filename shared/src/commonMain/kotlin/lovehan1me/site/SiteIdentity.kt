@@ -32,7 +32,7 @@ import lovehan1me.data.SettingsRepository
  * ---
  *
  * 与 [SiteCatalog] 的分工：`SiteCatalog` 是**静态契约**（有哪些站、各自 baseUrls/hostnames），
- * 本对象是**运行时判定**（当前是谁）。M6 重建时若把 javchu 提升为独立 `SiteConfig`，
+ * 本对象是**运行时判定**（当前是谁）。若把 javchu 提升为独立 `SiteConfig`（Gate2-站点纵深），
  * 本对象是唯一需要跟着改的地方。
  */
 object SiteIdentity {

@@ -6,7 +6,7 @@ package lovehan1me.core.platform
  * 逐项依据：
  * - `secureMode = false` —— `applySecureMode` 在 desktopMain 是空实现
  *   （桌面窗口没有 FLAG_SECURE 对等能力）；
- * - `hapticFeedback = false` —— `HapticFeedback.desktop.kt` 是 `HapticFeedback {}`（TODO P7）；
+ * - `hapticFeedback = false` —— `HapticFeedback.desktop.kt` 是 `HapticFeedback {}`（Gate3-平台能力）；
  * - `pipMode = false` —— `DesktopVideoPageHost.shouldEnterPip()` 恒 `false`，
  *   注释明确「桌面端恒不进入 PiP，是接口要求的空覆写，不是遗漏实现」；
  * - `meteredDataWarning = false` —— `isActiveNetworkMetered()` 恒 `false`，守卫永不触发；

@@ -1,7 +1,7 @@
 package lovehan1me.site
 
 /**
- * 站点配置（M6 契约，纯数据，不含 OkHttp/Ktor 实现）。
+ * 站点配置（纯数据，不含 OkHttp/Ktor 实现）。
  *
  * 单站实现（hanime1/getchu）通过 [SiteCatalog] 提供实例，解析层只认 [SiteId]。
  */

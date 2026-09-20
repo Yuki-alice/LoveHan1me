@@ -14,7 +14,7 @@ import kotlinx.coroutines.runBlocking
 import java.io.File
 
 /**
- * M6-2c：桌面下载引擎端到端冒烟（`HAN1ME_SMOKE=download` 触发，跑完即退）。
+ * 桌面下载引擎端到端冒烟（`HAN1ME_SMOKE=download` 触发，跑完即退）。
  *
  * T0 外键自检：一次性诊断库验证「未播种→失败 / 播种+合法值→成功 / 播种+非法值→失败」
  * T1 快速完成：插入 15s 样片任务 → initialize 恢复触发 → 等待 Finished → 校验文件

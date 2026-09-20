@@ -34,7 +34,7 @@ import java.time.Instant
 import java.util.concurrent.ConcurrentHashMap
 
 /**
- * M6-2：桌面下载引擎（B 站式体验的核心执行器）。
+ * 桌面下载引擎（B 站式体验的核心执行器）。
  *
  * - Room 库是唯一事实源：任务/进度全部落库，UI 直接观察 DB 流；
  * - 协程队列 + [Semaphore] 并发上限，进程重启经 [initialize] 从 DB 恢复未完成任务；
@@ -329,10 +329,10 @@ object DesktopDownloadWorkController : DownloadWorkController {
     }
 }
 
-/** M6-2：平台壳入口的公开薄封装（[downloadWorkController] 是 internal）。 */
+/** 平台壳入口的公开薄封装（[downloadWorkController] 是 internal）。 */
 fun initializeDesktopDownloadQueue() {
     runBlocking { DesktopDownloadWorkController.initialize() }
 }
 
-/** M6-2：跨模块薄封装（[downloadWorkController] 是 internal；供 :desktopApp 冒烟/壳层用）。 */
+/** 跨模块薄封装（[downloadWorkController] 是 internal；供 :desktopApp 冒烟/壳层用）。 */
 fun desktopDownloadWorkController(): DownloadWorkController = DesktopDownloadWorkController
