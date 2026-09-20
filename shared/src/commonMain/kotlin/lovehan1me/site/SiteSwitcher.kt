@@ -7,7 +7,8 @@ import lovehan1me.core.constant.HanimeConstants
 import lovehan1me.core.platform.rebuildSystemProxy
 import lovehan1me.core.util.TagLocalizer
 import lovehan1me.data.SettingsRepository
-import lovehan1me.data.logout
+import lovehan1me.data.clearMemoryCookies
+import lovehan1me.data.clearWebCookies
 import lovehan1me.data.network.CsrfTokenProvider
 import lovehan1me.data.network.HanimeNetwork
 import lovehan1me.feature.video.PreviewCommentPrefetcher
@@ -38,8 +39,7 @@ import lovehan1me.feature.video.PreviewCommentPrefetcher
  * 1. **先落配置** —— service 的 `baseUrl` 是构造期快照（见 [HanimeNetwork.rebuildNetwork]），
  *    必须在 `update{}` **之后**重建，否则新 service 仍读到旧 URL；
  * 2. **再重建网络传输与 service** —— 代理（`rebuildSystemProxy`）+ 五个 service；
- * 3. **再清站点性凭据** —— 登录态、CSRF token（`loginCookie` 是全局单值、按当前 host
- *    无差别注入，不切站的 A 站 cookie 会被发给 B 站）；
+ * 3. **再清进程级站点凭据（登录态除外）** —— 内存 cookie、WebView cookie、CSRF token；
  * 4. **再清进程级缓存** —— 那些不以站点为键、跨站会串台的 object；
  * 5. **最后递增 [generation]** —— UI 侧据此重建 composition 与 ViewModelStore。
  *
@@ -118,8 +118,20 @@ object SiteSwitcher {
         rebuildSystemProxy()
         HanimeNetwork.rebuildNetwork()
 
-        // 3) 清站点性凭据
-        logout()
+        // 3) 清进程级站点凭据，但**保留登录态**。
+        //
+        //    javchu 与 hanime 后端共用同一套账号（订阅 / 历史 / 收藏互通，实站验证），
+        //    同一个会话 ID 两边都认；`loginCookie` 又是按 host 重写的全局值，
+        //    DataStore 里的 `isAlreadyLogin / loginCookie / savedUserId` 必须原样保留。
+        //    之前这里调 `logout()` 是登录丢失的根因 —— 它还跟"等价于重启"矛盾：
+        //    上游杀进程根本不清 DataStore，登录本来就该留下来。
+        //
+        //    只清真正跟"这次进程状态"绑定的：内存 cookie（各端清法见 HanimeAccount，
+        //    iOS 顺带把已持久化的 CF cookie 也洗掉 —— CF clearance 本来就按域签发，
+        //    旧站的留着对新站无用）、WebView cookie、CSRF token（各站页面里重新拿）。
+        //    会话若在新站恰好过期，走原来的登录过期路径重新登录，与正常过期一致。
+        clearMemoryCookies()
+        clearWebCookies()
         CsrfTokenProvider.csrfToken = null
 
         // 4) 清进程级、非按站点分键的缓存

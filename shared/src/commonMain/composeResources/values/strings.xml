@@ -603,6 +603,7 @@ Recommendations are as follows:\n
     <string name="version_check_failed">\n⚠️ Version check failed</string>
     <string name="switch_site">Switch Site</string>
     <string name="confirm_switch_site">Are you sure you want to switch site?</string>
+    <string name="confirm_switch_site_message">Switch to %1$s? Your login session will be kept.</string>
     <string name="play_trailer">Play Trailer</string>
     <string name="load_complete">Load complete !</string>
     <string name="search_video_hint">Enter keywords</string>

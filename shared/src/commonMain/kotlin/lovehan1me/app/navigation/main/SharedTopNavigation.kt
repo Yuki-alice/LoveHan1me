@@ -42,10 +42,12 @@ import lovehan1me.Res
 import lovehan1me.cancel
 import lovehan1me.confirm
 import lovehan1me.confirm_switch_site
+import lovehan1me.confirm_switch_site_message
 import lovehan1me.ic_add
 import lovehan1me.ic_search
 import lovehan1me.login_first
 import lovehan1me.search
+import lovehan1me.site.SiteIdentity
 import lovehan1me.site.SiteSwitcher
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.component.IconButton
@@ -561,10 +563,13 @@ fun SharedTopNavigation(
 
     // 「切换站点」确认框。放在 NavDisplay **之后**：AlertDialog 自带独立 window/overlay，
     // 不依赖所在位置；放这里只是为了让状态与 NavDisplay 同级，切站重建时一起撤掉。
+    // 目标站名直接算（纯字符串拼接，重组开销可忽略）：标题问"切不切"，正文说"去哪 +
+    // 登录保留"，按钮上的目标站名（见 `SwitchSiteButton`）与这里同源。
+    val switchTargetHost = SiteIdentity.toHostName(SiteSwitcher.resolveToggleTarget())
     ConfirmDialog(
         visible = showSiteSwitchConfirm,
         title = stringResource(Res.string.confirm_switch_site),
-        message = "",
+        message = stringResource(Res.string.confirm_switch_site_message, switchTargetHost),
         confirmText = stringResource(Res.string.confirm),
         dismissText = stringResource(Res.string.cancel),
         cancelable = false,

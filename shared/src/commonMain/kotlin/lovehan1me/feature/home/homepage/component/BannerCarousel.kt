@@ -57,9 +57,16 @@ fun BannerCarousel(
 
     Column(modifier = modifier) {
         BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
-            // 宽度驱动：16:9 基准、封顶 320.dp。此前按朝向切 21:9 再封顶 240.dp，
-            // 宽屏下被压成 5:1 全景条、人脸全裁掉；窄高窗口也不该因"横屏"切比例。
-            val bannerHeight = minOf(maxWidth * 9f / 16f, 320.dp)
+            // 宽屏直接 21:9（H = W×9/21），窄屏保持 16:9 不变矮：
+            // `maxOf(21:9, 320.dp)` 定下限 —— 窄到 21:9 不足 320 时按 16:9 走；
+            // `minOf(16:9, ...)` 定上限 —— 中间宽度自然落在 21:9；
+            // 绝对封顶只防超宽屏（内容宽 >1773dp 才动手，日常碰不到）。
+            // 全程连续，拖窗口改尺寸时高度不跳变。
+            val bannerHeight = minOf(
+                maxWidth * 9f / 16f,
+                maxOf(maxWidth * 9f / 21f, MIN_BANNER_HEIGHT),
+                MAX_BANNER_HEIGHT,
+            )
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -152,3 +159,13 @@ fun BannerCarousel(
         }
     }
 }
+
+/**
+ * 下限：窄屏按 16:9 走时不会矮过它（手机 400dp 宽 → 225dp 高，不受影响）。
+ */
+private val MIN_BANNER_HEIGHT = 320.dp
+
+/**
+ * 绝对封顶：内容宽 >1773dp 的超宽屏才动手，日常碰不到。
+ */
+private val MAX_BANNER_HEIGHT = 760.dp

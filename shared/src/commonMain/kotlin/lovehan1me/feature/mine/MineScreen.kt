@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
@@ -46,6 +48,7 @@ import lovehan1me.refresh_page_or_login_expired
 import lovehan1me.settings
 import lovehan1me.switch_site
 import lovehan1me.ui.component.CardContainerSurface
+import lovehan1me.ui.component.FilledTonalButton
 import lovehan1me.ui.component.HanimeAsyncImage
 import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.component.SettingNavigationItem
@@ -103,6 +106,8 @@ fun MineScreen(
     entries: List<MineEntry>,
     /** 当前数据源站点名（host，如 `hanime1.me` / `javchu.com`），显示在账号卡副标题。 */
     currentSiteName: String,
+    /** 切换按钮的目标站点名（与 currentSiteName 同源）：按钮上直接写去哪。 */
+    switchTargetName: String,
     onOpenSettings: () -> Unit,
     onOpenAccount: () -> Unit,
     onOpenLogin: () -> Unit,
@@ -152,6 +157,7 @@ fun MineScreen(
                     avatarUrl = avatarUrl,
                     username = username,
                     currentSiteName = currentSiteName,
+                    switchTargetName = switchTargetName,
                     onOpenAccount = onOpenAccount,
                     onOpenLogin = onOpenLogin,
                     onSwitchSite = onSwitchSite,
@@ -257,7 +263,6 @@ private fun CheckInCard(
  *
  * ⚠️ 曾误按「仅已登录才给切换按钮」实现 —— 上游那处 `when { isLoading / isLoggedIn /
  * else }` **只管标题文字**，`currentSite` 与切换按钮都在条件分支之外，未登录照常可见。
- * 未登录时切站会触发重新登录，但这正是上游行为，不该由我们收紧。
  */
 @Composable
 private fun AccountCard(
@@ -266,6 +271,7 @@ private fun AccountCard(
     avatarUrl: String?,
     username: String?,
     currentSiteName: String,
+    switchTargetName: String,
     onOpenAccount: () -> Unit,
     onOpenLogin: () -> Unit,
     onSwitchSite: () -> Unit,
@@ -333,9 +339,9 @@ private fun AccountCard(
             // （上游那处 `when { isLoading / isLoggedIn / else }` 只管标题文字，
             // 站点名与切换按钮都在条件分支之外）。
             //
-            // 未登录显示「登录」按钮 + 切换按钮并存：切站确实会触发重新登录，
-            // 但这正是用户预期 —— 上游同样允许未登录时切站。
-            SwitchSiteButton(onClick = onSwitchSite)
+            // 切站保留登录态（两站共用同一账号，见 `SiteSwitcher`）：未登录时切站，
+            // 到了新站依然是未登录，照常点「登录」按钮登录即可。
+            SwitchSiteButton(targetName = switchTargetName, onClick = onSwitchSite)
             if (!isLoggedIn) {
                 Button(onClick = onOpenLogin) {
                     Text(stringResource(Res.string.login))
@@ -348,31 +354,28 @@ private fun AccountCard(
 /**
  * 账号卡右侧的「切换站点」按钮。
  *
- * 用 [IconButton]（项目既有组件）而非 `OutlinedButton`：图标 + 文案竖向堆叠，
- * 在 52dp 头像行高内不抢宽度，也不会像文本按钮那样把用户名挤成省略号。
- * 样式一律走 token（`MaterialTheme.colorScheme` / `typography`），不写死色值。
+ * 横向 `FilledTonalButton`（图标 + 目标站名），之前是圆形 `IconButton` 里竖排堆叠，
+ * 圆是固定尺寸，图标加文字撑出去就被裁掉 —— 显示目标站名后更宽，圆更装不下。
+ * 横排按钮按内容自适应宽度，不存在裁切；样式与触感走项目既有组件。
+ * 图标下直接写**目标站名**（`javchu.com` / `hanime1.me`）：点之前就知道去哪，
+ * 不用靠确认框二次确认。
  */
 @Composable
-private fun SwitchSiteButton(onClick: () -> Unit) {
-    IconButton(
-        shapes = IconButtonDefaults.shapes(),
+private fun SwitchSiteButton(targetName: String, onClick: () -> Unit) {
+    FilledTonalButton(
         onClick = onClick,
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
     ) {
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(2.dp),
-        ) {
-            Icon(
-                painter = painterResource(Res.drawable.ic_switch),
-                contentDescription = stringResource(Res.string.switch_site),
-                modifier = Modifier.size(20.dp),
-            )
-            Text(
-                text = stringResource(Res.string.switch_site),
-                style = MaterialTheme.typography.labelSmall,
-                maxLines = 1,
-            )
-        }
+        Icon(
+            painter = painterResource(Res.drawable.ic_switch),
+            contentDescription = stringResource(Res.string.switch_site),
+            modifier = Modifier.size(18.dp),
+        )
+        Spacer(modifier = Modifier.width(6.dp))
+        Text(
+            text = targetName,
+            maxLines = 1,
+        )
     }
 }
 

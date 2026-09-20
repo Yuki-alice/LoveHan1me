@@ -605,6 +605,7 @@
     <string name="version_check_failed">\n⚠️ 版本检查失败</string>
     <string name="switch_site">切换站点</string>
     <string name="confirm_switch_site">确定要切换站点吗？</string>
+    <string name="confirm_switch_site_message">切换到 %1$s？登录状态将保留。</string>
     <string name="play_trailer">播放预告</string>
     <string name="search_video_hint">请输入关键词</string>
     <string name="recent_searches">最近搜索</string>

@@ -18,6 +18,7 @@ import lovehan1me.feature.mine.MineEntry
 import lovehan1me.feature.mine.MineScreen
 import lovehan1me.my_account
 import lovehan1me.site.SiteIdentity
+import lovehan1me.site.SiteSwitcher
 import kotlinx.datetime.LocalDate
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
@@ -91,6 +92,11 @@ fun MineRouteScreen(
     // 站点名从 domainName 提 host，**不用 baseUrl** —— 开了自定义镜像后 baseUrl 返回的是
     // 镜像地址，会把镜像 host 当成站点名显示（详见 SiteIdentity 的说明）。
     val currentSiteName = remember(domainName) { SiteIdentity.toHostName(domainName) }
+    // 切换按钮上直接写目标站（`javchu.com` / `hanime1.me`）：点之前就知道去哪，
+    // 不用靠确认框二次确认。目标与 currentSiteName 同源（domainName），同帧刷新。
+    val switchTargetName = remember(domainName) {
+        SiteIdentity.toHostName(SiteSwitcher.resolveToggleTarget())
+    }
     val records: Map<LocalDate, Int> = checkInUiState?.records ?: emptyMap()
     val checkInDoneToday = (records[todayDate] ?: 0) > 0
     val checkInStreakDays = remember(records, todayDate) {
@@ -110,6 +116,7 @@ fun MineRouteScreen(
         avatarUrl = avatarUrl,
         username = username,
         currentSiteName = currentSiteName,
+        switchTargetName = switchTargetName,
         checkInVisible = checkInEnabled,
         checkInDoneToday = checkInDoneToday,
         checkInStreakDays = checkInStreakDays,
