@@ -13,6 +13,8 @@ out/
 
 # Kotlin
 *.kotlin_metadata
+# Kotlin 编译器本地会话/错误日志（机器相关，不入库）
+.kotlin/
 
 # Local work files
 .workbuddy/
