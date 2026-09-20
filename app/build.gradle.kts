@@ -18,9 +18,9 @@ plugins {
 }
 
 // SDK 版本统一从 gradle.properties 读（与 :shared 的约定插件一致，消除硬编码）。
-// 为什么是 37 而不是 36，见 gradle.properties 里 han1me.android.appCompileSdk 的注释。
+// 平台统一到 android-37（compileSdk）；targetSdk 有意降到 36 = 退出 Android 17 行为变更，详见 gradle.properties。
 val appCompileSdk = providers.gradleProperty("han1me.android.appCompileSdk").getOrElse("37").toInt()
-val appTargetSdk = providers.gradleProperty("han1me.android.appTargetSdk").getOrElse("37").toInt()
+val appTargetSdk = providers.gradleProperty("han1me.android.appTargetSdk").getOrElse("36").toInt()
 val appMinSdk = providers.gradleProperty("han1me.android.appMinSdk").getOrElse("29").toInt()
 
 // 原 buildSrc 的 `Config.thisYear`（UTC+8 时区的当前年，搜索年份上限）。

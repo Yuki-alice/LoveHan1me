@@ -26,22 +26,16 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v4
 
-      # :app 硬编码 compileSdk 37（其 targetSdk=37，而 compileSdk 必须 ≥ targetSdk）；
-      # :shared 走约定插件读 gradle.properties 的 han1me.android.compileSdk=36
-      # （两台开发机当时只装了 36）→ **两个平台都得装**，缺任一个就会在
-      # :app:compileDebugKotlin / :shared:compileAndroidMain 阶段报错。
-      #
-      # ⚠️ 这里刻意不再用 `|| true` 吞掉失败：原先装了 36 却没有 37，
-      #    失败被静默忽略，最终表现为下游莫名其妙的编译错误。
-      # API 37 起平台带 minor 版本（本机目录名是 android-37.0），
-      # 包名可能是 android-37 也可能是 android-37.0 → 两个都试。
-      - name: Install Android platforms (36 for :shared, 37 for :app)
+      # 全模块 compileSdk 统一到 android-37（:shared 与 :app 同一套平台，只装 37）。
+      # :app targetSdk 有意降到 36（退出 Android 17 行为变更），但 targetSdk 不需要装对应平台。
+      # API 37 起平台带 minor 版本（目录名 android-37.0），包名可能是 android-37 也可能是
+      # android-37.0 → 两个都试。
+      # ⚠️ 刻意不用 `|| true` 吞失败：装不上平台要在本步说清楚，而非留到下游编译期。
+      - name: Install Android platform (37)
         shell: bash
         run: |
           SM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
-          for pkg in "platforms;android-36" "build-tools;36.0.0" \
-                     "platforms;android-37" "platforms;android-37.0" \
-                     "build-tools;37.0.0"; do
+          for pkg in "platforms;android-37" "platforms;android-37.0" "build-tools;37.0.0"; do
             if yes | "$SM" "$pkg" >/dev/null 2>&1; then
               echo "ok    $pkg"
             else
@@ -50,14 +44,12 @@ jobs:
           done
 
       # 装完断言：失败在"平台缺失"这一步说清楚，而不是留到编译期。
-      - name: Assert required SDK platforms are present
+      - name: Assert required SDK platform is present
         shell: bash
         run: |
           echo "installed platforms:"; ls "$ANDROID_HOME/platforms"
-          test -d "$ANDROID_HOME/platforms/android-36" || {
-            echo "::error::缺少 android-36（:shared 的 compileSdk 需要）"; exit 1; }
           ls "$ANDROID_HOME/platforms" | grep -q '^android-37' || {
-            echo "::error::缺少 android-37(.x)（:app 的 compileSdk=37 需要）"; exit 1; }
+            echo "::error::缺少 android-37(.x)（:app 与 :shared 的 compileSdk 都需要）"; exit 1; }
           echo "platforms OK"
 
       - name: Compile Android + Desktop
