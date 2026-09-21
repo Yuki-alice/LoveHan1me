@@ -50,9 +50,13 @@ object ServiceCreator {
 
     /**
      * Rebuild OkHttpClient
+     *
+     * 三个客户端一起重建：下载客户端漏在外的话，用户在设置页改完代理，
+     * 页面能刷新了、图片能加载了，**下载仍拿旧代理**跑到下次冷启动才生效。
      */
     fun rebuildOkHttpClient() {
         hClient = buildHClient()
+        downloadClient = buildDownloadClient()
         getchuClient = buildGetchuClient()
     }
 
@@ -73,6 +77,8 @@ object ServiceCreator {
             .protocols(listOf(Protocol.HTTP_1_1))
             .addInterceptor(UserAgentInterceptor)
             .addInterceptor(downloadSpeedLimitInterceptor)
+            // 与浏览同一出口：站点直连被重置时，"能看不能下"就是代理没跟过来
+            .proxySelector(HanimeProxySelector())
             .dns(dns)
             .build()
     }

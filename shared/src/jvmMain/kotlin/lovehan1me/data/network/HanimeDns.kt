@@ -8,6 +8,7 @@ import okhttp3.dnsoverhttps.DnsOverHttps
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import java.net.InetAddress
+import java.net.UnknownHostException
 import java.util.concurrent.TimeUnit
 
 /**
@@ -39,17 +40,6 @@ class HanimeDns : Dns {
         private val getchuIps = listOf("210.155.150.166", "210.155.150.145")
 
         private const val GETCHU_HOSTNAME = "www.getchu.com"
-
-        /**
-         * 添加DNS
-         */
-        private operator fun MutableMap<String, List<InetAddress>>.set(
-            host: String, ips: List<String>,
-        ) {
-            this[host] = ips.map {
-                InetAddress.getByAddress(host, InetAddress.getByName(it).address)
-            }
-        }
 
         /**
          * 解析自定义 IP 列表，逗号分隔
@@ -89,35 +79,50 @@ class HanimeDns : Dns {
         }
     }
 
+    /**
+     * 解析一个域名，按"哪一档先出结果就用哪一档"的次序降级。
+     *
+     * 为什么要链条：默认只有 `Dns.SYSTEM` 一条路，系统 DNS 被污染或 LocalDNS 抽风时
+     * 请求直接失败，用户看到的只是"应用进不去"；而 DoH 与内置 IP 这两条已经写好的路，
+     * 各自绑在一个手动开关上——大部分用户不会去翻设置。
+     *
+     * 顺序：DoH（开着才排第一位）→ 系统 → 内置/自定义 IP（只有 Hanime 系站点有数据）。
+     * [SettingsRepository.useBuiltInHosts] 是"我就是要走这些 IP"的显式指定，不参与链条。
+     * 全档皆墨时把系统解析那次的异常抛出去，保持 OkHttp 原有的失败语义。
+     */
     override fun lookup(hostname: String): List<InetAddress> {
         if (hostname == GETCHU_HOSTNAME) {
-            return getchuIps.map {
-                InetAddress.getByAddress(hostname, InetAddress.getByName(it).address)
-            }
+            return hostname.toAddresses(getchuIps)
         }
 
-        if (SettingsRepository.useBuiltInHosts && HANIME_HOSTNAME.contains(hostname)) {
-            val customIps = resolveCustomIps()
-            if (!customIps.isNullOrEmpty()) {
-                return customIps.map {
-                    InetAddress.getByAddress(hostname, InetAddress.getByName(it).address)
-                }
-            }
-            return cloudFlareIps.map {
-                InetAddress.getByAddress(hostname, InetAddress.getByName(it).address)
-            }
+        val hanimeHost = HANIME_HOSTNAME.contains(hostname)
+        if (SettingsRepository.useBuiltInHosts && hanimeHost) {
+            return hostname.toAddresses(resolveStaticIps())
         }
 
         val dohUrl = DohConfig.resolveUrl()
         if (!dohUrl.isNullOrBlank()) {
-            return runCatching { lookupByDoH(dohUrl, hostname) }
-                .getOrElse {
-                    LogUtil.w("DOH", "lookup failed for $hostname: ${it.message}")
-                    Dns.SYSTEM.lookup(hostname)
-                }
+            val viaDoH = runCatching { lookupByDoH(dohUrl, hostname) }
+                .onFailure { LogUtil.w("DNS", "DoH 失败，降级系统解析 $hostname: ${it.message}") }
+                .getOrNull()?.takeIf { it.isNotEmpty() }
+            if (viaDoH != null) return viaDoH
         }
 
-        return Dns.SYSTEM.lookup(hostname)
+        val system = runCatching { Dns.SYSTEM.lookup(hostname) }
+        val viaSystem = system.getOrNull()?.takeIf { it.isNotEmpty() }
+        if (viaSystem != null) return viaSystem
+
+        LogUtil.w("DNS", "系统解析不可用，降级内置 IP: $hostname ${system.exceptionOrNull()?.message}")
+        if (hanimeHost) return hostname.toAddresses(resolveStaticIps())
+        throw system.exceptionOrNull() ?: UnknownHostException("系统解析无结果: $hostname")
+    }
+
+    /** 手动档/最后一档共用的 IP 表：用户填的自定义 IP 优先，没填（或填得不成列表）才用内置的。 */
+    private fun resolveStaticIps(): List<String> =
+        resolveCustomIps()?.takeIf { it.isNotEmpty() } ?: cloudFlareIps
+
+    private fun String.toAddresses(ips: List<String>): List<InetAddress> = ips.map {
+        InetAddress.getByAddress(this, InetAddress.getByName(it).address)
     }
 
     private fun lookupByDoH(dohUrl: String, hostname: String): List<InetAddress> {
@@ -176,11 +181,7 @@ class HanimeDns : Dns {
         }
 
         if (SettingsRepository.useBuiltInHosts && HANIME_HOSTNAME.contains(host)) {
-            val customIps = resolveCustomIps()
-            if (!customIps.isNullOrEmpty()) {
-                return customIps.distinct()
-            }
-            return cloudFlareIps.distinct()
+            return resolveStaticIps().distinct()
         }
 
         return runCatching {
