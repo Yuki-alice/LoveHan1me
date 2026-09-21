@@ -2,6 +2,7 @@
 <resources>
     <!-- P6a: merged from :app res/values-zh-rCN strings.xml + check_in_strings.xml (translatable=false only in values) -->
     <string name="home_page">主页</string>
+    <string name="artist_home_tab">首页</string>
     <string name="latest_hanime">最新里番</string>
     <string name="latest_upload">最新上传</string>
     <string name="they_watched">他们在看</string>
@@ -566,11 +567,6 @@
     <string name="search_artist_ignore_video_type_summary">开启后，点击详情页头像搜索艺术家时，不再附带影片类型。</string>
     <string name="show_played_indicator">显示播放状态标记</string>
     <string name="show_played_indicator_summary">开启后将在搜索结果页视频封面右上角显示已播放标记</string>
-    <string name="horizontal_card_count_title">横向列表可见卡片数</string>
-    <string name="horizontal_card_count_summary">可调整首页与影片详情相关推荐等横向列表一次可见的卡片数量</string>
-    <string name="horizontal_card_count_dialog_hint">按不同屏幕宽度设置横向列表一次可见的卡片数量</string>
-    <string name="horizontal_card_count_current_width_hint">当前容器宽度参考：约 %1$ddp</string>
-    <string name="horizontal_card_count_current_bucket_hint">当前命中档位：%1$s = %2$.1f 张</string>
     <string name="new_group_name">新分组名称</string>
     <string name="rename_group">重命名分组</string>
     <string name="current_group_name">当前分组名称：%1$s</string>

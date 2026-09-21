@@ -77,13 +77,10 @@ fun rememberCardResponsiveWidth(
     // 内容区可用宽度（常驻抽屉 / 侧栏占宽已扣除），而非整窗宽度。
     val currentWidthDp = rememberContentWidthDp()
 
-    val isPreview = LocalInspectionMode.current
-    val itemsToShow = if (!isPreview) {
-        SettingsRepository.horizontalCardCountConfig.countForWidthDp(currentWidthDp.value.toInt())
-    } else {
-        val estimatedCardWidth = 160.dp
+    // 横向可见卡片数不再可配：按 160dp 估算卡宽自动推导（预览与运行时同一公式）。
+    val estimatedCardWidth = 160.dp
+    val itemsToShow =
         maxOf(1f, ((currentWidthDp - (horizontalPadding * 2)) / (estimatedCardWidth + itemSpacing)))
-    }
 
     val safeItemsToShow = maxOf(1f, itemsToShow)
     val cardWidth = (currentWidthDp - (horizontalPadding * 2) - (itemSpacing * (safeItemsToShow - 1))) / safeItemsToShow

@@ -12,6 +12,7 @@ import lovehan1me.Res
 import lovehan1me.search_grid_columns_title
 import lovehan1me.search_grid_columns_range_medium
 import lovehan1me.search_grid_columns_range_large
+import lovehan1me.search_grid_columns_range_extra_large
 import lovehan1me.search_grid_columns_range_expanded
 import lovehan1me.search_grid_columns_range_compact
 import lovehan1me.search_grid_columns_dialog_hint
@@ -41,17 +42,20 @@ fun SearchGridColumnsDialog(
     var mediumText by remember(initialConfig) { mutableStateOf(initialConfig.mediumColumns.toString()) }
     var expandedText by remember(initialConfig) { mutableStateOf(initialConfig.expandedColumns.toString()) }
     var largeText by remember(initialConfig) { mutableStateOf(initialConfig.largeColumns.toString()) }
+    var extraLargeText by remember(initialConfig) { mutableStateOf(initialConfig.extraLargeColumns.toString()) }
 
     val compactCols = compactText.toSearchGridColumnsOrNull()
     val mediumCols = mediumText.toSearchGridColumnsOrNull()
     val expandedCols = expandedText.toSearchGridColumnsOrNull()
     val largeCols = largeText.toSearchGridColumnsOrNull()
+    val extraLargeCols = extraLargeText.toSearchGridColumnsOrNull()
 
     val currentConfig = SearchGridColumnsConfig(
         compactColumns = compactCols ?: initialConfig.compactColumns,
         mediumColumns = mediumCols ?: initialConfig.mediumColumns,
         expandedColumns = expandedCols ?: initialConfig.expandedColumns,
         largeColumns = largeCols ?: initialConfig.largeColumns,
+        extraLargeColumns = extraLargeCols ?: initialConfig.extraLargeColumns,
     )
 
     val options = listOf(
@@ -98,6 +102,17 @@ fun SearchGridColumnsDialog(
                 if (portraitWidthDp >= 1201) add(stringResource(Res.string.search_grid_columns_current_portrait))
                 if (landscapeWidthDp >= 1201) add(stringResource(Res.string.search_grid_columns_current_landscape))
             }
+        ),
+        GridRangeOption(
+            label = stringResource(Res.string.search_grid_columns_range_extra_large),
+            value = extraLargeText,
+            onValueChange = { extraLargeText = it },
+            isError = extraLargeCols == null,
+            isHighlighted = portraitWidthDp >= 1600 || landscapeWidthDp >= 1600,
+            highlightLabels = buildList {
+                if (portraitWidthDp >= 1600) add(stringResource(Res.string.search_grid_columns_current_portrait))
+                if (landscapeWidthDp >= 1600) add(stringResource(Res.string.search_grid_columns_current_landscape))
+            }
         )
     )
 
@@ -116,13 +131,14 @@ fun SearchGridColumnsDialog(
         ),
         options = options,
         isDecimal = false, // 只允许整数
-        canConfirm = compactCols != null && mediumCols != null && expandedCols != null && largeCols != null,
+        canConfirm = compactCols != null && mediumCols != null && expandedCols != null && largeCols != null && extraLargeCols != null,
         onDismiss = onDismiss,
         onReset = {
             compactText = SearchGridColumnsConfig.DEFAULT_COMPACT_COLUMNS.toString()
             mediumText = SearchGridColumnsConfig.DEFAULT_MEDIUM_COLUMNS.toString()
             expandedText = SearchGridColumnsConfig.DEFAULT_EXPANDED_COLUMNS.toString()
             largeText = SearchGridColumnsConfig.DEFAULT_LARGE_COLUMNS.toString()
+            extraLargeText = SearchGridColumnsConfig.DEFAULT_EXTRA_LARGE_COLUMNS.toString()
         },
         onConfirm = { onConfirm(currentConfig) }
     )
@@ -139,6 +155,7 @@ private fun searchGridColumnsBucketLabel(widthDp: Int): String {
         widthDp <= 600 -> stringResource(Res.string.search_grid_columns_range_compact)
         widthDp <= 900 -> stringResource(Res.string.search_grid_columns_range_medium)
         widthDp <= 1200 -> stringResource(Res.string.search_grid_columns_range_expanded)
-        else -> stringResource(Res.string.search_grid_columns_range_large)
+        widthDp < 1600 -> stringResource(Res.string.search_grid_columns_range_large)
+        else -> stringResource(Res.string.search_grid_columns_range_extra_large)
     }
 }

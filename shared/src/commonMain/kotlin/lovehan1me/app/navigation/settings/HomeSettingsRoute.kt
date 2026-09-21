@@ -312,10 +312,7 @@ fun HomeSettingsRouteScreen(
                 coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(collapseDownloadedGroup = it) } }
             },
             searchGridColumnsConfigChange = { config ->
-                coroutineScope.launch { SettingsRepository.update { it.copy(searchGridColumnsCompact = config.compactColumns, searchGridColumnsMedium = config.mediumColumns, searchGridColumnsExpanded = config.expandedColumns, searchGridColumnsLarge = config.largeColumns) } }
-            },
-            horizontalCardCountConfigChange = { config ->
-                coroutineScope.launch { SettingsRepository.update { it.copy(horizontalCardCountNarrow = config.narrowCount, horizontalCardCountCompact = config.compactCount, horizontalCardCountMedium = config.mediumCount, horizontalCardCountExpanded = config.expandedCount) } }
+                coroutineScope.launch { SettingsRepository.update { it.copy(searchGridColumnsCompact = config.compactColumns, searchGridColumnsMedium = config.mediumColumns, searchGridColumnsExpanded = config.expandedColumns, searchGridColumnsLarge = config.largeColumns, searchGridColumnsExtraLarge = config.extraLargeColumns) } }
             },
             homeCategoryPreferencesChange = { order, hiddenKeys ->
                 coroutineScope.launch { saveHomeCategoryPreferences(order, hiddenKeys) }
@@ -513,7 +510,6 @@ private fun buildHomeSettingsUiState(
         AppLanguage.CHINESE_TRADITIONAL -> "繁體中文"
     }
     val searchGridColumnsConfig = SettingsRepository.searchGridColumnsConfig
-    val horizontalCardCountConfig = SettingsRepository.horizontalCardCountConfig
     val capabilities = settingsPlatformCapabilities()
     return HomeSettingsUiState(
         videoLanguage = SettingsRepository.videoLanguage,
@@ -546,10 +542,9 @@ private fun buildHomeSettingsUiState(
             searchGridColumnsConfig.mediumColumns,
             searchGridColumnsConfig.expandedColumns,
             searchGridColumnsConfig.largeColumns,
+            searchGridColumnsConfig.extraLargeColumns,
         ).joinToString(" / "),
         searchGridColumnsConfig = searchGridColumnsConfig,
-        horizontalCardCountSummary = "${horizontalCardCountConfig.narrowCount}~${horizontalCardCountConfig.expandedCount}",
-        horizontalCardCountConfig = horizontalCardCountConfig,
         checkInEnabled = SettingsRepository.isCheckInEnabled,
         homeCategoryItems = defaultHomeCategoryPreferenceItems,
         homeCategoryOrder = homeCategoryOrder,

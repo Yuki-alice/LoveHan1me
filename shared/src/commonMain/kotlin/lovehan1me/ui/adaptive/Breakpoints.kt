@@ -6,12 +6,10 @@ import androidx.compose.ui.unit.dp
 /**
  * 自适应的**唯一一份**宽度断点定义（纯逻辑，不依赖 Compose 运行时）。
  *
- * 背景：此前项目内存在三套各自为政的宽度魔数——
- *  - `HorizontalCardCountConfig`：350 / 600 / 840
- *  - `SearchGridColumnsConfig`：600 / **900** / 1200
- *  - `App` 常驻抽屉判定：840
- * 同一个窗口宽度在不同组件里会落到不同档位：导航 chrome 与内容网格不同步。
- * 现在全部改为引用本文件的常量（见 [WindowWidthBreakpoints]），改一处即三端全局生效。
+ * 背景：此前项目内存在各自为政的宽度魔数（横向卡片数 350 / 600 / 840、自适应网格 600 / 900 / 1200、
+ * App 常驻抽屉 840），同一个窗口宽度在不同组件里会落到不同档位。
+ * 横向卡片数设置已删除（横向列表改全自动响应式），现在全部改为引用本文件的常量
+ * （见 [WindowWidthBreakpoints]），改一处即三端全局生效。
  *
  * 与 Compose 相关的采样 / 下发（`rememberContentWidthDp`、`ProvideContentWidth`）见
  * `WindowSize.kt`。

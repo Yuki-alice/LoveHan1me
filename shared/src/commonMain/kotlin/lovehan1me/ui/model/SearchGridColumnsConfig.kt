@@ -7,6 +7,8 @@ data class SearchGridColumnsConfig(
     val mediumColumns: Int = DEFAULT_MEDIUM_COLUMNS,
     val expandedColumns: Int = DEFAULT_EXPANDED_COLUMNS,
     val largeColumns: Int = DEFAULT_LARGE_COLUMNS,
+    /** 超宽屏档（≥1600dp，见 [WindowWidthBreakpoints.ExtraLarge]），默认 6 列。 */
+    val extraLargeColumns: Int = DEFAULT_EXTRA_LARGE_COLUMNS,
 ) {
     /**
      * 按宽度取列数。
@@ -20,7 +22,8 @@ data class SearchGridColumnsConfig(
             screenWidthDp < WindowWidthBreakpoints.Medium -> compactColumns
             screenWidthDp < WindowWidthBreakpoints.Expanded -> mediumColumns
             screenWidthDp < WindowWidthBreakpoints.Large -> expandedColumns
-            else -> largeColumns
+            screenWidthDp < WindowWidthBreakpoints.ExtraLarge -> largeColumns
+            else -> extraLargeColumns
         }.coerceAtLeast(1)
     }
 
@@ -29,5 +32,6 @@ data class SearchGridColumnsConfig(
         const val DEFAULT_MEDIUM_COLUMNS = 3
         const val DEFAULT_EXPANDED_COLUMNS = 4
         const val DEFAULT_LARGE_COLUMNS = 5
+        const val DEFAULT_EXTRA_LARGE_COLUMNS = 6
     }
 }

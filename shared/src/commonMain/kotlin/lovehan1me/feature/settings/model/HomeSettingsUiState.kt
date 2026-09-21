@@ -1,6 +1,5 @@
 package lovehan1me.feature.settings.model
 
-import lovehan1me.ui.model.HorizontalCardCountConfig
 import lovehan1me.ui.model.SearchGridColumnsConfig
 import lovehan1me.feature.home.homepage.HomeCategoryPreferenceItem
 
@@ -33,8 +32,6 @@ data class HomeSettingsUiState(
     val contrastLevel: String,
     val searchGridColumnsSummary: String,
     val searchGridColumnsConfig: SearchGridColumnsConfig,
-    val horizontalCardCountSummary: String,
-    val horizontalCardCountConfig: HorizontalCardCountConfig,
     val checkInEnabled: Boolean,
     val homeCategoryItems: List<HomeCategoryPreferenceItem>,
     val homeCategoryOrder: List<String>,

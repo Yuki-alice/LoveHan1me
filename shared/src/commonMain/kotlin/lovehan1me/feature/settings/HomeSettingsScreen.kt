@@ -31,7 +31,6 @@ import lovehan1me.ui.component.lazy.LazyColumn
 import lovehan1me.ui.adaptive.WindowWidthSizeClass
 import lovehan1me.ui.adaptive.rememberContentWidthSizeClass
 import lovehan1me.feature.settings.dialog.HomeCategoryLayoutDialog
-import lovehan1me.feature.settings.dialog.HorizontalCardCountDialog
 import lovehan1me.feature.settings.dialog.SearchGridColumnsDialog
 import lovehan1me.feature.settings.model.HomeSettingsUiState
 import lovehan1me.feature.settings.model.HomeSettingsActions
@@ -45,7 +44,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.UriHandler
-import lovehan1me.ui.model.HorizontalCardCountConfig
 import lovehan1me.core.constant.HA1_GITHUB_URL
 import lovehan1me.core.constant.UPSTREAM_GITHUB_URL
 import lovehan1me.amoled_mode
@@ -98,8 +96,6 @@ import lovehan1me.local_data_import_summary
 import lovehan1me.local_data_export_title
 import lovehan1me.local_data_export_summary
 import lovehan1me.information
-import lovehan1me.horizontal_card_count_title
-import lovehan1me.horizontal_card_count_summary
 import lovehan1me.home_category_layout_summary
 import lovehan1me.home_category_layout
 import lovehan1me.haptic_feedback_summary
@@ -224,7 +220,6 @@ fun HomeSettingsScreen(
 ) {
     var activeDialog by rememberSaveable { mutableStateOf<HomeSettingsChoiceDialog?>(null) }
     var showSearchGridColumnsDialog by rememberSaveable { mutableStateOf(false) }
-    var showHorizontalCardCountDialog by rememberSaveable { mutableStateOf(false) }
     var showHomeCategoryDialog by rememberSaveable { mutableStateOf(false) }
     var showUsageTerms by rememberSaveable { mutableStateOf(false) }
     val uriHandler = LocalUriHandler.current
@@ -326,16 +321,6 @@ fun HomeSettingsScreen(
             },
         )
     }
-    if (showHorizontalCardCountDialog) {
-        HorizontalCardCountDialog(
-            initialConfig = state.horizontalCardCountConfig,
-            onDismiss = { showHorizontalCardCountDialog = false },
-            onConfirm = {
-                showHorizontalCardCountDialog = false
-                actions.horizontalCardCountConfigChange(it)
-            },
-        )
-    }
     if (showHomeCategoryDialog) {
         HomeCategoryLayoutDialog(
             state = state,
@@ -373,7 +358,6 @@ fun HomeSettingsScreen(
                 showDensitySettings = showDensitySettings,
                 openSearchGridColumns = { showSearchGridColumnsDialog = true },
                 openHomeCategory = { showHomeCategoryDialog = true },
-                openHorizontalCardCount = { showHorizontalCardCountDialog = true },
             )
 
             HomeSettingsPage.DataPrivacy -> dataPrivacySection(state, actions, isLoggedIn)

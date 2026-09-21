@@ -1,6 +1,5 @@
 package lovehan1me.data
 
-import lovehan1me.ui.model.HorizontalCardCountConfig
 import lovehan1me.ui.model.SearchGridColumnsConfig
 import lovehan1me.core.domain.model.AppLanguage
 import lovehan1me.core.domain.model.AppSettings
@@ -113,8 +112,7 @@ object SettingsRepository : SettingsStore {
     val mpvNetworkTimeout get() = current.mpvNetworkTimeout
     val customMpvParams get() = current.customMpvParams
     val downloadSpeedLimit get() = DOWNLOAD_SPEED_BYTES[current.downloadSpeedLimitIndex]
-    val searchGridColumnsConfig get() = SearchGridColumnsConfig(current.searchGridColumnsCompact, current.searchGridColumnsMedium, current.searchGridColumnsExpanded, current.searchGridColumnsLarge)
-    val horizontalCardCountConfig get() = HorizontalCardCountConfig(current.horizontalCardCountNarrow, current.horizontalCardCountCompact, current.horizontalCardCountMedium, current.horizontalCardCountExpanded)
+    val searchGridColumnsConfig get() = SearchGridColumnsConfig(current.searchGridColumnsCompact, current.searchGridColumnsMedium, current.searchGridColumnsExpanded, current.searchGridColumnsLarge, current.searchGridColumnsExtraLarge)
     val subscriptionArtistRows get() = current.subscriptionArtistRows
     val alwaysShowUpdateCard get() = current.alwaysShowUpdateCard
     val displayDensity get() = current.displayDensity

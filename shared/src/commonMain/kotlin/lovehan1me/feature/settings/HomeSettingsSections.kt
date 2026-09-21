@@ -11,7 +11,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.UriHandler
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import lovehan1me.ui.model.HorizontalCardCountConfig
 import lovehan1me.core.constant.HA1_GITHUB_URL
 import lovehan1me.core.constant.UPSTREAM_GITHUB_URL
 import lovehan1me.core.platform.settingsPlatformCapabilities
@@ -72,8 +71,6 @@ import lovehan1me.local_data_import_summary
 import lovehan1me.local_data_export_title
 import lovehan1me.local_data_export_summary
 import lovehan1me.information
-import lovehan1me.horizontal_card_count_title
-import lovehan1me.horizontal_card_count_summary
 import lovehan1me.home_category_layout_summary
 import lovehan1me.home_category_layout
 import lovehan1me.haptic_feedback_summary
@@ -173,7 +170,6 @@ import lovehan1me.ui.component.ChoiceDialog
 import lovehan1me.ui.adaptive.WindowWidthSizeClass
 import lovehan1me.ui.adaptive.rememberContentWidthSizeClass
 import lovehan1me.feature.settings.dialog.HomeCategoryLayoutDialog
-import lovehan1me.feature.settings.dialog.HorizontalCardCountDialog
 import lovehan1me.feature.settings.dialog.SearchGridColumnsDialog
 import lovehan1me.ui.theme.HanimeDefaults
 
@@ -221,10 +217,8 @@ internal fun previewHomeSettingsState() = HomeSettingsUiState(
     cacheSummary = "12 MB",
     versionSummary = "v26.1.0",
     contrastLevel = "standard",
-    searchGridColumnsSummary = "2 / 3 / 4 / 5",
+    searchGridColumnsSummary = "2 / 3 / 4 / 5 / 6",
     searchGridColumnsConfig = SearchGridColumnsConfig(),
-    horizontalCardCountSummary = "1.5 / 2.1 / 4.1 / 5.1",
-    horizontalCardCountConfig = HorizontalCardCountConfig(),
     checkInEnabled = true,
     homeCategoryItems = emptyList(),
     homeCategoryOrder = emptyList(),
@@ -433,7 +427,6 @@ internal fun AnimatedLazyListScope.interfaceInteractionSection(
     showDensitySettings: Boolean,
     openSearchGridColumns: () -> Unit,
     openHomeCategory: () -> Unit,
-    openHorizontalCardCount: () -> Unit,
 ) {
     // 触感反馈：仅 Android 有真实实现（桌面/iOS 的 HapticFeedback 是空实现）。
     // 这一段只有这一行，所以隐藏要连整个 item 一起 —— 否则桌面上会留一张空卡片。
@@ -452,13 +445,15 @@ internal fun AnimatedLazyListScope.interfaceInteractionSection(
     }
     item {
         SettingsSection(stringResource(Res.string.settings_layout_content)) {
-            SettingNavigationItem(
-                title = stringResource(Res.string.horizontal_card_count_title),
-                summary = stringResource(Res.string.horizontal_card_count_summary),
-                valueText = state.horizontalCardCountSummary,
-                iconRes = Res.drawable.ic_row,
-                onClick = { openHorizontalCardCount() },
-            )
+            SettingsAnimatedVisibility(visible = showDensitySettings) {
+                SettingNavigationItem(
+                    title = stringResource(Res.string.search_grid_columns_title),
+                    summary = stringResource(Res.string.search_grid_columns_summary),
+                    valueText = state.searchGridColumnsSummary,
+                    iconRes = Res.drawable.ic_grid,
+                    onClick = { openSearchGridColumns() },
+                )
+            }
             SettingSwitchItem(
                 title = stringResource(Res.string.search_artist_ignore_video_type),
                 summary = stringResource(Res.string.search_artist_ignore_video_type_summary),
@@ -497,15 +492,6 @@ internal fun AnimatedLazyListScope.interfaceInteractionSection(
                 iconRes = Res.drawable.ic_pet_supplies,
                 onCheckedChange = actions.funLoadingHintsChange,
             )
-            SettingsAnimatedVisibility(visible = showDensitySettings) {
-                SettingNavigationItem(
-                    title = stringResource(Res.string.search_grid_columns_title),
-                    summary = stringResource(Res.string.search_grid_columns_summary),
-                    valueText = state.searchGridColumnsSummary,
-                    iconRes = Res.drawable.ic_grid,
-                    onClick = { openSearchGridColumns() },
-                )
-            }
             SettingNavigationItem(
                 title = stringResource(Res.string.home_category_layout),
                 summary = stringResource(Res.string.home_category_layout_summary,

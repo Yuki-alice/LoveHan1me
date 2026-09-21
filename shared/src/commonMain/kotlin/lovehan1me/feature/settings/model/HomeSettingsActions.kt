@@ -1,6 +1,5 @@
 package lovehan1me.feature.settings.model
 
-import lovehan1me.ui.model.HorizontalCardCountConfig
 import lovehan1me.ui.model.SearchGridColumnsConfig
 
 /**
@@ -42,7 +41,6 @@ class HomeSettingsActions(
     val disableCommentsChange: (Boolean) -> Unit,
     val collapseDownloadedGroupChange: (Boolean) -> Unit,
     val searchGridColumnsConfigChange: (SearchGridColumnsConfig) -> Unit,
-    val horizontalCardCountConfigChange: (HorizontalCardCountConfig) -> Unit,
     val secureModeChange: (Boolean) -> Unit,
     val alwaysShowUpdateCardChange: (Boolean) -> Unit,
     val displayDensityChange: (Int) -> Unit,
