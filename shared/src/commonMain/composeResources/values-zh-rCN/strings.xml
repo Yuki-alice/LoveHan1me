@@ -880,6 +880,7 @@
     <string name="cf_cdp_failed_title">自动验证不可用</string>
     <string name="cf_manual_open_browser">用系统浏览器打开验证页</string>
     <string name="cf_manual_cookie_hint">通过验证后，在浏览器开发者工具中复制以 cf_clearance 开头的 Cookie，粘贴到下方。</string>
+    <string name="cf_manual_ua_hint">浏览器 User-Agent（必填：cf_clearance 与 UA 绑定，缺了它请求仍会 403）。在刚验证过的那个浏览器的控制台执行 navigator.userAgent 后复制过来。</string>
     <string name="cf_manual_submit">提交并继续</string>
     <string name="cf_manual_retry">重试自动验证</string>
     <string name="gif_capture">录制 GIF</string>

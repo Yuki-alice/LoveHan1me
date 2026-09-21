@@ -131,8 +131,14 @@ data class AppSettings(
     val localListNoticeDismissed: Boolean = false,
     val savedUserId: String = "",
     val loginCookie: String = "",
-    val cloudFlareCookie: String = "",
-    val cloudFlareCookieHost: String = "",
+    /**
+     * Cloudflare `cf_clearance` 按域存档：host（小写）→ Cookie 头。
+     *
+     * 为什么不是"一条 cookie + 一个 host"：Hanime1 有四个可切域名外加用户自定义镜像，
+     * 而 clearance 是**按 zone 签发**的。单行存储下"在 B 域验证成功"会把 A 域那条还能用的
+     * 凭据直接顶掉，用户看到的就是"切个镜像又弹一次验证窗、验完回来又弹"。
+     */
+    val cfCookies: Map<String, String> = emptyMap(),
     val domainName: String = "https://hanime1.me/",
     val selectedBaseUrl: String = "https://hanime1.me/",
     val useCustomMirrorSite: Boolean = false,
@@ -266,3 +272,29 @@ data class AppSettings(
     val alwaysShowUpdateCard: Boolean = false,
     val displayDensity: DisplayDensity = DisplayDensity.Default,
 )
+
+/**
+ * [host] 能用哪条记录：返回命中的**域键**（精确域 → 父域），都没有返回 null。
+ *
+ * 要返回键而不是值，是因为作废时必须删对那一条：请求打在 `www.hanime1.me`、
+ * 凭据记在 `hanime1.me` 时，按请求域精确删会一个键都删不掉，死钥匙继续留在表里。
+ *
+ * 父域回落只在同一棵域名树下成立（`www.hanime1.me` 用 `hanime1.me` 的记录）；
+ * `hanime1.me` 与 `hanimeone.me` 是两个不同的 Cloudflare zone，串用等于拿错钥匙开锁，
+ * 表现就是"浏览器明明验证过了，应用还是 403"。
+ */
+fun Map<String, String>.cfCookieKeyFor(host: String): String? {
+    val labels = host.lowercase().split('.')
+    for (start in labels.indices) {
+        val candidate = labels.subList(start, labels.size).joinToString(".")
+        // 不回落到最后一段（TLD）：一条键为 "me" 的记录会服务整棵 .me 树下的陌生站。
+        // 单段 host（localhost 镜像）只剩精确匹配这一档，不受影响。
+        if (start > 0 && !candidate.contains('.')) continue
+        if (get(candidate)?.isNotBlank() == true) return candidate
+    }
+    return null
+}
+
+/** 取 [this] 里能给 [host] 用的 CF clearance（见 [cfCookieKeyFor]）。 */
+fun Map<String, String>.cfCookieFor(host: String): String? =
+    cfCookieKeyFor(host)?.let { this[it] }

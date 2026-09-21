@@ -592,6 +592,44 @@ object NetworkRepo {
         return username != null
     }
 
+    /** 等 CF 验证通过的上限：比桌面 CDP 的求解预算（120s）再宽一点，别卡在它前面放弃。 */
+    private const val CF_RETRY_WAIT_MS = 150_000L
+
+    /**
+     * 站点请求 + 状态判定 + **CF 验证通过后自动续跑一次**。
+     *
+     * 为什么要在流里等：验证成功之前，失败的请求早就抛完了，所以"用户验完了、应用却什么都没
+     * 发生"——只能手动退回再进，观感就是弹一次窗赌一把。这里让原请求挂在通过信号上，
+     * 窗口一关页面自己就出来了。只续跑一次（再失败就照常报错），不给死循环留口子。
+     *
+     * 非 CF 错误的语义与 [HttpResponse.throwRequestException] 完全一致。
+     */
+    private suspend fun ioRequest(
+        request: suspend () -> HttpResponse,
+        permittedSuccessCode: IntArray? = null,
+    ): HttpResponse {
+        val first = request()
+        if (first.isSuccessfulSiteResponse(permittedSuccessCode)) return first
+        try {
+            first.throwRequestException()
+        } catch (blocked: CloudflareBlockedException) {
+            val host = CloudflareChallenges.hostOf(first.call.request.url.toString())
+            if (!CloudflareChallenges.awaitPassed(host, CF_RETRY_WAIT_MS)) throw blocked
+            val retried = request()
+            if (!retried.isSuccessfulSiteResponse(permittedSuccessCode)) {
+                retried.throwRequestException()
+            }
+            return retried
+        }
+    }
+
+    /**
+     * 状态码是否算成功：`permittedSuccessCode` 用于特殊情况，
+     * 比如 [modifyPlaylist] 需要 302 成功。
+     */
+    private fun HttpResponse.isSuccessfulSiteResponse(permitted: IntArray?): Boolean =
+        permitted?.contains(status.value) == true || status.isSuccess()
+
     /**
      * 用于单网页的情况
      *
@@ -603,13 +641,8 @@ object NetworkRepo {
         // P4：action 改 suspend（Parser.homePageVer2 用 composeResources getString 需要）
         action: suspend (String) -> WebsiteState<T>,
     ) = flow {
-        val requestResult = request.invoke()
-        val permitted = permittedSuccessCode?.contains(requestResult.status.value) == true
-        if ((permitted || requestResult.status.isSuccess())) {
-            emit(action.invoke(requestResult.bodyAsText()))
-        } else {
-            requestResult.throwRequestException()
-        }
+        val requestResult = ioRequest(request, permittedSuccessCode)
+        emit(action.invoke(requestResult.bodyAsText()))
     }.catch { e ->
         emit(WebsiteState.Error(handleException(e)))
     }.flowOn(ioDispatcher)
@@ -621,12 +654,8 @@ object NetworkRepo {
         request: suspend () -> HttpResponse,
         action: (String) -> PageLoadingState<T>,
     ) = flow {
-        val requestResult = request.invoke()
-        if (requestResult.status.isSuccess()) {
-            emit(action.invoke(requestResult.bodyAsText()))
-        } else {
-            requestResult.throwRequestException()
-        }
+        val requestResult = ioRequest(request)
+        emit(action.invoke(requestResult.bodyAsText()))
     }.catch { e ->
         emit(PageLoadingState.Error(handleException(e)))
     }.flowOn(ioDispatcher)
@@ -639,16 +668,12 @@ object NetworkRepo {
         action: (String) -> VideoLoadingState<T>,
     ) = flow {
         PlayerTrace.mark("video-request-start")
-        val requestResult = request.invoke()
+        val requestResult = ioRequest(request)
         PlayerTrace.mark("video-request-end")
-        if (requestResult.status.isSuccess()) {
-            PlayerTrace.mark("video-parse-start")
-            val parsed = action.invoke(requestResult.bodyAsText())
-            PlayerTrace.mark("video-parse-end")
-            emit(parsed)
-        } else {
-            requestResult.throwRequestException()
-        }
+        PlayerTrace.mark("video-parse-start")
+        val parsed = action.invoke(requestResult.bodyAsText())
+        PlayerTrace.mark("video-parse-end")
+        emit(parsed)
     }.catch { e ->
         emit(VideoLoadingState.Error(handleException(e)))
     }.flowOn(ioDispatcher)
@@ -699,10 +724,17 @@ object NetworkRepo {
                         throw IPBlockedException(getString(Res.string.cloudflare_ip_block_warning))
 
                     "Just a moment" in body -> {
-                        // 三端统一 CF 恢复触发（桌面 KCEF 窗 / iOS WKWebView 槽位至此可达；
+                        // 三端统一 CF 恢复触发（桌面 CDP 窗 / iOS WKWebView 槽位至此可达；
                         // Android 拦截器链路不受影响，见 CloudflareChallenges 文档）。
+                        val url = call.request.url.toString()
+                        // 先把这把死钥匙丢掉再开窗：命中挑战说明它已过期或出口 IP 变了，
+                        // 留着它既会让下面的诊断日志谎报"有凭据"，也会让下一次请求继续裸奔。
                         runCatching {
-                            CloudflareChallenges.request(call.request.url.toString())
+                            SettingsRepository.clearCloudFlareCookie(CloudflareChallenges.hostOf(url))
+                        }
+                        LogUtil.d("CF", "challenge: ${cfFailureFingerprint(url, code)}")
+                        runCatching {
+                            CloudflareChallenges.request(url)
                         }
                         throw CloudflareBlockedException(getString(Res.string.cloudflare_network_mismatch))
                     }
@@ -722,6 +754,16 @@ object NetworkRepo {
 
             else -> throw IllegalStateException("$code ${status.description}")
         }
+    }
+
+    /**
+     * CF 挑战诊断指纹（无敏感值）：host + 状态码 + 是否携带已持久化 clearance + 代理类型。
+     * 下次"验证成功但应用仍失败"直接看这行即可定位（裸奔重试 / 换 host / 换出口 IP）。
+     */
+    internal fun cfFailureFingerprint(url: String, status: Int): String {
+        val host = CloudflareChallenges.hostOf(url)
+        return "host=$host status=$status hasClearance=${SettingsRepository.cfCookieFor(host) != null} " +
+            "proxyType=${SettingsRepository.proxyType}"
     }
 
     internal suspend fun handleException(e: Throwable): Throwable {

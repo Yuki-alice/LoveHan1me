@@ -23,9 +23,6 @@ const val APP_NAME = "LoveHan1me"
 const val LOGIN_COOKIE = "cookie"
 const val SAVED_USER_ID = "saved_user_id"
 
-const val CLOUDFLARE_COOKIE = "cf_cookie"
-const val CLOUDFLARE_COOKIE_HOST = "cf_cookie_host"
-
 const val ALREADY_LOGIN = "already_login"
 
 // Notification

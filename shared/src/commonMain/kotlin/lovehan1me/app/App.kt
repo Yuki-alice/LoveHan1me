@@ -164,11 +164,16 @@ private fun AppContent(
     }
 
     // CF 挑战统一恢复入口：NetworkRepo 判定挑战页时经总线送达，此处压栈各端
-    // 既有验证 UI（桌面 KCEF 弹窗 / iOS WKWebView / Android WebView）。
-    // 去重：栈上已有 CF 页不再压（Android 拦截器链路自带开屏，重试失败才到这里）。
+    // 既有验证 UI（桌面 CDP 弹窗 / iOS WKWebView / Android WebView）。
+    // 去重按**域**：栈上已有同一个域的 CF 页才不再压（Android 拦截器链路自带开屏，
+    // 重试失败才到这里）。不分域去重会把第二个站的挑战吞掉——请求挂在总线上
+    // 等一个永远不会出现的验证窗，用户看到的是无限转圈。
     LaunchedEffect(backStack) {
         CloudflareChallenges.requests.collect { challenge ->
-            if (backStack.backStack.none { it is CloudflareRoute }) {
+            val alreadyOpen = backStack.backStack.any {
+                it is CloudflareRoute && it.host == challenge.host
+            }
+            if (!alreadyOpen) {
                 backStack.add(CloudflareRoute(challenge.url, challenge.host))
             }
         }

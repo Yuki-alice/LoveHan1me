@@ -256,7 +256,7 @@ private suspend fun persistCloudflareCookies(
     val cookies = cookieManager.getCookie(completedUrl).orEmpty()
     if (!cookies.containsCookie("cf_clearance")) return false
     val cookieHost = completedUrl.toUri().host?.lowercase() ?: fallbackHost
-    SettingsRepository.setCloudFlareCookie(cookies, cookieHost)
+    SettingsRepository.setCloudFlareCookie(cookieHost, cookies)
     cookieManager.flush()
     return true
 }

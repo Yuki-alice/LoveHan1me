@@ -33,14 +33,16 @@ import lovehan1me.cf_manual_cookie_hint
 import lovehan1me.cf_manual_open_browser
 import lovehan1me.cf_manual_retry
 import lovehan1me.cf_manual_submit
+import lovehan1me.cf_manual_ua_hint
 import lovehan1me.cf_use_manual
 import lovehan1me.complete_cloudflare_verification
+import lovehan1me.data.network.CloudflareChallenges
 import org.jetbrains.compose.resources.stringResource
 import java.awt.Desktop
 import java.net.URI
 
 /**
- * 阶段一⑩：桌面 CF 人机验证——独立弹窗 + CDP 无头浏览器自动验证。
+ * 阶段一⑩：桌面 CF 人机验证——独立弹窗 + CDP 驱动可见浏览器自动验证。
  *
  * 形态（用户要的"独立窗口弹窗"）：Compose Desktop 在 App 内再开 `Window`，
  * 与主窗口互不干扰；验证结束关窗，调用方回退路由重试原请求。
@@ -54,7 +56,7 @@ import java.net.URI
  * 是那个浏览器窗口；本机无浏览器 / 启动失败 / 2 分钟未通过 → 切手动兜底面板。
  *
  * 手动兜底（与旧版同）：① 用系统浏览器打开验证页；② 粘贴 `cf_clearance`
- * 写回 DataStore（`HCookieJar.loadForRequest` 在 host 匹配时叠加，
+ * 写回 DataStore（`HCookieJar.loadForRequest` 按域取用 clearance，
  * 后续请求自动携带）。
  */
 @Composable
@@ -118,7 +120,12 @@ fun CloudflareVerificationWindow(
 
     if (open) {
         androidx.compose.ui.window.Window(
-            onCloseRequest = { open = false },
+            // 用户直接关窗 = 这个域不验了：叫醒挂在 ioRequest 上的请求，让它照常报错，
+            // 而不是把界面定格在转圈上直到超时。
+            onCloseRequest = {
+                open = false
+                CloudflareChallenges.abandoned(host)
+            },
             title = "Cloudflare 人机验证",
         ) {
             Column(modifier = Modifier.fillMaxSize()) {
@@ -191,8 +198,11 @@ private fun StatusPane(
 /**
  * 手动兜底：自动验证不可用时的自救路径。
  *
- * 写回通道只需 DataStore —— `HCookieJar.loadForRequest` 在
- * `cloudFlareCookieHost == host` 时会叠加该 Cookie，后续请求自动携带。
+ * 写回通道只需 DataStore —— `HCookieJar.loadForRequest` 按域取 clearance
+ * （精确域 → 父域回落）叠加进请求，后续请求自动携带。
+ *
+ * UA 与 clearance 一起要：`cf_clearance` 绑定签发它的浏览器 UA，只写 cookie
+ * 会得到一把"钥匙对不上锁"的死凭据 —— 旧版正是这条路径让人以为手动兜底没用。
  */
 @Composable
 private fun ManualFallbackPane(
@@ -204,6 +214,8 @@ private fun ManualFallbackPane(
 ) {
     val scope = rememberCoroutineScope()
     var input by remember { mutableStateOf("") }
+    // 预填上一次采到的真实 UA：同一个浏览器重复粘贴时不用再抄一遍，换浏览器时改这里。
+    var userAgent by remember { mutableStateOf(lovehan1me.data.SettingsRepository.desktopBrowserUserAgent) }
     var browserOpened by remember { mutableStateOf(false) }
     var browserError by remember { mutableStateOf<String?>(null) }
 
@@ -249,14 +261,31 @@ private fun ManualFallbackPane(
             maxLines = 8,
             modifier = Modifier.fillMaxWidth().heightIn(min = 72.dp, max = 200.dp),
         )
+
+        Text(
+            text = stringResource(Res.string.cf_manual_ua_hint),
+            style = MaterialTheme.typography.bodySmall,
+        )
+        OutlinedTextField(
+            value = userAgent,
+            onValueChange = { userAgent = it },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
         Spacer(modifier = Modifier.height(2.dp))
 
         Button(
-            enabled = input.contains('='),
+            // UA 与 cookie 缺一不可：只贴 cookie 就是把自己浏览器的钥匙配给一个
+            // 对不上锁孔的 UA，提交后照样 403（这正是"手动导入没用"的根因）。
+            enabled = input.contains('=') && userAgent.isNotBlank(),
             onClick = {
                 val cookie = input.trim()
+                val ua = userAgent.trim()
                 scope.launch {
-                    lovehan1me.data.SettingsRepository.setCloudFlareCookie(cookie, host)
+                    // 与 CDP 路径同序：UA 先落盘，再写 clearance（写它会叫醒等验证的请求）。
+                    val settings = lovehan1me.data.SettingsRepository
+                    settings.setDesktopBrowserUserAgent(ua)
+                    settings.setCloudFlareCookie(host, cookie)
                     onPassed()
                 }
             },

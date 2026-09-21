@@ -28,6 +28,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.serialization.builtins.MapSerializer
+import kotlinx.serialization.builtins.serializer
 import kotlinx.serialization.json.Json
 import kotlin.concurrent.Volatile
 import okio.Path.Companion.toPath
@@ -48,15 +50,24 @@ object DataStoreManager : SettingsStore {
     /** 命名筛选预设整表序列化后放这个键上（见 [AppSettings.searchFilterPresets]）。 */
     private const val KEY_SEARCH_FILTER_PRESETS = "search_filter_presets"
 
+    /** CF clearance 按域存档整表序列化后放这个键上（见 [AppSettings.cfCookies]）。 */
+    private const val KEY_CF_COOKIES = "cf_cookies"
+
+    /** 旧版单行 clearance（一个值 + 一个 host），只用于读侧升级回落。 */
+    private const val LEGACY_KEY_CF_COOKIE = "cf_cookie"
+    private const val LEGACY_KEY_CF_COOKIE_HOST = "cf_cookie_host"
+
     private val defaults = AppSettings()
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private val mutableSettings = MutableStateFlow(defaults)
     override val settings: StateFlow<AppSettings> = mutableSettings
 
-    private val presetsJson = Json {
+    private val storedJson = Json {
         ignoreUnknownKeys = true
         encodeDefaults = true
     }
+
+    private val cfCookiesSerializer = MapSerializer(String.serializer(), String.serializer())
 
     private lateinit var dataStore: DataStore<Preferences>
     @Volatile private var initialized = false
@@ -137,8 +148,11 @@ object DataStoreManager : SettingsStore {
         ),
         savedUserId = string("saved_user_id", defaults.savedUserId),
         loginCookie = string("cookie", defaults.loginCookie),
-        cloudFlareCookie = string("cf_cookie", defaults.cloudFlareCookie),
-        cloudFlareCookieHost = string("cf_cookie_host", defaults.cloudFlareCookieHost).lowercase(),
+        cfCookies = decodeCfCookies(
+            raw = nullableString(KEY_CF_COOKIES),
+            legacyCookie = nullableString(LEGACY_KEY_CF_COOKIE),
+            legacyHost = nullableString(LEGACY_KEY_CF_COOKIE_HOST),
+        ),
         desktopBrowserUserAgent = string("desktop_browser_user_agent", defaults.desktopBrowserUserAgent),
         domainName = string("domain_name", defaults.domainName), selectedBaseUrl = string("selectedBaseUrl", defaults.selectedBaseUrl),
         useCustomMirrorSite = bool("use_custom_mirror_site", defaults.useCustomMirrorSite), customMirrorSite = string("custom_mirror_site", defaults.customMirrorSite),
@@ -175,6 +189,10 @@ object DataStoreManager : SettingsStore {
     private fun MutablePreferences.write(value: AppSettings) {
         remove(stringPreferencesKey("app_update_cached_json"))
         remove(stringPreferencesKey("saf_download_path"))
+        // 旧单行 clearance 已并入 cf_cookies，这里彻底删掉：留着的话用户清掉验证后，
+        // 读侧升级回落会把它再捞回来（复活一把已经作废的钥匙）。
+        remove(stringPreferencesKey(LEGACY_KEY_CF_COOKIE))
+        remove(stringPreferencesKey(LEGACY_KEY_CF_COOKIE_HOST))
         value.toMap().forEach { (name, raw) -> putRaw(name, raw) }
         this[booleanPreferencesKey(SLIDE_MIGRATED)] = true
     }
@@ -182,7 +200,7 @@ object DataStoreManager : SettingsStore {
     private fun AppSettings.toMap(): Map<String, Any> = buildMap {
         put("app_language", appLanguage.preferenceValue); put("use_dark_mode", themeMode.value); put("app_theme_id", themeId); put("amoled_black", amoled); put("app_contrast_level", contrastLevel.value)
         put("allow_pip_mode", allowPipMode); put("secure_mode", secureMode); put("disable_comments", disableComments); put("haptic_feedback_enabled", hapticFeedbackEnabled); put("nav_bar_style", navBarStyle.value)
-        put("usage_notice_accepted_v2", usageNoticeAccepted); put("already_login", isAlreadyLogin); put("local_list_notice_dismissed", localListNoticeDismissed); put("saved_user_id", savedUserId); put("cookie", loginCookie); put("cf_cookie", cloudFlareCookie); put("cf_cookie_host", cloudFlareCookieHost); put("desktop_browser_user_agent", desktopBrowserUserAgent)
+        put("usage_notice_accepted_v2", usageNoticeAccepted); put("already_login", isAlreadyLogin); put("local_list_notice_dismissed", localListNoticeDismissed); put("saved_user_id", savedUserId); put("cookie", loginCookie); put(KEY_CF_COOKIES, encodeCfCookies(cfCookies)); put("desktop_browser_user_agent", desktopBrowserUserAgent)
         put("domain_name", domainName); put("selectedBaseUrl", selectedBaseUrl); put("use_custom_mirror_site", useCustomMirrorSite); put("custom_mirror_site", customMirrorSite); put("append_custom_mirror_path", appendCustomMirrorPath); put("use_built_in_hosts", useBuiltInHosts); put("custom_hosts_data", customHostsData); put("use_doh", useDoH); put("doh_preset", dohPreset); put("doh_custom_url", dohCustomUrl); put("doh_bootstrap_ips", dohBootstrapIps); put("doh_timeout_seconds", dohTimeoutSeconds); put("proxy_type", proxyType.id); put("proxy_ip", proxyIp); put("proxy_port", proxyPort)
         cachedUpdateJson?.let { put("app_update_cached_json", it) }; put("app_update_ignored_version_code", ignoredVersionCode); put("download_count_limit", downloadCountLimit); put("download_speed_limit", downloadSpeedLimitIndex); put("use_private_storage", usePrivateStorage); safDownloadPath?.let { put("saf_download_path", it) }; put("collapse_downloaded_group", collapseDownloadedGroup)
         put("switch_player_kernel", playerKernel.value); put("player_speed", playerSpeed.toString()); put("slide_sensitivity", slideSensitivity); put("long_press_speed_times", longPressSpeedTime.toString()); put("video_language", videoLanguage); put("default_video_quality", videoQuality); put("show_played_indicator", showPlayedIndicator); put("allow_resume_playback", allowResumePlayback); put("auto_play_on_enter", autoPlayOnEnter)
@@ -209,12 +227,40 @@ object DataStoreManager : SettingsStore {
      */
     private fun decodeFilterPresets(raw: String?): List<SearchFilterPreset> {
         if (raw.isNullOrBlank()) return emptyList()
-        return runCatching { presetsJson.decodeFromString<List<SearchFilterPreset>>(raw) }
+        return runCatching { storedJson.decodeFromString<List<SearchFilterPreset>>(raw) }
             .getOrElse { emptyList() }
     }
 
     private fun encodeFilterPresets(value: List<SearchFilterPreset>): String =
-        runCatching { presetsJson.encodeToString(value) }.getOrElse { "" }
+        runCatching { storedJson.encodeToString(value) }.getOrElse { "" }
+
+    /**
+     * 读 CF clearance 表。[raw] 缺失（老存档从没写过 `cf_cookies`）时，把旧版单行
+     * `cf_cookie` + `cf_cookie_host` 升上来 —— 否则每次改存储形状都要用户重验一次。
+     *
+     * [raw] 存在但解析失败只当没有凭据，不能让设置整体读崩。
+     */
+    internal fun decodeCfCookies(
+        raw: String?,
+        legacyCookie: String?,
+        legacyHost: String?,
+    ): Map<String, String> {
+        if (!raw.isNullOrBlank()) {
+            val decoded = runCatching {
+                storedJson.decodeFromString(cfCookiesSerializer, raw)
+            }.getOrNull().orEmpty()
+            return decoded.lowercaseKeys().filterValues { it.isNotBlank() }
+        }
+        val host = legacyHost?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }
+        val cookie = legacyCookie?.takeIf { it.isNotBlank() }
+        return if (host != null && cookie != null) mapOf(host to cookie) else emptyMap()
+    }
+
+    internal fun encodeCfCookies(value: Map<String, String>): String =
+        storedJson.encodeToString(cfCookiesSerializer, value.lowercaseKeys())
+
+    private fun Map<String, String>.lowercaseKeys(): Map<String, String> =
+        entries.associate { (host, cookie) -> host.lowercase() to cookie }
 
     private fun Preferences.bool(name: String, default: Boolean) = runCatching { this[booleanPreferencesKey(name)] }.getOrNull() ?: default
     private fun Preferences.int(name: String, default: Int) = intOrNull(name) ?: default
@@ -237,7 +283,7 @@ object DataStoreManager : SettingsStore {
      * 导入方出现"填了 ID 却总是鉴权失败"的半截配置，故与 secret 成对排除。
      */
     private val AUTH_KEYS = setOf(
-        "already_login", "saved_user_id", "cookie", "cf_cookie", "cf_cookie_host",
+        "already_login", "saved_user_id", "cookie", KEY_CF_COOKIES,
         "danmaku_app_id", "danmaku_app_secret",
     )
 }

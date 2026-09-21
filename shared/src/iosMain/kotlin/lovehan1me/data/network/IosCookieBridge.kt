@@ -19,9 +19,9 @@ import kotlinx.coroutines.flow.update
  * 注意 `cf_clearance` 与 UA/IP 绑定：WKWebView 的 `customUserAgent` 已固定为
  * 与 HTTP 层一致的 `USER_AGENT`，同机同网下匹配成立。
  *
- * M7-2 修复：cf_clearance 除写入内存桥外，同步写入 DataStore（`cf_cookie` /
- * `cf_cookie_host`），与 jvm 端 `persistCloudflareCookies` 语义对齐——跨进程
- * 重启后 CF 验证态可由 [BridgeCookiesStorage] 从持久化层恢复注入。
+ * M7-2 修复：cf_clearance 除写入内存桥外，同步写入 DataStore（`cf_cookies`，按域存），
+ * 与 jvm 端 `persistSolvedCookies` 语义对齐——跨进程重启后 CF 验证态可由
+ * [BridgeCookiesStorage] 从持久化层恢复注入。
  */
 object IosCookieBridge {
 
@@ -42,10 +42,10 @@ object IosCookieBridge {
      * 只在提取到 `cf_clearance` 时落盘，避免把无意义的中间态写进设置。
      */
     suspend fun persist(host: String, extra: Map<String, String>) {
-        val hasClearance = extra.keys.any { it == "cf_clearance" }
+        val hasClearance = extra.keys.any { it == CF_CLEARANCE_NAME }
         if (hasClearance && host.isNotBlank()) {
             val cookieHeader = extra.entries.joinToString("; ") { "${it.key}=${it.value}" }
-            SettingsRepository.setCloudFlareCookie(cookieHeader, host)
+            SettingsRepository.setCloudFlareCookie(host, cookieHeader)
         }
     }
 
@@ -67,10 +67,10 @@ object IosCookieBridge {
         }
     }
 
-    /** M7-2：从 DataStore cloudFlareCookie 构造请求 Cookie（host 匹配由调用方判定）。 */
+    /** M7-2：从 DataStore 取该域可用的 CF clearance（精确域 → 父域回落）构造请求 Cookie。 */
     internal fun cloudFlareCookiesFor(host: String): List<Cookie> {
-        val cfCookie = SettingsRepository.current.cloudFlareCookie
-        if (cfCookie.isBlank()) return emptyList()
+        val cfCookie = SettingsRepository.cfCookieFor(host)
+        if (cfCookie.isNullOrBlank()) return emptyList()
         return parseCookieString(cfCookie).map { (name, value) ->
             Cookie(name = name, value = value, domain = host, path = "/")
         }
@@ -82,26 +82,28 @@ object IosCookieBridge {
  *
  * M7-2 修复：对齐 jvm 端 `HCookieJar.loadForRequest` 的语义——每次请求把
  * DataStore 持久化的登录 Cookie（`loginCookie`）叠加到桥接 cookie 上，
- * CF Cookie（`cloudFlareCookie`）在 host 匹配时叠加。此前这里只读内存桥，
+ * CF clearance 按域取用（见 [IosCookieBridge.cloudFlareCookiesFor]）。此前这里只读内存桥，
  * 导致 iOS 端已持久化的登录态（表单登录/手动填 Cookie）重启后不再注入请求，
  * 且 cf_clearance 只存活于内存、进程重启即丢失。
+ *
+ * clearance 只认持久化那一份：内存里再留一份就会绕过 403 失效逻辑，
+ * 请求拿着死钥匙反复撞墙（与 jvm 端 `loadForRequest` 同一处理）。
  */
 class BridgeCookiesStorage : CookiesStorage {
 
     override suspend fun get(requestUrl: Url): List<Cookie> {
         val host = requestUrl.host
-        val cookies = IosCookieBridge.snapshot().mapTo(mutableListOf()) { (name, value) ->
-            Cookie(
-                name = name,
-                value = value,
-                domain = host,
-                path = "/",
-            )
-        }
+        val cookies = IosCookieBridge.snapshot().filterKeys { it != CF_CLEARANCE_NAME }
+            .mapTo(mutableListOf()) { (name, value) ->
+                Cookie(
+                    name = name,
+                    value = value,
+                    domain = host,
+                    path = "/",
+                )
+            }
         cookies += IosCookieBridge.loginCookiesFor(host)
-        if (SettingsRepository.cloudFlareCookieHost == host) {
-            cookies += IosCookieBridge.cloudFlareCookiesFor(host)
-        }
+        cookies += IosCookieBridge.cloudFlareCookiesFor(host)
         return cookies
     }
 

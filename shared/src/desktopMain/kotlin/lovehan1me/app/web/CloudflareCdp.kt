@@ -16,7 +16,7 @@ import lovehan1me.core.constant.DESKTOP_USER_AGENT
 import lovehan1me.core.domain.model.ProxyType
 import lovehan1me.core.util.LogUtil
 import lovehan1me.data.SettingsRepository
-import lovehan1me.data.network.HCookieJar
+import lovehan1me.data.network.CF_CLEARANCE_NAME
 import java.io.File
 import java.net.ServerSocket
 import java.net.URI
@@ -47,7 +47,7 @@ import kotlin.coroutines.coroutineContext
  *    但"每次全新"等于每次都被当新设备 → 持久化后重复访问常直接放行；
  * 3. 经 CDP 建页并导航到挑战 URL，轮询 `Network.getAllCookies`，
  *    命中 **`cf_clearance`（精确名 + 域匹配 + 值合法）** 即视为通过；
- * 4. 经 [persistSolvedCookies] 写回 [HCookieJar.cookieMap] + DataStore，
+ * 4. 经 [persistSolvedCookies] 按域写回 DataStore（clearance 与浏览器 UA 成对落盘），
  *    **写回成功才算完成**（写不进去还报成功，用户只会再撞一次 403）。
  *
  * ## 两条绑定约束（`cf_clearance` 绑定 UA 与出口 IP）
@@ -79,13 +79,13 @@ object CloudflareCdp {
         /**
          * 已拿到可用的 clearance（只可能有一个）。写法回由调用方决定。
          *
-         * [browserUserAgent] 是浏览器自报的真实 UA：`cf_clearance` 绑定它，
-         * 调用方必须把它写回 HTTP 层（写不回去 clearance 依旧无效）。
-         * 采集失败时为 null，此时保持原有 UA 不变。
+         * [browserUserAgent] 是浏览器自报的真实 UA，**非空**：`cf_clearance` 绑定 UA，
+         * 拿不到它就写不回 HTTP 层，那样的 clearance 是一把注定无效的钥匙 ——
+         * 用户照样验完一遍再撞 403。所以读不到 UA 直接算失败，不进门就别假装通过。
          */
         data class Solved(
             val clearance: CdpCookie,
-            val browserUserAgent: String?,
+            val browserUserAgent: String,
         ) : SolveResult
         data object NoBrowser : SolveResult
         data class Failed(val reason: String) : SolveResult
@@ -338,11 +338,13 @@ object CloudflareCdp {
                 )
                 readUntil(socket) { extractUserAgentFrame(it, uaId) }
             }
-            if (browserUserAgent == null) {
-                LogUtil.w(TAG, "未能读到浏览器 UA；HTTP 层将沿用原 UA")
-            } else {
-                LogUtil.d(TAG, "浏览器真实 UA = $browserUserAgent")
+            if (browserUserAgent.isNullOrBlank()) {
+                // 以前这里只 warn 一句就继续验：验完落盘一把没人能对上的 clearance，
+                // 用户白等两分钟再撞一次 403。读不到 UA 就是通道有问题，直接判失败。
+                LogUtil.w(TAG, "未能读到浏览器 UA，判为验证失败")
+                return SolveResult.Failed("未能读取浏览器 UA（调试通道异常），请重试")
             }
+            LogUtil.d(TAG, "浏览器真实 UA = $browserUserAgent")
             send("Page.navigate", """{"url":${jsonString(challengeUrl)}}""")
             // 轮询收割：发一个 poll 包、收一个回包交替进行
             val endAt = System.currentTimeMillis() + SOLVE_TIMEOUT_MS
@@ -435,7 +437,7 @@ object CloudflareCdp {
      * 旧实现是"名字以 `cf_` 开头就算通过"，而 `cf_bm` / `cf_chl_*` 这类
      * **挑战进行中就会下发**的 cookie 也满足它 → 假通过 → 写回一个没用的 cookie
      * → 重试仍 403 → 反复弹窗。这里收紧到三条：
-     * 1. 名字**精确**等于 [CLEARANCE_COOKIE_NAME]；
+     * 1. 名字**精确**等于 [CF_CLEARANCE_NAME]；
      * 2. 域对目标 host 有效（RFC 6265：`D == host` 或 `host` 以 `.` + D 结尾）；
      * 3. 值非空，且**不含 `;` 与控制字符** —— 它会被拼进 Cookie 请求头，
      *    含分隔符会破坏整个请求（与 legacy WebView2 助手同一道校验）。
@@ -446,7 +448,7 @@ object CloudflareCdp {
         val target = host.trim().trimStart('.').lowercase()
         if (target.isEmpty()) return null
         return cookies.firstOrNull { cookie ->
-            cookie.name == CLEARANCE_COOKIE_NAME &&
+            cookie.name == CF_CLEARANCE_NAME &&
                 cookie.value.isNotBlank() &&
                 cookie.value.none { it == ';' || it.isISOControl() } &&
                 cookie.domain.isCookieDomainAllowedFor(target)
@@ -544,11 +546,14 @@ object CloudflareCdp {
         }
     }
 
-    // ── 产物写回（与旧 KCEF 路径同语义） ──────────────────
+    // ── 产物写回 ────────────────────────────────────────
 
     /**
-     * 把 clearance 写回内存 + DataStore（后续请求自动携带）。
-     * `HCookieJar.loadForRequest` 在 host 匹配时叠加它。
+     * 把 clearance **按域**写进 DataStore（[lovehan1me.data.SettingsRepository.setCloudFlareCookie]），
+     * 请求侧由 `HCookieJar.loadForRequest` 取该域可用的那一条（精确域 → 父域回落）。
+     *
+     * 不再往 [lovehan1me.data.network.HCookieJar.cookieMap] 里塞：内存那份会绕过失效逻辑，
+     * 403 作废了持久层、内存里还留着死钥匙，正是"验完还是 403"的成因之一。
      *
      * **只写 `cf_clearance` 一个**：浏览器 profile 里其它 cookie（`cf_bm`、
      * 站点自己的会话 cookie 等）跟"应用能不能请求"无关，掺进来只会让
@@ -560,28 +565,21 @@ object CloudflareCdp {
     suspend fun persistSolvedCookies(
         host: String,
         clearance: CdpCookie,
-        browserUserAgent: String? = null,
+        browserUserAgent: String,
     ): Boolean {
-        val cookie = runCatching {
-            okhttp3.Cookie.Builder()
-                .name(clearance.name)
-                .value(clearance.value)
-                .domain(host)
-                .path("/")
-                .build()
-        }.getOrNull() ?: return false
-
-        HCookieJar.cookieMap[host] = mutableListOf(cookie)
+        LogUtil.d(
+            TAG,
+            "persist host=$host clearanceLen=${clearance.value.length} " +
+                "uaHead=${browserUserAgent.take(48)} proxyType=${SettingsRepository.proxyType}"
+        )
         return runCatching {
+            // 顺序有讲究：UA 先落盘。写 clearance 会叫醒等在那儿的请求（见
+            // CloudflareChallenges.passed），那些请求当场就要用配对的 UA 出去。
+            SettingsRepository.setDesktopBrowserUserAgent(browserUserAgent)
             SettingsRepository.setCloudFlareCookie(
-                value = "${clearance.name}=${clearance.value}",
                 host = host,
+                value = "${clearance.name}=${clearance.value}",
             )
-            // UA 必须与 clearance 一起落盘：只写 cookie 不写 UA，下一个请求
-            // 就会用旧 UA 发出去，clearance 立刻失效（白验证一轮）。
-            browserUserAgent?.takeIf { it.isNotBlank() }?.let {
-                SettingsRepository.setDesktopBrowserUserAgent(it)
-            }
             true
         }.getOrDefault(false)
     }
@@ -608,12 +606,6 @@ object CloudflareCdp {
         val type: String = "",
         val webSocketDebuggerUrl: String = "",
     )
-
-    /**
-     * clearance cookie 的**精确**名字。判据只认它 —— `cf_bm` / `cf_chl_*` 会在
-     * 挑战进行中就下发，按前缀判定会"假通过"（见 [findClearanceCookie]）。
-     */
-    internal const val CLEARANCE_COOKIE_NAME = "cf_clearance"
 
     /**
      * 挑战页标题的固定写法（英文 / 简中 / CF 拦截页）。

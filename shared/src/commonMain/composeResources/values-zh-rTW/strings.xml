@@ -871,6 +871,7 @@
     <string name="cf_cdp_failed_title">自動驗證無法使用</string>
     <string name="cf_manual_open_browser">用系統瀏覽器開啟驗證頁</string>
     <string name="cf_manual_cookie_hint">通過驗證後，在瀏覽器開發者工具中複製以 cf_clearance 開頭的 Cookie，貼到下方。</string>
+    <string name="cf_manual_ua_hint">瀏覽器 User-Agent（必填：cf_clearance 與 UA 綁定，缺了它請求仍會 403）。在剛驗證過的那個瀏覽器的主控台執行 navigator.userAgent 後複製過來。</string>
     <string name="cf_manual_submit">送出並繼續</string>
     <string name="cf_manual_retry">重試自動驗證</string>
     <string name="gif_capture">錄製 GIF</string>

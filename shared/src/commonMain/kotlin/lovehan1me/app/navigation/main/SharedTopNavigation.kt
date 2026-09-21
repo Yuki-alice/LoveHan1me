@@ -23,6 +23,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -47,6 +48,7 @@ import lovehan1me.ic_add
 import lovehan1me.ic_search
 import lovehan1me.login_first
 import lovehan1me.search
+import lovehan1me.data.network.CloudflareChallenges
 import lovehan1me.site.SiteIdentity
 import lovehan1me.site.SiteSwitcher
 import lovehan1me.ui.component.ConfirmDialog
@@ -336,6 +338,12 @@ fun SharedTopNavigation(
             )
         }
         entry<CloudflareRoute>(metadata = pageTransition()) { route ->
+            // 验证页出栈 = 这个域这一轮验证到此为止：叫醒挂在请求上的等待方，
+            // 让它照常报错而不是等满超时。通过的那一路已经先叫醒过它们，这里补的是
+            // "用户按返回键走了"的那一路（Android / iOS 是整页；桌面另有窗口自己的关闭事件）。
+            DisposableEffect(route.host) {
+                onDispose { CloudflareChallenges.abandoned(route.host) }
+            }
             val injected = platformScreens.cloudflare
             if (injected != null) {
                 navScope.injected(route)

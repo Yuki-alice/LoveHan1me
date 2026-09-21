@@ -28,11 +28,13 @@ class HCookieJar : CookieJar {
     override fun loadForRequest(url: HttpUrl): List<Cookie> {
         val host = url.host
         val cookies = mutableListOf<Cookie>()
-        cookieMap[host]?.let { cookies.addAll(it) }
+        // cf_clearance 只认持久化那一份：它由验证窗写入、由 403 作废。内存里再留一份就会
+        // 绕过失效逻辑，让请求一直拿着死钥匙撞 403（表现即"验证过了还是不行"）。
+        cookieMap[host]?.filterNot { it.name == CF_CLEARANCE_NAME }?.let { cookies.addAll(it) }
 
         cookies.addAll(CookieString(SettingsRepository.current.loginCookie).toLoginCookieList(host))
-        if (SettingsRepository.cloudFlareCookieHost == host) {
-            cookies.addAll(CookieString(SettingsRepository.current.cloudFlareCookie).toLoginCookieList(host))
+        SettingsRepository.cfCookieFor(host)?.let { clearance ->
+            cookies.addAll(CookieString(clearance).toLoginCookieList(host))
         }
 
         LogUtil.d("HCookieJar", "loadForRequest for $host: $cookies")
@@ -41,8 +43,16 @@ class HCookieJar : CookieJar {
     }
 
     override fun saveFromResponse(url: HttpUrl, cookies: List<Cookie>) {
-        cookieMap[url.host] = cookies.toMutableList().also {
-            it += CookieString(SettingsRepository.current.loginCookie).toLoginCookieList(url.host)
+        // 合并而非覆盖：直接替换会丢掉内存里的 cf_clearance（CDP 刚写回的），
+        // 下一次请求就只剩 DataStore 路径；若那次恰好 host 不一致即裸奔。
+        // 同名（name+domain+path）以响应值为准，其余保留。
+        val merged = cookieMap[url.host]?.toMutableList() ?: mutableListOf()
+        for (fresh in cookies) {
+            merged.removeAll { it.name == fresh.name && it.domain == fresh.domain && it.path == fresh.path }
+            merged.add(fresh)
         }
+        merged.removeAll { it.name == "user_lang" }
+        merged += CookieString(SettingsRepository.current.loginCookie).toLoginCookieList(url.host)
+        cookieMap[url.host] = merged
     }
 }

@@ -11,6 +11,9 @@ import lovehan1me.core.domain.model.SearchFilterPreset
 import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.core.domain.model.ThemeMode
 import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
+import lovehan1me.core.domain.model.cfCookieFor
+import lovehan1me.core.domain.model.cfCookieKeyFor
+import lovehan1me.data.network.CloudflareChallenges
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -45,7 +48,8 @@ object SettingsRepository : SettingsStore {
     val localListNoticeDismissed get() = current.localListNoticeDismissed
     val usageNoticeAccepted get() = current.usageNoticeAccepted
     val savedUserId get() = current.savedUserId
-    val cloudFlareCookieHost get() = current.cloudFlareCookieHost.lowercase()
+    /** 该主机可用的 CF clearance（精确域 → 父域回落），无则 null。 */
+    fun cfCookieFor(host: String): String? = current.cfCookies.cfCookieFor(host)
     /** 桌面：CF 验证浏览器采集到的真实 UA（空 = 未采集）。 */
     val desktopBrowserUserAgent get() = current.desktopBrowserUserAgent
     val switchPlayerKernel get() = current.playerKernel.value
@@ -120,7 +124,34 @@ object SettingsRepository : SettingsStore {
 
     suspend fun setLoginState(value: Boolean) = update { it.copy(isAlreadyLogin = value) }
     suspend fun dismissLocalListNotice() = update { it.copy(localListNoticeDismissed = true) }
-    suspend fun setCloudFlareCookie(value: String, host: String = current.cloudFlareCookieHost) = update { it.copy(cloudFlareCookie = value, cloudFlareCookieHost = host.lowercase()) }
+    /**
+     * 写入某域的 CF clearance，并广播"该域验证已通过"。
+     *
+     * 这是全仓唯一的 clearance 写入口，所以"通过"信号挂在这里而不是各端验证 UI 上——
+     * 桌面 CDP / 桌面手动粘贴 / Android WebView / iOS WKWebView 四条成功路径自动共用
+     * 同一套重试语义（等信号的请求见 `NetworkRepo.ioRequest`）。
+     */
+    suspend fun setCloudFlareCookie(host: String, value: String) {
+        val key = host.lowercase()
+        update { it.copy(cfCookies = it.cfCookies + (key to value)) }
+        CloudflareChallenges.passed(key)
+    }
+
+    /**
+     * 作废某域 clearance。403 命中挑战即说明这把钥匙已死（过期、或出口 IP 变了），
+     * 留着它只会让"要不要再弹验证"的判断继续基于一个假前提。
+     *
+     * 删的是 [cfCookieKeyFor] 命中的那一条（可能是父域），与请求实际用了谁保持一致。
+     */
+    suspend fun clearCloudFlareCookie(host: String) {
+        update { settings ->
+            val key = settings.cfCookies.cfCookieKeyFor(host)
+            if (key == null) settings else settings.copy(cfCookies = settings.cfCookies - key)
+        }
+    }
+
+    /** 退出登录用：清掉全部域的 clearance（与旧单行实现同语义）。 */
+    suspend fun clearAllCloudFlareCookies() = update { it.copy(cfCookies = emptyMap()) }
 
     /** 进入详情页是否自动播放（默认关）。 */
     suspend fun setAutoPlayOnEnter(value: Boolean) = update { it.copy(autoPlayOnEnter = value) }
