@@ -74,6 +74,8 @@ import lovehan1me.app.navigation.settings.SettingsScaffold
 import lovehan1me.app.navigation.settings.ThemeAuditRoute
 import lovehan1me.app.navigation.settings.VideoPlaybackSettingsRoute
 import lovehan1me.feature.home.homepage.HomePageViewModel
+import lovehan1me.feature.home.artist.ArtistDetailScreen
+import lovehan1me.feature.home.playlist.SitePlaylistScreen
 import lovehan1me.core.platform.downloadWorkController
 import lovehan1me.feature.login.FormLoginScreen
 import lovehan1me.data.logout
@@ -499,6 +501,22 @@ fun SharedTopNavigation(
                 onNavigateToVideo = onNavigateToVideo,
             )
         }
+        entry<ArtistRoute>(metadata = pageTransition()) { route ->
+            ArtistDetailScreen(
+                route = route,
+                onBack = onBack,
+                onNavigateToVideo = onNavigateToVideo,
+                onOpenPlaylist = { backStack.add(it) },
+            )
+        }
+        entry<SitePlaylistRoute>(metadata = pageTransition()) { route ->
+            SitePlaylistScreen(
+                route = route,
+                onBack = onBack,
+                onNavigateToVideo = onNavigateToVideo,
+                onOpenArtistRoute = { backStack.add(it) },
+            )
+        }
         entry<PreviewRoute>(metadata = pageTransition()) {
             PreviewRouteScreen(
                 onBack = onBack,
@@ -543,6 +561,8 @@ fun SharedTopNavigation(
                 onNavigateHome = { backStack.addTopLevel(HomeRoute) },
                 onNavigateToVideo = onNavigateToVideo,
                 onOpenSearchRoute = { searchRoute -> backStack.add(searchRoute) },
+                onOpenArtistRoute = { backStack.add(it) },
+                onOpenSitePlaylist = { backStack.add(it) },
                 // 弹幕状态条的「去设置」：播放器设置页里有弹幕分组
                 onOpenDanmakuSettings = { backStack.add(PlayerSettingsRoute) },
                 onEnqueueDownload = { request ->

@@ -16,6 +16,7 @@ import lovehan1me.data.database.entity.download.DownloadGroupEntity
 import lovehan1me.core.domain.model.HanimeVideo
 import lovehan1me.core.domain.model.SearchOption
 import lovehan1me.app.navigation.main.SearchRoute
+import lovehan1me.app.navigation.main.ArtistRoute
 import lovehan1me.feature.video.VideoViewModel
 import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.core.util.AppToast
@@ -56,11 +57,35 @@ class VideoRouteActions(
     private val onOpenUri: (String) -> Unit,
     private val onCopyText: (String) -> Unit,
     private val onOpenSearchRoute: (SearchRoute) -> Unit,
+    private val onOpenArtistRoute: (ArtistRoute) -> Unit,
     private val onRequestUnsubscribe: (HanimeVideo.Artist) -> Unit,
     private val onRequestNotificationPermission: () -> Unit,
     private val onRequestLocalListAction: (() -> Unit) -> Unit,
     private val onEnqueueDownload: (EnqueueDownloadRequest) -> Unit,
 ) {
+    /**
+     * G2-1b-1：作者页路由。有 post（`artistId` 即 `/user/{id}`）走新页；
+     * 无 post（未登录等）回退原来的作者搜索。
+     */
+    fun openArtist(artist: HanimeVideo.Artist) {
+        val post = artist.post
+        if (post == null) {
+            openArtistSearch(artist)
+            return
+        }
+        onOpenArtistRoute(
+            ArtistRoute(
+                userId = post.artistId,
+                name = artist.name,
+                avatarUrl = artist.avatarUrl.takeIf { it.isNotBlank() },
+                genre = artist.genre.takeIf { it.isNotBlank() },
+                postUserId = post.userId,
+                postArtistId = post.artistId,
+                isSubscribed = post.isSubscribed,
+            )
+        )
+    }
+
     fun openArtistSearch(artist: HanimeVideo.Artist) {
         val searchKey = genres.firstOrNull { option ->
             option.lang?.let { lang ->

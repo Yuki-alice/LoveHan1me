@@ -234,13 +234,13 @@ object Parser {
         return resultList
     }
 
-    private data class VideoCardMeta(
+    internal data class VideoCardMeta(
         val artist: String = "",
         val uploadTime: String = "",
         val genre: String? = null,
     )
 
-    private fun Element.extractVideoCardMeta(): VideoCardMeta {
+    internal fun Element.extractVideoCardMeta(): VideoCardMeta {
         val subtitleText = selectFirst("div.subtitle a, div.subtitle")
             ?.text()
             ?.trim()
@@ -288,7 +288,7 @@ object Parser {
         return PageLoadingState.Success(mutableListOf())
     }
 
-    private fun hanimeNormalItemVer2(hanimeSearchItem: Element): HanimeInfo? {
+    internal fun hanimeNormalItemVer2(hanimeSearchItem: Element): HanimeInfo? {
         val title =
             hanimeSearchItem.selectFirst("div.title, h4.video-title")?.text()?.trim()
                 .logIfParseNull(Parser::hanimeNormalItemVer2.name, "title")
@@ -450,7 +450,10 @@ object Parser {
                 val children = playlistScroll.children()
                 if (children.firstOrNull()?.hasClass("playlist-hover-wrap") == true) {
                     // 新版页面结构
-                    val playlistName = it.selectFirst("#playlist-top-block h4 a")?.text()
+                    val playlistTopAnchor = it.selectFirst("#playlist-top-block h4 a")
+                    val playlistName = playlistTopAnchor?.text()
+                    // G2-1b-1：同元素的 href 即独立 /playlist 页（G2-1b-2 解析验证）。
+                    val playlistListUrl = playlistTopAnchor?.absUrl("href")?.takeIf { it.isNotBlank() }
                     children.forEach { child ->
                         val dataHref = child.attr("data-href")
                         val videoCode = dataHref.toVideoCode()
@@ -489,7 +492,7 @@ object Parser {
                             )
                         )
                     }
-                    HanimeVideo.Playlist(playlistName = playlistName, video = playlistVideoList)
+                    HanimeVideo.Playlist(playlistName = playlistName, video = playlistVideoList, listUrl = playlistListUrl)
                 } else {
                     // 旧版页面结构（兼容兜底）
                     val playlistName = it.selectFirst("div > div > h4")?.text()

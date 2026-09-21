@@ -37,6 +37,10 @@ import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.core.domain.model.HanimeVideo
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.app.bridge.VideoPageHost
+import lovehan1me.app.navigation.main.SitePlaylistRoute
+import lovehan1me.feature.home.playlist.SitePlaylistVideo
+import lovehan1me.feature.home.playlist.encodeSitePlaylist
+import lovehan1me.feature.home.playlist.playlistListId
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.feature.video.CommentViewModel
 import lovehan1me.feature.video.VideoViewModel
@@ -54,6 +58,7 @@ fun RenderVideoIntroductionContent(
     onPendingDownloadPromptChange: (DownloadPromptState?) -> Unit,
     onOpenVideo: (HanimeInfo) -> Unit,
     onOpenArtist: (HanimeVideo.Artist) -> Unit,
+    onOpenSitePlaylist: (SitePlaylistRoute) -> Unit,
     onNavigateToSearch: (String) -> Unit,
     onToggleSubscribe: (HanimeVideo.Artist) -> Unit,
     onToggleFavorite: (HanimeVideo) -> Unit,
@@ -132,7 +137,34 @@ fun RenderVideoIntroductionContent(
             ?.takeIf { it.isNotBlank() }
             ?.let { comicLink -> { onOpenOriginalComic(comicLink) } },
         onShowAllPlaylist = if (!viewModel.fromDownload && video?.playlist != null) {
-            {}
+            val playlist = video?.playlist
+            val videosJson = playlist?.let {
+                encodeSitePlaylist(
+                    it.video.map { item ->
+                        SitePlaylistVideo(
+                            videoCode = item.videoCode,
+                            title = item.title,
+                            coverUrl = item.coverUrl,
+                            duration = item.duration,
+                            views = item.views,
+                            isPlaying = item.isPlaying,
+                        )
+                    }
+                )
+            }
+            if (playlist != null && videosJson != null) {
+                {
+                    onOpenSitePlaylist(
+                        SitePlaylistRoute(
+                            name = playlist.playlistName.orEmpty(),
+                            videosJson = videosJson,
+                            listId = playlistListId(playlist.listUrl),
+                        )
+                    )
+                }
+            } else {
+                null
+            }
         } else {
             null
         },

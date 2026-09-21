@@ -47,6 +47,10 @@ import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.core.platform.isSslHandshakeException
 import lovehan1me.core.platform.sslHandshakeException
 import lovehan1me.site.hanime1.Parser
+import lovehan1me.site.hanime1.authorPage
+import lovehan1me.site.hanime1.authorPlaylistsPage
+import lovehan1me.site.hanime1.authorVideosPage
+import lovehan1me.site.hanime1.sitePlaylistPage
 
 /**
  * @project LoveHan1me
@@ -97,6 +101,30 @@ object NetworkRepo {
         request = { HanimeNetwork.hanimeService.getMySubscriptions(page) },
         action = Parser::getMySubscriptions
     )
+
+    //<editor-fold desc="G2-1b-2 作者与系列清单">
+
+    fun getArtistPage(userId: String) = websiteIOFlow(
+        request = { HanimeNetwork.hanimeService.getArtistPage(userId) },
+        action = { body -> with(Parser) { authorPage(userId, body) } }
+    )
+
+    fun getArtistUploaded(userId: String, page: Int) = pageIOFlow(
+        request = { HanimeNetwork.hanimeService.getArtistUploaded(userId, page) },
+        action = { body -> with(Parser) { authorVideosPage(body) } }
+    )
+
+    fun getAuthorPlaylists(userId: String, sort: String? = null) = pageIOFlow(
+        request = { HanimeNetwork.hanimeService.getAuthorPlaylists(userId, sort) },
+        action = { body -> with(Parser) { authorPlaylistsPage(body) } }
+    )
+
+    fun getSitePlaylist(listId: String, sort: String?) = websiteIOFlow(
+        request = { HanimeNetwork.hanimeService.getSitePlaylist(listId, sort) },
+        action = { body -> with(Parser) { sitePlaylistPage(listId, body) } }
+    )
+
+    //</editor-fold>
     //</editor-fold>
 
     //<editor-fold desc="My List">

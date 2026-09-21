@@ -74,6 +74,8 @@ import lovehan1me.app.bridge.PipModeReporter
 import lovehan1me.app.bridge.VideoPageHost
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.app.navigation.main.SearchRoute
+import lovehan1me.app.navigation.main.ArtistRoute
+import lovehan1me.app.navigation.main.SitePlaylistRoute
 import lovehan1me.app.navigation.main.VideoRoute
 import lovehan1me.feature.player.BindOrientationAutoFullscreen
 import lovehan1me.feature.player.ComposePlaybackController
@@ -133,6 +135,8 @@ fun VideoRouteHostScreen(
     onNavigateHome: () -> Unit,
     onNavigateToVideo: (String) -> Unit,
     onOpenSearchRoute: (SearchRoute) -> Unit,
+    onOpenArtistRoute: (ArtistRoute) -> Unit,
+    onOpenSitePlaylist: (SitePlaylistRoute) -> Unit,
     onEnqueueDownload: (EnqueueDownloadRequest) -> Unit,
     /** 弹幕「去设置」：跳到播放器设置页（弹幕分组在那里）。 */
     onOpenDanmakuSettings: () -> Unit = {},
@@ -302,6 +306,7 @@ fun VideoRouteHostScreen(
             onOpenUri = uriHandler::openUri,
             onCopyText = copyTextToClipboard,
             onOpenSearchRoute = onOpenSearchRoute,
+            onOpenArtistRoute = onOpenArtistRoute,
             onRequestUnsubscribe = { pendingUnsubscribeArtist = it },
             onRequestNotificationPermission = { platformHost.requestNotificationPermission() },
             onRequestLocalListAction = { action ->
@@ -703,7 +708,8 @@ fun VideoRouteHostScreen(
             onPendingDownloadPromptChange = { pendingDownloadPrompt = it },
             onRetry = { viewModel.getHanimeVideo(route.videoCode, route.localUri) },
             onOpenVideo = { item -> onNavigateToVideo(item.videoCode) },
-            onOpenArtist = actions::openArtistSearch,
+            onOpenArtist = actions::openArtist,
+            onOpenSitePlaylist = onOpenSitePlaylist,
             onNavigateToSearch = actions::openTagSearch,
             onToggleSubscribe = actions::toggleArtistSubscription,
             onToggleFavorite = actions::toggleFavorite,

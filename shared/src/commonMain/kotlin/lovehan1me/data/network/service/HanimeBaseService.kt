@@ -84,4 +84,29 @@ class HanimeBaseService(
         url { parameters.append("page", page.toString()) }
     }
 
+    /** G2-1b-2：作者首页（信息头 + 近期作品 + 子页入口）。 */
+    suspend fun getArtistPage(userId: String): HttpResponse =
+        client.get(baseUrl + "user/" + userId.encodeURLPathPart())
+
+    /** G2-1b-2：作者全部作品（`?page=` 数字分页）。 */
+    suspend fun getArtistUploaded(userId: String, page: Int): HttpResponse =
+        client.get(baseUrl + "user/" + userId.encodeURLPathPart() + "/uploaded") {
+            url { parameters.append("page", page.toString()) }
+        }
+
+    /** G2-1b-2：作者的系列清单一览（单页全量；`sort` 服务端生效）。 */
+    suspend fun getAuthorPlaylists(userId: String, sort: String?): HttpResponse =
+        client.get(baseUrl + "user/" + userId.encodeURLPathPart() + "/playlists") {
+            url { if (sort != null) parameters.append("sort", sort) }
+        }
+
+    /** G2-1b-2：独立系列清单页（`sort` = latest/popular/oldest）。 */
+    suspend fun getSitePlaylist(listId: String, sort: String?): HttpResponse =
+        client.get(baseUrl + "playlist") {
+            url {
+                parameters.append("list", listId)
+                if (sort != null) parameters.append("sort", sort)
+            }
+        }
+
 }

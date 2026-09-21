@@ -106,6 +106,8 @@ data class HanimeVideo(
     data class Playlist(
         val playlistName: String?,
         val video: List<HanimeInfo>,
+        /** G2-1b-1：`#playlist-top-block h4 a` 的 href（独立 `/playlist` 页，G2-1b-2 用）。 */
+        val listUrl: String? = null,
     )
 
     @Serializable

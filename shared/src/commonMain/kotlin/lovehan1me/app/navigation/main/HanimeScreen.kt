@@ -77,6 +77,37 @@ data class SearchRoute(
     val advancedSearchJson: String? = null,
 ) : HanimeScreen
 
+/**
+ * G2-1b-1：视频侧作者页（站内 `/user/{userId}`）。
+ *
+ * v1 只带详情页已解析字段（`post.artistId` 即 userId）；作品列表走站内搜索，
+ * 独立 `/user` 拉取随 G2-1b-2。无 post（未登录等）时调用方回退搜索，不进本路由。
+ */
+@Serializable
+data class ArtistRoute(
+    val userId: String,
+    val name: String,
+    val avatarUrl: String? = null,
+    val genre: String? = null,
+    val postUserId: String? = null,
+    val postArtistId: String? = null,
+    val isSubscribed: Boolean = false,
+) : HanimeScreen
+
+/**
+ * G2-1b-1：站内系列清单全量页。
+ *
+ * v1 只渲染详情页内嵌清单（`videosJson`，DTO 见 SitePlaylistScreen）；
+ * G2-1b-2 起 `listId` 在则独立拉取（头部 + 排序），`videosJson` 仅作无 listId 兜底。
+ */
+@Serializable
+data class SitePlaylistRoute(
+    val name: String,
+    val videosJson: String,
+    val listId: String? = null,
+    val sort: String? = null,
+) : HanimeScreen
+
 @Serializable
 object PreviewRoute : HanimeScreen
 

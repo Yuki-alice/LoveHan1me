@@ -21,6 +21,8 @@ fun VideoRouteScreen(
     onNavigateHome: () -> Unit,
     onNavigateToVideo: (String) -> Unit,
     onOpenSearchRoute: (SearchRoute) -> Unit,
+    onOpenArtistRoute: (ArtistRoute) -> Unit,
+    onOpenSitePlaylist: (SitePlaylistRoute) -> Unit,
     onEnqueueDownload: (EnqueueDownloadRequest) -> Unit,
     /** 弹幕「去设置」：状态条在没配置数据源时只有这一个动作。 */
     onOpenDanmakuSettings: () -> Unit = {},
@@ -33,6 +35,8 @@ fun VideoRouteScreen(
         onNavigateHome = onNavigateHome,
         onNavigateToVideo = onNavigateToVideo,
         onOpenSearchRoute = onOpenSearchRoute,
+        onOpenArtistRoute = onOpenArtistRoute,
+        onOpenSitePlaylist = onOpenSitePlaylist,
         onEnqueueDownload = onEnqueueDownload,
         onOpenDanmakuSettings = onOpenDanmakuSettings,
     )

@@ -405,11 +405,15 @@ private fun MainNavigationRail(
  * 两类：
  * - [VideoRoute] —— 视频详情，全屏沉浸播放；
  * - 全部设置路由 —— 设置是独立全屏路由（内部自己做响应式双栏），进去不显示 Rail。
+ * - 作者页与系列清单页（G2-1b-3）—— 对齐站内 `/user/{id}` 全宽 banner + 自适应矩阵，
+ *   与视频详情同为无 Rail 全屏路由。
  *
  * 首页 / 发现 / 我的 及其 L2 列表页要保留 chrome，故默认 false。
  */
 private fun HanimeScreen.hidesNavigationChrome(): Boolean = when (this) {
     is VideoRoute -> true
+    is ArtistRoute -> true
+    is SitePlaylistRoute -> true
     HomeSettingsRoute,
     VideoPlaybackSettingsRoute,
     NetworkDownloadSettingsRoute,
