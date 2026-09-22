@@ -22,6 +22,8 @@ internal actual fun rebuildHttpClients() {
 }
 
 private fun createDarwinHttpClient(): HttpClient = HttpClient(Darwin) {
+    // ECH 网关插件必须装在 HttpCookies 之前：改写先发生，storage 随后对回环短路。
+    installEchGate()
     // M5-5：换 BridgeCookiesStorage——CF 验证产物经 IosCookieBridge 进入 HTTP 层
     install(HttpCookies) {
         storage = BridgeCookiesStorage()

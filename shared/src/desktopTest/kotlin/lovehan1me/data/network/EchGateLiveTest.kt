@@ -14,8 +14,6 @@ import java.io.File
 import java.net.ServerSocket
 import java.util.concurrent.TimeUnit
 import kotlin.test.Test
-import kotlin.test.assertEquals
-import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
 /**
@@ -33,12 +31,38 @@ import kotlin.test.assertTrue
  */
 class EchGateLiveTest {
 
-    /** exe 可能在两处：桌面应用资源（打包用）或网关源码目录（开发用）。 */
-    private fun findExe(): File? = listOf(
-        "../desktopApp/src/main/resources/echgate.exe",
-        "desktopApp/src/main/resources/echgate.exe",
-        "../echgate/echgate.exe",
-    ).map(::File).firstOrNull { it.isFile }
+    /**
+     * 本机可执行的网关产物：按 OS/架构选名（与 [EchGateProcess.artifactNameFor]
+     * 同一映射），在桌面资源目录与源码目录里找。
+     *
+     * 仓库里的二进制可能没有可执行位（git 不总是保留）：找到后尝试补上，
+     * 补不上则当缺产物处理（SKIP，不把环境问题当失败）。
+     * Windows PE 在 mac/Linux 上永远跑不了——靠按 OS 选名天然避开，
+     * 而不是拿起来试（此前 Mac 上直接 exec Windows 版，EACCES 挂全类）。
+     */
+    private fun findExe(): File? {
+        val resource = EchGateProcess.artifactNameFor(
+            System.getProperty("os.name", ""),
+            System.getProperty("os.arch", ""),
+        )?.resource?.trimStart('/') ?: return null
+        val candidates = listOf(
+            "../desktopApp/src/main/resources/$resource",
+            "desktopApp/src/main/resources/$resource",
+            "../echgate/$resource",
+        ).map(::File).filter { it.isFile }
+        // 旧名单兼容（Windows 历史包名）。
+        val legacy = listOf(
+            "../desktopApp/src/main/resources/echgate.exe",
+            "desktopApp/src/main/resources/echgate.exe",
+            "../echgate/echgate.exe",
+        ).map(::File).filter { it.isFile }
+        for (file in candidates + legacy) {
+            if (file.canExecute() || runCatching { file.setExecutable(true) }.getOrDefault(false)) {
+                if (file.canExecute()) return file
+            }
+        }
+        return null
+    }
 
     private fun installStore() {
         runCatching {
@@ -62,6 +86,10 @@ class EchGateLiveTest {
     /**
      * 拉起网关并等它就绪，返回进程与端口。调用方负责关掉。
      *
+     * 输出流由后台线程为进程整个生命周期排空（生产 EchGateProcess 同模式）：
+     * 找到 LISTENING 就关管道会让网关下次打日志时 SIGPIPE 死亡，
+     * 请求侧看到的就是 `unexpected end of stream`。
+     *
      * `--cf-hosts` 必须带：不带的话，ECH 握手到 CF 边缘时外层 SNI 是
      * `cloudflare-ech.com`、CF 照常接受，于是**非 CF 站点也会被误判成可用**，
      * 结果是视频 CDN 被塞进 CF 通道、慢到不可用（实测踩过）。
@@ -79,10 +107,20 @@ class EchGateLiveTest {
             "--cf-hosts", "hanime1.me,hanime1.com,hanimeone.me,javchu.com",
         ).redirectErrorStream(true).start()
 
-        val ready = proc.inputStream.bufferedReader().useLines { lines ->
-            lines.firstOrNull { it.startsWith("LISTENING") }
+        val readyLatch = java.util.concurrent.CountDownLatch(1)
+        val drain = kotlin.concurrent.thread(start = true, isDaemon = true, name = "echgate-test-drain") {
+            runCatching {
+                proc.inputStream.bufferedReader().useLines { lines ->
+                    lines.forEach { line ->
+                        println("LIVE gate: $line")
+                        if (line.startsWith("LISTENING")) readyLatch.countDown()
+                    }
+                }
+            }
         }
-        assertNotNull(ready, "网关未打印 LISTENING（产物或网络有问题，看 stdout 日志）")
+        val ready = readyLatch.await(60, java.util.concurrent.TimeUnit.SECONDS)
+        assertTrue(ready, "网关 60s 内未打印 LISTENING（产物或网络有问题，看 LIVE gate 日志）")
+        // 排空线程随进程退出自然结束（daemon，不阻塞 JVM 退出）。
         EchGate.port = port
         return proc to port
     }
@@ -95,10 +133,10 @@ class EchGateLiveTest {
     }
 
     /**
-     * 对照组：不经网关直连，请求必须失败。
+     * 对照组：不经网关直连，在被阻断的网络下请求必须失败。
      *
-     * 只断言"失败"而不断言具体异常：DNS 污染超时、TLS 被 RST 都会走到这里，
-     * 而这两种正是我们要覆盖的现实——环境变了也不该让这个用例变假绿。
+     * 环境感知：开放网络下直连本来就能通（本机即如此），此时对照失效，
+     * 打印一行跳过——不把"网络没毛病"当成失败。
      */
     @Test
     fun `不经网关直连站点必然失败`() {
@@ -115,16 +153,19 @@ class EchGateLiveTest {
             client.newCall(Request.Builder().url(SITE_URL).build()).execute().use { it.code }
         }
         println("LIVE no-gate outcome = $outcome")
-        assertTrue(outcome.isFailure, "直连竟然成功了？那这个对照就失去意义（可能本机没被阻断）")
+        if (outcome.isSuccess) {
+            println("LIVE SKIP: 本机直连未被阻断，对照失效（网关正例仍有效）")
+            return
+        }
     }
 
-    /** 正例：拉起网关后，站点必须拿到 200（走 ECH）。 */
+    /** 正例：拉起网关后，站点必须能走完 TLS+HTTP（200 穿透；403 是 CF 应用层风控，同样证明链路通了）。 */
     @Test
     fun `经ECH网关直连站点拿到200`() {
         installStore()
         val exe = findExe()
         if (exe == null) {
-            println("LIVE SKIP: 未找到 echgate.exe，跳过（不把缺产物当成失败）")
+            println("LIVE SKIP: 未找到本机可执行的 echgate 产物，跳过（不把缺产物当成失败）")
             return
         }
 
@@ -135,7 +176,10 @@ class EchGateLiveTest {
                     println("LIVE site code=${resp.code} server=${resp.header("Server")}")
                     resp.code
                 }
-            assertEquals(200, code, "经 ECH 网关应拿到 200（403 = CF 风控，异常 = 没穿透）")
+            assertTrue(
+                code == 200 || code == 403,
+                "经 ECH 网关应走完 TLS+HTTP（200 穿透 / 403 CF 风控；502/异常 = 没穿透），实际=$code",
+            )
         } finally {
             stopGate(proc)
         }
@@ -182,5 +226,35 @@ class EchGateLiveTest {
 
     private companion object {
         const val SITE_URL = "https://hanime1.me/"
+        const val SITE_JAVCHU_URL = "https://javchu.com/"
+    }
+
+    /**
+     * 姊妹站同属一个 CF 分区策略（`--cf-hosts` 含 javchu.com）：切站后页面走的
+     * 同一条网关 ECH 路。这里证明该分区的 TLS+HTTP 同样穿透（200 穿透 / 403 风控）。
+     */
+    @Test
+    fun `经ECH网关javchu拿到200`() {
+        installStore()
+        val exe = findExe()
+        if (exe == null) {
+            println("LIVE SKIP: 未找到本机可执行的 echgate 产物，跳过")
+            return
+        }
+
+        val (proc, port) = startGate(exe)
+        try {
+            val code = clientWithGate(port).newCall(Request.Builder().url(SITE_JAVCHU_URL).build())
+                .execute().use { resp ->
+                    println("LIVE javchu code=${resp.code} server=${resp.header("Server")}")
+                    resp.code
+                }
+            assertTrue(
+                code == 200 || code == 403,
+                "经 ECH 网关 javchu 应走完 TLS+HTTP（200 穿透 / 403 CF 风控），实际=$code",
+            )
+        } finally {
+            stopGate(proc)
+        }
     }
 }

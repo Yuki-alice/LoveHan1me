@@ -9,11 +9,14 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import lovehan1me.core.util.StartupTrace
 import lovehan1me.data.network.HanimeDns
 import lovehan1me.data.network.HanimeProxySelector
+import lovehan1me.data.network.interceptor.EchGateInterceptor
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
-// P6d-3-B：jvmMain 真实现。构造照抄 getchu 版（OkHttp + HanimeDns + 代理选择器），
+// P6d-2：jvmMain 真实现。构造照抄 getchu 版（OkHttp + HanimeDns + 代理选择器），
 // 只是去掉 getchu 域名特化头（通用加载器）；同时覆盖 Android 和桌面。
+// 图片同样在 CDN 上（`vdownload.hembed.com/image/…`），和视频一样被 SNI 阻断，
+// 故同样常驻 EchGateInterceptor（网关未运行时放行，行为与接入前一致）。
 @Composable
 actual fun rememberHanimeImageLoader(): ImageLoader {
     val context = LocalPlatformContext.current
@@ -26,6 +29,7 @@ actual fun rememberHanimeImageLoader(): ImageLoader {
                 .connectTimeout(15, TimeUnit.SECONDS)
                 .dns(HanimeDns())
                 .proxySelector(HanimeProxySelector())
+                .addInterceptor(EchGateInterceptor())
                 .build()
             ImageLoader.Builder(context)
                 .components {

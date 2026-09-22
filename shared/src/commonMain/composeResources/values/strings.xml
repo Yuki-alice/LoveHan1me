@@ -226,8 +226,12 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="use_built_in_hosts_summary">Mapping of hosts to IP provided by the app\nCustom hosts take priority if configured\nVPN? What's that?</string>
     <string name="auto_built_in_hosts">Auto-select built-in nodes</string>
     <string name="auto_built_in_hosts_summary">Prefer built-in IPs for site domains, fall back to system DNS when none connect\nOn by default: system DNS resolves these domains to unreachable addresses</string>
-    <string name="use_ech_gate">ECH gateway (direct, no proxy)</string>
-    <string name="use_ech_gate_summary">Route site traffic through the local ECH gateway so the SNI is encrypted and cannot be reset\nWindows only for now</string>
+    <string name="use_ech_gate">ECH gateway (direct, no proxy · experimental)</string>
+    <string name="use_ech_gate_summary">Experimental: route site traffic through the local ECH gateway so the SNI is encrypted and cannot be reset\nFirst load may take a few seconds (waiting for the gateway); falls back to direct/proxy on failure\nDesktop only for now, mobile runtime in progress</string>
+    <string name="ech_gate_status_running">Gateway running (127.0.0.1:%1$d)</string>
+    <string name="ech_gate_status_starting">Gateway starting…</string>
+    <string name="ech_gate_status_stopped">Gateway not running</string>
+    <string name="ech_gate_status_failed">Gateway failed: %1$s</string>
     <string name="custom_hosts">Custom Hosts</string>
     <string name="custom_hosts_format">Multiple IPs separated by commas, e.g. 1.2.3.4,5.6.7.8</string>
     <string name="custom_hosts_empty_summary">Not set (using built-in mapping)</string>

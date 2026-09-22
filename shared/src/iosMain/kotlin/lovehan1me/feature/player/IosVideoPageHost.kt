@@ -153,8 +153,21 @@ object IosVideoPageHost : VideoPageHost, PipModeReporter {
 
     internal fun rebuildForPlayer(player: AVPlayer) {
         releaseController()
-        val layer = AVPlayerLayer.playerLayerWithPlayer(player)
-        val controller = AVPictureInPictureController(playerLayer = layer)
+        // 模拟器无 PiP 硬件语义：控制器构造直接返回 nil（Kotlin 侧即 NPE），
+        // 且此前无任何守卫——点开视频页必闪退（实测）。无支持直接跳过，
+        // 渲染面用自己的 AVPlayerLayer，不受影响。
+        if (!AVPictureInPictureController.isPictureInPictureSupported()) {
+            LogUtil.d(TAG, "PiP 不支持，跳过控制器")
+            return
+        }
+        val layer = runCatching { AVPlayerLayer.playerLayerWithPlayer(player) }.getOrNull() ?: run {
+            LogUtil.w(TAG, "AVPlayerLayer 创建失败，跳过 PiP 控制器")
+            return
+        }
+        val controller = runCatching { AVPictureInPictureController(playerLayer = layer) }.getOrNull() ?: run {
+            LogUtil.w(TAG, "PiP 控制器创建失败，跳过")
+            return
+        }
         val delegate = object : NSObject(), AVPictureInPictureControllerDelegateProtocol {
             override fun pictureInPictureControllerWillStartPictureInPicture(
                 controller: AVPictureInPictureController,

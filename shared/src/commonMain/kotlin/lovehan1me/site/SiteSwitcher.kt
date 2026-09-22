@@ -11,6 +11,7 @@ import lovehan1me.data.clearMemoryCookies
 import lovehan1me.data.clearWebCookies
 import lovehan1me.data.network.CsrfTokenProvider
 import lovehan1me.data.network.HanimeNetwork
+import lovehan1me.data.network.ensureEchGateway
 import lovehan1me.feature.video.PreviewCommentPrefetcher
 
 /**
@@ -115,8 +116,11 @@ object SiteSwitcher {
         }
 
         // 2) 重建网络：代理选择器 + 全部 service（此处才真正把新 baseUrl 装进去）
+        //    + 确保 ECH 网关在运行（开着开关但进程死了，借切换复活；
+        //    探测缓存的失效在 jvmMain rebuildSystemProxy 内，见该函数注释）。
         rebuildSystemProxy()
         HanimeNetwork.rebuildNetwork()
+        ensureEchGateway()
 
         // 3) 清进程级站点凭据，但**保留登录态**。
         //

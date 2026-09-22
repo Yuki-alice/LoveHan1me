@@ -72,6 +72,8 @@ object ServiceCreator {
             .connectTimeout(15, TimeUnit.SECONDS)
             .addInterceptor(UrlLoggingInterceptor())
             .addInterceptor(GetchuInterceptor())
+            // getchu 同样可能被 SNI 阻断：网关未运行时放行零开销，运行时走普通 TLS 策略。
+            .addInterceptor(echGateInterceptor)
             .cookieJar(CookieJar.NO_COOKIES)
             .proxySelector(HanimeProxySelector())
             .dns(dns)
@@ -84,6 +86,9 @@ object ServiceCreator {
             .protocols(listOf(Protocol.HTTP_1_1))
             .addInterceptor(UserAgentInterceptor)
             .addInterceptor(downloadSpeedLimitInterceptor)
+            // 视频直链同样被 SNI 阻断（CDN77 走网关 CNAME 策略）：下载必须与浏览同出口。
+            // 失败时 EchGateInterceptor 自己回退直连，不会把下载卡死在网关上。
+            .addInterceptor(echGateInterceptor)
             // 与浏览同一出口：站点直连被重置时，"能看不能下"就是代理没跟过来
             .proxySelector(HanimeProxySelector())
             .dns(dns)

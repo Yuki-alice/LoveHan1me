@@ -103,6 +103,8 @@ data class NetworkSettingsUiState(
     val autoBuiltInHosts: Boolean,
     /** ECH 网关：加密 SNI 以避免握手被重置（默认关，目前仅桌面 Windows 可用）。 */
     val useEchGate: Boolean,
+    /** 网关运行时状态行（jvmMain Route 拼接好的本地化文案，iOS 传空）。 */
+    val echGateStatus: String,
     val useCustomMirrorSite: Boolean,
     val customMirrorSite: String,
     val appendCustomMirrorPath: Boolean,
@@ -302,7 +304,8 @@ fun NetworkSettingsScreen(
                 )
                 SettingSwitchItem(
                     title = stringResource(Res.string.use_ech_gate),
-                    summary = stringResource(Res.string.use_ech_gate_summary),
+                    summary = if (state.echGateStatus.isBlank()) stringResource(Res.string.use_ech_gate_summary)
+                    else stringResource(Res.string.use_ech_gate_summary) + "\n" + state.echGateStatus,
                     checked = state.useEchGate,
                     iconRes = Res.drawable.ic_hosts,
                     onCheckedChange = onUseEchGateChange,

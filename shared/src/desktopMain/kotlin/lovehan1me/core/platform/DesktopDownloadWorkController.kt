@@ -9,6 +9,9 @@ import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.dao.Han1meDatabases
 import lovehan1me.data.database.entity.download.DownloadGroupEntity
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity
+import lovehan1me.data.network.HanimeDns
+import lovehan1me.data.network.HanimeProxySelector
+import lovehan1me.data.network.interceptor.EchGateInterceptor
 import lovehan1me.core.domain.model.HanimeVideo
 import lovehan1me.core.domain.state.DownloadState
 import kotlinx.coroutines.CoroutineScope
@@ -321,10 +324,18 @@ object DesktopDownloadWorkController : DownloadWorkController {
         }
     }
 
+    /**
+     * 与浏览同一条出口：DNS（内置 hosts/DoH）+ 代理选择器 + ECH 网关
+     * （视频直链同样被 SNI 阻断；网关失败时拦截器自己回退直连）。
+     * 此前这里是裸 client——开着网关/代理时"能看不能下"的桌面版。
+     */
     private val httpClient: OkHttpClient by lazy {
         OkHttpClient.Builder()
             .connectTimeout(java.time.Duration.ofSeconds(15))
             .readTimeout(java.time.Duration.ofSeconds(30))
+            .dns(HanimeDns())
+            .proxySelector(HanimeProxySelector())
+            .addInterceptor(EchGateInterceptor())
             .build()
     }
 }

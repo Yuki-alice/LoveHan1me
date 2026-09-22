@@ -10,6 +10,7 @@ import lovehan1me.data.database.entity.download.DownloadGroupEntity
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import lovehan1me.core.domain.model.HanimeVideo
 import lovehan1me.data.network.BridgeCookiesStorage
+import lovehan1me.data.network.installEchGate
 import lovehan1me.core.domain.state.DownloadState
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.darwin.Darwin
@@ -460,6 +461,7 @@ object IosDownloadWorkController : DownloadWorkController {
      */
     private val httpClient: HttpClient by lazy {
         HttpClient(Darwin) {
+            installEchGate()
             install(HttpCookies) {
                 storage = BridgeCookiesStorage()
             }

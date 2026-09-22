@@ -17,9 +17,9 @@ import platform.AVFoundation.AVAssetTrack
 import platform.AVFoundation.asset
 import platform.AVFoundation.naturalSize
 import platform.AVFoundation.preferredTransform
-import platform.AVFoundation.tracksWithMediaType
+import platform.AVFoundation.tracks
+import platform.AVFoundation.mediaType
 import platform.AVFoundation.AVPlayer
-import platform.AVFoundation.AVMediaTypeVideo
 import platform.AVFoundation.AVPlayerItem
 import platform.AVFoundation.AVPlayerStatusFailed
 import platform.AVFoundation.AVPlayerStatusReadyToPlay
@@ -83,6 +83,13 @@ class IosAVPlaybackEngine : PlaybackEngine {
     override fun load(request: PlaybackRequest) {
         if (released) return
         LogUtil.d(TAG, "load: ${request.uri}")
+        // iOS 网关运行时待接入；即使将来网关就绪，AVPlayer 也不能走
+        // AVURLAsset 自定义头那条路：Xcode 26 SDK 已不再公开
+        // `AVURLAssetHTTPHeaderFieldsKey`（仅剩 HTTPCookiesKey，传不了
+        // X-Ech-Target），且 HLS 分片本就不继承初始请求的头。
+        // 到时的正确形态是 AVAssetResourceLoaderDelegate 在原生侧按
+        // EchGatePolicy 逐请求改写（与 Android EchGateDataSource 同思路）。
+        // 在此之前 AVPlayer 走现有机制（直连/代理）兜底。
         val url = NSURL.URLWithString(request.uri) ?: run {
             _state.value = _state.value.copy(
                 phase = PlaybackPhase.Error,
@@ -180,9 +187,12 @@ class IosAVPlaybackEngine : PlaybackEngine {
      * `preferredTransform` 判断是否交换宽高，否则 1080x1920 的竖屏片源会被误判为横屏。
      */
     private fun readVideoSize(): Pair<Int, Int> {
-        val track = avPlayer.currentItem?.asset
-            ?.tracksWithMediaType(AVMediaTypeVideo)
-            ?.firstOrNull() as? AVAssetTrack ?: return 0 to 0
+        // 不直接用 AVMediaTypeVideo 常量：各 KN 版本对 NS_EXTENSIBLE_STRING_ENUM
+        // 的映射有差异（本机工具链下该符号不可见，编译器会验；IosBackupFiles 的
+        // UTType 处是同一处理）。"vide" 即 AVMediaTypeVideo 的字面值，行为等价。
+        val track = avPlayer.currentItem?.asset?.tracks
+            ?.firstOrNull { (it as? AVAssetTrack)?.mediaType?.toString() == VIDEO_MEDIA_TYPE }
+            as? AVAssetTrack ?: return 0 to 0
         val size = track.naturalSize
         val width = size.useContents { width.toInt() }
         val height = size.useContents { height.toInt() }
@@ -239,5 +249,8 @@ class IosAVPlaybackEngine : PlaybackEngine {
 
     companion object {
         private const val TAG = "IosAVPlayer"
+
+        /** `AVMediaTypeVideo` 的字面值（见 readVideoSize 注释）。 */
+        private const val VIDEO_MEDIA_TYPE = "vide"
     }
 }

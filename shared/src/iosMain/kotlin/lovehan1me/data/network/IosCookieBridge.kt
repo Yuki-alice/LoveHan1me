@@ -92,6 +92,9 @@ object IosCookieBridge {
 class BridgeCookiesStorage : CookiesStorage {
 
     override suspend fun get(requestUrl: Url): List<Cookie> {
+        // ECH 网关回环：插件已按原域名附加过 Cookie（见 echCookieHeader），
+        // 这里再按 127.0.0.1 取只会带来重复与错域，直接短路。
+        if (requestUrl.host == EchGatePolicy.GATE_HOST) return emptyList()
         val host = requestUrl.host
         val cookies = IosCookieBridge.snapshot().filterKeys { it != CF_CLEARANCE_NAME }
             .mapTo(mutableListOf()) { (name, value) ->

@@ -3,6 +3,7 @@ package lovehan1me.feature.player
 import lovehan1me.core.util.MpvShaders
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.EchGate
+import lovehan1me.data.network.EchGatePolicy
 import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.data.network.currentHttpUserAgent
 import java.net.InetSocketAddress
@@ -545,6 +546,8 @@ class DesktopMpvPlaybackEngine(
 /**
  * 把媒体 URL 改写到本地 ECH 网关（网关没运行则原样返回）。
  *
+ * 判定收敛到 commonMain [EchGatePolicy]（与 OkHttp 拦截器 / Ktor 插件同一份逻辑）。
+ *
  * ## 为什么视频必须单独处理
  * mpv 有自己的网络栈（ffmpeg），**不继承 OkHttp 的拦截器**——页面能开、视频打不开，
  * 根因就在这。而实测视频直链在 `vdownload.hembed.com`（CDN77），和站点一样被 SNI 阻断，
@@ -556,16 +559,9 @@ class DesktopMpvPlaybackEngine(
  * 只处理 https：本地文件、http 直链不掺和。
  */
 private fun mediaUrlForGate(request: PlaybackRequest): Pair<String, Map<String, String>> {
-    val port = EchGate.port
-    if (port <= 0) return request.uri to request.headers
-
-    val uri = runCatching { URI(request.uri) }.getOrNull()
+    val rewrite = EchGatePolicy.rewrite(request.uri, EchGate.port)
         ?: return request.uri to request.headers
-    if (!uri.scheme.equals("https", ignoreCase = true)) return request.uri to request.headers
-    val host = uri.host ?: return request.uri to request.headers
-
-    val path = (uri.rawPath ?: "/") + (uri.rawQuery?.let { "?$it" } ?: "")
-    return "http://127.0.0.1:$port$path" to (request.headers + ("X-Ech-Target" to host))
+    return rewrite.url to (request.headers + (EchGatePolicy.TARGET_HEADER to rewrite.targetHost))
 }
 
 /**

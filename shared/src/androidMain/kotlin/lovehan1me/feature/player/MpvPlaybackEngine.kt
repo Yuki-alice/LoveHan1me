@@ -7,6 +7,8 @@ import androidx.core.net.toUri
 import lovehan1me.core.constant.USER_AGENT
 import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.data.SettingsRepository
+import lovehan1me.data.network.EchGate
+import lovehan1me.data.network.EchGatePolicy
 import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.core.util.AnimeShaders.getCert
 import lovehan1me.core.util.LogUtil
@@ -134,8 +136,11 @@ class MpvPlaybackEngine(
             )
             return
         }
+        // ECH 网关：mpv 不继承 OkHttp 拦截器，顶层 URL 在此改写
+        // （与桌面 mediaUrlForGate 同语义，判定收敛到 EchGatePolicy）。
+        val playbackPath = applyEchGateForLoad(request, path)
         MPVLib.setOptionString("force-window", "yes")
-        MPVLib.command(arrayOf("loadfile", path, "replace"))
+        MPVLib.command(arrayOf("loadfile", playbackPath, "replace"))
         currentSurface?.let {
             MPVLib.attachSurface(it)
             applySurfaceSize()
@@ -374,6 +379,43 @@ class MpvPlaybackEngine(
         detachedFd?.let { runCatching { ParcelFileDescriptor.adoptFd(it).close() } }
         currentPfd = null
         detachedFd = null
+    }
+
+    /**
+     * 本次 load 的网关 reconcilation（与桌面 `applyNetworkOptions` 同原则）。
+     *
+     * - 网关启用：URL 改写到回环 + `http-header-fields` 补 `X-Ech-Target`，
+     *   同时**清空 `http-proxy`**——ffmpeg 的代理没有 bypass 概念，
+     *   会把回环请求也送往外部代理，网关永远收不到；
+     * - 网关未运行：按设置恢复代理（网关可能在初始化后才停止），清空网关头。
+     *
+     * @return 实际喂给 `loadfile` 的路径。
+     */
+    private fun applyEchGateForLoad(request: PlaybackRequest, path: String): String {
+        val rewrite = EchGatePolicy.rewrite(request.uri, EchGate.port)
+        if (rewrite == null) {
+            runCatching { MPVLib.setPropertyString("http-header-fields", "") }
+            runCatching { MPVLib.setPropertyString("http-proxy", settingsHttpProxy() ?: "") }
+            return path
+        }
+        runCatching { MPVLib.setPropertyString("http-proxy", "") }
+        runCatching {
+            MPVLib.setPropertyString(
+                "http-header-fields",
+                "${EchGatePolicy.TARGET_HEADER}: ${rewrite.targetHost}",
+            )
+        }
+        LogUtil.d(TAG, "ECH direct ${rewrite.targetHost}（代理已让路）")
+        return rewrite.url
+    }
+
+    /** 初始化选项同款的手填 HTTP 代理（mpvOptions 的子集，供 per-load 恢复用）。 */
+    private fun settingsHttpProxy(): String? {
+        val ip = SettingsRepository.proxyIp
+            .takeIf { it.isNotBlank() && SettingsRepository.proxyPort in 1..65535 }
+            ?: return null
+        if (SettingsRepository.proxyType != HanimeProxySelector.TYPE_HTTP) return null
+        return "http://$ip:${SettingsRepository.proxyPort}"
     }
 
     private fun mpvOptions(): Map<String, String> = buildMap {

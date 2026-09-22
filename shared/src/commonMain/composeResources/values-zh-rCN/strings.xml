@@ -226,8 +226,12 @@
     <string name="use_built_in_hosts_summary">应用提供的主机到 IP 的映射\n若已设定自定义 Hosts，则优先使用\nVPN？那是什么？</string>
     <string name="auto_built_in_hosts">自动优选内置节点</string>
     <string name="auto_built_in_hosts_summary">站点域名优先走内置 IP，全部不可连时自动回退系统 DNS\n默认开启：系统 DNS 会把这些域名解析到不可达的地址</string>
-    <string name="use_ech_gate">ECH 网关（免代理直连）</string>
-    <string name="use_ech_gate_summary">站点流量经本地 ECH 网关出站，加密 SNI 以避免握手被重置\n目前仅 Windows 可用</string>
+    <string name="use_ech_gate">ECH 网关（免代理直连·实验性）</string>
+    <string name="use_ech_gate_summary">实验性功能：站点流量经本地 ECH 网关出站，加密 SNI 以避免握手被重置\n冷启动时首页可能慢几秒（等网关就绪）；网关失败自动回退直连/代理\n目前仅桌面可用，移动端运行时接入中</string>
+    <string name="ech_gate_status_running">网关运行中（127.0.0.1:%1$d）</string>
+    <string name="ech_gate_status_starting">网关启动中…</string>
+    <string name="ech_gate_status_stopped">网关未运行</string>
+    <string name="ech_gate_status_failed">网关启动失败：%1$s</string>
     <string name="custom_hosts">自定义 Hosts</string>
     <string name="custom_hosts_format">多个 IP 以逗号分隔，如 1.2.3.4,5.6.7.8</string>
     <string name="custom_hosts_empty_summary">未设定（使用内置映射）</string>

@@ -47,6 +47,7 @@ import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import kotlinx.coroutines.withTimeoutOrNull
+import java.net.ProxySelector
 import java.net.URI
 
 /**
@@ -92,18 +93,8 @@ fun main() {
 
     application {
         StartupTrace.mark("application")
-        System.getenv("HAN1ME_P3A_PROXY")?.takeIf { it.isNotBlank() }?.let { hp ->
-            val idx = hp.lastIndexOf(':')
-            if (idx > 0) {
-                val host = hp.substring(0, idx)
-                val port = hp.substring(idx + 1)
-                System.setProperty("http.proxyHost", host)
-                System.setProperty("http.proxyPort", port)
-                System.setProperty("https.proxyHost", host)
-                System.setProperty("https.proxyPort", port)
-                LogUtil.d("Desktop", "main: JVM proxy=$host:$port (from HAN1ME_P3A_PROXY)")
-            }
-        }
+        // HAN1ME_P3A_PROXY 已移入 initializeDesktop（见下）：它必须在
+        // rebuildNetwork() 之后生效，否则设置页的代理类型会把它清掉。
 
         // M5-2：Coil 单例注册是 **@Composable**（coil-compose 的 API），只能在组合里调，
         // 因此它留在 application 作用域、而不是下面的挂起初始化函数里。
@@ -254,6 +245,29 @@ private suspend fun initializeDesktop() {
     // 放在设置就绪之后、界面组合之前（与 Android 在 Application.onCreate 里做同一件事）。
     applyAppLanguage(SettingsRepository.current.appLanguage)
     StartupTrace.mark("language")
+
+    // 全局默认选择器 + 系统属性：HttpURLConnection 支路（CDP 调试端口轮询、
+    // DoH 之外的裸连接）与 OkHttp 走同一套代理判定；此前桌面从未 setDefault，
+    // 这些支路恒走 DefaultProxySelector，与设置页的代理完全脱节。
+    // 必须在设置就绪后、任何网络请求前执行（此处即该位置）。
+    ProxySelector.setDefault(HanimeProxySelector())
+    HanimeProxySelector.rebuildNetwork()
+
+    // 受限网络逃生舱：HAN1ME_P3A_PROXY=host:port 显式覆盖 JVM 代理。
+    // 必须在 rebuildNetwork() 之后——否则设置页的代理类型（Direct/System）
+    // 会把这里写的标准属性清掉，顺序反了等于没设。
+    System.getenv("HAN1ME_P3A_PROXY")?.takeIf { it.isNotBlank() }?.let { hp ->
+        val idx = hp.lastIndexOf(':')
+        if (idx > 0) {
+            val host = hp.substring(0, idx)
+            val port = hp.substring(idx + 1)
+            System.setProperty("http.proxyHost", host)
+            System.setProperty("http.proxyPort", port)
+            System.setProperty("https.proxyHost", host)
+            System.setProperty("https.proxyPort", port)
+            LogUtil.d("Desktop", "main: JVM proxy=$host:$port (from HAN1ME_P3A_PROXY)")
+        }
+    }
 
     // 把"实际会用的出口"打出来：System 模式曾因 JVM 不读系统代理而静默 DIRECT，
     // 表现成"根本不弹 CF 验证"，有这行就能一眼定位。

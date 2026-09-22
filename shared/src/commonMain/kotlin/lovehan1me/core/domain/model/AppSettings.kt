@@ -161,13 +161,12 @@ data class AppSettings(
     /**
      * 是否启用本地 ECH 网关（`echgate`）出站。
      *
-     * 默认关：网关是外部进程，先让用户能手动验证再考虑默认开。关掉时
-     * 拦截器自动放行直连，**行为与本功能存在前完全一致**。
-     *
-     * 目前只有桌面端会真正拉起网关（Android 需 gomobile 打包，iOS 无可执行文件路径），
-     * 移动端即使这里为 true 也不会有任何改变。
+     * 默认开（实验性）：项目的目标是免梯直连，网关失败时所有改写层自动放行、
+     * 走原有机制（代理 / 内置 hosts / DoH），与关闭行为一致，故默认开是安全的。
+     * 无运行时的平台（移动端待接入）开着也无害。
+     * 用户手动关掉后予以尊重，不再自愈拉起。
      */
-    val useEchGate: Boolean = false,
+    val useEchGate: Boolean = true,
     val customHostsData: String = "",
     val useDoH: Boolean = false,
     val dohPreset: String = "alidns",

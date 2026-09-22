@@ -9,6 +9,7 @@ import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import lovehan1me.core.constant.DESKTOP_USER_AGENT
 import lovehan1me.data.network.HanimeDns
 import lovehan1me.data.network.HanimeProxySelector
+import lovehan1me.data.network.interceptor.EchGateInterceptor
 import okhttp3.OkHttpClient
 import java.util.concurrent.TimeUnit
 
@@ -33,6 +34,7 @@ fun createGetchuImageLoader(context: coil3.PlatformContext): ImageLoader {
         .connectTimeout(15, TimeUnit.SECONDS)
         .dns(HanimeDns())
         .proxySelector(HanimeProxySelector())
+        .addInterceptor(EchGateInterceptor())
         .addInterceptor { chain ->
             val request = chain.request()
             val url = request.url

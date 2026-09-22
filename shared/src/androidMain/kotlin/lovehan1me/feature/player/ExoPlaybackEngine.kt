@@ -355,7 +355,10 @@ class ExoPlaybackEngine(
         val httpFactory = DefaultHttpDataSource.Factory()
             .setUserAgent(USER_AGENT)
             .setDefaultRequestProperties(request.headers)
-        val dataSourceFactory = DefaultDataSource.Factory(appContext, httpFactory)
+        // ECH 网关：顶层 manifest 与 HLS 分片各自在 open() 时改写
+        // （见 EchGateDataSource——工厂级加头会把顶层域名错贴到分片上，故不在此加）。
+        val dataSourceFactory =
+            DefaultDataSource.Factory(appContext, EchGateDataSourceFactory(httpFactory))
         val item = MediaItem.fromUri(request.uri.toUri())
         return if (request.uri.substringBefore('?').endsWith(".m3u8", ignoreCase = true)) {
             HlsMediaSource.Factory(dataSourceFactory).createMediaSource(item)

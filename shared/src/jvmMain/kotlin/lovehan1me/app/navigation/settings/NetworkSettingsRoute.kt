@@ -6,6 +6,7 @@ import androidx.compose.material3.Text
 import lovehan1me.ui.component.HapticTextButton as TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
@@ -13,10 +14,12 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.core.constant.EMPTY_STRING
 import lovehan1me.data.SettingsRepository
+import lovehan1me.data.network.EchGate
 import lovehan1me.Res
 import lovehan1me.alternative
 import lovehan1me.custom
@@ -40,6 +43,10 @@ import lovehan1me.system_proxy
 import lovehan1me.unknow
 import lovehan1me.warning
 import lovehan1me.restart_or_not_working
+import lovehan1me.ech_gate_status_failed
+import lovehan1me.ech_gate_status_running
+import lovehan1me.ech_gate_status_starting
+import lovehan1me.ech_gate_status_stopped
 import lovehan1me.network_timeout_text
 import lovehan1me.mpv_socks5_warning
 import lovehan1me.domain_change_tips
@@ -132,15 +139,38 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
     val watchFailedHttpTemplate = stringResource(Res.string.custom_mirror_site_watch_test_failed_http)
     val watchFailedTemplate = stringResource(Res.string.custom_mirror_site_watch_test_failed)
     val loadingText = stringResource(Res.string.loading)
+    // 网关状态行：2s 轮询一次运行态（端口/拉起中/失败原因），用户报障时先看这里。
+    var gateStatusTick by remember { mutableIntStateOf(0) }
+    LaunchedEffect(Unit) {
+        while (true) {
+            delay(2_000L)
+            gateStatusTick++
+        }
+    }
+    val gateRunningTemplate = stringResource(Res.string.ech_gate_status_running)
+    val gateStartingText = stringResource(Res.string.ech_gate_status_starting)
+    val gateStoppedText = stringResource(Res.string.ech_gate_status_stopped)
+    val gateFailedTemplate = stringResource(Res.string.ech_gate_status_failed)
+    val echGateStatus = remember(gateStatusTick, settings) {
+        val port = EchGate.port
+        when {
+            port > 0 -> gateRunningTemplate.replace("%1\$d", port.toString())
+            EchGateProcess.starting -> gateStartingText
+            EchGateProcess.lastError != null ->
+                gateFailedTemplate.replace("%1\$s", EchGateProcess.lastError.orEmpty())
+
+            else -> gateStoppedText
+        }
+    }
     val uiState = remember(
         settings, unknownText, domainDefaultText, domainAlternativeText, directText,
         systemProxyText, httpProxyTemplate, socksProxyTemplate, nodeLatencyText,
-        dohDisabledText, dohConflictText, customText,
+        dohDisabledText, dohConflictText, customText, echGateStatus,
     ) {
         buildNetworkSettingsUiState(
             domainDefaultText, domainAlternativeText, directText, systemProxyText,
             httpProxyTemplate, socksProxyTemplate, nodeLatencyText,
-            dohDisabledText, dohConflictText, customText,
+            dohDisabledText, dohConflictText, customText, echGateStatus,
         )
     }
     val customMirrorInvalidText = stringResource(Res.string.custom_mirror_site_invalid)
@@ -543,6 +573,7 @@ private fun buildNetworkSettingsUiState(
     dohDisabled: String,
     dohConflict: String,
     custom: String,
+    echGateStatus: String,
 ): NetworkSettingsUiState {
     return NetworkSettingsUiState(
         domainName = SettingsRepository.baseUrl,
@@ -564,6 +595,7 @@ private fun buildNetworkSettingsUiState(
         useBuiltInHosts = SettingsRepository.useBuiltInHosts,
         autoBuiltInHosts = SettingsRepository.autoBuiltInHosts,
         useEchGate = SettingsRepository.useEchGate,
+        echGateStatus = echGateStatus,
         useCustomMirrorSite = SettingsRepository.useCustomMirrorSite,
         customMirrorSite = SettingsRepository.customMirrorSite,
         appendCustomMirrorPath = SettingsRepository.appendCustomMirrorPath,
