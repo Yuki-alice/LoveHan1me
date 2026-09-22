@@ -180,3 +180,58 @@ class HanimeDnsTest {
         )
     }
 }
+
+/**
+ * [HanimeDns.preferredIps] 的回归：桌面 CF 验证浏览器靠它决定要不要用
+ * `--host-resolver-rules` 把 host 钉住。钉错比不钉更糟——会把验证页送到另一个出口。
+ *
+ * 这里刻意**只测不触发探测的分支**（两档都关 / 非站点域名 / 手动档），
+ * 自动档要连真实网络，交给 live 用例，不混进离线单测。
+ */
+class PreferredIpsTest {
+
+    private fun withBuiltInModes(
+        force: Boolean,
+        auto: Boolean,
+        customIps: String = "",
+        block: () -> Unit,
+    ) {
+        ensureStoreInstalled()
+        runBlocking {
+            SettingsRepository.update {
+                it.copy(
+                    useBuiltInHosts = force,
+                    autoBuiltInHosts = auto,
+                    customHostsData = customIps,
+                )
+            }
+        }
+        try {
+            block()
+        } finally {
+            // 还原成出厂默认：强制档关、自动档开（自动档默认是开的，留着 false 会拖累别的用例）
+            runBlocking {
+                SettingsRepository.update {
+                    it.copy(useBuiltInHosts = false, autoBuiltInHosts = true, customHostsData = "")
+                }
+            }
+        }
+    }
+
+    @Test
+    fun `两档都关时不给出内置 IP`() = withBuiltInModes(force = false, auto = false) {
+        // 不能拿系统解析结果冒充"内置 IP"——那正是被污染的假地址，钉上去验证页就废了。
+        assertTrue(HanimeDns().preferredIps(HANIME_HOSTNAME.first()).isEmpty())
+    }
+
+    @Test
+    fun `非站点域名不参与内置 IP`() = withBuiltInModes(force = true, auto = true) {
+        assertTrue(HanimeDns().preferredIps("example.com").isEmpty())
+    }
+
+    @Test
+    fun `手动档给出自定义 IP_供验证浏览器对齐出口`() =
+        withBuiltInModes(force = true, auto = true, customIps = "203.0.113.11") {
+            assertEquals(listOf("203.0.113.11"), HanimeDns().preferredIps(HANIME_HOSTNAME.first()))
+        }
+}

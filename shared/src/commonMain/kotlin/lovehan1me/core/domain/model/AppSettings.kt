@@ -145,6 +145,29 @@ data class AppSettings(
     val customMirrorSite: String = "",
     val appendCustomMirrorPath: Boolean = true,
     val useBuiltInHosts: Boolean = false,
+    /**
+     * 自动档（默认开）：Hanime 系域名**优先**走内置/自定义 IP，但先做一次连通性
+     * 探测，全不通就退回 DoH / 系统 DNS —— 不像 [useBuiltInHosts] 那样强制、无回退。
+     *
+     * 为什么必须默认开（2026-09-21 本机实测）：系统 DNS 对 `hanime1.me` /
+     * `www.hanime1.me` / `hanimeone.me` 全部返回**不可达**的假 IP（443 握手超时，
+     * `hanimeone.me` 甚至落到 Facebook 段），而内置 CF IP 实测 5 个里 3 个通
+     * （170–230ms）。不开这个，默认用户根本连不上站点。
+     *
+     * 为什么不能直接把 [useBuiltInHosts] 强制档打开：那批 IP 会失效，强制档一旦
+     * 失效就是断网，而它又没有回退。"探测 + 回退"才是可以默认打开的形态。
+     */
+    val autoBuiltInHosts: Boolean = true,
+    /**
+     * 是否启用本地 ECH 网关（`echgate`）出站。
+     *
+     * 默认关：网关是外部进程，先让用户能手动验证再考虑默认开。关掉时
+     * 拦截器自动放行直连，**行为与本功能存在前完全一致**。
+     *
+     * 目前只有桌面端会真正拉起网关（Android 需 gomobile 打包，iOS 无可执行文件路径），
+     * 移动端即使这里为 true 也不会有任何改变。
+     */
+    val useEchGate: Boolean = false,
     val customHostsData: String = "",
     val useDoH: Boolean = false,
     val dohPreset: String = "alidns",

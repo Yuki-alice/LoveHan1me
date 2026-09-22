@@ -36,7 +36,9 @@ import lovehan1me.core.util.LogUtil
 import lovehan1me.core.util.StartupTrace
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.datastore.DataStoreManager
+import lovehan1me.data.network.EchGateProcess
 import lovehan1me.data.network.HanimeProxySelector
+import lovehan1me.data.network.createHanimeHttpClient
 import lovehan1me.feature.player.DesktopMpvPlaybackEngine
 import lovehan1me.feature.player.DesktopVideoPageHost
 import lovehan1me.feature.player.DesktopWindowHolder
@@ -108,7 +110,13 @@ fun main() {
         // 语义与原来一致：在任何图片请求之前注册好。
         setSingletonImageLoaderFactory { context ->
             ImageLoader.Builder(context)
-                .components { add(KtorNetworkFetcherFactory()) }
+                .components {
+                    // 图片同样在 CDN 上（实测 `vdownload.hembed.com/image/…`），和视频一样
+                    // 被 SNI 阻断。Coil 默认会**自建一个 Ktor 客户端**，那个客户端不带
+                    // ECH 网关拦截器，结果就是页面能开、图一张都出不来。
+                    // 显式复用应用自己的客户端，让图片与页面走同一条出口。
+                    add(KtorNetworkFetcherFactory(httpClient = { createHanimeHttpClient() }))
+                }
                 .build()
         }
 
@@ -255,11 +263,21 @@ private suspend fun initializeDesktop() {
     }.getOrNull()
     LogUtil.d("Desktop", "main: proxyType=${SettingsRepository.proxyType} -> $effectiveProxy")
 
+    // ECH 网关（真免梯）：仅开关打开时拉起。它内部自己判平台与产物是否齐备，
+    // 失败只记日志——网关是加速项，不该让启动失败。
+    //
+    // 位置刻意靠前：首页图片在界面首帧后立刻开始加载，网关越早就绪越不容易漏掉。
+    // 就绪时间主要取决于 ECH 公钥配置——首次启动要等一次 DoH，之后走 --cache-dir 的磁盘缓存。
+    if (SettingsRepository.useEchGate) {
+        runCatching { EchGateProcess.start() }
+            .onFailure { LogUtil.w("Desktop", "main: ECH 网关启动失败：${it.message}") }
+    }
+    StartupTrace.mark("ech-gate")
+
     // 恢复未完成的下载队列（Room 里的 Downloading/Queued 任务）
     initializeDesktopDownloadQueue()
     StartupTrace.mark("download-queue")
     LogUtil.d("Desktop", "main: download queue restored")
-
 }
 
 /**

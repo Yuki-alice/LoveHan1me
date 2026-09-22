@@ -222,6 +222,10 @@
     <string name="use_built_in_hosts">使用應用內建 Hosts</string>
     <string name="network_settings">網路設定</string>
     <string name="use_built_in_hosts_summary">應用提供的主機到 IP 位址的對應\n若已設定自訂 Hosts，則優先使用\nVPN？那是什麼？</string>
+    <string name="auto_built_in_hosts">自動優選內建節點</string>
+    <string name="auto_built_in_hosts_summary">站台網域優先走內建 IP，全部無法連線時自動回退系統 DNS\n預設開啟：系統 DNS 會把這些網域解析到無法連線的位址</string>
+    <string name="use_ech_gate">ECH 閘道（免代理直連）</string>
+    <string name="use_ech_gate_summary">站台流量經本地 ECH 閘道出站，加密 SNI 以避免握手被重置\n目前僅 Windows 可用</string>
     <string name="custom_hosts">自訂 Hosts</string>
     <string name="custom_hosts_format">多個 IP 位址以逗號分隔，例如 1.2.3.4,5.6.7.8</string>
     <string name="custom_hosts_empty_summary">未設定（使用內建對應）</string>

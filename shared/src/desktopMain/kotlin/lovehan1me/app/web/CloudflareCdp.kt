@@ -17,6 +17,8 @@ import lovehan1me.core.domain.model.ProxyType
 import lovehan1me.core.util.LogUtil
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.CF_CLEARANCE_NAME
+import lovehan1me.data.network.CloudflareChallenges
+import lovehan1me.data.network.HanimeDns
 import java.io.File
 import java.net.ServerSocket
 import java.net.URI
@@ -182,7 +184,13 @@ object CloudflareCdp {
         val profileDir = runCatching { challengeProfileDirectory() }.getOrNull()
             ?: return@withContext SolveResult.Failed("无法创建浏览器 profile 目录")
 
-        val args = buildArgs(browser, port, profileDir, proxyArg)
+        val args = buildArgs(
+            browser,
+            port,
+            profileDir,
+            proxyArg,
+            hostResolverRules(CloudflareChallenges.hostOf(url)),
+        )
         val process = runCatching {
             ProcessBuilder(args).redirectOutput(ProcessBuilder.Redirect.DISCARD)
                 .redirectError(ProcessBuilder.Redirect.DISCARD)
@@ -241,11 +249,46 @@ object CloudflareCdp {
      *
      * @param proxyArg 由 [proxyFlag] 解析或调用方注入（测试用）
      */
+    /**
+     * 把验证浏览器钉到与 App **同一个边缘 IP**。
+     *
+     * ## 为什么需要（2026-09-21 本机实测，不是推测）
+     * 系统 DNS 对三个 Hanime 域名全部返回**不可达**的假 IP：
+     * `hanime1.me`→108.160.173.207、`www.hanime1.me`→211.104.160.39、
+     * `hanimeone.me`→157.240.10.36（Facebook 段，典型污染特征）——
+     * 这三个 IP 的 **443 握手全部超时**。
+     *
+     * 后果不是"慢"，是**验证页根本打不开**：CDP 浏览器走系统 DNS ⇒ 连不上 CF ⇒
+     * 拿不到真的挑战页 ⇒ 用户看到的就是"验证弹窗跟拼运气一样 / 验证过了还是 403"。
+     * 而 App 开了内置 hosts 之后走的是真 CF IP（实测 172.64.229.154 等 3 个可达，
+     * 170–230ms）——两边根本不在同一个网络世界里，`cf_clearance` 自然绑不上。
+     *
+     * Chrome/Edge 的 `--host-resolver-rules` 可以把指定 host 钉到给定 IP，
+     * 于是**不引入任何代理**就能让两边同出口。
+     *
+     * ## 只在"应用自己也会走内置 IP"时下发
+     * 判定交给 [HanimeDns.preferredIps]：手动内置档返回整张表，自动档返回探测过
+     * 能建连的那些，两者都关（或 host 不属于站点族）则返回空表 ⇒ 不钉。
+     * 不能图省事用 `getCDNList`——它在没走内置 IP 时会**回退到系统解析结果**，
+     * 拿那个去钉等于把验证页送到系统 DNS 的假 IP 上，正是我们要躲开的那个坑。
+     *
+     * 手填 HTTP/Socks 代理时浏览器把解析交给代理，本规则自然不生效，
+     * 此时出口一致性由 [proxyFlag] 保证——两者各管一段，不冲突。
+     */
+    internal fun hostResolverRules(host: String?): String? {
+        if (host.isNullOrBlank()) return null
+        // 取列表首位：App 侧 OkHttp 也是按这个顺序尝试，两边才会落在同一个 IP 上。
+        val ip = runCatching { HanimeDns().preferredIps(host) }.getOrNull()
+            ?.firstOrNull { it.isNotBlank() } ?: return null
+        return "--host-resolver-rules=MAP $host $ip"
+    }
+
     internal fun buildArgs(
         browser: String,
         port: Int,
         profileDir: File,
         proxyArg: String? = proxyFlag(),
+        hostResolverArg: String? = null,
     ): List<String> {
         val args = mutableListOf(
             browser,
@@ -266,6 +309,7 @@ object CloudflareCdp {
             "--user-data-dir=${profileDir.absolutePath}",
         )
         proxyArg?.let { args += it }
+        hostResolverArg?.let { args += it }
         args += "about:blank"
         return args
     }

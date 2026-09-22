@@ -31,6 +31,10 @@ import androidx.compose.ui.graphics.Color
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
+import lovehan1me.auto_built_in_hosts
+import lovehan1me.auto_built_in_hosts_summary
+import lovehan1me.use_ech_gate
+import lovehan1me.use_ech_gate_summary
 import lovehan1me.view_node_latency
 import lovehan1me.use_doh
 import lovehan1me.use_built_in_hosts_summary
@@ -95,6 +99,10 @@ data class NetworkSettingsUiState(
     val domainDisplay: String,
     val proxySummary: String,
     val useBuiltInHosts: Boolean,
+    /** 自动档：站点域名优先走内置 IP，全部不可连时自动回退（默认开，见 AppSettings）。 */
+    val autoBuiltInHosts: Boolean,
+    /** ECH 网关：加密 SNI 以避免握手被重置（默认关，目前仅桌面 Windows 可用）。 */
+    val useEchGate: Boolean,
     val useCustomMirrorSite: Boolean,
     val customMirrorSite: String,
     val appendCustomMirrorPath: Boolean,
@@ -148,6 +156,8 @@ fun NetworkSettingsScreen(
     onSaveCustomMirrorSite: (Boolean, String, Boolean) -> Unit,
     onTestCustomMirrorSite: (String, Boolean) -> Unit,
     onUseBuiltInHostsChange: (Boolean) -> Unit,
+    onAutoBuiltInHostsChange: (Boolean) -> Unit,
+    onUseEchGateChange: (Boolean) -> Unit,
     onSaveCustomHosts: (String) -> Unit,
     onSaveDohSettings: (Boolean, String, String, String, Int) -> Unit,
     onOpenDelayTest: () -> Unit,
@@ -282,6 +292,20 @@ fun NetworkSettingsScreen(
                     checked = state.useBuiltInHosts,
                     iconRes = Res.drawable.ic_hosts,
                     onCheckedChange = onUseBuiltInHostsChange,
+                )
+                SettingSwitchItem(
+                    title = stringResource(Res.string.auto_built_in_hosts),
+                    summary = stringResource(Res.string.auto_built_in_hosts_summary),
+                    checked = state.autoBuiltInHosts,
+                    iconRes = Res.drawable.ic_hosts,
+                    onCheckedChange = onAutoBuiltInHostsChange,
+                )
+                SettingSwitchItem(
+                    title = stringResource(Res.string.use_ech_gate),
+                    summary = stringResource(Res.string.use_ech_gate_summary),
+                    checked = state.useEchGate,
+                    iconRes = Res.drawable.ic_hosts,
+                    onCheckedChange = onUseEchGateChange,
                 )
                 SettingNavigationItem(
                     title = stringResource(Res.string.custom_hosts),

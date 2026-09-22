@@ -38,3 +38,8 @@ local.properties
 
 # Logs
 *.log
+
+# echgate（本地 ECH 网关，Go）——只入库源码。
+# 构建产物由 `go build` 生成后拷进 desktopApp/src/main/resources/ 作为应用资源，
+# 那一份才随仓库走；这份是本地的中间产物，重复提交没意义。
+echgate/echgate.exe

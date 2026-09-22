@@ -75,6 +75,13 @@ class HanimeProxySelector : ProxySelector() {
     }
 
     override fun select(uri: URI?): MutableList<Proxy> {
+        // 本地 ECH 网关就在本机：再交给外部代理，等于把流量绕出去又绕回来，
+        // 而且绕出去的那一段是明文 SNI——正是我们要躲的东西。
+        val host = uri?.host
+        if (host == "127.0.0.1" || host == "localhost") {
+            return mutableListOf(Proxy.NO_PROXY)
+        }
+
         val type = SettingsRepository.proxyType
         if (type == TYPE_HTTP || type == TYPE_SOCKS) {
             val ip = SettingsRepository.proxyIp

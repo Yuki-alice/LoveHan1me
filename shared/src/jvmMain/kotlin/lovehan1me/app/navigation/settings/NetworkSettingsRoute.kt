@@ -51,6 +51,8 @@ import lovehan1me.confirm
 import lovehan1me.cancel
 import lovehan1me.attention
 import lovehan1me.site.hanime1.Parser
+import lovehan1me.data.network.CdnIpProbe
+import lovehan1me.data.network.EchGateProcess
 import lovehan1me.data.network.DohConfig
 import lovehan1me.data.network.HanimeDns
 import lovehan1me.data.network.HanimeProxySelector
@@ -66,6 +68,8 @@ import lovehan1me.feature.settings.NetworkSettingsUiState
 import lovehan1me.core.util.AppToast
 import okhttp3.Request
 import java.net.InetAddress
+import java.net.InetSocketAddress
+import java.net.Socket
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
@@ -149,12 +153,24 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
         isDohTesting = false
     }
 
+    /**
+     * 节点延迟 = **TCP 443 握手耗时**。
+     *
+     * 为什么不能用 `InetAddress.isReachable`：拿不到 raw socket 权限时（Windows 常见）
+     * 它退化成 **TCP echo（port 7）**探测，对着 Cloudflare 边缘 IP 恒返回 false ⇒
+     * 面板上只剩一排 "-1"，看着像"节点全挂"，其实一次都没测成功。
+     *
+     * 实测（2026-09-21，本机）：内置 IP 里 172.64.229.154 / 172.64.33.1 / 104.19.0.1
+     * 的 443 握手是 170–230ms；同一批 IP 用 port 7 探测则全部 -1。
+     * 测的是 443 而不是 80，因为业务流量本来就走 443——握手通就等于这个节点能建连。
+     */
     fun measureDelay(ip: String): Int {
         return try {
             val start = currentEpochMillis()
-            val address = InetAddress.getByName(ip)
-            val reachable = address.isReachable(2000)
-            if (reachable) (currentEpochMillis() - start).toInt() else -1
+            Socket().use { socket ->
+                socket.connect(InetSocketAddress(InetAddress.getByName(ip), 443), 2000)
+            }
+            (currentEpochMillis() - start).toInt()
         } catch (_: Exception) {
             -1
         }
@@ -307,6 +323,20 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             coroutineScope.launch {
                 SettingsRepository.update { it.copy(useBuiltInHosts = value) }
                 showHostsRestartConfirm = true
+            }
+        },
+        onAutoBuiltInHostsChange = { value ->
+            coroutineScope.launch {
+                SettingsRepository.update { it.copy(autoBuiltInHosts = value) }
+                // 开关一改，缓存里的探测结果就不再作数：开→重新探测，关→下次走系统 DNS。
+                CdnIpProbe.invalidate()
+            }
+        },
+        onUseEchGateChange = { value ->
+            coroutineScope.launch {
+                SettingsRepository.update { it.copy(useEchGate = value) }
+                // 网关是外部进程，开关就是它的生死。拦截器常驻且自己看端口，无需重建客户端。
+                if (value) EchGateProcess.start() else EchGateProcess.stop()
             }
         },
         onSaveCustomHosts = { data ->
@@ -532,6 +562,8 @@ private fun buildNetworkSettingsUiState(
             else -> direct
         },
         useBuiltInHosts = SettingsRepository.useBuiltInHosts,
+        autoBuiltInHosts = SettingsRepository.autoBuiltInHosts,
+        useEchGate = SettingsRepository.useEchGate,
         useCustomMirrorSite = SettingsRepository.useCustomMirrorSite,
         customMirrorSite = SettingsRepository.customMirrorSite,
         appendCustomMirrorPath = SettingsRepository.appendCustomMirrorPath,

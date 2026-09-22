@@ -86,7 +86,8 @@ class HanimeDns : Dns {
      * 请求直接失败，用户看到的只是"应用进不去"；而 DoH 与内置 IP 这两条已经写好的路，
      * 各自绑在一个手动开关上——大部分用户不会去翻设置。
      *
-     * 顺序：DoH（开着才排第一位）→ 系统 → 内置/自定义 IP（只有 Hanime 系站点有数据）。
+     * 顺序：内置 IP 自动档（Hanime 系且探测到可用节点）→ DoH（开着才排这一位）
+     * → 系统 → 内置/自定义 IP 兜底（只有 Hanime 系站点有数据）。
      * [SettingsRepository.useBuiltInHosts] 是"我就是要走这些 IP"的显式指定，不参与链条。
      * 全档皆墨时把系统解析那次的异常抛出去，保持 OkHttp 原有的失败语义。
      */
@@ -98,6 +99,14 @@ class HanimeDns : Dns {
         val hanimeHost = HANIME_HOSTNAME.contains(hostname)
         if (SettingsRepository.useBuiltInHosts && hanimeHost) {
             return hostname.toAddresses(resolveStaticIps())
+        }
+
+        // 自动档：Hanime 系域名优先走"探测过能建连"的内置 IP；一个都不通就继续往下
+        // （DoH → 系统 → 内置兜底）。失败会回退，所以这一档才敢默认打开。
+        // 排在 DoH 之前是刻意的：实测 DoH 对这几个域名同样返回假 IP，让它抢先只是白跑一趟。
+        if (hanimeHost && SettingsRepository.autoBuiltInHosts) {
+            val usable = CdnIpProbe.usable(resolveStaticIps())
+            if (usable.isNotEmpty()) return hostname.toAddresses(usable)
         }
 
         val dohUrl = DohConfig.resolveUrl()
@@ -180,15 +189,30 @@ class HanimeDns : Dns {
             return getchuIps.distinct()
         }
 
-        if (SettingsRepository.useBuiltInHosts && HANIME_HOSTNAME.contains(host)) {
-            return resolveStaticIps().distinct()
-        }
+        val preferred = preferredIps(host)
+        if (preferred.isNotEmpty()) return preferred.distinct()
 
         return runCatching {
             Dns.SYSTEM.lookup(host).map { it.hostAddress }.distinct()
         }.getOrElse {
             it.printStackTrace()
             emptyList()
+        }
+    }
+
+    /**
+     * 这个 host **实际会走**的内置 IP（自动档只返回探测过能建连的那些）。
+     *
+     * 返回空表 = 这次不会走内置 IP（落到 DoH / 系统 DNS）。桌面 CF 验证浏览器靠它判断
+     * 该不该用 `--host-resolver-rules` 把 host 钉住：钉到一个应用自己都不用的 IP 上，
+     * 等于把验证页送到另一个出口，`cf_clearance` 照样绑不上。
+     */
+    fun preferredIps(host: String): List<String> {
+        if (!HANIME_HOSTNAME.contains(host)) return emptyList()
+        return when {
+            SettingsRepository.useBuiltInHosts -> resolveStaticIps()
+            SettingsRepository.autoBuiltInHosts -> CdnIpProbe.usable(resolveStaticIps())
+            else -> emptyList()
         }
     }
 

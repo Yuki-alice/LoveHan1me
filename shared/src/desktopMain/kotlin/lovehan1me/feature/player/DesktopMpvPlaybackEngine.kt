@@ -2,6 +2,7 @@ package lovehan1me.feature.player
 
 import lovehan1me.core.util.MpvShaders
 import lovehan1me.data.SettingsRepository
+import lovehan1me.data.network.EchGate
 import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.data.network.currentHttpUserAgent
 import java.net.InetSocketAddress
@@ -160,8 +161,9 @@ class DesktopMpvPlaybackEngine(
                     applyNetworkOptions(handle)
                     applyMpvSettings(handle)
                 }
+                val (mediaUri, mediaHeaders) = mediaUrlForGate(request)
                 player.setMediaData(
-                    UriMediaData(request.uri, request.headers),
+                    UriMediaData(mediaUri, mediaHeaders),
                     request.playWhenReady,
                     request.startPositionMs,
                 )
@@ -315,10 +317,17 @@ class DesktopMpvPlaybackEngine(
      * 若某天 mpv 把它标成不可运行时修改，日志里会直接看到 `set=false`，不必猜。
      */
     private fun applyNetworkOptions(handle: MPVHandle) {
-        mediaProxyUrl()?.let { proxy ->
-            val ok = handle.setPropertyString("http-proxy", proxy)
-            LogUtil.d(TAG, "mpv http-proxy=$proxy set=$ok")
-            if (!ok) LogUtil.w(TAG, "mpv 不接受运行时设置 http-proxy，视频可能仍走直连")
+        // ⚠️ ECH 网关启用时**不能再给 mpv 设 http-proxy**：媒体 URL 已被改写到
+        // 127.0.0.1（见 [mediaUrlForGate]），而 ffmpeg 的 http_proxy 没有 bypass
+        // 列表——它会把这条件对本地回环的请求也代理出去，网关永远收不到。
+        if (EchGate.port > 0) {
+            LogUtil.d(TAG, "ECH 网关启用，跳过 mpv http-proxy（媒体走本地回环）")
+        } else {
+            mediaProxyUrl()?.let { proxy ->
+                val ok = handle.setPropertyString("http-proxy", proxy)
+                LogUtil.d(TAG, "mpv http-proxy=$proxy set=$ok")
+                if (!ok) LogUtil.w(TAG, "mpv 不接受运行时设置 http-proxy，视频可能仍走直连")
+            }
         }
         // UA 与应用 HTTP 层保持一致（站点/CDN 可能按 UA 判定）
         val userAgent = currentHttpUserAgent()
@@ -531,6 +540,32 @@ class DesktopMpvPlaybackEngine(
             return dir
         }
     }
+}
+
+/**
+ * 把媒体 URL 改写到本地 ECH 网关（网关没运行则原样返回）。
+ *
+ * ## 为什么视频必须单独处理
+ * mpv 有自己的网络栈（ffmpeg），**不继承 OkHttp 的拦截器**——页面能开、视频打不开，
+ * 根因就在这。而实测视频直链在 `vdownload.hembed.com`（CDN77），和站点一样被 SNI 阻断，
+ * 所以要把 URL 也交给网关，由它按域名的 CNAME 真名出站。
+ *
+ * 改写形状与 HTTP 层一致：`http://127.0.0.1:<port>/path?query` + `X-Ech-Target: <原 host>`。
+ * 网关按该头还原目标，Host 头则由它自己按策略决定（CNAME 降级时要换成真名）。
+ *
+ * 只处理 https：本地文件、http 直链不掺和。
+ */
+private fun mediaUrlForGate(request: PlaybackRequest): Pair<String, Map<String, String>> {
+    val port = EchGate.port
+    if (port <= 0) return request.uri to request.headers
+
+    val uri = runCatching { URI(request.uri) }.getOrNull()
+        ?: return request.uri to request.headers
+    if (!uri.scheme.equals("https", ignoreCase = true)) return request.uri to request.headers
+    val host = uri.host ?: return request.uri to request.headers
+
+    val path = (uri.rawPath ?: "/") + (uri.rawQuery?.let { "?$it" } ?: "")
+    return "http://127.0.0.1:$port$path" to (request.headers + ("X-Ech-Target" to host))
 }
 
 /**

@@ -1,6 +1,7 @@
 package lovehan1me.data.network
 
 import lovehan1me.data.SettingsRepository
+import lovehan1me.data.network.interceptor.EchGateInterceptor
 import lovehan1me.data.network.interceptor.GetchuInterceptor
 import lovehan1me.data.network.interceptor.SpeedLimitInterceptor
 import lovehan1me.data.network.interceptor.UrlLoggingInterceptor
@@ -35,6 +36,12 @@ object ServiceCreator {
     }
 
     private val dns = HanimeDns()
+
+    /**
+     * 网关未运行时它自己放行直连，所以常驻拦截器列表是安全的
+     * （见 [EchGateInterceptor] 的说明）。
+     */
+    private val echGateInterceptor = EchGateInterceptor()
 
     /**
      * OkHttpClient
@@ -97,6 +104,8 @@ object ServiceCreator {
             .callTimeout(60, TimeUnit.SECONDS)
             .addInterceptor(UserAgentInterceptor)
             .addInterceptor(UrlLoggingInterceptor())
+            // 放在日志之后：日志记录的是改写前的真实 URL，排查时才有意义。
+            .addInterceptor(echGateInterceptor)
             .cache(cache)
             .cookieJar(HCookieJar())
             .proxySelector(HanimeProxySelector())
