@@ -1,0 +1,8 @@
+framework module "Echgate" {
+	header "ref.h"
+    header "Gate.objc.h"
+    header "Universe.objc.h"
+    header "Echgate.h"
+
+    export *
+}

@@ -9,8 +9,12 @@
 /* Begin PBXBuildFile section */
 		170239AFA9E698528CDEEA41 /* UIKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = EADD9B981D81A9C9CF871989 /* UIKit.framework */; };
 		307C2654CD5972A25FB7FD87 /* iOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 668CECA83ACC03A83C85A623 /* iOSApp.swift */; };
+		43BE560BD74166B36BD32BFB /* Echgate.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = BAF2DF7AC187B0143B0AAC64 /* Echgate.xcframework */; };
 		4DC93C55BD8E0153B9E8E6A7 /* NoticeAndBackupUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 10E7A7A7C3067F1B1D50ABE5 /* NoticeAndBackupUITests.swift */; };
 		56B0305B5D3847FC6B326502 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = CE8509E5A49E4A5CAAEB3ADB /* ContentView.swift */; };
+		79817E7518E84C21735F7820 /* Echgate.xcframework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = BAF2DF7AC187B0143B0AAC64 /* Echgate.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		E53C149D84A1DE338B4A6E78 /* VideoCardCrashUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 17378372012CD2DFFB8230EA /* VideoCardCrashUITests.swift */; };
+		EB627B9A7EB509D9E745A635 /* EchGateBootstrap.swift in Sources */ = {isa = PBXBuildFile; fileRef = AD5024DE6FC52E5C20D96A30 /* EchGateBootstrap.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -23,11 +27,28 @@
 		};
 /* End PBXContainerItemProxy section */
 
+/* Begin PBXCopyFilesBuildPhase section */
+		DB76241340C08196BD9C492C /* Embed Frameworks */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 10;
+			files = (
+				79817E7518E84C21735F7820 /* Echgate.xcframework in Embed Frameworks */,
+			);
+			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
 		10E7A7A7C3067F1B1D50ABE5 /* NoticeAndBackupUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoticeAndBackupUITests.swift; sourceTree = "<group>"; };
+		17378372012CD2DFFB8230EA /* VideoCardCrashUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoCardCrashUITests.swift; sourceTree = "<group>"; };
 		323906AFB18147ABEDEBDB38 /* iosAppUITests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = iosAppUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		668CECA83ACC03A83C85A623 /* iOSApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = iOSApp.swift; sourceTree = "<group>"; };
 		86038AE1032E284E79B32AD6 /* iosApp.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = iosApp.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		AD5024DE6FC52E5C20D96A30 /* EchGateBootstrap.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EchGateBootstrap.swift; sourceTree = "<group>"; };
+		BAF2DF7AC187B0143B0AAC64 /* Echgate.xcframework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcframework; name = Echgate.xcframework; path = libs/Echgate.xcframework; sourceTree = "<group>"; };
 		C117AD187833E2513BD2F553 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		CE8509E5A49E4A5CAAEB3ADB /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		EADD9B981D81A9C9CF871989 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
@@ -39,6 +60,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				170239AFA9E698528CDEEA41 /* UIKit.framework in Frameworks */,
+				43BE560BD74166B36BD32BFB /* Echgate.xcframework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -49,6 +71,7 @@
 			isa = PBXGroup;
 			children = (
 				CE8509E5A49E4A5CAAEB3ADB /* ContentView.swift */,
+				AD5024DE6FC52E5C20D96A30 /* EchGateBootstrap.swift */,
 				C117AD187833E2513BD2F553 /* Info.plist */,
 				668CECA83ACC03A83C85A623 /* iOSApp.swift */,
 			);
@@ -58,6 +81,7 @@
 		3666012298E772D226418813 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				BAF2DF7AC187B0143B0AAC64 /* Echgate.xcframework */,
 				EADD9B981D81A9C9CF871989 /* UIKit.framework */,
 			);
 			name = Frameworks;
@@ -86,6 +110,7 @@
 			isa = PBXGroup;
 			children = (
 				10E7A7A7C3067F1B1D50ABE5 /* NoticeAndBackupUITests.swift */,
+				17378372012CD2DFFB8230EA /* VideoCardCrashUITests.swift */,
 			);
 			path = iosAppUITests;
 			sourceTree = "<group>";
@@ -100,6 +125,7 @@
 				DBA1DCFAF952F908D380FA0F /* Build Shared Kotlin Framework */,
 				297B59D9CE634556D6007C40 /* Sources */,
 				EF8A6E9BFD470986D9D5C9B5 /* Frameworks */,
+				DB76241340C08196BD9C492C /* Embed Frameworks */,
 			);
 			buildRules = (
 			);
@@ -192,6 +218,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				4DC93C55BD8E0153B9E8E6A7 /* NoticeAndBackupUITests.swift in Sources */,
+				E53C149D84A1DE338B4A6E78 /* VideoCardCrashUITests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -200,6 +227,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				56B0305B5D3847FC6B326502 /* ContentView.swift in Sources */,
+				EB627B9A7EB509D9E745A635 /* EchGateBootstrap.swift in Sources */,
 				307C2654CD5972A25FB7FD87 /* iOSApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -234,6 +262,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = me.lovehan1me.iosUITests;
 				PRODUCT_NAME = iosAppUITests;
 				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.10;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = iosApp;
@@ -259,6 +288,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = me.lovehan1me.iosUITests;
 				PRODUCT_NAME = iosAppUITests;
 				SDKROOT = auto;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 				SWIFT_VERSION = 5.10;
 				TARGETED_DEVICE_FAMILY = "1,2";
 				TEST_TARGET_NAME = iosApp;
@@ -271,6 +301,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/../shared/build/bin",
+					"\"libs\"",
 				);
 				INFOPLIST_FILE = iosApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -280,6 +311,7 @@
 				OTHER_LDFLAGS = "$(inherited) -framework ComposeApp";
 				PRODUCT_BUNDLE_IDENTIFIER = me.lovehan1me.ios;
 				PRODUCT_NAME = LoveHan1me;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 			};
 			name = Debug;
 		};
@@ -289,6 +321,7 @@
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/../shared/build/bin",
+					"\"libs\"",
 				);
 				INFOPLIST_FILE = iosApp/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
@@ -298,6 +331,7 @@
 				OTHER_LDFLAGS = "$(inherited) -framework ComposeApp";
 				PRODUCT_BUNDLE_IDENTIFIER = me.lovehan1me.ios;
 				PRODUCT_NAME = LoveHan1me;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
 			};
 			name = Release;
 		};

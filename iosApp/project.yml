@@ -47,10 +47,17 @@ targets:
         # 没有它，系统把 App 当老应用跑兼容信箱模式，在新比例 iPhone 上下补黑边
         # （iPhone 17 模拟器实测）。空字典即默认启动屏，只起“声明新屏支持”作用。
         UILaunchScreen: {}
+        # ECH 网关走 http://127.0.0.1 明文回环：没有它，ATS 直接掐掉网关流量。
+        # NSAllowsLocalNetworking 只放行本地网络，对外仍强制 HTTPS。
+        NSAppTransportSecurity:
+          NSAllowsLocalNetworking: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: me.lovehan1me.ios
         PRODUCT_NAME: LoveHan1me
+        # CLI 下 destination 只列出 macOS 的根因：SDKROOT=auto 且无显式平台声明时，
+        # Xcode 26 把 target 解析成 macOS。显式声明双平台（与 SDKROOT=auto 共存）。
+        SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
         # Kotlin/Native 共享框架的输出目录（Gradle 按 sdk 与架构落盘）
         FRAMEWORK_SEARCH_PATHS:
           - "$(inherited)"
@@ -62,6 +69,11 @@ targets:
     dependencies:
       # xcodegen 不直接支持 Gradle 框架产物，改由脚本阶段产出并手动链接
       - sdk: UIKit.framework
+      # 本地 ECH 网关运行时（`echgate/build-ios.sh` 产物，gomobile xcframework）。
+      # embed+codeSign：随 App  bundle 分发并签名，真机缺签名会启动闪退。
+      - framework: libs/Echgate.xcframework
+        embed: true
+        codeSign: true
     preBuildScripts:
       # 构建前先编译共享模块框架（Kotlin 1.9.20+ 提供的集成任务）
       - name: Build Shared Kotlin Framework
@@ -83,6 +95,8 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: me.lovehan1me.iosUITests
+        # 与主 target 同理：无显式平台声明时 CLI 只认 macOS。
+        SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
         # 不显式给 PRODUCT_NAME 的话产物名是空的（-Runner.app / .xctest），
         # xcodegen 顶层 settings 也不会透传到这个 target，以下都得手写：
         PRODUCT_NAME: iosAppUITests
