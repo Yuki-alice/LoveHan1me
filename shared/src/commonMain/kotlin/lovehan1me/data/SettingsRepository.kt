@@ -56,7 +56,6 @@ object SettingsRepository : SettingsStore {
     val desktopBrowserUserAgent get() = current.desktopBrowserUserAgent
     val switchPlayerKernel get() = current.playerKernel.value
     val playerSpeed get() = current.playerSpeed
-    val slideSensitivity get() = current.slideSensitivity
     val longPressSpeedTime get() = current.longPressSpeedTime
     val videoLanguage get() = current.videoLanguage
     val videoQuality get() = current.videoQuality
@@ -111,6 +110,8 @@ object SettingsRepository : SettingsStore {
     val allowResumePlayback get() = current.allowResumePlayback
     /** 进入详情页是否自动播放（默认 false）。 */
     val autoPlayOnEnter get() = current.autoPlayOnEnter
+    /** 系列视频播完是否自动连播下一集（默认开，仅系列有效）。 */
+    val autoPlayNext get() = current.autoPlayNext
     val searchArtistIgnoreVideoType get() = current.searchArtistIgnoreVideoType
     val disableMobileDataWarning get() = current.disableMobileDataWarning
     val navBarStyle get() = current.navBarStyle
@@ -168,6 +169,9 @@ object SettingsRepository : SettingsStore {
     /** 进入详情页是否自动播放（默认关）。 */
     suspend fun setAutoPlayOnEnter(value: Boolean) = update { it.copy(autoPlayOnEnter = value) }
 
+    /** 系列视频播完是否自动连播下一集（默认开）。 */
+    suspend fun setAutoPlayNext(value: Boolean) = update { it.copy(autoPlayNext = value) }
+
     /** G2-3b：画面比例偏好（存"用户选的"，不管引擎能否生效）。 */
     suspend fun setVideoAspect(value: VideoAspectMode) = update { it.copy(videoAspect = value) }
 
@@ -204,7 +208,6 @@ object SettingsRepository : SettingsStore {
     suspend fun setDownloadStorage(usePrivate: Boolean, path: String?) = update { it.copy(usePrivateStorage = usePrivate, safDownloadPath = path) }
     suspend fun setDownloadCountLimit(value: Int) = update { it.copy(downloadCountLimit = value) }
     suspend fun setDownloadSpeedLimitIndex(value: Int) = update { it.copy(downloadSpeedLimitIndex = value.coerceIn(DOWNLOAD_SPEED_BYTES.indices)) }
-    suspend fun setSlideSensitivity(value: Int) = update { it.copy(slideSensitivity = value.coerceIn(1, 7)) }
     suspend fun setSubscriptionArtistRows(value: Int) = update { it.copy(subscriptionArtistRows = value.coerceIn(1, 3)) }
     suspend fun setHomeCategories(order: List<String>, hidden: Set<String>) = update { it.copy(homeCategoryOrder = order, hiddenHomeCategoryKeys = hidden) }
     suspend fun setCachedUpdateJson(value: String?) = update { it.copy(cachedUpdateJson = value) }

@@ -232,7 +232,7 @@ fun VideoPlayerUi(
     brightnessGestureEnabled: Boolean = true,
     onBrightnessChange: (Float) -> Unit = {},
     onProgressGesture: (Float) -> Unit = onProgressChange,
-    progressGestureSensitivity: Float = PlayerDefaults.DEFAULT_PROGRESS_SLIDE_SENSITIVITY.toFloat(),
+    progressGestureSensitivity: Float = PlayerDefaults.PROGRESS_SLIDE_SENSITIVITY,
     videoAspectRatio: Float = 16f / 9f,
     /**
      * 弹幕绘制层插槽。null = 不画（未配置数据源、PiP、首帧未到都由调用方决定）。
@@ -255,6 +255,12 @@ fun VideoPlayerUi(
     bilibiliStyle: Boolean = false,
     /** 下一集（系列视频才有，null = 不显示）。只在 [bilibiliStyle] 底栏使用。 */
     onNextClick: (() -> Unit)? = null,
+    /**
+     * 系列自动连播开关值 + 变更回调（与 [onNextClick] 同条件透传到底栏，
+     * 单片时不展示，见 PlayerBottomBar）。
+     */
+    autoPlayNext: Boolean = true,
+    onAutoPlayNextChange: (Boolean) -> Unit = {},
     /**
      * animeko 的「expanded」形态（宽屏双栏 / 全屏）：底栏进度条从"内联在图标之间"
      * 切换为"独占一行"。
@@ -905,6 +911,8 @@ fun VideoPlayerUi(
             selectedVideoAspect = selectedVideoAspect,
             onVideoAspectSelected = onVideoAspectSelected,
             onNextClick = onNextClick,
+            autoPlayNext = autoPlayNext,
+            onAutoPlayNextChange = onAutoPlayNextChange,
             isFullscreen = isFullscreen,
             durationMs = durationMs,
             expanded = expanded,

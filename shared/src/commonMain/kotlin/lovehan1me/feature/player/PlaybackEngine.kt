@@ -9,7 +9,13 @@ typealias PictureAdjust = lovehan1me.core.domain.model.PictureAdjust
 object PlayerDefaults {
     const val DEFAULT_SPEED = 1f
     const val DEFAULT_SPEED_INDEX = 2
-    const val DEFAULT_PROGRESS_SLIDE_SENSITIVITY = 4
+    /**
+     * 进度滑动手势灵敏度：进度增量 = `拖动位移 / (屏宽 × 本值)`，所以**数值越大越迟钝**。
+     *
+     * 2.25f 即满幅横滑走约 44% 进度 —— 原设置页默认档（4 档）的实际手感，
+     * 设置项删掉后把这个值冻在这里，三端唯一来源。
+     */
+    const val PROGRESS_SLIDE_SENSITIVITY = 2.25f
     const val DEFAULT_LONG_PRESS_SPEED_MULTIPLIER = 2.5f
     val speeds = floatArrayOf(
         0.5f,

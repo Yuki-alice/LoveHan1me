@@ -37,6 +37,7 @@ import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import lovehan1me.Res
+import lovehan1me.auto_play_next_short
 import lovehan1me.ic_fullscreen
 import lovehan1me.ic_fullscreen_exit
 import lovehan1me.ic_pause
@@ -49,6 +50,8 @@ import lovehan1me.feature.player.PlaybackQuality
 import lovehan1me.feature.player.PlayerDefaults
 import lovehan1me.feature.player.VideoAspectMode
 import lovehan1me.player_speed_format
+import lovehan1me.switch_off
+import lovehan1me.switch_on
 import lovehan1me.speed
 import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.theme.HanimeDefaults
@@ -102,6 +105,12 @@ internal fun BoxScope.PlayerBottomBar(
     onVideoAspectSelected: (VideoAspectMode) -> Unit = {},
     /** 下一集（系列视频才有，null = 不显示）。 */
     onNextClick: (() -> Unit)? = null,
+    /**
+     * 系列自动连播开关值 + 变更回调。只在系列上下文（[onNextClick] 非空）展示，
+     * 单片无下一集，出开关等于骗人（与「下一集」键同条件）。
+     */
+    autoPlayNext: Boolean = true,
+    onAutoPlayNextChange: (Boolean) -> Unit = {},
     /** 是否全屏：全屏键图标随状态切换。 */
     isFullscreen: Boolean = false,
     /** 视频总时长（毫秒）。> 0 时进度条才启用时间预览气泡与上滑取消 seek。 */
@@ -276,6 +285,22 @@ internal fun BoxScope.PlayerBottomBar(
                             onSelected = onQualitySelected,
                             onOpenChange = ::menuOpenChanged,
                         )
+                        if (onNextClick != null) {
+                            KazumiTextMenu(
+                                label = stringResource(Res.string.auto_play_next_short) +
+                                    stringResource(
+                                        if (autoPlayNext) Res.string.switch_on
+                                        else Res.string.switch_off
+                                    ),
+                                options = listOf(
+                                    stringResource(Res.string.switch_off),
+                                    stringResource(Res.string.switch_on),
+                                ),
+                                selectedIndex = if (autoPlayNext) 1 else 0,
+                                onSelected = { index -> onAutoPlayNextChange(index == 1) },
+                                onOpenChange = ::menuOpenChanged,
+                            )
+                        }
                         if (fullscreenEnabled) {
                             IconButton(onClick = onFullscreenClick) {
                                 Icon(
@@ -374,6 +399,22 @@ internal fun BoxScope.PlayerBottomBar(
                                 onSelected = onQualitySelected,
                                 onOpenChange = ::menuOpenChanged,
                             )
+                            if (onNextClick != null) {
+                                KazumiTextMenu(
+                                    label = stringResource(Res.string.auto_play_next_short) +
+                                        stringResource(
+                                            if (autoPlayNext) Res.string.switch_on
+                                            else Res.string.switch_off
+                                        ),
+                                    options = listOf(
+                                        stringResource(Res.string.switch_off),
+                                        stringResource(Res.string.switch_on),
+                                    ),
+                                    selectedIndex = if (autoPlayNext) 1 else 0,
+                                    onSelected = { index -> onAutoPlayNextChange(index == 1) },
+                                    onOpenChange = ::menuOpenChanged,
+                                )
+                            }
                         }
                         if (fullscreenEnabled) {
                             IconButton(onClick = onFullscreenClick) {

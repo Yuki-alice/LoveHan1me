@@ -20,7 +20,7 @@ import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.core.domain.model.ThemeMode
 import lovehan1me.core.domain.model.VideoAspectMode
 import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
-import lovehan1me.core.domain.model.normalizeLegacySlideSensitivity
+import lovehan1me.core.domain.model.normalizeLongPressSpeed
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -46,7 +46,6 @@ import okio.Path.Companion.toPath
 object DataStoreManager : SettingsStore {
     // 旧实现是 preferencesDataStoreFile("settings")，实际落盘名带 .preferences_pb 后缀
     private const val FILE_NAME = "settings.preferences_pb"
-    private const val SLIDE_MIGRATED = "slide_sensitivity_v2_migrated"
 
     /** 命名筛选预设整表序列化后放这个键上（见 [AppSettings.searchFilterPresets]）。 */
     private const val KEY_SEARCH_FILTER_PRESETS = "search_filter_presets"
@@ -82,7 +81,6 @@ object DataStoreManager : SettingsStore {
                 produceFile = { dataStoreFilePath(FILE_NAME).toPath() },
             )
             runBlockingIo {
-                normalizeLegacySlideSensitivity()
                 val initial = dataStore.data.first().toAppSettings()
                 dataStore.edit { it.write(initial) }
                 mutableSettings.value = initial
@@ -117,16 +115,6 @@ object DataStoreManager : SettingsStore {
     }
 
     fun exportBackup(): Map<String, Any> = current.toMap().filterKeys { it !in AUTH_KEYS }
-
-    private suspend fun normalizeLegacySlideSensitivity() {
-        dataStore.edit { preferences ->
-            if (preferences.bool(SLIDE_MIGRATED, false)) return@edit
-            val stored = preferences.intOrNull("slide_sensitivity")
-            preferences[intPreferencesKey("slide_sensitivity")] =
-                normalizeLegacySlideSensitivity(stored)
-            preferences[booleanPreferencesKey(SLIDE_MIGRATED)] = true
-        }
-    }
 
     private fun Preferences.toAppSettings(): AppSettings = AppSettings(
         appLanguage = AppLanguage.fromPreference(string("app_language", defaults.appLanguage.preferenceValue)),
@@ -167,12 +155,13 @@ object DataStoreManager : SettingsStore {
         downloadCountLimit = int("download_count_limit", defaults.downloadCountLimit), downloadSpeedLimitIndex = intInRange("download_speed_limit", defaults.downloadSpeedLimitIndex, DOWNLOAD_SPEED_BYTES.indices),
         usePrivateStorage = bool("use_private_storage", defaults.usePrivateStorage), safDownloadPath = nullableString("saf_download_path"), collapseDownloadedGroup = bool("collapse_downloaded_group", defaults.collapseDownloadedGroup),
         playerKernel = PlayerKernel.fromValue(string("switch_player_kernel", defaults.playerKernel.value)),
-        playerSpeed = floatString("player_speed", defaults.playerSpeed), slideSensitivity = intInRange("slide_sensitivity", defaults.slideSensitivity, 1..7), longPressSpeedTime = floatString("long_press_speed_times", defaults.longPressSpeedTime),
+        playerSpeed = floatString("player_speed", defaults.playerSpeed), longPressSpeedTime = normalizeLongPressSpeed(floatString("long_press_speed_times", defaults.longPressSpeedTime)),
         videoLanguage = string("video_language", defaults.videoLanguage), videoQuality = string("default_video_quality", defaults.videoQuality), showPlayedIndicator = bool("show_played_indicator", defaults.showPlayedIndicator),
         videoAspect = VideoAspectMode.fromValue(string("video_aspect", defaults.videoAspect.value)),
         pictureBrightness = floatString("picture_brightness", defaults.pictureBrightness), pictureContrast = floatString("picture_contrast", defaults.pictureContrast), pictureSaturation = floatString("picture_saturation", defaults.pictureSaturation),
         allowResumePlayback = bool("allow_resume_playback", defaults.allowResumePlayback),
         autoPlayOnEnter = bool("auto_play_on_enter", defaults.autoPlayOnEnter),
+        autoPlayNext = bool("auto_play_next", defaults.autoPlayNext),
         danmakuEnabled = bool("danmaku_enabled", defaults.danmakuEnabled), danmakuCommentEnabled = bool("danmaku_comment_enabled", defaults.danmakuCommentEnabled), danmakuProxyBase = string("danmaku_proxy_base", defaults.danmakuProxyBase), danmakuAppId = danmakuCredentials().first, danmakuAppSecret = danmakuCredentials().second,
         danmakuFontSizeSp = int("danmaku_font_size", defaults.danmakuFontSizeSp), danmakuOpacityPercent = int("danmaku_opacity", defaults.danmakuOpacityPercent), danmakuDisplayAreaPercent = int("danmaku_display_area", defaults.danmakuDisplayAreaPercent), danmakuSpeedPercent = int("danmaku_speed", defaults.danmakuSpeedPercent), danmakuShowScroll = bool("danmaku_show_scroll", defaults.danmakuShowScroll), danmakuShowTop = bool("danmaku_show_top", defaults.danmakuShowTop), danmakuShowBottom = bool("danmaku_show_bottom", defaults.danmakuShowBottom),
         mpvProfile = string("mpv_profile", defaults.mpvProfile), enableGpuNextRenderer = bool("mpv_gpu_next_render", defaults.enableGpuNextRenderer), mpvInterpolation = bool("mpv_interpolation", defaults.mpvInterpolation),
@@ -199,7 +188,6 @@ object DataStoreManager : SettingsStore {
         remove(stringPreferencesKey(LEGACY_KEY_CF_COOKIE))
         remove(stringPreferencesKey(LEGACY_KEY_CF_COOKIE_HOST))
         value.toMap().forEach { (name, raw) -> putRaw(name, raw) }
-        this[booleanPreferencesKey(SLIDE_MIGRATED)] = true
     }
 
     private fun AppSettings.toMap(): Map<String, Any> = buildMap {
@@ -208,7 +196,7 @@ object DataStoreManager : SettingsStore {
         put("usage_notice_accepted_v2", usageNoticeAccepted); put("already_login", isAlreadyLogin); put("local_list_notice_dismissed", localListNoticeDismissed); put("saved_user_id", savedUserId); put("cookie", loginCookie); put(KEY_CF_COOKIES, encodeCfCookies(cfCookies)); put("desktop_browser_user_agent", desktopBrowserUserAgent)
         put("domain_name", domainName); put("selectedBaseUrl", selectedBaseUrl); put("use_custom_mirror_site", useCustomMirrorSite); put("custom_mirror_site", customMirrorSite); put("append_custom_mirror_path", appendCustomMirrorPath); put("use_built_in_hosts", useBuiltInHosts); put("auto_built_in_hosts", autoBuiltInHosts); put("use_ech_gate", useEchGate); put("custom_hosts_data", customHostsData); put("use_doh", useDoH); put("doh_preset", dohPreset); put("doh_custom_url", dohCustomUrl); put("doh_bootstrap_ips", dohBootstrapIps); put("doh_timeout_seconds", dohTimeoutSeconds); put("proxy_type", proxyType.id); put("proxy_ip", proxyIp); put("proxy_port", proxyPort)
         cachedUpdateJson?.let { put("app_update_cached_json", it) }; put("app_update_ignored_version_code", ignoredVersionCode); put("download_count_limit", downloadCountLimit); put("download_speed_limit", downloadSpeedLimitIndex); put("use_private_storage", usePrivateStorage); safDownloadPath?.let { put("saf_download_path", it) }; put("collapse_downloaded_group", collapseDownloadedGroup)
-        put("switch_player_kernel", playerKernel.value); put("player_speed", playerSpeed.toString()); put("slide_sensitivity", slideSensitivity); put("long_press_speed_times", longPressSpeedTime.toString()); put("video_language", videoLanguage); put("default_video_quality", videoQuality); put("show_played_indicator", showPlayedIndicator); put("allow_resume_playback", allowResumePlayback); put("auto_play_on_enter", autoPlayOnEnter)
+        put("switch_player_kernel", playerKernel.value); put("player_speed", playerSpeed.toString()); put("long_press_speed_times", longPressSpeedTime.toString()); put("video_language", videoLanguage); put("default_video_quality", videoQuality); put("show_played_indicator", showPlayedIndicator); put("allow_resume_playback", allowResumePlayback); put("auto_play_on_enter", autoPlayOnEnter); put("auto_play_next", autoPlayNext)
         put("video_aspect", videoAspect.value); put("picture_brightness", pictureBrightness.toString()); put("picture_contrast", pictureContrast.toString()); put("picture_saturation", pictureSaturation.toString())
         put("danmaku_enabled", danmakuEnabled); put("danmaku_comment_enabled", danmakuCommentEnabled); put("danmaku_proxy_base", danmakuProxyBase)
         put("danmaku_font_size", danmakuFontSizeSp); put("danmaku_opacity", danmakuOpacityPercent); put("danmaku_display_area", danmakuDisplayAreaPercent); put("danmaku_speed", danmakuSpeedPercent); put("danmaku_show_scroll", danmakuShowScroll); put("danmaku_show_top", danmakuShowTop); put("danmaku_show_bottom", danmakuShowBottom)

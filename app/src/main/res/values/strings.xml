@@ -102,7 +102,6 @@
     <string name="search_grid_columns_current_bucket_hint">Current hit bucket: portrait %1$s = %2$d columns, landscape %3$s = %4$d columns</string>
     <string name="search_grid_columns_current_portrait">Current Portrait</string>
     <string name="search_grid_columns_current_landscape">Current Landscape</string>
-    <string name="current_slide_sensitivity">Current Sensitivity: %s</string>
     <string name="network">Network</string>
     <string name="proxy">Proxy</string>
     <string name="port">Port</string>
@@ -248,16 +247,7 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="clear_success">Clear Successful</string>
     <string name="clear_failed">Clear Failed</string>
     <string name="cache_empty">The current cache is empty, no need to clean</string>
-    <string name="d_speed_times">%.1f times</string>
-    <string name="high">High</string>
-    <string name="moderately_high">Moderately High</string>
-    <string name="moderate">Moderate</string>
-    <string name="slightly_low">Slightly Low</string>
-    <string name="low">Low</string>
-    <string name="very_low">Very Low</string>
-    <string name="extremely_low">Extremely Low</string>
-    <string name="slightly_high">Slightly High</string>
-    <string name="extremely_high">Extremely High</string>
+    <string name="d_speed_times">%1$s times</string>
     <string name="domain_change_tips">Switching the domain name reloads the app immediately — no restart needed!\n
 Different domains do not share the same cookies, so after changing the domain name, you need to log in again.\n
 So, except for hanime1.me, other domain names may redirect back to hanime1.me at certain times, which may cause cookies to expire\n
@@ -291,7 +281,6 @@ Recommendations are as follows:\n
     <string name="secure_mode_summary">Block screenshots and protect recent-app previews</string>
     <string name="fun_loading_hints">More playful loading messages</string>
     <string name="fun_loading_hints_summary">You are as cute as ever today~</string>
-    <string name="slide_sensitivity">Slide Sensitivity for Progress Adjustment</string>
     <string name="apply_deep_links">Apply Deep Links</string>
     <string name="apply_deep_links_summary">After application, quickly jump to this app when opening relevant web pages</string>
     <string name="apply_deep_links_tips">MIUI has hidden this interface, so you need to open it from here and then add the link.</string>

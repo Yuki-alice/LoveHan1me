@@ -8,18 +8,10 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.data.SettingsRepository
 import lovehan1me.Res
-import lovehan1me.current_slide_sensitivity
 import lovehan1me.default_
 import lovehan1me.d_speed_times
-import lovehan1me.extremely_high
-import lovehan1me.extremely_low
-import lovehan1me.high
-import lovehan1me.low
-import lovehan1me.moderate
 import lovehan1me.mpv_advanced_settings_summary
 import lovehan1me.mpv_settings_disabled_summary
-import lovehan1me.slightly_high
-import lovehan1me.slightly_low
 import lovehan1me.feature.player.PlayerDefaults
 import lovehan1me.feature.player.PlayerKernel
 import lovehan1me.feature.settings.PlayerSettingsScreen
@@ -28,15 +20,28 @@ import lovehan1me.core.domain.model.AppSettings
 import lovehan1me.core.platform.SettingsPlatformCapabilities
 import lovehan1me.core.platform.settingsPlatformCapabilities
 import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 
 /**
- * 长按速播的可选倍率。
+ * 长按速播的可选倍率：2.0~5.0，步进 0.5，共 7 档。
  *
  * 「(默认)」标注**由真实默认值决定**（见 [PlayerSettingsRouteScreen] 里的比较），
  * 不再写死在字面量上：此前默认值从 2.5f 改成 3f 时标签没跟着改，
  * 用户看到的「默认」和实际默认不是同一个值。
  */
-private val LONG_PRESS_SPEED_CHOICES = listOf(1f, 1.5f, 2f, 2.5f, 2.8f, 3f, 3.2f, 3.5f, 3.8f, 4f)
+internal val LONG_PRESS_SPEED_CHOICES = listOf(2f, 2.5f, 3f, 3.5f, 4f, 4.5f, 5f)
+
+/**
+ * 倍率 → 一位小数字符串（`%.1f` 等价），喂给 `%1$s` 模板。
+ *
+ * CMP 的 `stringResource` 只替换 `%n$s`/`%n$d`，printf 式 `%.1f` 原样透出
+ * （曾导致行值/摘要直接显示 `%.1f倍`），所以格式化必须在 Kotlin 侧完成。
+ * commonMain 无 `String.format`，按整数缩放 HALF_UP 后拼串。
+ */
+internal fun formatSpeedTimes(speed: Float): String {
+    val tenths = (speed * 10).roundToInt()
+    return "${tenths / 10}.${tenths % 10}"
+}
 
 @Composable
 fun PlayerSettingsRouteScreen(
@@ -53,7 +58,7 @@ fun PlayerSettingsRouteScreen(
     val capabilities = remember { settingsPlatformCapabilities() }
     val longPressDisplayTop = stringResource(
         Res.string.d_speed_times,
-        SettingsRepository.longPressSpeedTime
+        formatSpeedTimes(SettingsRepository.longPressSpeedTime)
     )
     val mpvSummaryTop =
         // ⚠️ 摘要必须与 `mpvSettingsEnabled` 用**同一个判据**：否则桌面（内核选择已被隐藏，
@@ -63,25 +68,11 @@ fun PlayerSettingsRouteScreen(
         } else {
             stringResource(Res.string.mpv_settings_disabled_summary)
         }
-    val sensitivitySummaryTop = toPrettySensitivityString(
-        SettingsRepository.slideSensitivity,
-        listOf(
-            stringResource(Res.string.extremely_low),
-            stringResource(Res.string.low),
-            stringResource(Res.string.slightly_low),
-            stringResource(Res.string.moderate),
-            stringResource(Res.string.slightly_high),
-            stringResource(Res.string.high),
-            stringResource(Res.string.extremely_high),
-        ),
-        stringResource(Res.string.current_slide_sensitivity),
-    )
-    val uiState = remember(settings, longPressDisplayTop, mpvSummaryTop, sensitivitySummaryTop) {
+    val uiState = remember(settings, longPressDisplayTop, mpvSummaryTop) {
         buildPlayerSettingsUiState(
             capabilities = capabilities,
             longPressDisplay = longPressDisplayTop,
             mpvSettingsSummary = mpvSummaryTop,
-            slideSensitivitySummary = sensitivitySummaryTop,
         )
     }
     val longPressDefault = AppSettings().longPressSpeedTime
@@ -92,7 +83,7 @@ fun PlayerSettingsRouteScreen(
         kernelOptions = PlayerKernel.entries.map { it.name to it.name },
         speedOptions = PlayerDefaults.speedLabels.zip(PlayerDefaults.speeds.map { it.toString() }),
         longPressSpeedOptions = LONG_PRESS_SPEED_CHOICES.map { speed ->
-            val label = stringResource(Res.string.d_speed_times, speed)
+            val label = stringResource(Res.string.d_speed_times, formatSpeedTimes(speed))
             // ⚠️ 选项值必须与 `longPressSpeedTimes`（= 存储值的 `toString()`）**逐字符相同**：
             // ChoiceDialog 用 `selectedValue == value` 判选中（ui/component/ChoiceDialog.kt:44）。
             // 上游原先写死 "1"/"2"/"3"/"4"，而 `3f.toString()` 是 "3.0" —— 于是**默认档在对话框里
@@ -110,8 +101,8 @@ fun PlayerSettingsRouteScreen(
         onLongPressSpeedChange = {
             coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(longPressSpeedTime = it.toFloatOrNull() ?: settings.longPressSpeedTime) } }
         },
-        onSlideSensitivityChange = {
-            coroutineScope.launch { SettingsRepository.setSlideSensitivity(it) }
+        onAutoPlayNextChange = { enabled ->
+            coroutineScope.launch { SettingsRepository.setAutoPlayNext(enabled) }
         },
         onOpenMpvSettings = onNavigateToMpvSettings,
         onPictureBrightnessChange = { value ->
@@ -196,7 +187,6 @@ private fun buildPlayerSettingsUiState(
     capabilities: SettingsPlatformCapabilities,
     longPressDisplay: String,
     mpvSettingsSummary: String,
-    slideSensitivitySummary: String,
 ): PlayerSettingsUiState {
     val kernel = SettingsRepository.switchPlayerKernel
     // 弹幕四项同源于一个快照：分四次读 `settings.value` 会读到跨写入的中间态
@@ -221,8 +211,7 @@ private fun buildPlayerSettingsUiState(
         playerSpeedLabel = speedDisplay,
         longPressSpeedTimes = currentLongPressSpeed.toString(),
         longPressSpeedTimesLabel = longPressDisplay,
-        slideSensitivity = SettingsRepository.slideSensitivity,
-        slideSensitivitySummary = slideSensitivitySummary,
+        autoPlayNext = SettingsRepository.autoPlayNext,
         // G2-3b：画面调节 —— 按平台能力（有没有 mpv）决定是否列出，并如实标注"仅 mpv 生效"
         showPictureAdjust = capabilities.mpvAdvancedSettings,
         pictureBrightness = SettingsRepository.pictureAdjust.brightness.toInt(),

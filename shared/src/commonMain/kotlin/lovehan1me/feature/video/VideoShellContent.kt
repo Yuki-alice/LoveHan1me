@@ -63,6 +63,12 @@ fun VideoShellContent(
     onLockClick: () -> Unit,
     /** 下一集（系列视频才有，null = 不显示）。只在 B 站风底栏使用。 */
     onNextClick: (() -> Unit)? = null,
+    /**
+     * 系列自动连播开关值 + 变更回调（与 [onNextClick] 同条件透传，
+     * 单片时底栏不展示，见 PlayerBottomBar）。
+     */
+    autoPlayNext: Boolean = true,
+    onAutoPlayNextChange: (Boolean) -> Unit = {},
     onProgressChange: (Float) -> Unit,
     onRetry: () -> Unit,
     onResumeClick: () -> Unit,
@@ -197,6 +203,8 @@ fun VideoShellContent(
             onFullscreenClick = onFullscreenClick,
             onLockClick = onLockClick,
             onNextClick = onNextClick,
+            autoPlayNext = autoPlayNext,
+            onAutoPlayNextChange = onAutoPlayNextChange,
             onProgressChange = onProgressChange,
             onRetry = onRetry,
             onResumeClick = onResumeClick,

@@ -102,7 +102,6 @@
     <string name="search_grid_columns_current_bucket_hint">目前套用區間：直向 %1$s = %2$d 欄，橫向 %3$s = %4$d 欄</string>
     <string name="search_grid_columns_current_portrait">目前直向</string>
     <string name="search_grid_columns_current_landscape">目前橫向</string>
-    <string name="current_slide_sensitivity">目前靈敏度：%s</string>
     <string name="network">網路</string>
     <string name="proxy">代理</string>
     <string name="port">連接埠</string>
@@ -247,16 +246,7 @@
     <string name="clear_success">清除成功</string>
     <string name="clear_failed">清除時發生錯誤</string>
     <string name="cache_empty">目前快取為空，不需要清理哦</string>
-    <string name="d_speed_times">%.1f 倍</string>
-    <string name="high">高</string>
-    <string name="moderately_high">較高</string>
-    <string name="moderate">中等</string>
-    <string name="slightly_low">稍低</string>
-    <string name="low">低</string>
-    <string name="very_low">很低</string>
-    <string name="extremely_low">極低</string>
-    <string name="slightly_high">稍高</string>
-    <string name="extremely_high">極高</string>
+    <string name="d_speed_times">%1$s 倍</string>
     <string name="domain_change_tips">切換網域後會立即重新載入，無需重新啟動程式！\n不同網域不共用 Cookie，因此更換網域後需要重新登入。\n所以除了 hanime1.me 以外的網域可能在某些時段重新導向回 hanime1.me，這可能導致 Cookie 失效\n\n建議如下：\n· 無 VPN 使用者，使用 hanime1.me 並開啟內建 Hosts\n· 日本使用者，使用 hanime1.com\n· 其他地區使用者，使用 hanime1.me 並關閉內建 Hosts</string>
     <string name="not_logged_in_currently">目前未登入</string>
     <string name="login_state_expired">登入狀態已失效，已自動登出，請重新登入</string>
@@ -283,7 +273,6 @@
     <string name="secure_mode_summary">阻止截圖並保護背景預覽圖</string>
     <string name="fun_loading_hints">更有趣的載入文案</string>
     <string name="fun_loading_hints_summary">今天也很可愛哦~</string>
-    <string name="slide_sensitivity">滑動調整進度的靈敏度</string>
     <string name="apply_deep_links">套用深層連結</string>
     <string name="apply_deep_links_summary">套用後，開啟相關網頁時可快速跳轉至此 App</string>
     <string name="apply_deep_links_tips">MIUI 隱藏了此介面，因此你需要從這裡開啟並新增連結</string>

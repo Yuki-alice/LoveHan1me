@@ -28,7 +28,6 @@ import lovehan1me.danmaku_settings_credentials_hint
 import lovehan1me.danmaku_settings_comment_enabled
 import lovehan1me.danmaku_settings_enabled
 import lovehan1me.danmaku_settings_group
-import lovehan1me.danmaku_settings_match_hint
 import lovehan1me.danmaku_settings_proxy
 import lovehan1me.danmaku_settings_proxy_hint
 import lovehan1me.danmaku_settings_proxy_invalid
@@ -39,16 +38,16 @@ import lovehan1me.danmaku_opacity
 import lovehan1me.danmaku_display_area
 import lovehan1me.danmaku_speed
 import lovehan1me.danmaku_percent_value
+import lovehan1me.auto_play_next_title
+import lovehan1me.auto_play_next_summary
+import lovehan1me.ic_skip
 import lovehan1me.data.danmaku.asValidBaseUrl
 import lovehan1me.switch_player_kernel
-import lovehan1me.slide_sensitivity
 import lovehan1me.mpv_settings_disabled_summary
 import lovehan1me.mpv_advanced_settings
-import lovehan1me.moderate
 import lovehan1me.long_press_speed_summary
 import lovehan1me.long_press_speed_multiplier
 import lovehan1me.default_playback_speed
-import lovehan1me.current_slide_sensitivity
 import lovehan1me.player_settings_controls
 import lovehan1me.picture_adjust_reset
 import lovehan1me.picture_adjust_summary
@@ -66,7 +65,6 @@ import lovehan1me.ic_person
 import lovehan1me.ic_player_setting
 import lovehan1me.ic_router
 import lovehan1me.ic_speed
-import lovehan1me.ic_speed_flash
 import lovehan1me.ic_touch_long
 import lovehan1me.ic_visibility
 import lovehan1me.ic_visibility_off
@@ -108,8 +106,8 @@ data class PlayerSettingsUiState(
     val playerSpeedLabel: String,
     val longPressSpeedTimes: String,
     val longPressSpeedTimesLabel: String,
-    val slideSensitivity: Int,
-    val slideSensitivitySummary: String,
+    /** 系列自动连播（播完播下一集，仅系列有效）。 */
+    val autoPlayNext: Boolean,
     // ── G2-3b：画面调节（仅 mpv 内核真的生效）────────────────────
     /**
      * 是否列出「画面调节」。
@@ -167,7 +165,7 @@ fun PlayerSettingsScreen(
     onKernelChange: (String) -> Unit,
     onPlayerSpeedChange: (String) -> Unit,
     onLongPressSpeedChange: (String) -> Unit,
-    onSlideSensitivityChange: (Int) -> Unit,
+    onAutoPlayNextChange: (Boolean) -> Unit = {},
     onOpenMpvSettings: () -> Unit,
     // G2-3b：画面调节
     onPictureBrightnessChange: (Int) -> Unit = {},
@@ -317,13 +315,12 @@ fun PlayerSettingsScreen(
                     iconRes = Res.drawable.ic_touch_long,
                     onClick = { activeDialog = PlayerChoiceDialog.LongPressSpeed },
                 )
-                SettingSliderItem(
-                    title = stringResource(Res.string.slide_sensitivity),
-                    summary = state.slideSensitivitySummary,
-                    value = state.slideSensitivity,
-                    valueRange = 1..7,
-                    iconRes = Res.drawable.ic_speed_flash,
-                    onValueChange = onSlideSensitivityChange,
+                SettingSwitchItem(
+                    title = stringResource(Res.string.auto_play_next_title),
+                    summary = stringResource(Res.string.auto_play_next_summary),
+                    checked = state.autoPlayNext,
+                    iconRes = Res.drawable.ic_skip,
+                    onCheckedChange = onAutoPlayNextChange,
                 )
                 // ── G2-3b：画面调节（亮度 / 对比度 / 饱和度）──────────
                 // 区间与 mpv 的属性范围一致（-100~100，0 = 原始），步进 5 是"肉眼
@@ -369,7 +366,6 @@ fun PlayerSettingsScreen(
         // 项目**不内置**任何代理地址与密钥（弹弹play 官方政策禁止共享密钥）。
         segmentedSection(
             titleRes = Res.string.danmaku_settings_group,
-            descriptionRes = Res.string.danmaku_settings_match_hint,
         ) {
             segmentedGroup {
                 SettingSwitchItem(

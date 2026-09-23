@@ -102,7 +102,6 @@
     <string name="search_grid_columns_current_bucket_hint">当前命中档位：竖屏 %1$s = %2$d 列，横屏 %3$s = %4$d 列</string>
     <string name="search_grid_columns_current_portrait">当前竖屏</string>
     <string name="search_grid_columns_current_landscape">当前横屏</string>
-    <string name="current_slide_sensitivity">当前灵敏度：%s</string>
     <string name="network">网络</string>
     <string name="proxy">代理</string>
     <string name="port">端口</string>
@@ -249,16 +248,7 @@
     <string name="clear_success">清除成功</string>
     <string name="clear_failed">清除发生意外</string>
     <string name="cache_empty">当前缓存为空，无需清理哦</string>
-    <string name="d_speed_times">%.1f倍</string>
-    <string name="high">高</string>
-    <string name="moderately_high">较高</string>
-    <string name="moderate">适中</string>
-    <string name="slightly_low">稍低</string>
-    <string name="low">低</string>
-    <string name="very_low">很低</string>
-    <string name="extremely_low">极低</string>
-    <string name="slightly_high">稍高</string>
-    <string name="extremely_high">极高</string>
+    <string name="d_speed_times">%1$s倍</string>
     <string name="domain_change_tips">切换域名后会立即重新加载，无需重启程序！\n
 不同域名不共通 Cookie，所以更换域名后需要重新进行登录操作。\n
 所以除 hanime1.me 以外的域名可能在某些时间段会重定向回 hanime1.me，这可能导致 Cookie 失效\n
@@ -292,7 +282,6 @@
     <string name="secure_mode_summary">阻止截屏并保护后台预览图</string>
     <string name="fun_loading_hints">更有趣的加载文案</string>
     <string name="fun_loading_hints_summary">今天也很可爱哦~</string>
-    <string name="slide_sensitivity">滑动调整进度的灵敏度</string>
     <string name="apply_deep_links">应用深层链接</string>
     <string name="apply_deep_links_summary">应用后，打开相关网页后能快速跳转至本 App</string>
     <string name="apply_deep_links_tips">MIUI 隐藏了这个界面，所以你需要从这里打开然后添加链接</string>

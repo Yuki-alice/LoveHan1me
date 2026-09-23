@@ -12,15 +12,12 @@ val DOWNLOAD_SPEED_BYTES = longArrayOf(
     10240 * 1024L,
 )
 
-fun normalizeLegacySlideSensitivity(storedValue: Int?): Int = when (storedValue) {
-    1, 2 -> 6
-    3, 4 -> 5
-    5 -> 4
-    6 -> 3
-    7 -> 2
-    8, 9 -> 1
-    else -> AppSettings().slideSensitivity
-}
+/**
+ * 长按速播倍率读侧钳制到 2.0~5.0（设置页选项表 `LONG_PRESS_SPEED_CHOICES` 同界）。
+ * 不做数据迁移——历史值（1.x、>5 的备份导入）读出即落到边界。
+ * 不做 0.5 网格吸附：靠设置页选项收敛，钳制只兜越界脏值。
+ */
+fun normalizeLongPressSpeed(storedValue: Float): Float = storedValue.coerceIn(2f, 5f)
 
 enum class ThemeMode(val value: String) {
     Light("always_off"),
@@ -239,7 +236,6 @@ data class AppSettings(
     val collapseDownloadedGroup: Boolean = false,
     val playerKernel: PlayerKernel = PlayerKernel.ExoPlayer,
     val playerSpeed: Float = 1f,
-    val slideSensitivity: Int = 4,
     /** 长按速播倍率（对齐 animeko 默认 3x；设置里可改）。 */
     val longPressSpeedTime: Float = 3f,
     val videoLanguage: String = "zhs",
@@ -268,6 +264,14 @@ data class AppSettings(
      * 移动网络下尤其重要（此前是一进去就播，配上"移动数据提醒"才勉强兜住）。
      */
     val autoPlayOnEnter: Boolean = false,
+
+    /**
+     * 系列视频是否**播完自动连播下一集**。
+     *
+     * 默认 **true**：只有系列清单里"当前项的后一项"存在时才触发（见
+     * `shouldAutoPlayNext`），单片不受影响；关掉后底栏仍保留手动「下一集」键。
+     */
+    val autoPlayNext: Boolean = true,
 
     /**
      * 弹幕总开关。默认 **true**：接入方式由构建内置（见 [DanmakuBuildCredentials]），

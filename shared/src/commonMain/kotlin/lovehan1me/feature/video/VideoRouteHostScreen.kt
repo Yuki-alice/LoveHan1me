@@ -82,9 +82,11 @@ import lovehan1me.feature.player.ComposePlaybackController
 import lovehan1me.feature.player.PlaybackEngine
 import lovehan1me.feature.player.PlaybackPhase
 import lovehan1me.feature.player.PlaybackQuality
+import lovehan1me.feature.player.PlayerDefaults
 import lovehan1me.feature.player.PlayerKernel
 import lovehan1me.feature.player.createPlaybackEngine
 import lovehan1me.feature.player.isActiveNetworkMetered
+import lovehan1me.feature.player.shouldAutoPlayNext
 import lovehan1me.feature.danmaku.DanmakuLayer
 import lovehan1me.feature.danmaku.DanmakuControls
 import lovehan1me.feature.danmaku.rememberDanmakuRenderOptions
@@ -704,6 +706,21 @@ fun VideoRouteHostScreen(
         if (playingIndex >= 0) playlist.getOrNull(playingIndex + 1) else null
     }
 
+    // 系列自动连播：播完（Ended 跃迁）+ 开关开 + 有下一集 → 走与手动「下一集」
+    // 同一条导航。新页面 phase 从头开始，不会连环触发；单片/尾集/开关关闭
+    // 时 shouldAutoPlayNext 为 false，原地停在结束态（行为与之前一致）。
+    val autoPlayNext = SettingsRepository.settings.collectAsStateWithLifecycle().value.autoPlayNext
+    LaunchedEffect(playbackState.engine.phase, autoPlayNext, nextPlaylistItem) {
+        if (shouldAutoPlayNext(
+                playbackState.engine.phase,
+                autoPlayNext,
+                nextPlaylistItem != null,
+            )
+        ) {
+            nextPlaylistItem?.let { onNavigateToVideo(it.videoCode) }
+        }
+    }
+
     // 简介/评论 Tab 只有一处装配：窄屏播放器下方（wideRail=false）与
     // Animeko 宽屏右栏（wideRail=true：弹幕占位条 + 标题收藏钮）共用，改只改这里。
     @Composable
@@ -936,7 +953,7 @@ fun VideoRouteHostScreen(
             val duration = playbackState.engine.durationMs
             if (duration > 0L) playbackController.seekTo((duration * value).toLong())
         },
-        progressGestureSensitivity = realProgressSensitivity(SettingsRepository.slideSensitivity),
+        progressGestureSensitivity = PlayerDefaults.PROGRESS_SLIDE_SENSITIVITY,
         videoAspectRatio = if (
             playbackState.engine.videoWidth > 0 &&
             playbackState.engine.videoHeight > 0
@@ -973,6 +990,8 @@ fun VideoRouteHostScreen(
         onNextClick = nextPlaylistItem?.let { item ->
             { onNavigateToVideo(item.videoCode) }
         },
+        autoPlayNext = autoPlayNext,
+        onAutoPlayNextChange = { scope.launch { SettingsRepository.setAutoPlayNext(it) } },
         tabsContent = {
             HostVideoTabs(wideRail = false)
         },
@@ -1093,8 +1112,3 @@ private data class PendingPlayback(
     val artworkUri: String?,
     val startPositionMs: Long,
 )
-
-private fun realProgressSensitivity(value: Int): Float {
-    val clampedValue = value.coerceIn(1, 7)
-    return 4f - (clampedValue - 1) * (3.5f / 6f)
-}

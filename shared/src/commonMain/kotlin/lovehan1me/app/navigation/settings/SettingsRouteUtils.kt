@@ -1,6 +1,5 @@
 package lovehan1me.app.navigation.settings
 
-import androidx.annotation.IntRange
 import lovehan1me.cache_usage_summary
 import lovehan1me.core.constant.HanimeConstants.AV_URL
 import lovehan1me.core.constant.HanimeConstants.HANIME_HOSTNAME
@@ -28,16 +27,6 @@ suspend fun generateClearCacheSummary(size: Long): String {
     // 模板 cache_usage_summary 仅含 <b> 对
     val raw = getString(Res.string.cache_usage_summary, size.formatFileSize())
     return Regex("<[^>]+>").replace(raw, "")
-}
-
-fun toPrettySensitivityString(
-    @IntRange(from = 1, to = 7) value: Int,
-    levelNames: List<String>,
-    currentTemplate: String,
-): String {
-    val pretty = levelNames.getOrNull(value - 1) ?: error("Invalid sensitivity value: $value")
-    // 模板 "Current Sensitivity: %s"，commonMain 外可用 replace（:app 侧）
-    return currentTemplate.replace("%s", pretty)
 }
 
 fun Long.toDownloadSpeedPrettyString(noLimitText: String): String {
