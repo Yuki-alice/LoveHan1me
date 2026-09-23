@@ -3,6 +3,8 @@ package lovehan1me.feature.player
 import kotlinx.coroutines.flow.StateFlow
 
 typealias PlayerKernel = lovehan1me.core.domain.model.PlayerKernel
+typealias VideoAspectMode = lovehan1me.core.domain.model.VideoAspectMode
+typealias PictureAdjust = lovehan1me.core.domain.model.PictureAdjust
 
 object PlayerDefaults {
     const val DEFAULT_SPEED = 1f
@@ -35,6 +37,9 @@ enum class PlaybackPhase {
     Error,
 }
 
+// 注：G2-3b 的 VideoAspectMode / PictureAdjust 定义在 core.domain.model（见文件头 typealias），
+// 因为 AppSettings 要持久化它们 —— 放在本包会让 core 反向依赖 feature。
+
 data class PlaybackEngineState(
     val phase: PlaybackPhase = PlaybackPhase.Idle,
     val isPlaying: Boolean = false,
@@ -47,6 +52,14 @@ data class PlaybackEngineState(
     val videoHeight: Int = 0,
     val hasRenderedFirstFrame: Boolean = false,
     val errorMessage: String? = null,
+    /**
+     * G2-3b：引擎**实际生效**的画面比例。
+     *
+     * 为什么放在引擎状态里而不是只记在 UI：有的引擎不支持某一档（Exo 没有 Stretch），
+     * 请求 [VideoAspectMode.Stretch] 后它会静默降级到 [VideoAspectMode.Fit]。
+     * 让引擎把真实生效值报出来，UI 才不会显示一个"选中了但其实没生效"的假状态。
+     */
+    val videoAspect: VideoAspectMode = VideoAspectMode.Fit,
 )
 
 data class PlaybackRequest(
@@ -97,6 +110,43 @@ interface PlaybackEngine {
      * 按名字判断会让桌面端永远看不到超分入口。
      */
     fun supportsSuperResolution(): Boolean = false
+
+    /**
+     * G2-3b：本引擎**真实支持**的画面比例档位（顺序即 UI 展示顺序）。
+     *
+     * 声明式而不是让 UI 去猜：Exo 只有 Fit / Crop（Media3 的 `setVideoScalingMode`
+     * 没有"拉伸"这一档），mpv 与 AVPlayer 三档全有。空列表 = 不支持 → UI 不出入口。
+     */
+    fun supportedAspectModes(): List<VideoAspectMode> = emptyList()
+
+    /** 便捷判断：至少两档可选时才值得出「画面比例」菜单（一档等于没得选）。 */
+    fun supportsVideoAspect(): Boolean = supportedAspectModes().size > 1
+
+    /**
+     * G2-3b：切换画面比例。
+     *
+     * 实现方**必须在下一帧起生效，且不能打断播放**（不是"重载视频才行"那种实现）——
+     * 否则用户拖着进度调的时候体验会很难看。
+     *
+     * 请求了 [supportedAspectModes] 之外的档位时，实现应当**降级到 Fit 并如实报状态**，
+     * 而不是抛异常或假装生效。
+     */
+    fun setVideoAspect(mode: VideoAspectMode) {}
+
+    /**
+     * G2-3b：是否支持画面调节（亮度/对比/饱和）。
+     *
+     * 与 [supportsSuperResolution] 同样的理由：**按能力判断，不要按内核名字判断**。
+     * 目前只有 mpv 内核（桌面 + Android mpv）返回 true。
+     */
+    fun supportsPictureAdjust(): Boolean = false
+
+    /**
+     * G2-3b：设置画面调节（各分量 -100 ~ 100，0 = 原始）。
+     *
+     * 与 [setVideoAspect] 同源约束：即时生效、不打断播放、不支持时静默忽略。
+     */
+    fun setPictureAdjust(brightness: Float, contrast: Float, saturation: Float) {}
 
     /**
      * M3-b：本引擎是否支持抓取渲染帧（GIF 录制 / 截图分享）。

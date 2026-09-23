@@ -59,7 +59,12 @@ configure<KotlinMultiplatformExtension> {
         // 启用 Android 宿主单测（androidUnitTest / androidDeviceTest 的"host test"）。
         // 不开的话 commonTest 只会被编译进 desktop / iOS，**Android 侧零覆盖**，
         // 迁移到 commonTest 的意义就废了一半。（Gradle 会打 WARNING 提示这一项）
-        withHostTest {}
+        withHostTest {
+            // commonTest 用例在 host 上执行会触达 android.util.Log（LogUtil 的 android actual
+            // 走 println）。不开这个，Log 抛 "not mocked" 异常打断弹幕加载协程 →
+            // DanmakuClockCadenceTest / DanmakuSessionTest 整组挂掉。
+            isReturnDefaultValues = true
+        }
         compilerOptions {
             jvmTarget.set(JvmTarget.JVM_21)
         }

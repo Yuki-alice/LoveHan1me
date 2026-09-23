@@ -10,6 +10,8 @@ import lovehan1me.core.domain.model.PlayerKernel
 import lovehan1me.core.domain.model.SearchFilterPreset
 import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.core.domain.model.ThemeMode
+import lovehan1me.core.domain.model.VideoAspectMode
+import lovehan1me.core.domain.model.PictureAdjust
 import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
 import lovehan1me.core.domain.model.cfCookieFor
 import lovehan1me.core.domain.model.cfCookieKeyFor
@@ -58,6 +60,14 @@ object SettingsRepository : SettingsStore {
     val longPressSpeedTime get() = current.longPressSpeedTime
     val videoLanguage get() = current.videoLanguage
     val videoQuality get() = current.videoQuality
+    /** G2-3b：画面比例偏好。引擎不支持时会降级，实际生效值看引擎状态。 */
+    val videoAspect get() = current.videoAspect
+    /** G2-3b：画面调节（仅 mpv 内核生效）。 */
+    val pictureAdjust get() = PictureAdjust(
+        brightness = current.pictureBrightness,
+        contrast = current.pictureContrast,
+        saturation = current.pictureSaturation,
+    )
     val showPlayedIndicator get() = current.showPlayedIndicator
     val isCheckInEnabled get() = current.checkInEnabled
     val baseUrl: String get() {
@@ -157,6 +167,26 @@ object SettingsRepository : SettingsStore {
 
     /** 进入详情页是否自动播放（默认关）。 */
     suspend fun setAutoPlayOnEnter(value: Boolean) = update { it.copy(autoPlayOnEnter = value) }
+
+    /** G2-3b：画面比例偏好（存"用户选的"，不管引擎能否生效）。 */
+    suspend fun setVideoAspect(value: VideoAspectMode) = update { it.copy(videoAspect = value) }
+
+    /** G2-3b：画面亮度（-100~100）。 */
+    suspend fun setPictureBrightness(value: Float) =
+        update { it.copy(pictureBrightness = PictureAdjust.clamp(value)) }
+
+    /** G2-3b：画面对比度（-100~100）。 */
+    suspend fun setPictureContrast(value: Float) =
+        update { it.copy(pictureContrast = PictureAdjust.clamp(value)) }
+
+    /** G2-3b：画面饱和度（-100~100）。 */
+    suspend fun setPictureSaturation(value: Float) =
+        update { it.copy(pictureSaturation = PictureAdjust.clamp(value)) }
+
+    /** G2-3b：一次性复位画面调节三件套。 */
+    suspend fun resetPictureAdjust() = update {
+        it.copy(pictureBrightness = 0f, pictureContrast = 0f, pictureSaturation = 0f)
+    }
 
     /** 落盘 CF 验证浏览器自报的真实 UA（供 HTTP 层对齐，见 currentHttpUserAgent 的 KDoc）。 */
     suspend fun setDesktopBrowserUserAgent(value: String) =

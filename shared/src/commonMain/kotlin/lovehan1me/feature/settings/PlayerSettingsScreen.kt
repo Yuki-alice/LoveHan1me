@@ -50,9 +50,16 @@ import lovehan1me.long_press_speed_multiplier
 import lovehan1me.default_playback_speed
 import lovehan1me.current_slide_sensitivity
 import lovehan1me.player_settings_controls
+import lovehan1me.picture_adjust_reset
+import lovehan1me.picture_adjust_summary
+import lovehan1me.picture_brightness
+import lovehan1me.picture_contrast
+import lovehan1me.picture_saturation
 import lovehan1me.ic_comment
 import lovehan1me.ic_fullscreen
 import lovehan1me.ic_h_text
+import lovehan1me.ic_light_mode
+import lovehan1me.ic_lightbulb
 import lovehan1me.ic_palette
 import lovehan1me.ic_lock
 import lovehan1me.ic_person
@@ -103,6 +110,19 @@ data class PlayerSettingsUiState(
     val longPressSpeedTimesLabel: String,
     val slideSensitivity: Int,
     val slideSensitivitySummary: String,
+    // ── G2-3b：画面调节（仅 mpv 内核真的生效）────────────────────
+    /**
+     * 是否列出「画面调节」。
+     *
+     * 判据是**平台能力**（有没有 mpv），与设置页其它 mpv 项同源：设置页没有引擎实例，
+     * 不该为了渲染三行滑杆去初始化播放器。真实是否生效由引擎的
+     * `supportsPictureAdjust()` 在播放时决定 —— 那正是"不做假开关"的另一半。
+     */
+    val showPictureAdjust: Boolean,
+    /** 亮度 / 对比度 / 饱和度：-100 ~ 100，0 = 原始（与 mpv 属性同单位）。 */
+    val pictureBrightness: Int,
+    val pictureContrast: Int,
+    val pictureSaturation: Int,
     // ── 弹幕（弹弹play）────────────────────────────────────────────
     /** 播放器内的弹幕总开关。与"有没有配置数据源"是两件事，见 `DanmakuStatusBar`。 */
     val danmakuEnabled: Boolean,
@@ -132,6 +152,9 @@ private enum class PlayerChoiceDialog {
     LongPressSpeed,
 }
 
+/** G2-3b：画面调节滑杆区间（-100~100，0 = 原始），与 mpv 的属性范围同义。 */
+private val PICTURE_ADJUST_RANGE = -100..100
+
 /** 弹幕分组里三个可编辑的文本项（同一个对话框组件，按此切换标题/掩码）。 */
 private enum class DanmakuTextField { Proxy, AppId, AppSecret }
 
@@ -146,6 +169,11 @@ fun PlayerSettingsScreen(
     onLongPressSpeedChange: (String) -> Unit,
     onSlideSensitivityChange: (Int) -> Unit,
     onOpenMpvSettings: () -> Unit,
+    // G2-3b：画面调节
+    onPictureBrightnessChange: (Int) -> Unit = {},
+    onPictureContrastChange: (Int) -> Unit = {},
+    onPictureSaturationChange: (Int) -> Unit = {},
+    onPictureAdjustReset: () -> Unit = {},
     onDanmakuEnabledChange: (Boolean) -> Unit,
     onDanmakuCommentEnabledChange: (Boolean) -> Unit,
     onDanmakuProxyChange: (String) -> Unit,
@@ -297,6 +325,42 @@ fun PlayerSettingsScreen(
                     iconRes = Res.drawable.ic_speed_flash,
                     onValueChange = onSlideSensitivityChange,
                 )
+                // ── G2-3b：画面调节（亮度 / 对比度 / 饱和度）──────────
+                // 区间与 mpv 的属性范围一致（-100~100，0 = 原始），步进 5 是"肉眼
+                // 分得出差别"的最小粒度 —— 再细就只有数字在动。
+                if (state.showPictureAdjust) {
+                    SettingSliderItem(
+                        title = stringResource(Res.string.picture_brightness),
+                        summary = stringResource(Res.string.picture_adjust_summary),
+                        value = state.pictureBrightness.coerceIn(PICTURE_ADJUST_RANGE),
+                        valueRange = PICTURE_ADJUST_RANGE,
+                        step = 5,
+                        iconRes = Res.drawable.ic_light_mode,
+                        onValueChange = onPictureBrightnessChange,
+                    )
+                    SettingSliderItem(
+                        title = stringResource(Res.string.picture_contrast),
+                        value = state.pictureContrast.coerceIn(PICTURE_ADJUST_RANGE),
+                        valueRange = PICTURE_ADJUST_RANGE,
+                        step = 5,
+                        iconRes = Res.drawable.ic_lightbulb,
+                        onValueChange = onPictureContrastChange,
+                    )
+                    SettingSliderItem(
+                        title = stringResource(Res.string.picture_saturation),
+                        value = state.pictureSaturation.coerceIn(PICTURE_ADJUST_RANGE),
+                        valueRange = PICTURE_ADJUST_RANGE,
+                        step = 5,
+                        iconRes = Res.drawable.ic_palette,
+                        onValueChange = onPictureSaturationChange,
+                    )
+                    SettingNavigationItem(
+                        title = stringResource(Res.string.picture_adjust_reset),
+                        iconRes = Res.drawable.ic_player_setting,
+                        valueText = null,
+                        onClick = onPictureAdjustReset,
+                    )
+                }
             }
         }
 

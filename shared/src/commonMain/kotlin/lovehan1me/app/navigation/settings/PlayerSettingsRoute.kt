@@ -114,6 +114,18 @@ fun PlayerSettingsRouteScreen(
             coroutineScope.launch { SettingsRepository.setSlideSensitivity(it) }
         },
         onOpenMpvSettings = onNavigateToMpvSettings,
+        onPictureBrightnessChange = { value ->
+            coroutineScope.launch { SettingsRepository.setPictureBrightness(value.toFloat()) }
+        },
+        onPictureContrastChange = { value ->
+            coroutineScope.launch { SettingsRepository.setPictureContrast(value.toFloat()) }
+        },
+        onPictureSaturationChange = { value ->
+            coroutineScope.launch { SettingsRepository.setPictureSaturation(value.toFloat()) }
+        },
+        onPictureAdjustReset = {
+            coroutineScope.launch { SettingsRepository.resetPictureAdjust() }
+        },
         onDanmakuEnabledChange = { enabled ->
             coroutineScope.launch {
                 SettingsRepository.update { it.copy(danmakuEnabled = enabled) }
@@ -211,6 +223,11 @@ private fun buildPlayerSettingsUiState(
         longPressSpeedTimesLabel = longPressDisplay,
         slideSensitivity = SettingsRepository.slideSensitivity,
         slideSensitivitySummary = slideSensitivitySummary,
+        // G2-3b：画面调节 —— 按平台能力（有没有 mpv）决定是否列出，并如实标注"仅 mpv 生效"
+        showPictureAdjust = capabilities.mpvAdvancedSettings,
+        pictureBrightness = SettingsRepository.pictureAdjust.brightness.toInt(),
+        pictureContrast = SettingsRepository.pictureAdjust.contrast.toInt(),
+        pictureSaturation = SettingsRepository.pictureAdjust.saturation.toInt(),
         danmakuEnabled = danmaku.danmakuEnabled,
         danmakuCommentEnabled = danmaku.danmakuCommentEnabled,
         danmakuProxyBase = danmaku.danmakuProxyBase,

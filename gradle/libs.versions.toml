@@ -7,7 +7,12 @@ coreSplashscreen = "1.2.0"
 documentFile = "1.1.0"
 kotlin = "2.4.10"
 serializationPlugin = "2.4.10"
-ksp = "2.3.2"
+# ⚠️ KSP 必须跟着 Kotlin 大版本走：Native target 上 KSP 的
+# `kspKotlinIosSimulatorArm64` 会因 processor classpath 判空而被整体 SKIPPED
+# （KspAATask 的 onlyIf 是 `!incomingProcessors.isEmpty`），
+# 表现为 Room 的 XxxConstructor 在 iosMain 缺 actual、编译直接失败。
+# 2.3.2 + Kotlin 2.4.10 会踩到；2.3.12 起正常，**升 Kotlin 时同步升 KSP**。
+ksp = "2.3.12"
 okio = "3.18.1"
 # Dependencies
 coreKtx = "1.19.0"

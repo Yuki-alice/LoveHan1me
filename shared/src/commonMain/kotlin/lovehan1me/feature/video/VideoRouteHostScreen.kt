@@ -223,6 +223,16 @@ fun VideoRouteHostScreen(
         mutableStateOf(false)
     }
     var superResolutionIndex by remember { mutableStateOf(0) }
+    // G2-3b：画面比例。初值取"引擎真实生效值"，而不是直接读设置 ——
+    // 设置里可能存着 Stretch，但当前引擎是 Exo（无此档），引擎已经降级成 Fit 了；
+    // 拿引擎状态当唯一真相，菜单就不会显示一个"选中了却没生效"的档。
+    val aspectOptions = playbackController.supportedAspectModes
+    val currentVideoAspect = playbackState.engine.videoAspect
+    LaunchedEffect(playbackController, aspectOptions) {
+        // 首次进入时把用户存的偏好下发（引擎不支持的档会被降级并回报）。
+        playbackController.setVideoAspect(SettingsRepository.videoAspect)
+        playbackController.setPictureAdjust(SettingsRepository.pictureAdjust)
+    }
     // M3-b：录 GIF 对话框的开关。入口是否显示由 controller.supportsFrameCapture 决定
     var showGifCapture by remember { mutableStateOf(false) }
     // M3-c：截图没有对话框（一次手势走完），只用这个标志防连点重入
@@ -885,6 +895,14 @@ fun VideoRouteHostScreen(
         onSuperResolutionSelected = { index ->
             superResolutionIndex = index
             playbackEngine.setSuperResolution(index)
+        },
+        // G2-3b：画面比例 —— 引擎真实支持的档 + 引擎真实生效的值。
+        // 选完即存偏好：下次起播由上面的 LaunchedEffect 下发。
+        videoAspectOptions = aspectOptions,
+        selectedVideoAspect = currentVideoAspect,
+        onVideoAspectSelected = { mode ->
+            playbackController.setVideoAspect(mode)
+            scope.launch { SettingsRepository.setVideoAspect(mode) }
         },
         // M3-b/M3-c：能力判断（不用内核名）—— 引擎不支持抓帧时两个入口都自动不显示
         frameCaptureEnabled = playbackController.supportsFrameCapture,

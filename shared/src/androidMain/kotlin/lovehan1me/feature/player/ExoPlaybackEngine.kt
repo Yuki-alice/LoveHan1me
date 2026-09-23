@@ -53,6 +53,8 @@ class ExoPlaybackEngine(
     private var superResolutionLevel = ExoSuperResolution.OFF
     private var lastRequest: PlaybackRequest? = null
     private var lastSpeed = PlayerDefaults.DEFAULT_SPEED
+    /** G2-3b：生效中的画面比例（Stretch 会降级成 Fit，见 [setVideoAspect]）。 */
+    private var aspectMode = VideoAspectMode.Fit
 
     // M3-b：PixelCopy 要求 Bitmap 与渲染面**等大**（它不做缩放），
     // 而从 android.view.Surface 读不出宽高，故由 PlatformVideoSurface 经
@@ -103,6 +105,38 @@ class ExoPlaybackEngine(
         lastSpeed = safeSpeed
         player.playbackParameters = PlaybackParameters(safeSpeed)
         publishState()
+    }
+
+    // ── G2-3b：画面比例 ─────────────────────────────────────
+    //
+    // Media3 的 `setVideoScalingMode` 只有两档 relevant 值：
+    // `SCALE_TO_FIT`（留黑边）与 `SCALE_TO_FIT_WITH_CROPPING`（裁切填满）。
+    // **没有"拉伸"这一档**，所以这里如实只声明两档 —— UI 不列 Stretch，
+    // 而不是给一个"选了没反应"的假开关（G2 对照表的明确要求）。
+    //
+    // 也不要为了凑三档去接 media3-effect 的 ScaleAndRotateTransformation：
+    // 那条路要重走 prepare（与超分切档同款重建续播），为了一个"把人拉扁"的
+    // 非推荐档位付这个代价不值当。
+    override fun supportedAspectModes(): List<VideoAspectMode> =
+        listOf(VideoAspectMode.Fit, VideoAspectMode.Crop)
+
+    private fun applyVideoScalingMode() {
+        kotlin.runCatching {
+            player.setVideoScalingMode(
+                if (aspectMode == VideoAspectMode.Crop) {
+                    C.VIDEO_SCALING_MODE_SCALE_TO_FIT_WITH_CROPPING
+                } else {
+                    C.VIDEO_SCALING_MODE_SCALE_TO_FIT
+                }
+            )
+        }.onFailure { LogUtil.w(TAG, "setVideoScalingMode failed: ${it.message}") }
+    }
+
+    override fun setVideoAspect(mode: VideoAspectMode) {
+        val effective = if (mode in supportedAspectModes()) mode else VideoAspectMode.Fit
+        aspectMode = effective
+        applyVideoScalingMode()
+        mutableState.value = mutableState.value.copy(videoAspect = effective)
     }
 
     // 阶段一②：Exo 超分入口（三档，与 mpv 侧编号一致）。
@@ -315,6 +349,9 @@ class ExoPlaybackEngine(
      */
     private fun preparePlayer(request: PlaybackRequest) {
         applyVideoEffects()
+        // G2-3b：scaling mode 是 player 实例级的，本来不会随 re-prepare 丢失；
+        // 这里显式补一次是为了覆盖"用户先选了 Crop、之后才第一次 prepare"这条路径。
+        applyVideoScalingMode()
         player.repeatMode = if (request.looping) Player.REPEAT_MODE_ONE else Player.REPEAT_MODE_OFF
         // 切档时 resetPosition=false：保留当前播放位置，随后由下面的 seekTo 精确定位。
         // （默认的 setMediaSource(source) 会把位置重置到 0，多一次定位、也多一次可见跳变。）

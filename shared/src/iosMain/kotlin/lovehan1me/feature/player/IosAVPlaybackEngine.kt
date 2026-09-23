@@ -68,6 +68,9 @@ class IosAVPlaybackEngine : PlaybackEngine {
     private var hasRenderedFrame = false
     private var released = false
 
+    /** G2-3b：生效中的画面比例（渲染面按它挑 `AVPlayerLayer.videoGravity`）。 */
+    private var aspectMode = VideoAspectMode.Fit
+
     init {
         // 阶段一⑨：向画中画 holder 注册当前 AVPlayer（每条视频一个引擎实例，
         // release 时解绑；PiP 用独立 AVPlayerLayer，不碰渲染面的 layer）。
@@ -146,6 +149,27 @@ class IosAVPlaybackEngine : PlaybackEngine {
 
     override fun attachSurface(surface: VideoSurface) {}
     override fun detachSurface(surface: VideoSurface) {}
+
+    // ── G2-3b：画面比例（AVPlayerLayer.videoGravity 三档全有）────
+
+    override fun supportedAspectModes(): List<VideoAspectMode> =
+        listOf(VideoAspectMode.Fit, VideoAspectMode.Stretch, VideoAspectMode.Crop)
+
+    /**
+     * 三档与 `videoGravity` 一一对应，切档**立即生效、不打断播放**：
+     * Fit → `resizeAspect`、Stretch → `resize`、Crop → `resizeAspectFill`。
+     *
+     * 值只落在引擎状态里，渲染面（`PlatformVideoSurface.ios`）订阅这个状态改图层 ——
+     * 引擎自己不持 layer（与桌面端"引擎不持渲染面"同一分工）。
+     */
+    override fun setVideoAspect(mode: VideoAspectMode) {
+        if (released) return
+        aspectMode = mode
+        _state.value = _state.value.copy(videoAspect = mode)
+    }
+
+    // 画面调节：AVPlayer 侧没有对等能力（只有 AVVideoComposition + CIFilter 那条
+    // 逐帧 CPU 路线，代价与收益不成比例），如实声明不支持，不做假开关。
 
     // ── M3-b：抓帧（实现见 IosFrameCapture.kt）──────────────
 
@@ -239,6 +263,8 @@ class IosAVPlaybackEngine : PlaybackEngine {
             videoWidth = videoWidth,
             videoHeight = videoHeight,
             hasRenderedFirstFrame = hasRenderedFrame,
+            // G2-3b：publishState 每 500ms 重建一次 state，画面比例要从字段回填。
+            videoAspect = aspectMode,
             errorMessage = if (failed) {
                 itemError?.localizedDescription ?: "AVPlayer error"
             } else {

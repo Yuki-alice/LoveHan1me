@@ -134,8 +134,8 @@ fun SubscriptionContent(
                         artists = artists,
                         artistRows = artistRows,
                         artistColumns = artistColumns,
-                        onClickArtist = {
-                            onEvent(SubscriptionEvent.OnClickArtist(it))
+                        onClickArtist = { name, artistId ->
+                            onEvent(SubscriptionEvent.OnClickArtist(name, artistId))
                         },
                         onLongClickArtist = {
                             onEvent(SubscriptionEvent.OnLongClickArtist(it))
@@ -191,7 +191,7 @@ private fun ArtistListSection(
     artists: List<SubscriptionItem>,
     artistRows: Int,
     artistColumns: Int,
-    onClickArtist: (String) -> Unit,
+    onClickArtist: (artistName: String, artistId: String) -> Unit,
     onLongClickArtist: (String) -> Unit,
 ) {
     val scrollState = rememberScrollState()
@@ -252,7 +252,7 @@ private fun ArtistListSection(
                             if (artist != null) {
                                 ArtistItem(
                                     artist = artist,
-                                    onClickArtist = { onClickArtist(artist.artistName) },
+                                    onClickArtist = { onClickArtist(artist.artistName, artist.artistId) },
                                     onLongClickArtist = { onLongClickArtist(artist.artistName) },
                                 )
                             } else {

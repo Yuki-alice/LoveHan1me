@@ -16,10 +16,12 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.concurrent.thread
@@ -83,6 +85,12 @@ class DesktopMpvPlaybackEngine(
     /** mpv 缩放相关属性的原始值（首次切档时记录，OFF 时还原）。 */
     private var originalScaling: Map<String, String>? = null
 
+    /** G2-3b：当前画面比例（状态上报与 mpv 属性重放都以它为准）。 */
+    private var aspectMode: VideoAspectMode = VideoAspectMode.Fit
+
+    /** G2-3b：当前画面调节（mpv 的 brightness/contrast/saturation）。 */
+    private var pictureAdjust: PictureAdjust = PictureAdjust.Neutral
+
     /**
      * 给渲染面用的挂起获取：返回预热好的 player。
      *
@@ -94,6 +102,8 @@ class DesktopMpvPlaybackEngine(
         withContext(Dispatchers.Default) { mediampPlayer }
 
     init {
+        // G2-3b：Stretch 档看门狗（默认 Fit 档下完全不碰 mpv，不会提前触发原生初始化）。
+        startAspectWatch()
         // 预热放后台线程：mpv 原生初始化（解压 49MB dylib + dlopen + mpv_create）
         // 在 macOS 首次装载实测 10~15s，之前排进 EDT 异步队列，把视频详情页的
         // 首次组合后到数据到货前整段冻死（compose-done +40ms → info-ready +12s，
@@ -130,6 +140,9 @@ class DesktopMpvPlaybackEngine(
                     videoWidth = props?.videoWidth ?: 0,
                     videoHeight = props?.videoHeight ?: 0,
                     hasRenderedFirstFrame = hasRenderedFrame,
+                    // G2-3b：collect 每帧重建 state，画面比例必须从引擎字段回填，
+                    // 否则用户选完 Crop 后第一个状态帧就把它打回 Fit。
+                    videoAspect = aspectMode,
                     errorMessage = if (phase == PlaybackPhase.Error) {
                         "mpv playback error"
                     } else {
@@ -161,6 +174,10 @@ class DesktopMpvPlaybackEngine(
                 mpvHandle()?.let { handle ->
                     applyNetworkOptions(handle)
                     applyMpvSettings(handle)
+                    // G2-3b：换流之后重下画面类偏好（新 mpv 实例/新窗口尺寸下属性仍在，
+                    // 但 draw 尺寸会变，Stretch 的比值必须按新渲染面重算）。
+                    applyVideoAspect(handle, aspectMode)
+                    applyPictureAdjust(handle, pictureAdjust)
                 }
                 val (mediaUri, mediaHeaders) = mediaUrlForGate(request)
                 player.setMediaData(
@@ -244,6 +261,89 @@ class DesktopMpvPlaybackEngine(
     }
 
     override fun supportsSuperResolution(): Boolean = true
+
+    // ── G2-3b：画面比例 / 画面调节（mpv 原生三档全支持）──────────
+
+    override fun supportedAspectModes(): List<VideoAspectMode> =
+        listOf(VideoAspectMode.Fit, VideoAspectMode.Stretch, VideoAspectMode.Crop)
+
+    override fun supportsPictureAdjust(): Boolean = true
+
+    override fun setVideoAspect(mode: VideoAspectMode) {
+        if (released) return
+        aspectMode = mode
+        _state.value = _state.value.copy(videoAspect = mode)
+        scope.launch { runCatching { mpvHandle()?.let { applyVideoAspect(it, mode) } } }
+    }
+
+    override fun setPictureAdjust(brightness: Float, contrast: Float, saturation: Float) {
+        if (released) return
+        pictureAdjust = PictureAdjust(
+            brightness = PictureAdjust.clamp(brightness),
+            contrast = PictureAdjust.clamp(contrast),
+            saturation = PictureAdjust.clamp(saturation),
+        )
+        scope.launch { runCatching { mpvHandle()?.let { applyPictureAdjust(it, pictureAdjust) } } }
+    }
+
+    /**
+     * 画面比例 → mpv 属性。
+     *
+     * - Fit：`video-aspect-override=-1`（= 关闭覆写，mpv 自己等比留边）；
+     * - Crop：`panscan=1.0`（mpv 的"裁切填满"；再叠加覆写会互相打架，故先清覆写）；
+     * - Stretch：**没有直接的开关**。mpv 只有"把图像按某个 DAR 绘制"这一件事，
+     *   所以这里把 DAR 覆写成**渲染面的宽高比**（`dwidth/dheight`）—— 图像被按
+     *   容器形状绘制，即为拉伸。代价是容器尺寸变化时这个比值会过期，
+     *   故 [startAspectWatch] 在 Stretch 档下按秒回读重算。
+     */
+    private fun applyVideoAspect(handle: MPVHandle, mode: VideoAspectMode) {
+        when (mode) {
+            VideoAspectMode.Fit -> {
+                handle.setPropertyString("panscan", "0")
+                handle.setPropertyString("video-aspect-override", "-1")
+            }
+
+            VideoAspectMode.Crop -> {
+                handle.setPropertyString("video-aspect-override", "-1")
+                handle.setPropertyString("panscan", "1.0")
+            }
+
+            VideoAspectMode.Stretch -> {
+                handle.setPropertyString("panscan", "0")
+                val width = handle.getPropertyString("dwidth")?.toDoubleOrNull() ?: 0.0
+                val height = handle.getPropertyString("dheight")?.toDoubleOrNull() ?: 0.0
+                if (width <= 0.0 || height <= 0.0) {
+                    // 渲染面尺寸还没出来（首帧前）：先退回 Fit，等看门狗补上。
+                    handle.setPropertyString("video-aspect-override", "-1")
+                    return
+                }
+                handle.setPropertyString("video-aspect-override", (width / height).toString())
+            }
+        }
+    }
+
+    /** 亮度/对比/饱和：mpv 三个属性都是 -100~100，0 = 原始。 */
+    private fun applyPictureAdjust(handle: MPVHandle, adjust: PictureAdjust) {
+        handle.setPropertyString("brightness", adjust.brightness.toInt().toString())
+        handle.setPropertyString("contrast", adjust.contrast.toInt().toString())
+        handle.setPropertyString("saturation", adjust.saturation.toInt().toString())
+    }
+
+    /**
+     * Stretch 档的看门狗：渲染面尺寸变化时重算 `video-aspect-override`。
+     *
+     * mpv 没有"跟随容器拉伸"的模式，只能由外部在尺寸变了之后重下一次。
+     * 只在 Stretch 档下读属性（默认档下这条循环完全不碰 mpv，不会因此提前初始化原生库）。
+     */
+    private fun startAspectWatch() {
+        scope.launch {
+            while (isActive) {
+                delay(1000L)
+                if (released || aspectMode != VideoAspectMode.Stretch) continue
+                runCatching { mpvHandle()?.let { applyVideoAspect(it, VideoAspectMode.Stretch) } }
+            }
+        }
+    }
 
     /**
      * M3-b：桌面端支持抓帧 —— 走 mediamp 的 `FramePreview` feature

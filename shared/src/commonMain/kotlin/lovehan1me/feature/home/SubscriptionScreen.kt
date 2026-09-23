@@ -58,7 +58,7 @@ import kotlinx.coroutines.launch
  *
  * @param navigateBack 返回回调
  * @param viewModel 订阅 ViewModel
- * @param onClickArtist 点击作者 → 跳转搜索
+ * @param onClickArtist 点击作者 → 有 artistId 直连作者页，否则回退搜索
  * @param onLongClickArtist 长按作者 → 复制分享文本
  * @param onClickVideosItem 点击视频 → 跳转详情
  * @param onLongClickVideosItem 长按视频 → 复制分享文本
@@ -68,7 +68,7 @@ import kotlinx.coroutines.launch
 fun SubscriptionScreen(
     navigateBack: () -> Unit,
     viewModel: MySubscriptionsViewModel,
-    onClickArtist: (String) -> Unit,
+    onClickArtist: (artistName: String, artistId: String) -> Unit,
     onLongClickArtist: (String) -> Unit,
     onClickVideosItem: (String) -> Unit,
     onLongClickVideosItem: (String, String) -> Unit,
@@ -137,7 +137,7 @@ fun SubscriptionScreen(
     val handleEvent: (SubscriptionEvent) -> Unit = { event ->
         when (event) {
             SubscriptionEvent.OnBack -> navigateBack()
-            is SubscriptionEvent.OnClickArtist -> onClickArtist(event.artistName)
+            is SubscriptionEvent.OnClickArtist -> onClickArtist(event.artistName, event.artistId)
             is SubscriptionEvent.OnLongClickArtist -> onLongClickArtist(event.artistName)
             is SubscriptionEvent.OnClickVideo -> onClickVideosItem(event.videoCode)
             is SubscriptionEvent.OnLongClickVideo -> onLongClickVideosItem(

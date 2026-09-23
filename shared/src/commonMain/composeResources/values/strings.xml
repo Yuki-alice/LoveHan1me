@@ -933,4 +933,21 @@ Recommendations are as follows:\n
     <string name="onboarding_lang_english">English</string>
     <string name="onboarding_lang_simplified">Simplified Chinese</string>
     <string name="onboarding_lang_traditional">Traditional Chinese</string>
+
+    <!-- G2-3b 画面比例 / 画面调节 -->
+    <string name="player_aspect_label">Aspect</string>
+    <string name="player_aspect_fit">Fit</string>
+    <string name="player_aspect_stretch">Stretch</string>
+    <string name="player_aspect_crop">Crop</string>
+    <string name="player_aspect_summary">How the picture fills the screen</string>
+    <string name="player_aspect_fit_summary">Keep proportions, black bars fill the rest</string>
+    <string name="player_aspect_stretch_summary">Fill the screen, picture gets distorted</string>
+    <string name="player_aspect_crop_summary">Fill the screen and crop the overflow</string>
+    <string name="picture_adjust">Picture adjustments</string>
+    <string name="picture_adjust_summary">Brightness, contrast and saturation</string>
+    <string name="picture_adjust_unsupported">The current player engine does not support picture adjustments</string>
+    <string name="picture_brightness">Brightness</string>
+    <string name="picture_contrast">Contrast</string>
+    <string name="picture_saturation">Saturation</string>
+    <string name="picture_adjust_reset">Reset</string>
 </resources>

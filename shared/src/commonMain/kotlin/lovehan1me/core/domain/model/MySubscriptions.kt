@@ -13,7 +13,14 @@ data class MySubscriptions(
 
 data class SubscriptionItem(
     val artistName: String,
-    val avatar: String
+    val avatar: String,
+    /**
+     * G2-1b-3 收尾：站内作者 id（`/user/{id}` 里的数字）。
+     *
+     * 空串 = 解析没拿到（订阅卡片上没有作者链接）。此时点击**回退到搜索**，
+     * 而不是进作者页 —— 作者页没有 id 拉不出东西，硬跳只会给一个空白页。
+     */
+    val artistId: String = "",
 )
 
 data class SubscriptionVideosItem(

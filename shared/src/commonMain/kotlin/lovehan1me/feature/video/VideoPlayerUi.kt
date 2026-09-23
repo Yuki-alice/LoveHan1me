@@ -91,6 +91,7 @@ import lovehan1me.feature.player.PlaybackEngine
 import lovehan1me.feature.player.PlaybackQuality
 import lovehan1me.feature.player.PlatformVideoSurface
 import lovehan1me.feature.player.PlayerDefaults
+import lovehan1me.feature.player.VideoAspectMode
 import lovehan1me.feature.player.posterBlur
 import lovehan1me.ui.transition.sharedCoverElement
 import lovehan1me.ui.component.rememberHapticFeedback
@@ -203,6 +204,12 @@ fun VideoPlayerUi(
     superResolutionOptions: List<String> = emptyList(),
     selectedSuperResolutionIndex: Int = 0,
     onSuperResolutionSelected: (Int) -> Unit = {},
+    /**
+     * G2-3b：画面比例可选档位（引擎真实支持的那些）。空 = 不支持 → 底栏不画该菜单。
+     */
+    videoAspectOptions: List<VideoAspectMode> = emptyList(),
+    selectedVideoAspect: VideoAspectMode = VideoAspectMode.Fit,
+    onVideoAspectSelected: (VideoAspectMode) -> Unit = {},
     /**
      * M3-b/M3-c：是否显示「截图 / 录 GIF」入口。由调用方传 `controller.supportsFrameCapture`
      * —— 用**能力**判断而不是内核名（与超分同理）。
@@ -894,6 +901,9 @@ fun VideoPlayerUi(
             superResolutionOptions = superResolutionOptions,
             selectedSuperResolutionIndex = selectedSuperResolutionIndex,
             onSuperResolutionSelected = onSuperResolutionSelected,
+            videoAspectOptions = videoAspectOptions,
+            selectedVideoAspect = selectedVideoAspect,
+            onVideoAspectSelected = onVideoAspectSelected,
             onNextClick = onNextClick,
             isFullscreen = isFullscreen,
             durationMs = durationMs,

@@ -28,8 +28,13 @@ data class SubscriptionUiState(
  * 订阅页面用户交互事件。
  */
 sealed interface SubscriptionEvent {
-    /** 点击作者 */
-    data class OnClickArtist(val artistName: String) : SubscriptionEvent
+    /**
+     * 点击作者。
+     *
+     * G2-1b-3 收尾：带上 [artistId]，有 id 就直连作者页（`/user/{id}`），
+     * 没有才回退"按名字搜索" —— 此前一律走搜索，等于有了作者页却不用。
+     */
+    data class OnClickArtist(val artistName: String, val artistId: String = "") : SubscriptionEvent
 
     /** 长按作者 */
     data class OnLongClickArtist(val artistName: String) : SubscriptionEvent

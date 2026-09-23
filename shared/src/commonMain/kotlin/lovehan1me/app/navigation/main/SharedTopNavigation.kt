@@ -252,6 +252,9 @@ fun SharedTopNavigation(
             SubscriptionRouteScreen(
                 onBack = onBack,
                 onNavigateToSearch = { query -> backStack.add(SearchRoute(query = query)) },
+                onNavigateToArtist = { userId, name ->
+                    backStack.add(ArtistRoute(userId = userId, name = name))
+                },
                 onNavigateToVideo = onNavigateToVideo,
             )
         }

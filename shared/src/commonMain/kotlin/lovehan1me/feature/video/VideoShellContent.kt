@@ -27,6 +27,7 @@ import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
 import lovehan1me.feature.player.PlaybackEngine
 import lovehan1me.feature.player.PlaybackQuality
+import lovehan1me.feature.player.VideoAspectMode
 import lovehan1me.ui.theme.HanimeDefaults
 
 @Composable
@@ -74,6 +75,10 @@ fun VideoShellContent(
     superResolutionOptions: List<String>,
     selectedSuperResolutionIndex: Int,
     onSuperResolutionSelected: (Int) -> Unit,
+    /** G2-3b：画面比例可选档位（引擎真实支持的那些）。 */
+    videoAspectOptions: List<VideoAspectMode> = emptyList(),
+    selectedVideoAspect: VideoAspectMode = VideoAspectMode.Fit,
+    onVideoAspectSelected: (VideoAspectMode) -> Unit = {},
     /** M3-b/M3-c：是否显示「截图 / 录 GIF」入口（= controller.supportsFrameCapture）。 */
     frameCaptureEnabled: Boolean,
     /** M3-b：点「录 GIF」的回调。 */
@@ -204,6 +209,9 @@ fun VideoShellContent(
             superResolutionOptions = superResolutionOptions,
             selectedSuperResolutionIndex = selectedSuperResolutionIndex,
             onSuperResolutionSelected = onSuperResolutionSelected,
+            videoAspectOptions = videoAspectOptions,
+            selectedVideoAspect = selectedVideoAspect,
+            onVideoAspectSelected = onVideoAspectSelected,
             frameCaptureEnabled = frameCaptureEnabled,
             onOpenGifCapture = onOpenGifCapture,
             onCaptureScreenshot = onCaptureScreenshot,

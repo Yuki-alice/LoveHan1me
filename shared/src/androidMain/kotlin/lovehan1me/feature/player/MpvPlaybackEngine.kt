@@ -80,6 +80,9 @@ class MpvPlaybackEngine(
                         }
                         if (request.playWhenReady) startPlayback()
                     }
+                    // G2-3b：换流后重下画面类偏好（与倍速同批，避免"换档后比例打回 Fit"）。
+                    runCatching { applyVideoAspect() }
+                    runCatching { applyPictureAdjust() }
                     mutableState.value = mutableState.value.copy(
                         phase = PlaybackPhase.Ready,
                         isBuffering = false,
@@ -103,12 +106,20 @@ class MpvPlaybackEngine(
                 }
 
                 MPVLib.mpvEventId.MPV_EVENT_SHUTDOWN -> {
-                    mutableState.value = PlaybackEngineState()
+                    // G2-3b：画面比例是**用户偏好**，不是播放状态 —— 关机事件重置播放状态时
+                    // 要把它带过去，否则 UI 上"选中的 Crop"会在这一帧闪回 Fit。
+                    mutableState.value = PlaybackEngineState(videoAspect = aspectMode)
                 }
             }
         }
     }
     private var requestSpeed = PlayerDefaults.DEFAULT_SPEED
+
+    /** G2-3b：当前画面比例（状态上报与 mpv 属性重放都以它为准）。 */
+    private var aspectMode: VideoAspectMode = VideoAspectMode.Fit
+
+    /** G2-3b：当前画面调节（mpv 的 brightness/contrast/saturation）。 */
+    private var pictureAdjust: PictureAdjust = PictureAdjust.Neutral
 
     override val state: StateFlow<PlaybackEngineState> = mutableState.asStateFlow()
 
@@ -208,6 +219,76 @@ class MpvPlaybackEngine(
     }
 
     override fun supportsSuperResolution(): Boolean = true
+
+    // ── G2-3b：画面比例 / 画面调节（mpv 原生三档全支持）──────────
+
+    override fun supportedAspectModes(): List<VideoAspectMode> =
+        listOf(VideoAspectMode.Fit, VideoAspectMode.Stretch, VideoAspectMode.Crop)
+
+    override fun supportsPictureAdjust(): Boolean = true
+
+    override fun setVideoAspect(mode: VideoAspectMode) {
+        if (released) return
+        aspectMode = mode
+        mutableState.value = mutableState.value.copy(videoAspect = mode)
+        if (!initialized) return
+        runCatching { applyVideoAspect() }
+            .onFailure { LogUtil.w(TAG, "setVideoAspect failed: ${it.message}") }
+    }
+
+    override fun setPictureAdjust(brightness: Float, contrast: Float, saturation: Float) {
+        if (released) return
+        pictureAdjust = PictureAdjust(
+            brightness = PictureAdjust.clamp(brightness),
+            contrast = PictureAdjust.clamp(contrast),
+            saturation = PictureAdjust.clamp(saturation),
+        )
+        if (!initialized) return
+        runCatching { applyPictureAdjust() }
+            .onFailure { LogUtil.w(TAG, "setPictureAdjust failed: ${it.message}") }
+    }
+
+    /**
+     * 画面比例 → mpv 属性。
+     *
+     * 与桌面端同一套映射（Fit = 关覆写 + panscan 0；Crop = panscan 1；Stretch = DAR
+     * 覆写成容器比值），差别只在"容器尺寸从哪来"：桌面端问 mpv 的 `dwidth/dheight`，
+     * Android 侧 [AndroidSurfaceSizeAware] 已经把 SurfaceView 的实测尺寸送进来了，
+     * 直接除就行（也更准 —— 不依赖 mpv 侧窗口状态是否刷新）。
+     */
+    private fun applyVideoAspect() {
+        when (aspectMode) {
+            VideoAspectMode.Fit -> {
+                MPVLib.setPropertyString("panscan", "0")
+                MPVLib.setPropertyString("video-aspect-override", "-1")
+            }
+
+            VideoAspectMode.Crop -> {
+                MPVLib.setPropertyString("video-aspect-override", "-1")
+                MPVLib.setPropertyString("panscan", "1.0")
+            }
+
+            VideoAspectMode.Stretch -> {
+                MPVLib.setPropertyString("panscan", "0")
+                if (surfaceWidth <= 0 || surfaceHeight <= 0) {
+                    // 渲染面尺寸还没回调上来：先退回 Fit，等 surfaceChanged 补一次。
+                    MPVLib.setPropertyString("video-aspect-override", "-1")
+                    return
+                }
+                MPVLib.setPropertyString(
+                    "video-aspect-override",
+                    (surfaceWidth.toDouble() / surfaceHeight.toDouble()).toString(),
+                )
+            }
+        }
+    }
+
+    /** 亮度/对比/饱和：mpv 三个属性都是 -100~100，0 = 原始。 */
+    private fun applyPictureAdjust() {
+        MPVLib.setPropertyString("brightness", pictureAdjust.brightness.toInt().toString())
+        MPVLib.setPropertyString("contrast", pictureAdjust.contrast.toInt().toString())
+        MPVLib.setPropertyString("saturation", pictureAdjust.saturation.toInt().toString())
+    }
 
     // ── M3-b：抓帧（GIF 录制；M3-c 截图可复用）──────────────
 
@@ -326,6 +407,8 @@ class MpvPlaybackEngine(
         if (!initialized || released || currentSurface == null) return
         if (surfaceWidth <= 0 || surfaceHeight <= 0) return
         MPVLib.setPropertyString("android-surface-size", "${surfaceWidth}x${surfaceHeight}")
+        // G2-3b：Stretch 档的 DAR 是"容器比值"，容器一变（旋转/分屏）就要重算。
+        if (aspectMode == VideoAspectMode.Stretch) applyVideoAspect()
         if (MPVLib.getPropertyBoolean("pause") == true) {
             MPVLib.command(arrayOf("seek", "0", "relative", "exact"))
         }

@@ -42,8 +42,12 @@ import lovehan1me.ic_fullscreen_exit
 import lovehan1me.ic_pause
 import lovehan1me.ic_play_arrow
 import lovehan1me.ic_skip
+import lovehan1me.player_aspect_crop
+import lovehan1me.player_aspect_fit
+import lovehan1me.player_aspect_stretch
 import lovehan1me.feature.player.PlaybackQuality
 import lovehan1me.feature.player.PlayerDefaults
+import lovehan1me.feature.player.VideoAspectMode
 import lovehan1me.player_speed_format
 import lovehan1me.speed
 import lovehan1me.ui.component.IconButton
@@ -89,6 +93,13 @@ internal fun BoxScope.PlayerBottomBar(
     superResolutionOptions: List<String> = emptyList(),
     selectedSuperResolutionIndex: Int = 0,
     onSuperResolutionSelected: (Int) -> Unit = {},
+    /**
+     * G2-3b：画面比例可选档位（引擎**真实支持**的那些，Exo 没有 Stretch）。
+     * 空列表 = 引擎不支持 → 不画这个菜单（不是画一个空按钮）。
+     */
+    videoAspectOptions: List<VideoAspectMode> = emptyList(),
+    selectedVideoAspect: VideoAspectMode = VideoAspectMode.Fit,
+    onVideoAspectSelected: (VideoAspectMode) -> Unit = {},
     /** 下一集（系列视频才有，null = 不显示）。 */
     onNextClick: (() -> Unit)? = null,
     /** 是否全屏：全屏键图标随状态切换。 */
@@ -230,6 +241,21 @@ internal fun BoxScope.PlayerBottomBar(
                             onSelected = onSuperResolutionSelected,
                             onOpenChange = ::menuOpenChanged,
                         )
+                        // G2-3b：画面比例。只列引擎真实支持的档位 —— 少一个"拉伸"
+                        // 好过一个"选了没反应"的开关。
+                        if (videoAspectOptions.isNotEmpty()) {
+                            KazumiTextMenu(
+                                label = aspectLabel(
+                                    if (selectedVideoAspect in videoAspectOptions) selectedVideoAspect
+                                    else videoAspectOptions.first()
+                                ),
+                                options = videoAspectOptions.map { aspectLabel(it) },
+                                selectedIndex = videoAspectOptions.indexOf(selectedVideoAspect)
+                                    .takeIf { it >= 0 },
+                                onSelected = { index -> onVideoAspectSelected(videoAspectOptions[index]) },
+                                onOpenChange = ::menuOpenChanged,
+                            )
+                        }
                         KazumiTextMenu(
                             label = speedLabel,
                             options = PlayerDefaults.speeds.map {
@@ -315,6 +341,19 @@ internal fun BoxScope.PlayerBottomBar(
                                 .height(HanimeDefaults.PlayerSizes.bottomControlRow),
                         )
                         Row(verticalAlignment = Alignment.CenterVertically) {
+                            if (videoAspectOptions.isNotEmpty()) {
+                                KazumiTextMenu(
+                                    label = aspectLabel(
+                                        if (selectedVideoAspect in videoAspectOptions) selectedVideoAspect
+                                        else videoAspectOptions.first()
+                                    ),
+                                    options = videoAspectOptions.map { aspectLabel(it) },
+                                    selectedIndex = videoAspectOptions.indexOf(selectedVideoAspect)
+                                        .takeIf { it >= 0 },
+                                    onSelected = { index -> onVideoAspectSelected(videoAspectOptions[index]) },
+                                    onOpenChange = ::menuOpenChanged,
+                                )
+                            }
                             KazumiTextMenu(
                                 label = speedLabel,
                                 options = PlayerDefaults.speeds.map {
@@ -352,6 +391,16 @@ internal fun BoxScope.PlayerBottomBar(
             }
         }
     }
+}
+
+/**
+ * G2-3b：画面比例 → 菜单文案。
+ */
+@Composable
+private fun aspectLabel(mode: VideoAspectMode): String = when (mode) {
+    VideoAspectMode.Fit -> stringResource(Res.string.player_aspect_fit)
+    VideoAspectMode.Stretch -> stringResource(Res.string.player_aspect_stretch)
+    VideoAspectMode.Crop -> stringResource(Res.string.player_aspect_crop)
 }
 
 /**

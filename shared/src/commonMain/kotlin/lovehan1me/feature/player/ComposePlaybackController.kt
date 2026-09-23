@@ -69,6 +69,16 @@ class ComposePlaybackController(
     }
     private var requestedPlaybackSpeed = PlayerDefaults.DEFAULT_SPEED
 
+    /**
+     * G2-3b：请求的画面比例 / 画面调节。
+     *
+     * 与 [requestedPlaybackSpeed] 同一套套路：引擎每 `load` 一次都丢状态
+     * （mpv 换了流、Exo 换了 player item），所以必须记住"用户想要什么"，
+     * 在每次 `load` 之后重下一次，否则换画质/重播会把画面比例打回 Fit。
+     */
+    private var requestedVideoAspect: VideoAspectMode = VideoAspectMode.Fit
+    private var requestedPictureAdjust: PictureAdjust = PictureAdjust.Neutral
+
     val state: StateFlow<ComposePlaybackState> = mutableState.asStateFlow()
 
     fun load(
@@ -137,6 +147,38 @@ class ComposePlaybackController(
 
     fun setVolume(volume: Float) = playbackEngine.setVolume(volume)
 
+    // ── G2-3b：画面比例 / 画面调节 ──────────────────────────
+
+    /** 引擎真实支持的画面比例档位（空 = 不支持 → UI 不出入口）。 */
+    val supportedAspectModes: List<VideoAspectMode> get() = playbackEngine.supportedAspectModes()
+
+    /** 是否值得出「画面比例」菜单（≥2 档）。 */
+    val supportsVideoAspect: Boolean get() = playbackEngine.supportsVideoAspect()
+
+    fun setVideoAspect(mode: VideoAspectMode) {
+        requestedVideoAspect = mode
+        playbackEngine.setVideoAspect(mode)
+    }
+
+    /** 是否支持画面调节（亮度/对比/饱和）。目前只有 mpv 内核为真。 */
+    val supportsPictureAdjust: Boolean get() = playbackEngine.supportsPictureAdjust()
+
+    fun setPictureAdjust(brightness: Float, contrast: Float, saturation: Float) {
+        requestedPictureAdjust = PictureAdjust(
+            brightness = PictureAdjust.clamp(brightness),
+            contrast = PictureAdjust.clamp(contrast),
+            saturation = PictureAdjust.clamp(saturation),
+        )
+        playbackEngine.setPictureAdjust(
+            requestedPictureAdjust.brightness,
+            requestedPictureAdjust.contrast,
+            requestedPictureAdjust.saturation,
+        )
+    }
+
+    fun setPictureAdjust(adjust: PictureAdjust) =
+        setPictureAdjust(adjust.brightness, adjust.contrast, adjust.saturation)
+
     // ── M3-b：抓帧能力（GIF 录制 / 后续截图分享复用）──────────────
 
     /**
@@ -197,5 +239,22 @@ class ComposePlaybackController(
             )
         )
         playbackEngine.setPlaybackSpeed(requestedPlaybackSpeed)
+        applyPicturePreferences()
+    }
+
+    /**
+     * 每次 load 之后重下"画面"类偏好。
+     *
+     * 换画质/重播会走一次新的 load，而部分引擎（mpv 新实例、Exo 首次 prepare 前）
+     * 会在这一刻丢掉画面比例与调节值。统一在这里补一次，语义与上面的
+     * `setPlaybackSpeed` 一致：**用户选过什么，重载后还是什么**。
+     */
+    private fun applyPicturePreferences() {
+        playbackEngine.setVideoAspect(requestedVideoAspect)
+        playbackEngine.setPictureAdjust(
+            requestedPictureAdjust.brightness,
+            requestedPictureAdjust.contrast,
+            requestedPictureAdjust.saturation,
+        )
     }
 }

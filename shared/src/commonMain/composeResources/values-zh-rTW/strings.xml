@@ -901,4 +901,21 @@
     <string name="onboarding_lang_english">英語</string>
     <string name="onboarding_lang_simplified">簡體中文</string>
     <string name="onboarding_lang_traditional">繁體中文</string>
+
+    <!-- G2-3b 画面比例 / 画面调节 -->
+    <string name="player_aspect_label">畫面比例</string>
+    <string name="player_aspect_fit">適應</string>
+    <string name="player_aspect_stretch">拉伸</string>
+    <string name="player_aspect_crop">裁切</string>
+    <string name="player_aspect_summary">畫面如何填滿螢幕</string>
+    <string name="player_aspect_fit_summary">保持原比例，多餘處留黑邊</string>
+    <string name="player_aspect_stretch_summary">填滿螢幕，畫面會變形</string>
+    <string name="player_aspect_crop_summary">填滿螢幕並裁掉溢出的部分</string>
+    <string name="picture_adjust">畫面調節</string>
+    <string name="picture_adjust_summary">亮度、對比度與飽和度</string>
+    <string name="picture_adjust_unsupported">目前的播放核心不支援畫面調節</string>
+    <string name="picture_brightness">亮度</string>
+    <string name="picture_contrast">對比度</string>
+    <string name="picture_saturation">飽和度</string>
+    <string name="picture_adjust_reset">重設</string>
 </resources>

@@ -18,6 +18,7 @@ import org.jetbrains.compose.resources.getString
 fun SubscriptionRouteScreen(
     onBack: () -> Unit,
     onNavigateToSearch: (String?) -> Unit,
+    onNavigateToArtist: (userId: String, name: String) -> Unit,
     onNavigateToVideo: (String) -> Unit,
 ) {
     val viewModel: MySubscriptionsViewModel = sharedViewModel(::MySubscriptionsViewModel)
@@ -27,7 +28,12 @@ fun SubscriptionRouteScreen(
     SubscriptionScreen(
         navigateBack = onBack,
         viewModel = viewModel,
-        onClickArtist = { onNavigateToSearch(it) },
+        // G2-1b-3 收尾：拿到 artistId 就直连作者页（订阅卡片上有作者链接），
+        // 拿不到（旧缓存 / 卡片结构变了）才退回"按名字搜索" —— 绝不拿空 id 去开作者页。
+        onClickArtist = { artistName, artistId ->
+            if (artistId.isNotBlank()) onNavigateToArtist(artistId, artistName)
+            else onNavigateToSearch(artistName)
+        },
         onLongClickArtist = { artistName ->
             copyTextToClipboard(getHanimeSearchShareText(artistName))
             scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }

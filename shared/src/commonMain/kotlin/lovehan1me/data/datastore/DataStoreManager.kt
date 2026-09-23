@@ -18,6 +18,7 @@ import lovehan1me.core.domain.model.ProxyType
 import lovehan1me.core.domain.model.SearchFilterPreset
 import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.core.domain.model.ThemeMode
+import lovehan1me.core.domain.model.VideoAspectMode
 import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
 import lovehan1me.core.domain.model.normalizeLegacySlideSensitivity
 import kotlinx.coroutines.CoroutineScope
@@ -168,6 +169,8 @@ object DataStoreManager : SettingsStore {
         playerKernel = PlayerKernel.fromValue(string("switch_player_kernel", defaults.playerKernel.value)),
         playerSpeed = floatString("player_speed", defaults.playerSpeed), slideSensitivity = intInRange("slide_sensitivity", defaults.slideSensitivity, 1..7), longPressSpeedTime = floatString("long_press_speed_times", defaults.longPressSpeedTime),
         videoLanguage = string("video_language", defaults.videoLanguage), videoQuality = string("default_video_quality", defaults.videoQuality), showPlayedIndicator = bool("show_played_indicator", defaults.showPlayedIndicator),
+        videoAspect = VideoAspectMode.fromValue(string("video_aspect", defaults.videoAspect.value)),
+        pictureBrightness = floatString("picture_brightness", defaults.pictureBrightness), pictureContrast = floatString("picture_contrast", defaults.pictureContrast), pictureSaturation = floatString("picture_saturation", defaults.pictureSaturation),
         allowResumePlayback = bool("allow_resume_playback", defaults.allowResumePlayback),
         autoPlayOnEnter = bool("auto_play_on_enter", defaults.autoPlayOnEnter),
         danmakuEnabled = bool("danmaku_enabled", defaults.danmakuEnabled), danmakuCommentEnabled = bool("danmaku_comment_enabled", defaults.danmakuCommentEnabled), danmakuProxyBase = string("danmaku_proxy_base", defaults.danmakuProxyBase), danmakuAppId = danmakuCredentials().first, danmakuAppSecret = danmakuCredentials().second,
@@ -206,6 +209,7 @@ object DataStoreManager : SettingsStore {
         put("domain_name", domainName); put("selectedBaseUrl", selectedBaseUrl); put("use_custom_mirror_site", useCustomMirrorSite); put("custom_mirror_site", customMirrorSite); put("append_custom_mirror_path", appendCustomMirrorPath); put("use_built_in_hosts", useBuiltInHosts); put("auto_built_in_hosts", autoBuiltInHosts); put("use_ech_gate", useEchGate); put("custom_hosts_data", customHostsData); put("use_doh", useDoH); put("doh_preset", dohPreset); put("doh_custom_url", dohCustomUrl); put("doh_bootstrap_ips", dohBootstrapIps); put("doh_timeout_seconds", dohTimeoutSeconds); put("proxy_type", proxyType.id); put("proxy_ip", proxyIp); put("proxy_port", proxyPort)
         cachedUpdateJson?.let { put("app_update_cached_json", it) }; put("app_update_ignored_version_code", ignoredVersionCode); put("download_count_limit", downloadCountLimit); put("download_speed_limit", downloadSpeedLimitIndex); put("use_private_storage", usePrivateStorage); safDownloadPath?.let { put("saf_download_path", it) }; put("collapse_downloaded_group", collapseDownloadedGroup)
         put("switch_player_kernel", playerKernel.value); put("player_speed", playerSpeed.toString()); put("slide_sensitivity", slideSensitivity); put("long_press_speed_times", longPressSpeedTime.toString()); put("video_language", videoLanguage); put("default_video_quality", videoQuality); put("show_played_indicator", showPlayedIndicator); put("allow_resume_playback", allowResumePlayback); put("auto_play_on_enter", autoPlayOnEnter)
+        put("video_aspect", videoAspect.value); put("picture_brightness", pictureBrightness.toString()); put("picture_contrast", pictureContrast.toString()); put("picture_saturation", pictureSaturation.toString())
         put("danmaku_enabled", danmakuEnabled); put("danmaku_comment_enabled", danmakuCommentEnabled); put("danmaku_proxy_base", danmakuProxyBase)
         put("danmaku_font_size", danmakuFontSizeSp); put("danmaku_opacity", danmakuOpacityPercent); put("danmaku_display_area", danmakuDisplayAreaPercent); put("danmaku_speed", danmakuSpeedPercent); put("danmaku_show_scroll", danmakuShowScroll); put("danmaku_show_top", danmakuShowTop); put("danmaku_show_bottom", danmakuShowBottom)
         val (storedAppId, storedAppSecret) = danmakuCredentialsToPersist(

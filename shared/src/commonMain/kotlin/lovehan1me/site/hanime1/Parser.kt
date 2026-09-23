@@ -1089,10 +1089,18 @@ object Parser {
                 val avatarSrc = imgs.getOrNull(1)?.absUrl("src") ?: return@mapNotNull null
                 val artistName = card.selectFirst("div.card-mobile-title")?.text()?.trim()
                     ?: return@mapNotNull null
+                // G2-1b-3 收尾：作者 id。订阅卡片本身不带 id 字段，只能从"指向作者页的
+                // 那个 <a>"里抠 —— 拿不到就留空串，由 UI 侧回退搜索（见 SubscriptionItem）。
+                // 全仓唯一的作者 id 形态是 `/user/{数字}`（AuthorPlaylistParser 同款正则）。
+                val artistHref = card.selectFirst("a[href*=/user/]")?.attr("href")
+                    ?: card.selectFirst("a")?.attr("href").orEmpty()
+                val artistId = Regex("""/user/(\d+)""").find(artistHref)
+                    ?.groupValues?.getOrNull(1).orEmpty()
 
                 SubscriptionItem(
                     artistName = artistName,
-                    avatar = avatarSrc
+                    avatar = avatarSrc,
+                    artistId = artistId,
                 )
             } catch (_: Exception) {
                 null
