@@ -4,7 +4,7 @@ import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import kotlinx.coroutines.flow.Flow
 
 /**
- * 下载引擎契约（B 站式客户端体验；桌面/iOS 拉齐见 Gate3）。
+ * 下载引擎契约（B 站式客户端体验；桌面/iOS 拉齐见 Gate4）。
  *
  * 数据面（三端共享）：Room KMP 的 [lovehan1me.data.database.dao.DownloadDatabase]
  * 是唯一事实源——任务/进度/分组全部落库，UI（Downloading/DownloadedScreen）直接观察 DB 流。

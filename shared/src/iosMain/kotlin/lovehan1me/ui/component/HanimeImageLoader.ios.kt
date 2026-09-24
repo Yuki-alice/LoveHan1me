@@ -5,7 +5,7 @@ import androidx.compose.runtime.remember
 import coil3.ImageLoader
 import coil3.compose.LocalPlatformContext
 
-// P6d-3-B：iOS 默认 ImageLoader（Gate3-平台能力再特化，照抄 GetchuImageLoader.ios.kt）。
+// P6d-3-B：iOS 默认 ImageLoader（Gate4-平台能力再特化，照抄 GetchuImageLoader.ios.kt）。
 @Composable
 actual fun rememberHanimeImageLoader(): ImageLoader {
     val context = LocalPlatformContext.current

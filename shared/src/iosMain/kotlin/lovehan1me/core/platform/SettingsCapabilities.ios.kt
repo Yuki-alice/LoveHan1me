@@ -8,7 +8,7 @@ package lovehan1me.core.platform
  * - `playerKernelSelection = false` / `mpvAdvancedSettings = false` —— AVPlayer 通吃，
  *   kernel 被忽略；无 mpv 可调；
  * - `secureMode = false` / `hapticFeedback = false` —— `applySecureMode` 与
- *   `HapticFeedback.ios.kt` 都是空实现（Gate3-平台能力）；
+ *   `HapticFeedback.ios.kt` 都是空实现（Gate4-平台能力）；
  * - `pipMode = **true**` —— iOS 是唯一除 Android 外真实支持 PiP 的平台，
  *   `IosVideoPageHost` 退后台进 PiP 时会读 `allowPipMode`，这一项必须保留；
  * - `meteredDataWarning = false` —— `isActiveNetworkMetered()` 恒 `false`。

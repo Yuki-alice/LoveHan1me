@@ -66,7 +66,7 @@ fun getchuImageRequest(url: String?): ImageRequest {
 
 /**
  * getchu 域名特化的图片加载器（OkHttp + HanimeDns/代理/UA/Referer/Cookie）。
- * jvmMain 真实现；iosMain 为默认 ImageLoader（Gate3-平台能力：getchu 特化）。
+ * jvmMain 真实现；iosMain 为默认 ImageLoader（Gate4-平台能力：getchu 特化）。
  */
 @Composable
 expect fun rememberGetchuImageLoader(): ImageLoader
