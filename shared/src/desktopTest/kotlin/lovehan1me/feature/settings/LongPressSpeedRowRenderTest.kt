@@ -20,8 +20,11 @@ import lovehan1me.ui.component.SettingNavigationItem
 import lovehan1me.ui.preview.HanimePreviewTheme
 import org.jetbrains.compose.resources.stringResource
 import org.jetbrains.skia.EncodedImageFormat
+import org.jetbrains.skia.Image
 import java.io.File
+import kotlin.math.abs
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 /**
  * 设置页「长按快进速度」行的离屏渲染（`ImageComposeScene`，无窗口/无设备）：
@@ -78,6 +81,14 @@ class LongPressSpeedRowRenderTest {
             val image = scene.render(1_000_000_000L)
             val data = image.encodeToData(EncodedImageFormat.PNG)
                 ?: error("PNG 编码失败：$name")
+            val inked = inkedPixelCount(image)
+            println("SETTINGS_RENDER_OUT: $name inkedPixels=$inked")
+            // 白屏/空组合回归（Gate3-P2）：行值摘要任一没画出来即红。
+            // 阈值与 PlayerBarRenderTest 同口径（200），正常行是几千。
+            assertTrue(
+                inked > MIN_INKED_SAMPLES,
+                "$name 几乎是空的（落墨采样点 $inked）：设置行没画东西出来",
+            )
             val outDir = File("build/settings-renders").also { it.mkdirs() }
             val out = File(outDir, "$name.png")
             out.writeBytes(data.bytes)
@@ -85,5 +96,32 @@ class LongPressSpeedRowRenderTest {
         } finally {
             scene.close()
         }
+    }
+
+    private fun inkedPixelCount(image: Image): Int {
+        val pixels = image.peekPixels() ?: return 0
+        val sample = ArrayList<Int>(
+            (image.width / SAMPLE_STRIDE) * (image.height / SAMPLE_STRIDE),
+        )
+        for (y in 0 until image.height step SAMPLE_STRIDE) {
+            for (x in 0 until image.width step SAMPLE_STRIDE) {
+                sample += pixels.getColor(x, y)
+            }
+        }
+        val background = sample.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
+            ?: return 0
+        return sample.count { colorDistance(it, background) > COLOR_EPSILON }
+    }
+
+    private fun colorDistance(a: Int, b: Int): Int = maxOf(
+        abs((a shr 16 and 0xFF) - (b shr 16 and 0xFF)),
+        abs((a shr 8 and 0xFF) - (b shr 8 and 0xFF)),
+        abs((a and 0xFF) - (b and 0xFF)),
+    )
+
+    private companion object {
+        const val SAMPLE_STRIDE = 2
+        const val COLOR_EPSILON = 24
+        const val MIN_INKED_SAMPLES = 200
     }
 }

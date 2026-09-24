@@ -53,20 +53,24 @@ jobs:
           echo "platforms OK"
 
       - name: Compile Android + Desktop
-        run: ./gradlew :shared:compileAndroidMain :shared:compileKotlinDesktop :app:compileDebugKotlin :desktopApp:compileKotlin --console=plain
+        # Gate3-P1：:player 独立模块，显式编译（shared 的 project 依赖也会间接触发，这里写明防漏）。
+        run: ./gradlew :player:compileAndroidMain :player:compileKotlinDesktop :shared:compileAndroidMain :shared:compileKotlinDesktop :app:compileDebugKotlin :desktopApp:compileKotlin --console=plain
 
       - name: Assemble debug APK
         run: ./gradlew :app:assembleDebug --console=plain
 
       - name: desktopTest
-        run: ./gradlew :shared:desktopTest --console=plain
+        # Gate3-P1：纯逻辑测试已随代码进 :player（commonTest 经 desktop 跑），两边都跑。
+        run: ./gradlew :player:desktopTest :shared:desktopTest --console=plain
 
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: desktop-test-reports
-          path: shared/build/test-results/desktopTest/
+          path: |
+            player/build/test-results/desktopTest/
+            shared/build/test-results/desktopTest/
           if-no-files-found: ignore
 
   # macOS runner：Kotlin/Native 编译 iOS 目标——这是 Windows 上无法验证的部分，
@@ -85,4 +89,5 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Compile iOS (device + simulator)
-        run: ./gradlew :shared:compileKotlinIosArm64 :shared:compileKotlinIosSimulatorArm64 --console=plain
+        # Gate3-P1：:player 含 iosMain（引擎/LogUtil/时钟），与 :shared 同编。
+        run: ./gradlew :player:compileKotlinIosArm64 :player:compileKotlinIosSimulatorArm64 :shared:compileKotlinIosArm64 :shared:compileKotlinIosSimulatorArm64 --console=plain

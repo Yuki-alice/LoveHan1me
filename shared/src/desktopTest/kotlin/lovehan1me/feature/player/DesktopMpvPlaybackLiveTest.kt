@@ -5,6 +5,8 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import lovehan1me.feature.player.PlayerMpvOptions
+import lovehan1me.feature.player.PlayerNetworkConfig
 
 /**
  * 桌面 mpv 的**真实播放**冒烟（默认 skip，手工开启）。
@@ -48,7 +50,10 @@ class DesktopMpvPlaybackLiveTest {
 
     /** 载入并等到 Ready/Error/超时，返回那一刻的状态。 */
     private fun playAndWait(url: String, proxy: String?): PlaybackEngineState = runBlocking {
-        val engine = DesktopMpvPlaybackEngine(mediaProxyUrl = { proxy })
+        val engine = DesktopMpvPlaybackEngine(
+            network = liveNetwork(proxy),
+            mpvOptions = { PlayerMpvOptions() },
+        )
         try {
             engine.load(PlaybackRequest(uri = url, playWhenReady = true))
             withTimeoutOrNull(30_000) {
@@ -58,4 +63,14 @@ class DesktopMpvPlaybackLiveTest {
             engine.release()
         }
     }
+}
+
+/**
+ * live 冒烟用的网络配置：代理走环境变量直给，不读设置、不走网关
+ * （Gate3-P1 后引擎构造必须显式传参，原 `mediaProxyUrl = { proxy }` 形参已删）。
+ */
+internal fun liveNetwork(proxy: String?): PlayerNetworkConfig = object : PlayerNetworkConfig {
+    override val userAgent: String = "live-probe"
+    override fun proxyUrlFor(mediaUri: String): String? = proxy
+    override fun rewriteForGate(uri: String): Pair<String, Map<String, String>>? = null
 }

@@ -16,8 +16,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Density
 import lovehan1me.ui.preview.HanimePreviewTheme
 import org.jetbrains.skia.EncodedImageFormat
+import org.jetbrains.skia.Image
 import java.io.File
+import kotlin.math.abs
 import kotlin.test.Test
+import kotlin.test.assertTrue
 
 /**
  * 播放器顶栏/底栏的离屏渲染（`ImageComposeScene`，无窗口）：
@@ -51,6 +54,15 @@ class PlayerBarRenderTest {
             val image = scene.render(1_000_000_000L)
             val data = image.encodeToData(EncodedImageFormat.PNG)
                 ?: error("PNG 编码失败：$name")
+            val inked = inkedPixelCount(image)
+            println("PLAYERBAR_RENDER_OUT: $name inkedPixels=$inked")
+            // 白屏/空组合回归（Gate3-P2，钉 468092b 那类事故）：
+            // 顶栏底栏任一没组合出来，整张就是纯黑底，落墨骤降。阈值取 200
+            // （与弹幕层同口径）：正常 chrome 下是几千到几万，误报空间极大。
+            assertTrue(
+                inked > MIN_INKED_SAMPLES,
+                "$name 几乎是空的（落墨采样点 $inked）：顶栏/底栏没画东西出来",
+            )
             val outDir = File("build/playerbar-renders").also { it.mkdirs() }
             val out = File(outDir, "$name.png")
             out.writeBytes(data.bytes)
@@ -59,6 +71,36 @@ class PlayerBarRenderTest {
         } finally {
             scene.close()
         }
+    }
+
+    // 落墨采样：不预设背景色值，取出现最多的颜色当背景（与
+    // DanmakuLayerRenderTest 同算法：位图色彩空间与 sRGB 非一一对应，
+    // 写死色值逐位比大会误判；chrome 铺不满画面，"多数色=背景"自洽）。
+    private fun inkedPixelCount(image: Image): Int {
+        val pixels = image.peekPixels() ?: return 0
+        val sample = ArrayList<Int>(
+            (image.width / SAMPLE_STRIDE) * (image.height / SAMPLE_STRIDE),
+        )
+        for (y in 0 until image.height step SAMPLE_STRIDE) {
+            for (x in 0 until image.width step SAMPLE_STRIDE) {
+                sample += pixels.getColor(x, y)
+            }
+        }
+        val background = sample.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
+            ?: return 0
+        return sample.count { colorDistance(it, background) > COLOR_EPSILON }
+    }
+
+    private fun colorDistance(a: Int, b: Int): Int = maxOf(
+        abs((a shr 16 and 0xFF) - (b shr 16 and 0xFF)),
+        abs((a shr 8 and 0xFF) - (b shr 8 and 0xFF)),
+        abs((a and 0xFF) - (b and 0xFF)),
+    )
+
+    private companion object {
+        const val SAMPLE_STRIDE = 2
+        const val COLOR_EPSILON = 24
+        const val MIN_INKED_SAMPLES = 200
     }
 
     @Test

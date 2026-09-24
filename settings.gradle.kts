@@ -57,4 +57,5 @@ include(":app")
 
 // KMP 共享模块与新增平台入口
 include(":shared")
+include(":player")
 include(":desktopApp")

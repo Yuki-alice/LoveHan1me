@@ -48,6 +48,9 @@ kotlin {
         binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
+            // Gate3-P1：:player 是独立 KMP 库，iOS framework 必须 export，
+            // 否则 Swift 侧看不到引擎类型（api 依赖不会自动进 framework）。
+            export(project(":player"))
         }
     }
 
@@ -106,6 +109,9 @@ kotlin {
             // P6d-4E：开源许可页（15.2.0 起 core/compose 为 KMP 产物，要求 Compose 1.12/Kotlin 2.4 对齐）
             implementation(libs.aboutlibraries.core)
             implementation(libs.aboutlibraries.compose.m3)
+
+            // Gate3-P1：播放内核独立模块。UI 签名透传引擎类型，必须 api 导出。
+            api(project(":player"))
         }
 
         androidMain.dependencies {

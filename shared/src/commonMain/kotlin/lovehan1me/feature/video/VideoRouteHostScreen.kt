@@ -23,6 +23,8 @@ import androidx.lifecycle.repeatOnLifecycle
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import lovehan1me.data.SettingsRepository
+import lovehan1me.data.network.defaultPlayerMpvOptionsProvider
+import lovehan1me.data.network.defaultPlayerNetworkConfig
 import lovehan1me.site.SiteIdentity
 import lovehan1me.ui.adaptive.WindowHeightBreakpoints
 import lovehan1me.ui.adaptive.WindowWidthBreakpoints
@@ -160,7 +162,11 @@ fun VideoRouteHostScreen(
     val kernel = remember { PlayerKernel.fromPreference(SettingsRepository.switchPlayerKernel) }
     val playbackEngine: PlaybackEngine = remember(route.videoCode, route.localUri, kernel) {
         PlayerTrace.mark("engine-create-start")
-        createPlaybackEngine(kernel = kernel).also {
+        createPlaybackEngine(
+            kernel = kernel,
+            network = defaultPlayerNetworkConfig(),
+            mpvOptions = defaultPlayerMpvOptionsProvider,
+        ).also {
             PlayerTrace.mark("engine-create-end")
         }
     }
@@ -865,7 +871,7 @@ fun VideoRouteHostScreen(
             val duration = playbackState.engine.durationMs
             if (duration > 0L) {
                 playbackController.seekTo((duration * value).toLong())
-                // 埋点：播放器内部已按 120ms 节流，这里不会每帧刷屏
+                // 埋点：P3-1 后此处只在松手/手势结束时调一次（拖动期间零 seek），不会刷屏
                 PlayerTrace.event("seek", "-> ${(value * 100).toInt()}%")
             }
         },
@@ -970,7 +976,7 @@ fun VideoRouteHostScreen(
                 // 在 lambda **内**取：设置变了只重组弹幕这一槽，不动整个播放器组合
                 val danmakuOptions = rememberDanmakuRenderOptions()
                 DanmakuLayer(
-                    session = session,
+                    driver = session,
                     modifier = Modifier.fillMaxSize(),
                     options = danmakuOptions,
                 )

@@ -79,8 +79,8 @@ class DanmakuSession(
         DanmakuRepository::link,
     private val unlinkFrom: suspend (String) -> Unit = DanmakuRepository::unlink,
     val tracker: DanmakuPositionTracker = DanmakuPositionTracker(),
-    val engine: DanmakuEngine = DanmakuEngine(),
-) {
+    override val engine: DanmakuEngine = DanmakuEngine(),
+) : DanmakuFrameDriver {
 
     private val mutableStatus = MutableStateFlow<DanmakuStatus>(DanmakuStatus.Loading)
     val status: StateFlow<DanmakuStatus> = mutableStatus.asStateFlow()
@@ -270,7 +270,7 @@ class DanmakuSession(
      * @param frameNanos `withFrameNanos` 给的帧时刻，必须每帧同源
      * @return 本次使用的播放位置；null = 尚无锚点或已关闭，调用方什么都不画
      */
-    fun advance(
+    override fun advance(
         frameNanos: Long,
         viewport: DanmakuViewport,
         measureWidth: (DanmakuItem) -> Float,

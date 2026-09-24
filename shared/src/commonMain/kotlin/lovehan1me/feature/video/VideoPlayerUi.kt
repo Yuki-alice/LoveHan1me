@@ -47,6 +47,7 @@ import androidx.compose.runtime.key
 import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
@@ -283,10 +284,22 @@ fun VideoPlayerUi(
 ) {
     var showControlsState by remember { mutableStateOf(true) }
 
+    // P3-2：控件常亮请求方集合（对齐 animeko PlayerControllerState 的 alwaysOnRequests）。
+    // 谁在交互谁请求，结束即撤销；计时器只看"集合空不空"，不再数布尔。
+    // 瞬态手势（gestureType/isProgressGestureActive/hover）仍走计时器键——
+    // 它们由手势回调自清零，转请求方反而有"结束事件丢失就永远常亮"的泄漏风险。
+    val alwaysOnRequests = remember { mutableStateMapOf<Any, Boolean>() }
+    fun requestAlwaysOn(key: Any) {
+        alwaysOnRequests[key] = true
+    }
+    fun cancelAlwaysOn(key: Any) {
+        alwaysOnRequests.remove(key)
+    }
+    val alwaysOn = alwaysOnRequests.isNotEmpty()
+
     // M5-3：拖动进度条期间的**本地乐观值**。拖动中显示手指位置，而不是引擎回写的旧位置 ——
     // 引擎 seek 后立刻 publishState，而它读到的仍是旧位置，直接显示会"拖了又弹回去"。
     var sliderDragValue by remember { mutableStateOf<Float?>(null) }
-    var lastSliderSeekAtMs by remember { mutableLongStateOf(0L) }
     // M5-3：双击左右快进/快退的瞬时反馈（方向 + 目标百分比），复用同一个手势浮层。
     var doubleTapSeekFeedback by remember {
         mutableStateOf<Pair<ProgressGestureDirection, Float>?>(null)
@@ -306,11 +319,24 @@ fun VideoPlayerUi(
     var isScaleGestureActive by remember { mutableStateOf(false) }
     var isLongPressSpeedActive by remember { mutableStateOf(false) }
     var suppressTapUntilMs by remember { mutableLongStateOf(0L) }
-    // 功能弹窗 hold（Kazumi `acquirePlayerPanelHold`）：底栏选单 / 顶栏更多菜单
-    // 任一打开，控件自动隐藏就暂停计时。
-    var topMenuOpen by remember { mutableStateOf(false) }
-    var bottomMenuOpen by remember { mutableStateOf(false) }
-    val menuHold = topMenuOpen || bottomMenuOpen
+    // 滑条拖动请求常亮（P3-2 补的漏）：触屏上滑条拖动不经过手势仲裁
+    //（gestureType 为 null）也没有悬停，5 秒计时器此前会中途藏控件。
+    // sliderDragValue 非空即拖动中（滑条/手势两条路径共用，松手即 null），天然配对。
+    LaunchedEffect(sliderDragValue) {
+        if (sliderDragValue != null) requestAlwaysOn(SliderDragRequest)
+        else cancelAlwaysOn(SliderDragRequest)
+    }
+
+    // 功能弹窗 hold（Kazumi `acquirePlayerPanelHold`）：顶栏/底栏菜单各占一个 key
+    //（两菜单可同时开，同 key 会早退）。onMenuOpenChange 的 true/false 天然配对
+    //（弹窗 dismiss 必调），不存在"结束事件丢失"的泄漏场景；手势类状态不敢转请求方，见上。
+    fun setTopMenuHold(open: Boolean) {
+        if (open) requestAlwaysOn(TopMenuHoldRequest) else cancelAlwaysOn(TopMenuHoldRequest)
+    }
+
+    fun setBottomMenuHold(open: Boolean) {
+        if (open) requestAlwaysOn(BottomMenuHoldRequest) else cancelAlwaysOn(BottomMenuHoldRequest)
+    }
     // Kazumi 音量 pill：调音量时弹出来，1 秒无变化后收起（Kazumi 手势 650ms / 滚轮 2s，取中间）。
     var volumeHudVisible by remember { mutableStateOf(false) }
     var volumeHudTick by remember { mutableIntStateOf(0) }
@@ -361,12 +387,12 @@ fun VideoPlayerUi(
     // 三种"先别收"的情形：
     //   ① 手势进行中（含横向拖动 seek）—— 手势结束后**重新计时**，而不是立刻消失；
     //   ② 指针悬停在**控件上**（顶栏/底栏）—— 用户显然还在操作；
-    //   ③ 功能弹窗打开中（Kazumi 的 panel hold：选单开着时控件不能收）。
+    //   ③ 常亮请求非空（功能弹窗/滑条拖动，见 alwaysOnRequests）。
     // 键里带上这些状态：它们一变，倒计时就重启，天然做到"手势结束不自动消失"。
     LaunchedEffect(
         showControlsState,
         isPlaying,
-        menuHold,
+        alwaysOn,
         gestureType,
         isProgressGestureActive,
         isControlsHovered,
@@ -374,7 +400,7 @@ fun VideoPlayerUi(
         if (
             showControlsState &&
             isPlaying &&
-            !menuHold &&
+            !alwaysOn &&
             gestureType == null &&
             !isProgressGestureActive &&
             !isControlsHovered
@@ -606,6 +632,11 @@ fun VideoPlayerUi(
         Box(
             modifier = Modifier
                 .fillMaxSize()
+                // P3-3 手势仲裁结论（已审计，不拆两套表）：触屏/鼠标共用同一套
+                // 拖拽/点击/双击/长按语义 —— 三组核对均无须分叉：
+                // 悬停天然只在指针设备上产生（触屏恒 false，见上）；键盘快捷键已是
+                // desktop-only actual；长按倍速/双击分区在鼠标上同样可用，无禁用理由。
+                // 挂载期 key 只有 isLocked（锁定态整层换成"点任意处计解锁"）。
                 .pointerInput(isLocked) {
                     if (!isLocked) {
                         var gestureStartProgress = 0f
@@ -644,7 +675,13 @@ fun VideoPlayerUi(
                                     }
                                     latestOnLongPressEnd()
                                     longPressOwnsDrag = false
+                                } else if (gestureType == GestureIndicatorType.Progress) {
+                                    // P3-1：横向手势松手才提交一次（拖动期间只写 sliderDragValue 预览）。
+                                    // 此前这里每帧调 onProgressGesture → 路由每帧 seekTo，
+                                    // 弱机上足以打垮解码器（Exo 每次 seek 重缓冲、mpv 每次 exact 都 flush）。
+                                    sliderDragValue?.let { latestOnProgressGesture(it) }
                                 }
+                                sliderDragValue = null
                                 gestureType = null
                                 isProgressGestureActive = false
                             },
@@ -654,7 +691,12 @@ fun VideoPlayerUi(
                                     showControlsState = false
                                     latestOnLongPressEnd()
                                     longPressOwnsDrag = false
+                                } else if (gestureType == GestureIndicatorType.Progress) {
+                                    // 被打断的手势按当前位置提交（此前是每帧已 seek，
+                                    // 提交即最后位置，语义不变，只是少了中间 N 次）。
+                                    sliderDragValue?.let { latestOnProgressGesture(it) }
                                 }
+                                sliderDragValue = null
                                 gestureType = null
                                 isProgressGestureActive = false
                             },
@@ -710,7 +752,11 @@ fun VideoPlayerUi(
                                 when (type) {
                                     GestureIndicatorType.Brightness -> latestOnBrightnessChange(next)
                                     GestureIndicatorType.Volume -> latestOnVolumeChange(next)
-                                    GestureIndicatorType.Progress -> latestOnProgressGesture(next)
+                                    // P3-1：进度手势拖动期间只写本地预览（底栏跟手指走，
+                                    // 见 sliderValue = sliderDragValue ?: progress），
+                                    // **禁止在这里调 onProgressGesture**：每帧 seek 打垮解码器，
+                                    // 提交只在 onDragEnd / onDragCancel 做一次。
+                                    GestureIndicatorType.Progress -> sliderDragValue = next
                                 }
                             },
                         )
@@ -804,7 +850,7 @@ fun VideoPlayerUi(
             sidebarVisible = sidebarVisible,
             onToggleSidebar = onToggleSidebar,
             expanded = expanded,
-            onMenuOpenChange = { topMenuOpen = it },
+            onMenuOpenChange = { setTopMenuHold(it) },
         )
 
         AnimatedVisibility(
@@ -877,18 +923,12 @@ fun VideoPlayerUi(
             sliderValue = sliderDragValue ?: progress,
             bufferedProgress = bufferedProgress,
             onSliderValueChange = { value ->
+                // P3-1 收尾：滑条拖动纯预览（与横向手势同语义），松手提交一次。
+                // 此前 120ms 节流 seek 在弱机上仍卡，且与手势路径不一致；现统一。
                 sliderDragValue = value
-                // 节流：拖动时**每一帧**都 seek 会让引擎反复重定位
-                // （Exo 每次 seek 都要重新缓冲、mpv 每次 exact seek 都 flush），
-                // 既卡又容易与引擎回写的旧位置打架。
-                val now = nowMs()
-                if (now - lastSliderSeekAtMs >= SLIDER_SEEK_THROTTLE_MS) {
-                    lastSliderSeekAtMs = now
-                    onProgressChange(value)
-                }
             },
             onSliderValueChangeFinished = {
-                // 松手补一次最终位置：节流可能吞掉最后一次回调
+                // 松手提交一次最终位置（拖动期间零 seek）。
                 sliderDragValue?.let(onProgressChange)
                 sliderDragValue = null
             },
@@ -916,7 +956,7 @@ fun VideoPlayerUi(
             isFullscreen = isFullscreen,
             durationMs = durationMs,
             expanded = expanded,
-            onMenuOpenChange = { bottomMenuOpen = it },
+            onMenuOpenChange = { setBottomMenuHold(it) },
             hoverInteractionSource = bottomBarHoverSource,
             danmakuControls = danmakuControls,
         )
@@ -933,3 +973,9 @@ fun VideoPlayerUi(
         )
     }
 }
+
+// P3-2 常亮请求 key：顶栏菜单 / 底栏菜单 / 滑条（手势）拖动各占一个，
+// 同 key 重复请求幂等，撤销只删自己的，不会早退别人的 hold。
+private object TopMenuHoldRequest
+private object BottomMenuHoldRequest
+private object SliderDragRequest

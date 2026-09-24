@@ -38,60 +38,8 @@ enum class PaletteStyle(val id: Int) {
     }
 }
 
-enum class PlayerKernel(val value: String) {
-    MediaPlayer("MediaPlayer"), ExoPlayer("ExoPlayer"), MpvPlayer("MpvPlayer");
-
-    companion object {
-        fun fromValue(value: String): PlayerKernel = entries.firstOrNull { it.value == value } ?: ExoPlayer
-        fun fromPreference(value: String): PlayerKernel = fromValue(value)
-    }
-}
-
-/**
- * G2-3b：画面比例（对齐 animeko 的 `VideoAspectControllerState`）。
- *
- * - [Fit]：等比缩放填满容器，多出来的地方留黑边（三端默认，也是老行为）；
- * - [Stretch]：强行拉成容器的形状，**画面会变形** —— 给那些上下黑边粗得离谱的
- *   老片源一个"将就看完"的出口，不是推荐项；
- * - [Crop]：等比放大到铺满容器，溢出部分裁掉（不留黑边，但会丢画面边缘）。
- *
- * 三端的对等实现各不相同（mpv `video-aspect-override`/`panscan`、Exo
- * `setVideoScalingMode`、iOS `AVPlayerLayer.videoGravity`），而且**并非每端都支持全部三档**
- * （Exo 没有"拉伸"这一档）。
- */
-enum class VideoAspectMode(val value: String) {
-    Fit("fit"),
-    Stretch("stretch"),
-    Crop("crop");
-
-    companion object {
-        fun fromValue(value: String): VideoAspectMode =
-            entries.firstOrNull { it.value == value } ?: Fit
-    }
-}
-
-/**
- * G2-3b：画面调节三件套（亮度 / 对比度 / 饱和度）。
- *
- * 单位与 mpv 对齐：**-100 ~ 100，0 = 原始画面**。三端里只有 mpv 内核真的支持
- * （`brightness`/`contrast`/`saturation` 属性），Exo 与 AVPlayer 没有对等能力 ——
- * 那两端不在 UI 出这个入口，**不做假开关**。
- */
-data class PictureAdjust(
-    val brightness: Float = 0f,
-    val contrast: Float = 0f,
-    val saturation: Float = 0f,
-) {
-    val isNeutral: Boolean get() = brightness == 0f && contrast == 0f && saturation == 0f
-
-    companion object {
-        const val MIN = -100f
-        const val MAX = 100f
-        val Neutral = PictureAdjust()
-
-        fun clamp(value: Float): Float = value.coerceIn(MIN, MAX)
-    }
-}
+// PlayerKernel / VideoAspectMode / PictureAdjust 已搬入 :player 同包 PlaybackModels.kt
+//（包名不变，全仓 import 零改动；本文件持久化它们，见下）。
 
 enum class ProxyType(val id: Int) {
     Direct(0), System(1), Http(2), Socks(3);

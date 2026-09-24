@@ -7,7 +7,7 @@
 
 ## 当前焦点
 
-**Gate 3「播放模块打磨攻坚」待开工，卡在 G3-0 换底裁定。**
+**Gate 3「播放独立与超分」开工中（v2，方案A），当前做 P1 `:player` 模块独立。**
 Gate 2 的两个方向（源站覆盖、CF 攻坚）已完成，剩 comic 延后项与 DoD 收尾。
 
 ---
@@ -46,47 +46,32 @@ Gate 2 的两个方向（源站覆盖、CF 攻坚）已完成，剩 comic 延后
 
 ---
 
-## Gate 3「播放模块打磨攻坚」—— 把缝补上，再谈对齐
+## Gate 3「播放独立与超分」—— 内核独立成模块，再谈打磨
 
-状态：**⬜ 未启动**（2026-09-23 新增，由 Gate 2 播放器方向独立而来）
+状态：**🟡 开工中**（2026-09-24 由"打磨攻坚"重排为 v2，方案A：`:player` 独立模块）
 
-来源：`docs/播放页-对比animeko差距清点与重构裁定.md` + `…-审阅.md`
-任务规划：**`docs/specs/2026-09-23-Gate3-播放模块打磨攻坚-tasks.md`**
+来源：`docs/specs/2026-09-24-Gate3-播放独立与超分-tasks.md`（v2，取代 09-23 版 v1）
+依据：mediamp 按 v0.5.0 tag 重验 + animeko 超分读完 + scope 收敛（截图/GIF/预览帧/章节/音轨不做）
 
-- [ ] **G3-10 超分性能与掉帧治理** —— 用户实测：开超分画面卡顿 + 弹幕抖动。
-      **根因是一个**：超分把帧率打下去 → 弹幕按 `nowMs` 闭式解算一帧跳很远 → 抖。
-      三重叠加开销（CNN 链 + `scale/cscale/dscale` 全 `ewa_lanczossharp` + `sigmoid-upscaling`）
-      且**无分辨率门控**（1080p 也 x2 放大到 2160p 再缩回）。**第一步必须先加帧时间实测**。
-- [ ] **G3-9 画面比例三端拉齐** —— UI 链路已通，真问题是**能力表不齐**：
-      Exo（Android 默认内核）只有 Fit/Crop 无 Stretch；System 内核完全没 override → 菜单消失。
-      **先真机确认 Crop 是否真生效**，再决定要不要为 Stretch 接 `ScaleAndRotateTransformation`。
-- [ ] **G3-0 换底裁定** —— `PlaybackEngine` → mediamp 是否执行。
-      ⚠️ 取证三条（2026-09-23 已查到前两条）：
-      ① mediamp 的 **mpv 后端有 `androidMain` 源集**，Android mpv 内核**可能保得住**
-        （README 把 Android 标 ExoPlayer 是"推荐"不是"唯一"）——需确认 **0.3.2** 是否带 Android 产物；
-      ② **exoplayer 后端未实现 `VideoAspectRatio`** → Android 走 exoplayer 会**失去画面比例**
-        （animeko 的 Android 端因此没有这个入口）；
-      ③ `EchGateDataSource` 管道能否重接。
-      📉 **必要性已下降**：预览帧与字幕音轨两项已决定不做，换底只剩 G3-5 一个下游，
-      **允许裁定为"不换"**。
-- [ ] **G3-7 播放器稳定性回归** —— 白屏/闪烁历史（468092b / f9d2cad / f4c2e4a）建回归测试并进 CI。**优先做**，为下面所有改动护航。
-- [ ] **G3-1 超分诚实化** —— Exo 路径实为同分辨率锐化（`ExoSuperResolution.kt:100-104`）：接真 Anime4K CNN 链（9 个 MIT glsl 已在仓）或改文案，二选一。
-- [ ] ~~**G3-4 预览帧管线**~~ —— **不做**（2026-09-23 产品取舍）。坑位保留在规划文档 §4
-- [ ] ~~**G3-6 字幕/音轨选择**~~ —— **不做**（2026-09-23 产品取舍，单音轨源为主）
-- [ ] **G3-2 弹幕两处外科手术** —— 帧时间 PLL 平滑 + 文本一次栅格化后 `drawImage`。闭式几何不动。
-      ⚠️ PLL 只能摊平相位抖动，**救不了掉帧**，须排在 G3-10 之后。
-- [ ] **G3-3 控件状态机** —— 可见性改请求方集合、手势挂载期仲裁；其中"横向手势每帧无节流 seekTo"
-      （`VideoRouteHostScreen.kt:952-955`）是正确性 bug，改动极小，可单独先做。
-- [ ] **G3-8 引擎测试补位** —— 补 Android 三引擎（Exo/System/mpv-android）覆盖。
-      根因：`shared` **没有 android 测试源集**（只有 commonTest/desktopTest/iosTest），需先建。
-- [ ] **G3-5 缓冲/卡顿语义对齐** —— 桌面/iOS `bufferedPositionMs` 造假、mpv-android `isBuffering` 靠猜。（依赖 G3-0）
+- [x] **P1 `:player` 模块** —— `feature/player` 全量 + 纯弹幕引擎 + MpvShaders 超分胶水独立成模块；
+      引擎经构造注入拿配置，不再直读 `SettingsRepository`/`EchGate`；S 仅 `api` 消费。
+      （2026-09-24 落地：双端编译 + 双模块测试全绿，见规划 §1.4 偏差记录）
+- [x] **P2 回归护栏** —— 白屏（顶栏/底栏/设置行/弹幕落墨断言）+ 闪烁（稳帧重组计数）
+      进 `:player`/`:shared` 测试源集并入 CI（2026-09-24：404 项全绿）
+- [x] **P3 控件手术** —— 横向手势 seek 预览/提交分离（正确性）+ 可见性请求方集合
+      + 手势仲裁与命中区审计（维持现状，结论落码）；过期注释清理（2026-09-24）
+- [x] **P4 超分** —— 分辨率门控 + dscale 换 bilinear + 预建空图免重建 + Exo 真 CNN 链
+      （PERF=Restore S，QUALITY=Restore M+Upscale M+自研 scaler）；
+      真机帧时间 QA 待补（2026-09-24 代码落地，测试 410 项全绿）
+- [ ] **P5 mediamp 0.5.0 迁移** —— Android→exo 后端、iOS→avkit 后端、桌面不动；Surface 跟换；
+      System 引擎删；**Android mpv 内核去留待产品决策（唯一待定）**
+- [ ] **P6 收尾** —— 删旧引擎/占位/过期注释，DoD 验收
 
 **DoD**
-- [ ] 播放模块无"假装实现了"的能力（缓冲进度 / `isBuffering` / Android 超分 三处语义造假清零）
-- [ ] 画面比例在三端 × 三内核下，`supportedAspectModes()` 与真机实测一致
-- [ ] 开超分不掉帧、弹幕不抖；有各档位 × 各分辨率的帧时间实测数据
-- [ ] G3-7 的回归测试进 CI
-- [ ] 换底与否有明确结论，写回本文件 G3-0（**允许结论为"不换"**）
+- [ ] `:player` 三端独立编译，引擎零直读设置/网关
+- [ ] 缓冲/isBuffering 三端真值；`supportedAspectModes()` 与真机实测一致
+- [ ] 超分诚实 + 1080p+ 不放大 + 帧时间实测数据
+- [ ] 回归测试进 CI；换底结论写回本节
 
 ---
 
@@ -131,7 +116,8 @@ Gate 2 的两个方向（源站覆盖、CF 攻坚）已完成，剩 comic 延后
 | **`docs/ROADMAP.md`** | 本文件 —— **单一真相源**，只有 Gate 进度与 DoD 勾选 | 任何时候先读它 |
 | `docs/specs/2026-09-20-项目重新定位梳理-design.md` | 项目定位与五道 Gate 路线图定稿 | 需要知道"为什么这么排" |
 | `docs/specs/2026-09-20-Gate1-tasks.md` | Gate 1 子任务提示词 + 关闭记录 | 回溯 Gate 1 做了什么 |
-| `docs/specs/2026-09-23-Gate3-播放模块打磨攻坚-tasks.md` | **Gate 3 任务规划**（逐项：代码事实/做法/验收/风险） | 开工 Gate 3 |
+| `docs/specs/2026-09-24-Gate3-播放独立与超分-tasks.md` | **Gate 3 任务规划 v2**（方案A：`:player` 独立 + 超分 + mediamp 0.5.0 迁移） | 开工 Gate 3 |
+| `docs/specs/2026-09-23-Gate3-播放模块打磨攻坚-tasks.md` | Gate 3 规划 v1（**已取代**，仅引擎事实核验方法可参考） | 归档 |
 | `docs/specs/2026-09-24-G3-0-mediamp迁移工作量评估.md` | 换底 mediamp 的**许可分层 + 分场景工作量 + 风险** | 拍 G3-0 决策 |
 | `docs/specs/2026-09-20-G2-播放器对照表.md` | 播放器能力清单（animeko × 本仓） | 判断"某能力有没有" |
 | `docs/specs/2026-09-20-G2-1a-探站结论.md` | 作者页/系列清单的路由与选择器 | 动站点解析 |

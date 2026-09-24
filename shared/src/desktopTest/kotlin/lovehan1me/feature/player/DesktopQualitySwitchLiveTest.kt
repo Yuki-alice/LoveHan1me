@@ -11,6 +11,8 @@ import kotlinx.coroutines.withTimeoutOrNull
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
+import lovehan1me.feature.player.PlayerMpvOptions
+import lovehan1me.feature.player.PlayerNetworkConfig
 
 /**
  * 桌面**切画质保面**的真实验证（默认 skip，手工开启）。
@@ -44,7 +46,10 @@ class DesktopQualitySwitchLiveTest {
         println("[live] A=${urlA.take(70)}  B=${urlB.take(70)}  proxy=$proxy")
 
         runBlocking {
-            val engine = DesktopMpvPlaybackEngine(mediaProxyUrl = { proxy })
+            val engine = DesktopMpvPlaybackEngine(
+                network = liveNetwork(proxy),
+                mpvOptions = { PlayerMpvOptions() },
+            )
             // 独立作用域：controller.release() 会 cancel 传进去的 scope，
             // 用 runBlocking 的 context 会把测试自己取消掉。
             val playerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)

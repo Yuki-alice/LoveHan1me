@@ -1,6 +1,6 @@
 package lovehan1me.data.network
 
-import lovehan1me.feature.player.resolveMediaProxyUrl
+import lovehan1me.data.network.resolveMediaProxyUrl
 import lovehan1me.core.constant.HanimeConstants.HANIME_HOSTNAME
 import lovehan1me.core.domain.model.AppSettings
 import lovehan1me.core.domain.model.ProxyType

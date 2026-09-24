@@ -127,7 +127,7 @@ class DanmakuLayerRenderTest {
                 HanimePreviewTheme(modifier = Modifier.fillMaxSize()) {
                     // 深灰底：纯黑看不出白字，纯白看不出描边
                     Box(modifier = Modifier.fillMaxSize().background(Color.DarkGray)) {
-                        DanmakuLayer(session = session, modifier = Modifier.fillMaxSize())
+                        DanmakuLayer(driver = session, modifier = Modifier.fillMaxSize())
                     }
                 }
             },

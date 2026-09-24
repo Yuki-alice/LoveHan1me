@@ -231,8 +231,8 @@ internal fun Modifier.playerHitTarget(
 /** 双击左右跳转的步长（毫秒）。10 秒是 YouTube / 哔哩哔哩的通行值。 */
 internal const val DOUBLE_TAP_SEEK_STEP_MS = 10_000L
 
-/** 拖动进度条时的 seek 节流间隔（毫秒，M5-3）。 */
-internal const val SLIDER_SEEK_THROTTLE_MS = 120L
+// SLIDER_SEEK_THROTTLE_MS（120ms）已于 P3-1 退役：滑条/手势统一为"拖动纯预览、松手提交一次"，
+// 拖动期间零 seek，不再需要节流。
 
 /** 控件自动隐藏倒计时（毫秒，M5 体验打磨）：3s → 5s。 */
 internal const val CONTROLS_AUTO_HIDE_MS = 5_000L
@@ -281,8 +281,9 @@ private class SliderPreviewPositionProvider(
 
 /**
  * 进度条时间预览气泡（animeko `ProgressSliderPreviewPopup` 的**无帧形态**）：
- * 深底胶囊 + 时间文字。有帧预览（160×90 圆角矩形）需要引擎提供抓帧，
- * 见 `frameCaptureEnabled` —— 等接上再做，这里先把时间气泡立起来。
+ * 深底胶囊 + 时间文字。拖动预览帧不在本期 scope（见 Gate3 规划：预览帧/GIF 均不做），
+ * 时间气泡即最终形态，不是占位。抓帧能力（`grabFrameArgb` 四端已实现）仅供
+ * GIF/截图既有入口，与本气泡无关。
  */
 @Composable
 private fun SliderPreviewBubble(text: String) {
