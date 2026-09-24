@@ -1,6 +1,6 @@
 package lovehan1me.core.platform
 
-import lovehan1me.Res
+import lovehan1me.player.Res
 
 // iosMain：compose resources 的 files 薄封装
 internal actual suspend fun readAssetText(path: String): String? =

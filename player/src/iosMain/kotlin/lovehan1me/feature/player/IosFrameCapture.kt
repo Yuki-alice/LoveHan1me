@@ -9,7 +9,6 @@ import kotlinx.cinterop.reinterpret
 import kotlinx.coroutines.delay
 import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.core.util.LogUtil
-import lovehan1me.core.util.gif.FrameScaler
 import platform.AVFoundation.AVPlayer
 import platform.AVFoundation.AVPlayerItemVideoOutput
 import platform.AVFoundation.addOutput
@@ -153,7 +152,10 @@ private fun CVPixelBufferRef.toArgbPixelsScaled(targetWidth: Int, targetHeight: 
             }
         }
         if (width == targetWidth && height == targetHeight) return source
-        return FrameScaler.scale(source, width, height, targetWidth, targetHeight)
+        // 源尺寸直返：缩放由调用方（GifRecorder，:shared）补做——grabFrameArgb 契约
+        // 明确允许"只能给源尺寸就返回源尺寸"；:player 不能反向依赖 :shared 的
+        // FrameScaler（Gate3-P1 模块边界，P1 搬迁时 iOS 侧漏检的反向引用）。
+        return source
     } finally {
         CVPixelBufferUnlockBaseAddress(this, kCVPixelBufferLock_ReadOnly)
     }

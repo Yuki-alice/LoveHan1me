@@ -63,7 +63,7 @@ coil3Kmp = "3.6.1"
 fleeksoft-ksoup = "0.2.6"
 # M3：桌面 mpv 引擎（animeko 同款；engine + Skia 渲染 + 各 OS native 一体，
 # 仅 desktopMain 依赖，不碰 android/ios）
-mediamp = "0.3.2"
+mediamp = "0.5.0"
 
 [libraries]
 okio = { module = "com.squareup.okio:okio", version.ref = "okio" }
@@ -182,6 +182,12 @@ coil-network-okhttp-kmp = { module = "io.coil-kt.coil3:coil-network-okhttp", ver
 mediamp-mpv-desktop = { module = "org.openani.mediamp:mediamp-mpv-desktop", version.ref = "mediamp" }
 # M3：mpv 各 OS 原生库（engine 在运行时按平台解包加载；runtimeOnly 即可）
 mediamp-mpv-runtime = { module = "org.openani.mediamp:mediamp-mpv-runtime", version.ref = "mediamp" }
+# Gate3-P5：mediamp 核心 API（commonMain 状态机/PlayerState/MediaData 契约）
+mediamp-api = { module = "org.openani.mediamp:mediamp-api", version.ref = "mediamp" }
+# Gate3-P5：Android exo 后端（真缓冲值 + mediaSourceInterceptor 挂 ECH）
+mediamp-exoplayer = { module = "org.openani.mediamp:mediamp-exoplayer", version.ref = "mediamp" }
+# Gate3-P5：iOS avkit 后端
+mediamp-avkit = { module = "org.openani.mediamp:mediamp-avkit", version.ref = "mediamp" }
 
 [bundles]
 

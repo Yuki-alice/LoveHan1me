@@ -3,11 +3,11 @@
 > **单一真相源**（`docs/specs/2026-09-20-项目重新定位梳理-design.md` §5）。
 > 只维护 Gate 进度与 DoD 勾选，不写长文。规划细节一律回 design 文档，任务提示词回 `docs/specs/`。
 >
-> 最近更新：**2026-09-23** —— 路线图四道 Gate 扩为五道，播放模块独立为 Gate 3。
+> 最近更新：**2026-09-24** —— Gate 3 P1-P5 落地（`:player` 独立 + 回归护栏 + 控件手术 + 超分 + mediamp 0.5.0 换底），剩 P6 收尾。
 
 ## 当前焦点
 
-**Gate 3「播放独立与超分」开工中（v2，方案A），当前做 P1 `:player` 模块独立。**
+**Gate 3「播放独立与超分」开工中（v2，方案A），P1-P5 已落地，剩 P6 收尾验收。**
 Gate 2 的两个方向（源站覆盖、CF 攻坚）已完成，剩 comic 延后项与 DoD 收尾。
 
 ---
@@ -63,8 +63,11 @@ Gate 2 的两个方向（源站覆盖、CF 攻坚）已完成，剩 comic 延后
 - [x] **P4 超分** —— 分辨率门控 + dscale 换 bilinear + 预建空图免重建 + Exo 真 CNN 链
       （PERF=Restore S，QUALITY=Restore M+Upscale M+自研 scaler）；
       真机帧时间 QA 待补（2026-09-24 代码落地，测试 410 项全绿）
-- [ ] **P5 mediamp 0.5.0 迁移** —— Android→exo 后端、iOS→avkit 后端、桌面不动；Surface 跟换；
-      System 引擎删；**Android mpv 内核去留待产品决策（唯一待定）**
+- [x] **P5 mediamp 0.5.0 迁移** —— Android→exo 后端、iOS→avkit 后端、桌面不动；Surface 跟换；
+      System 引擎删
+      （2026-09-24 落地：mpv 内核经产品决策**保留为唯一例外**，P6 收尾再议砍留；MediaPlayer 档随
+      System 删除降级到 mediamp-exo；三端编译 + 全量测试全绿；mpv-android 链路仅编译验证，
+      真机回归待手测）
 - [ ] **P6 收尾** —— 删旧引擎/占位/过期注释，DoD 验收
 
 **DoD**

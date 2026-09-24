@@ -29,6 +29,9 @@ kotlin {
             // 故显式声明（API 面用不到，仅对齐版本）。
             implementation(libs.datetime)
             implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.9.1")
+            // Gate3-P5：mediamp 核心契约（PlayerState/MediaData/VideoAspectRatio），
+            // 桥接基类 MediampPlaybackEngineBase 在 commonMain。
+            implementation(libs.mediamp.api)
         }
 
         androidMain.dependencies {
@@ -41,6 +44,15 @@ kotlin {
             implementation(libs.mpv.lib)
             implementation(libs.core.ktx)
             implementation(libs.coroutines.android)
+            // Gate3-P5：mediamp-exo 换底（真缓冲值 + aspect 真效果走它家 Surface）
+            implementation(libs.mediamp.exoplayer)
+        }
+
+        val iosMain by getting {
+            dependencies {
+                // Gate3-P5：mediamp-avkit 换底
+                implementation(libs.mediamp.avkit)
+            }
         }
 
         // jvm("desktop") 自定义目标名，需用 by getting（与 :shared 同例）

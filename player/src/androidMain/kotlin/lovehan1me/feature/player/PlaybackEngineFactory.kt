@@ -10,8 +10,10 @@ object PlaybackEngineFactory {
         network: PlayerNetworkConfig,
         mpvOptions: PlayerMpvOptionsProvider,
     ): PlaybackEngine = when (kernel) {
-        PlayerKernel.MediaPlayer -> SystemPlaybackEngine(context)
-        PlayerKernel.ExoPlayer -> ExoPlaybackEngine(context, network)
+        // Gate3-P5：System 引擎已删（mediamp 无对应）；MediaPlayer 档降级到 mediamp-exo。
+        PlayerKernel.MediaPlayer, PlayerKernel.ExoPlayer -> MediampExoPlaybackEngine(context, network)
+        // mpv 内核保留为唯一例外（产品决策 2026-09-24：switch_player_kernel 现有功能不动，
+        // 砍留待 P6 收尾再议）。
         PlayerKernel.MpvPlayer -> MpvPlaybackEngine(context, network, mpvOptions)
     }
 }

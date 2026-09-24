@@ -87,3 +87,26 @@ is also listed in the application's Open Source Licenses page, and can be
 inspected with:
 
     ./gradlew :app:dependencies
+
+
+mediamp (org.openani.mediamp)
+-----------------------------
+
+The playback engine layer is built on mediamp v0.5.0
+(https://github.com/open-ani/mediamp), Copyright 2024-2026 OpenAni and
+contributors, licensed under the Apache License, Version 2.0 for the source
+code.
+
+Per-backend artifacts additionally carry the licenses of the underlying
+players they wrap:
+
+    mediamp-exoplayer  -> AndroidX Media3 (Apache License, Version 2.0);
+                          the mpv Android AAR bundled with our mpv kernel
+                          (com.github.abdallahmehiz:mpv-android) is built with
+                          `-Dgpl=false` and adds LGPL terms (see that project's
+                          NOTICE).
+    mediamp-avkit     -> Apple AVFoundation (system framework, Apple SDK terms).
+    mediamp-mpv-desktop / mediamp-mpv-runtime
+                      -> libmpv (LGPLv2.1+); the aggregated Linux runtime
+                          packages are GPL-3.0, compatible with this
+                          repository's GPLv3.
