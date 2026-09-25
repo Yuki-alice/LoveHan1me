@@ -1,103 +1,67 @@
 # LoveHan1me
 
-> 跨平台（Android / Desktop / iOS）的 hanime1.me 第三方客户端
-> 基于 **Kotlin Multiplatform** + **Compose Multiplatform**，一套代码三端运行
+跨平台（Android / 桌面 / iOS）的 [hanime1.me](https://hanime1.me) 第三方客户端。
+Kotlin Multiplatform + Compose Multiplatform，一套代码三端。
 
-> ⚠️ **开发中**：项目正在积极重构，尚未发布可用版本。
->
-> 项目定位见 [`定位.md`](定位.md)。
-
----
-
-## 为什么做这个
-
-hanime1.me 只有网页版。网页端能做的不多：没有离线、没有多端同步、播放器能力有限、搜索与内容组织较弱。
-
-LoveHan1me 想做的是**把"能看"变成"看得爽"**：
-
-- **播放体验优先** —— 手势、快捷键、倍速记忆、画中画、自动跳过、错误自动换源
-- **离线观看** —— 下载与缓存，没网也能看
-- **三端一致** —— Android / 桌面 / iOS 同一套体验
-- **可改动** —— 设计系统与分层清晰，视觉与功能都能持续演进
+> ⚠️ **成人内容**：本客户端聚合的站点含色情内容。请自行确认所在地区是否允许访问与持有。
+> **开发中**：尚未发布可用版本。
 
 ---
 
-## 平台支持
+## 它是什么，不是什么
 
-| 平台 | 说明 |
-|---|---|
-| Android | 主平台，功能最完整 |
-| Desktop | Windows / macOS / Linux（JVM） |
-| iOS | 规划中 |
-
----
-
-## 技术栈
-
-| 领域 | 选型 |
-|---|---|
-| 语言 / 构建 | Kotlin Multiplatform、Gradle (Kotlin DSL) |
-| UI | Compose Multiplatform |
-| 网络 | Ktor |
-| HTML 解析 | ksoup |
-| 持久化 | Room (KMP) + DataStore |
-| 图片 | Coil 3 |
-| 播放 | 平台原生（Android: Media3/mpv · Desktop: mpv · iOS: AVPlayer） |
+- 是**第三方客户端**：不提供、不托管、不分发任何媒体内容，所有内容来自站点本身。
+- 与 hanime1.me 官方无任何关联；不代表站点立场。
+- 仅供技术学习与交流，不得用于商业用途。
+- 网络访问需使用者自行解决（应用内可配置代理，见下）。
 
 ---
 
-## 构建
-
-### 环境要求
+## 环境要求
 
 - JDK 21
-- Android SDK（`:app` compileSdk 37 / `:shared` compileSdk 36 —— 两个平台都要装）
-- Gradle 由 wrapper 提供，无需单独安装
+- Android：Android SDK，平台 `android-37`（`minSdk 29`）
+- iOS：macOS + Xcode（Kotlin/Native 只能在 macOS 上构建 iOS 目标）
+- Gradle 由 wrapper 提供，不需要单独安装
 
-### 命令
+## 跑起来
 
 ```bash
-# 桌面端运行
-./gradlew :desktopApp:run
-
-# Android 调试包
-./gradlew :app:assembleDebug
-
-# 仅编译共享模块（最快的问题定位方式）
-./gradlew :shared:compileKotlinDesktop
+./gradlew :desktopApp:run      # 桌面
+./gradlew :app:assembleDebug   # Android 调试包
 ```
 
-> Windows 环境的坑与解法见 [`Windows环境搭建说明.md`](Windows环境搭建说明.md)
+iOS 工程由 xcodegen 生成，步骤见 [`iosApp/README.md`](iosApp/README.md)。
+
+## 可选：弹幕凭据
+
+想用自己的弹弹play 密钥，在仓库根目录的 `local.properties`（已被 gitignore）里加：
+
+```properties
+han1me.danmaku.dandan.app.id=你的 AppId
+han1me.danmaku.dandan.app.secret=你的 AppSecret
+```
+
+构建时会生成到 `build/` 下，源码里永远不含真实值。设置页里的同名输入框用于覆盖它。
+没有凭据时弹幕功能静默关闭，不影响播放。
 
 ---
 
-## 项目结构
+## 文档
 
-```
-LoveHan1me/
-├── shared/          # KMP 共享模块：网络 / 解析 / 数据 / UI / 播放器
-├── app/             # Android 壳（平台能力 + 打包）
-├── desktopApp/      # Desktop 壳
-├── iosApp/          # iOS 壳（Xcode 工程）
-└── build-logic/     # Convention plugins（KMP 模块配置统一收口）
-```
+- 本 `README.md`：面向人，只讲是什么 / 怎么跑 / 许可。
+- [`POSITIONING.md`](POSITIONING.md)：项目定位——它从哪来、为什么存在、边界在哪（给项目所有者和 agent）。
+- [`AGENTS.md`](AGENTS.md)：给 AI agent 的仓库规则（也欢迎人读，但它是规则不是介绍）。
+- [`docs/decisions.md`](docs/decisions.md)：产品与技术上的取舍与"明确不做"。
+- [`docs/evidence/`](docs/evidence)：对外部世界（站点、第三方 API、上游库）的实测记录。
 
-共享模块的内部分层见 [`规划.md`](规划.md)。历史规划文档归档在 `docs/history/`，仅供翻阅，不作为依据。
-
----
-
-## 免责声明
-
-- 本项目是**第三方客户端**，**不提供、不托管、不分发任何媒体内容**，所有内容均来自第三方网站。
-- 本项目仅供**技术学习与交流**，请勿用于任何商业用途。
-- 使用者应自行遵守所在地区的法律法规。
-- 本项目与 hanime1.me 官方无任何关联。
+**这里没有架构说明书。** 模块划分看 `settings.gradle.kts`，具体行为读代码——
+本项目刻意不维护会过期的架构描述。
 
 ---
 
 ## 许可与归属
 
-本项目以 **GNU General Public License v3.0** 发布（见 [`LICENSE`](LICENSE)）。
-第三方代码归属与完整声明见 [`NOTICE`](NOTICE)。
-
-> 本项目的部分实现参考了开源社区的工作，我们在此致谢。所有上游归属信息均保留在 `NOTICE` 中。
+以 **GNU GPL v3.0** 发布（[`LICENSE`](LICENSE)）。
+上游归属与第三方许可（Han1meViewer / MomoQR / Anime4K shaders / mediamp / libmpv）
+完整列在 [`NOTICE`](NOTICE)。

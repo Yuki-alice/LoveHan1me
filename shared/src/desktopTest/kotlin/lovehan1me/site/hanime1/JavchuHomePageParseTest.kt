@@ -80,7 +80,7 @@ private fun readFixtureOrNull(): String? {
     if (fixture == null) {
         println(
             "[skip] 未找到 .workbuddy/_javchu_home.html（本地抓包，gitignore 不入库）—— " +
-                "跳过 javchu 首页解析回归。需要时按 docs/javchu数据源热切换实施规划.md 重新抓一份。"
+                "跳过 javchu 首页解析回归。需要时重新抓一份 javchu 首页 HTML 存到该路径。"
         )
         return null
     }

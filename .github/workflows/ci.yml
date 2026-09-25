@@ -11,6 +11,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # 文档引用校验：docs/ 与 AGENTS.md/README.md 里的每个 `文件:行号` 都必须还存在，
+  # 取证条目必须四件套齐全，docs/plan/ 只允许一份活计划。断链 = 直接失败。
+  docs:
+    name: Doc citations
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Check document citations
+        run: python tools/check_doc_citations.py
+
   # Windows runner：desktopTest 里的 skiko runtimeOnly 钉的是 windows-x64 原生库，
   # 换 Linux runner 会因原生库不匹配导致 Skia 相关测试失败。
   jvm-android:
