@@ -175,4 +175,7 @@ dependencies {
     coreLibraryDesugaring(libs.desugar.jdk.libs)
 
     androidTestImplementation(libs.test.junit)
+    // Gate4-2：instrumented runner 本体（只声明 ext.junit 会导致 APK 里没有
+    // AndroidJUnitRunner，connectedAndroidTest 起不来，模拟器实测）。
+    androidTestImplementation(libs.test.runner)
 }

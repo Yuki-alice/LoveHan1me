@@ -186,6 +186,8 @@ kotlin {
         iosMain.dependencies {
             // iOS 端只能走 Darwin 引擎，自定义 DNS / DoH 需降级为系统解析
             implementation(libs.ktor.client.darwin)
+            // Gate4-1：iOS 图片管线走 Ktor（Darwin + 通用头/ECH 配置，见 ImagePipeline）
+            implementation(libs.coil.network.ktor3)
         }
 
         // 阶段 B：跨平台测试源集。

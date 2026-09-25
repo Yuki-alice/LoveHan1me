@@ -55,3 +55,13 @@ compose.desktop {
         }
     }
 }
+
+// Gate4：桌面调试构建标记。开发运行（`run`）带上，jpackage 发行包不带，
+// IsDebugBuild.desktop 只认它（默认 false，宁可藏起调试入口）。
+// 注意本块注释说的：run 与打包产物本来就是两条路，正好借来区分构建形态。
+// afterEvaluate + findByName：compose 插件的 run 任务非配置期存在，named 会直接炸求值。
+afterEvaluate {
+    tasks.findByName("run")?.let { task ->
+        (task as org.gradle.api.tasks.JavaExec).jvmArgs("-Dlovehan1me.debug=true")
+    }
+}

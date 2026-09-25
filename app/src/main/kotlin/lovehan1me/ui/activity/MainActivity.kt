@@ -18,7 +18,6 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.lifecycleScope
-import lovehan1me.BuildConfig
 import lovehan1me.data.SettingsRepository
 import lovehan1me.R
 import lovehan1me.data.logout
@@ -36,7 +35,6 @@ import lovehan1me.app.main.MainActivityHost
 import lovehan1me.app.main.MainActivityShell
 import androidx.activity.ComponentActivity
 import lovehan1me.feature.home.homepage.HomePageViewModel
-import lovehan1me.core.util.isX86_64Device
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.launch
 
@@ -219,9 +217,9 @@ class MainActivity : BaseActivity(), MainActivityHost {
         currentVideoHost?.togglePlayPause()
     }
 
-    init {
-        if (!(BuildConfig.DEBUG && isX86_64Device)) {
-            System.loadLibrary("chino")
-        }
-    }
+    // 注：曾在此 `System.loadLibrary("chino")`（46b4dea 随 NDK 源码一起删了加载，
+    // 但漏删这一处），导致非 x86_64 真机/模拟器启动即崩（UnsatisfiedLinkError）。
+    // 该库已确认不可恢复也不该恢复：其 JNI 符号包名前缀是上游旧包
+    // （`io.github.daisukikaffuchino...VideoRouteHostScreenKt_*`），在我方包名下
+    // 永远链不上；且全仓无 `external fun` 调用它。删加载即根治，不重建 NDK。
 }

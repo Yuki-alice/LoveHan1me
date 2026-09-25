@@ -9,8 +9,8 @@
 
 ## 当前焦点
 
-**Gate 3「播放独立与超分」代码侧闭环：P1-P6 全部落地，DoD 只剩真机项（见该节）。**
-Gate 2 的两个方向（源站覆盖、CF 攻坚）已完成，剩 comic 延后项与 DoD 收尾。
+**Gate 4「齐整」开工中（规划已落盘，G4-1 待开工）。**
+Gate 2 的两个方向已完成，剩 comic 延后项；Gate 3 代码侧闭环，真机三项并入 Gate 4。
 
 ---
 
@@ -96,13 +96,14 @@ Gate 2 的两个方向（源站覆盖、CF 攻坚）已完成，剩 comic 延后
 
 ## Gate 4「齐整」—— 三平台功能对齐（原 Gate 3）
 
-状态：**⬜ 未启动**
+状态：**🟡 开工中**（2026-09-25，规划见 `docs/specs/2026-09-25-Gate4-齐整-tasks.md`）
 
-- [ ] 平台能力补位：iOS 触感/相册写入/ImageLoader/下载收尾；桌面下载收尾、调试构建对话框
-      （代码里已预埋 13 处 `Gate4-平台能力` 注释）
-- [ ] Gate 2/3 新功能三平台查漏
-- [ ] 性能基线：live test 加门槛/隔离策略；列表滑动/搜索响应建基准
-- [ ] 下载链路三平台拉齐（`VideoCacheStore` 仍 no-op；`PlatformStores` stale 注释同步更新）
+- [ ] G4-1 平台能力补位：iOS 触感/相册写入/ImageLoader×2/IsDebugBuild；桌面触感标 by-design；
+      `SettingsCapabilities` 三端注释同步（13 处 `Gate4-平台能力` 注释，代码里已预埋）
+- [ ] G4-2 Gate 2/3 新功能三平台查漏 + 真机 sweep（含 Gate3 遗留：真机播放/P4 帧时间 QA）
+- [ ] G4-3 性能基线：live test 加门槛/隔离策略；列表滑动/搜索响应先记录后定线
+- [ ] G4-4 下载链路三平台拉齐（`VideoCacheStore` 双端 no-op；先定语义再实现）
+- [ ] G4-5 soak（播放器连续自用两周计时）+ 交接 Gate5 的构建预检
 
 **DoD**
 - [ ] 全仓无占位型 no-op（平台本无语义的 by-design no-op 除外，需注释标明）
@@ -135,7 +136,8 @@ Gate 2 的两个方向（源站覆盖、CF 攻坚）已完成，剩 comic 延后
 | **`docs/ROADMAP.md`** | 本文件 —— **单一真相源**，只有 Gate 进度与 DoD 勾选 | 任何时候先读它 |
 | `docs/specs/2026-09-20-项目重新定位梳理-design.md` | 项目定位与五道 Gate 路线图定稿 | 需要知道"为什么这么排" |
 | `docs/specs/2026-09-20-Gate1-tasks.md` | Gate 1 子任务提示词 + 关闭记录 | 回溯 Gate 1 做了什么 |
-| `docs/specs/2026-09-24-Gate3-播放独立与超分-tasks.md` | **Gate 3 任务规划 v2**（方案A：`:player` 独立 + 超分 + mediamp 0.5.0 迁移） | 开工 Gate 3 |
+| `docs/specs/2026-09-24-Gate3-播放独立与超分-tasks.md` | **Gate 3 任务规划 v2**（方案A：`:player` 独立 + 超分 + mediamp 0.5.0 迁移） | 开工 Gate 3（已关，见 §6.5/§6.6） |
+| `docs/specs/2026-09-25-Gate4-齐整-tasks.md` | **Gate 4 任务规划**（能力补位 + 查漏sweep + 基线 + 下载链路 + soak） | 开工 Gate 4 |
 | `docs/specs/2026-09-23-Gate3-播放模块打磨攻坚-tasks.md` | Gate 3 规划 v1（**已取代**，仅引擎事实核验方法可参考） | 归档 |
 | `docs/specs/2026-09-24-G3-0-mediamp迁移工作量评估.md` | 换底 mediamp 的**许可分层 + 分场景工作量 + 风险** | 拍 G3-0 决策 |
 | `docs/specs/2026-09-20-G2-播放器对照表.md` | 播放器能力清单（animeko × 本仓） | 判断"某能力有没有" |
