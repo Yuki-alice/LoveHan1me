@@ -93,6 +93,16 @@ class MediampExoPlaybackEngine(
         scope.launch(Dispatchers.Main) { applyVideoEffects() }
     }
 
+    // 超分致错自愈（Gate4-2 真机教训）：GL 编译是异步的，失败浮上来时已经是播放错误。
+    // 这里把档位降回 OFF（下次 load/onBeforeOpen 即空表），用户点重试就回到正常播放；
+    // 不自动重载、不吞错误卡；档位已是 OFF 时不动作，不可能循环。
+    override fun onEnteredError() {
+        if (superResolutionLevel != ExoSuperResolution.OFF) {
+            LogUtil.w(TAG, "疑似超分致错，自动降回 OFF，用户重试即恢复播放")
+            setSuperResolution(ExoSuperResolution.OFF)
+        }
+    }
+
     /** 渲染面尺寸（超分 scaler 判断 needsUpscale 用）：由 PlatformVideoSurface 按布局尺寸转交。 */
     private var surfaceWidth = 0
     private var surfaceHeight = 0

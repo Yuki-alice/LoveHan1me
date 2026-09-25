@@ -28,7 +28,10 @@ fun anime4kFeatureName(index: Int): String =
 
 // 卷积 pass 的前导：把 mpv 隐式 uniform 翻译成我们的 uTexSampler + uTexelSize。
 // 体内只用到 `<input>_texOff`（3x3 卷积采样），`_tex/_pos` 一并给出以备它用。
-fun anime4kConvPrologue(inputName: String): String = """#version 100
+// 末尾换行不可省：调用方做 `前导 + 体 + 收尾` 的字符串拼接，少了它体的首行
+// `#define` 会被粘到上一行尾，预处理器认不出（真机实测：Mali 报
+// "No matching function for call to 'go_0'"，见 Gate4-2 实机记录）。
+fun anime4kConvPrologue(inputName: String): String = """
     precision highp float;
     uniform sampler2D uTexSampler;
     uniform vec2 uTexelSize;
@@ -36,7 +39,7 @@ fun anime4kConvPrologue(inputName: String): String = """#version 100
     #define ${inputName}_texOff(off) texture2D(uTexSampler, vTexSamplingCoord + (off) * uTexelSize)
     #define ${inputName}_tex(pt) texture2D(uTexSampler, (pt))
     #define ${inputName}_pos vTexSamplingCoord
-""".trimIndent()
+""".trimIndent() + "\n"
 
 // 合并 pass 的前导：N 个特征各占一个 sampler（uFeatureK），
 // 还原残差用的原图占 uOriginalSampler（upscale 的合并没有原图，见 x2M 的 BIND 表）。
@@ -74,7 +77,7 @@ fun anime4kDepthToSpacePrologue(): String = """#version 100
     #define conv2d_last_tf_pt uTexelSize
     #define MAIN_tex(pt) texture2D(uOriginalSampler, (pt))
     #define MAIN_pos vTexSamplingCoord
-""".trimIndent()
+""".trimIndent() + "\n"
 
 // 每个 pass 体的收尾：mpv 的 hook() 即主函数体。
 const val ANIME4K_MAIN_EPILOGUE = "\nvoid main() { gl_FragColor = hook(); }\n"

@@ -83,6 +83,26 @@ class ExoAnime4kPassesTest {
     }
 
     @Test
+    fun `拼接后的源码每行指令独立成行`() {
+        // 真机教训（Gate4-2）：前导缺尾换行会把体的首行 #define 粘到上一行尾，
+        // 预处理器认不出，Mali 报 "No matching function for call to 'go_0'"。
+        val body = "#define go(x) (MAIN_texOff(x))\nvec4 hook() { return go(vec2(0.0)); }"
+        val src = anime4kConvPrologue("MAIN") + body + ANIME4K_MAIN_EPILOGUE
+        for (line in src.lineSequence()) {
+            if ("#define" in line) {
+                assertTrue(
+                    line.trimStart().startsWith("#define"),
+                    "指令被粘住：$line",
+                )
+            }
+        }
+        assertTrue(
+            src.lineSequence().any { it.trimStart().startsWith("vec4 hook()") },
+            "体函数必须独立成行",
+        )
+    }
+
+    @Test
     fun `合并体按实际引用扫出特征_单特征与全特征统一`() {
         // 还原 S 的合并只采样最后一个特征 + 原图（点采样 _tex/_pos，非卷积的 _texOff）
         val single = anime4kCombineFeatures(

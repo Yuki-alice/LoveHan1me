@@ -211,6 +211,15 @@ abstract class MediampPlaybackEngineBase : PlaybackEngine {
 
     protected open fun onRelease() {}
 
+    /**
+     * 刚进入 Error 相时调用一次（错误信息已写入后）。
+     *
+     * 用途举例：超分 effect 编译失败是异步的（Media3 在 GL 线程编，调 setVideoEffects
+     * 时不报错），失败会以播放错误浮上来；子类在此把档位降回 OFF，用户点重试即走
+     * 空表重播 —— 不自动重载（避免无意义重试与循环），不吞错误卡。
+     */
+    protected open fun onEnteredError() {}
+
     private fun publish() {
         if (released) return
         val snapshot = mediampPlayer.state.value
@@ -234,6 +243,8 @@ abstract class MediampPlaybackEngineBase : PlaybackEngine {
             mutableState.value = mutableState.value.copy(
                 errorMessage = err?.message ?: err?.toString() ?: "playback error",
             )
+            // 子类恢复钩子（如超分致错自动降档，见 onEnteredError）。
+            onEnteredError()
         }
 
         mutableState.value = mutableState.value.copy(

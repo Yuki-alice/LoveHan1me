@@ -55,6 +55,26 @@ class MediampExoDevicePlaybackTest {
                 "mediamp 应上报真缓冲进度（换底收益点）：${engine.state.value}",
                 engine.state.value.bufferedPositionMs > 0L,
             )
+
+            // P4 真 CNN 链真机验证（Gate4-2 实机教训：模板拼接缺换行曾让 Mali
+            // 编译失败 "No matching function for call to 'go_0'"，且编译是异步的，
+            // 失败浮上来是播放错误而非挂载异常）。不断言画质（肉眼项），只断言：
+            // 挂 PERFORMANCE 后不进 Error、位置继续推进（编译失败即红）。
+            engine.setSuperResolution(ExoSuperResolution.PERFORMANCE)
+            val stillFine = withTimeoutOrNull(30.seconds) {
+                while (true) {
+                    val s = engine.state.value
+                    if (s.phase == PlaybackPhase.Error) break
+                    if (s.positionMs > 15_000L && s.isPlaying) break
+                    delay(500L)
+                }
+                val s = engine.state.value
+                s.phase != PlaybackPhase.Error && s.isPlaying
+            } ?: false
+            assertTrue(
+                "挂超分 PERFORMANCE 后播放异常（GL 编译失败会进 Error）：${engine.state.value}",
+                stillFine,
+            )
         } finally {
             engine.release()
         }
