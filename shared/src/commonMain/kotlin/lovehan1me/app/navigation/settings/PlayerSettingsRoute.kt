@@ -13,7 +13,6 @@ import lovehan1me.d_speed_times
 import lovehan1me.mpv_advanced_settings_summary
 import lovehan1me.mpv_settings_disabled_summary
 import lovehan1me.feature.player.PlayerDefaults
-import lovehan1me.feature.player.PlayerKernel
 import lovehan1me.feature.settings.PlayerSettingsScreen
 import lovehan1me.feature.settings.PlayerSettingsUiState
 import lovehan1me.core.domain.model.AppSettings
@@ -49,21 +48,19 @@ fun PlayerSettingsRouteScreen(
 ) {
     val coroutineScope = rememberCoroutineScope()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
-    // P6d-3-C2：builder 在 remember{} 内无法调 stringResource，字符串在外层预解析后传入
-    val kernelForSummary = SettingsRepository.switchPlayerKernel
-    // 平台能力：桌面/iOS 的 createPlaybackEngine 忽略 kernel 参数，因此「内核选择」
-    // 与「MPV 入口」的可见性由本表决定，**不按设置值判断**。旧实现是
-    // `mpvSettingsEnabled = (kernel == "MpvPlayer")`，后果是桌面用户选了 ExoPlayer 之后，
-    // 正在跑 mpv 的桌面端反而把 MPV 高级设置置灰了（用户被自己的假设置锁在门外）。
+    // 平台能力：Gate3-P6 后**没有任何平台**提供内核选择（Android 砍掉 mpv 只剩 mediamp-exo，
+    // 桌面/iOS 本就忽略 kernel 参数），因此「MPV 入口」的可见性只剩平台能力一个判据，
+    // 不再出现「按设置值猜」那条错路（旧实现 `mpvSettingsEnabled = (kernel == "MpvPlayer")`
+    // 曾让桌面用户被自己的假设置锁在门外）。
     val capabilities = remember { settingsPlatformCapabilities() }
     val longPressDisplayTop = stringResource(
         Res.string.d_speed_times,
         formatSpeedTimes(SettingsRepository.longPressSpeedTime)
     )
     val mpvSummaryTop =
-        // ⚠️ 摘要必须与 `mpvSettingsEnabled` 用**同一个判据**：否则桌面（内核选择已被隐藏，
-        // 入口恒可点）会显示「仅当播放内核为 MPV 播放器时可配置」——界面自己打自己的脸。
-        if (isMpvSettingsAvailable(capabilities, kernelForSummary)) {
+        // ⚠️ 摘要必须与 `mpvSettingsEnabled` 用**同一个判据**：否则会出现
+        // 「入口不在、摘要却写着可用」这类界面自打脸。
+        if (isMpvSettingsAvailable(capabilities)) {
             stringResource(Res.string.mpv_advanced_settings_summary)
         } else {
             stringResource(Res.string.mpv_settings_disabled_summary)
@@ -80,7 +77,6 @@ fun PlayerSettingsRouteScreen(
 
     PlayerSettingsScreen(
         state = uiState,
-        kernelOptions = PlayerKernel.entries.map { it.name to it.name },
         speedOptions = PlayerDefaults.speedLabels.zip(PlayerDefaults.speeds.map { it.toString() }),
         longPressSpeedOptions = LONG_PRESS_SPEED_CHOICES.map { speed ->
             val label = stringResource(Res.string.d_speed_times, formatSpeedTimes(speed))
@@ -91,9 +87,6 @@ fun PlayerSettingsRouteScreen(
             // 与隔壁 `speedOptions`（`PlayerDefaults.speeds.map { it.toString() }`）同一约定。
             val value = speed.toString()
             (if (speed == longPressDefault) "$label ($defaultTag)" else label) to value
-        },
-        onKernelChange = {
-            coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(playerKernel = lovehan1me.core.domain.model.PlayerKernel.fromValue(it)) } }
         },
         onPlayerSpeedChange = {
             coroutineScope.launch { SettingsRepository.update { settings -> settings.copy(playerSpeed = it.toFloatOrNull() ?: settings.playerSpeed) } }
@@ -172,23 +165,19 @@ fun PlayerSettingsRouteScreen(
  * 「MPV 高级设置」是否**可配置** —— 全页唯一判据。
  *
  * 摘要文案（[PlayerSettingsRouteScreen] 里的 `mpvSummaryTop`）与 UiState 的
- * `mpvSettingsEnabled` 必须共用本函数：一处分叉就会出现"入口能点、摘要却写着不可用"
- * ——桌面默认内核是 `ExoPlayer`（内核选择在桌面已被隐藏、入口恒可点），旧实现正是这么错的。
+ * `mpvSettingsEnabled` 必须共用本函数：一处分叉就会出现"入口能点、摘要却写着不可用"。
  *
- * 判据本身是**平台能力**而非设置值：有内核选择的平台（Android）才需要"切到 MPV 才可点"；
- * 没有内核选择的平台（桌面）引擎本来就是 mpv，恒可点。
+ * Gate3-P6 起判据收敛为**纯平台能力**（本平台有 mpv 才可点）：内核选择项在三个平台
+ * 全部消失（Android 砍掉 mpv、桌面/iOS 忽略 kernel），"切到 MPV 才可点"那半句已无对象。
  */
-private fun isMpvSettingsAvailable(
-    capabilities: SettingsPlatformCapabilities,
-    kernel: String,
-): Boolean = !capabilities.playerKernelSelection || kernel == PlayerKernel.MpvPlayer.name
+private fun isMpvSettingsAvailable(capabilities: SettingsPlatformCapabilities): Boolean =
+    capabilities.mpvAdvancedSettings
 
 private fun buildPlayerSettingsUiState(
     capabilities: SettingsPlatformCapabilities,
     longPressDisplay: String,
     mpvSettingsSummary: String,
 ): PlayerSettingsUiState {
-    val kernel = SettingsRepository.switchPlayerKernel
     // 弹幕四项同源于一个快照：分四次读 `settings.value` 会读到跨写入的中间态
     val danmaku = SettingsRepository.current
     val currentSpeed = SettingsRepository.playerSpeed
@@ -199,13 +188,9 @@ private fun buildPlayerSettingsUiState(
             ?: PlayerDefaults.DEFAULT_SPEED_INDEX
     ) { speedLabels[PlayerDefaults.DEFAULT_SPEED_INDEX] }
     return PlayerSettingsUiState(
-        kernel = kernel,
-        kernelDisplay = kernel,
-        showKernelSelection = capabilities.playerKernelSelection,
         showMpvSettings = capabilities.mpvAdvancedSettings,
-        // 有内核选择时（Android）必须先切到 MPV 才可点；
-        // 无内核选择时（桌面）引擎本来就是 mpv，恒可点。
-        mpvSettingsEnabled = isMpvSettingsAvailable(capabilities, kernel),
+        // Gate3-P6：内核选择在三个平台都已消失，判据只剩「本平台有没有 mpv」。
+        mpvSettingsEnabled = isMpvSettingsAvailable(capabilities),
         mpvSettingsSummary = mpvSettingsSummary,
         playerSpeed = currentSpeed.toString(),
         playerSpeedLabel = speedDisplay,

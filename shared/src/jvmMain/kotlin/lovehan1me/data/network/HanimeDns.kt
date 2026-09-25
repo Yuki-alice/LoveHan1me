@@ -142,7 +142,8 @@ class HanimeDns : Dns {
         )
         val dns = getOrCreateDohDns(config)
         return dns.lookup(hostname).also {
-            LogUtil.i("DOH", it.toString())
+            // 每次域名解析都会走到这里 —— INFO 级等于按请求刷屏；解析结果属调试细节。
+            LogUtil.d("DOH", it.toString())
         }
     }
 

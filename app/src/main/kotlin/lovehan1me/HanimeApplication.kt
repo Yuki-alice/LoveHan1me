@@ -18,13 +18,11 @@ import lovehan1me.data.network.CloudflareVerificationCoordinator
 import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.ui.activity.MainActivity
 import lovehan1me.app.crash.CrashHandler
-import lovehan1me.core.util.AnimeShaders
 import lovehan1me.core.util.AppLanguageManager
 import lovehan1me.core.platform.CurrentActivityHolder
 import lovehan1me.core.util.LogUtil
 import lovehan1me.core.util.StartupTrace
 import lovehan1me.core.util.setApplicationContext
-import `is`.xyz.mpv.MPVLib
 import java.net.ProxySelector
 
 /**
@@ -47,8 +45,8 @@ class HanimeApplication : Application(), Application.ActivityLifecycleCallbacks 
 
     override fun onCreate() {
         super.onCreate()
-        // M5-2：冷启动埋点起点。放在**最前面** —— 下面每一步（DataStore/设置/语言/通知渠道/
-        // MPV 初始化）都算启动耗时，而那正是用户感受到的部分。
+        // M5-2：冷启动埋点起点。放在**最前面** —— 下面每一步（DataStore/设置/语言/通知渠道）
+        // 都算启动耗时，而那正是用户感受到的部分。
         StartupTrace.begin("android:Application")
         // 与上面互补的一条对照：**进程起点 → onCreate** 的耗时（类加载、ContentProvider
         // 初始化都在这一段里，它发生在 begin 之前，故单独打一条而不是塞进段落表）。
@@ -75,13 +73,9 @@ class HanimeApplication : Application(), Application.ActivityLifecycleCallbacks 
         // 「哪个 Activity 承载验证页」这一点壳信息（决策 #9 划给壳的 Activity 能力）。
         CloudflareVerificationCoordinator.verificationActivityClass = MainActivity::class.java
         initNotificationChannel()
-        MPVLib.create(applicationContext)
-        MPVLib.init()
-        StartupTrace.mark("mpv")
-
-        if (AnimeShaders.copyCertAssets(applicationContext) <= 0) {
-            LogUtil.w(TAG, "cert 复制失败")
-        }
+        // Gate3-P6：mpv 内核已砍（产品决策 2026-09-24），故这里原先的
+        // `MPVLib.create/init` + `StartupTrace.mark("mpv")` + `AnimeShaders.copyCertAssets`
+        // （只服务于 mpv 的 tls-ca-file）一并删除。副作用是冷启动少一项原生库加载。
     }
 
     /**

@@ -3,11 +3,13 @@
 > **单一真相源**（`docs/specs/2026-09-20-项目重新定位梳理-design.md` §5）。
 > 只维护 Gate 进度与 DoD 勾选，不写长文。规划细节一律回 design 文档，任务提示词回 `docs/specs/`。
 >
-> 最近更新：**2026-09-24** —— Gate 3 P1-P5 落地（`:player` 独立 + 回归护栏 + 控件手术 + 超分 + mediamp 0.5.0 换底），剩 P6 收尾。
+> 最近更新：**2026-09-24（P6 收尾）** —— Gate 3 P1-P6 全部落地（`:player` 独立 + 回归护栏 +
+> 控件手术 + 超分 + mediamp 0.5.0 换底 + **P6 砍掉 Android mpv 内核并删净旧引擎**）；
+> 剩 DoD 里需要真机的那几项手测。
 
 ## 当前焦点
 
-**Gate 3「播放独立与超分」开工中（v2，方案A），P1-P5 已落地，剩 P6 收尾验收。**
+**Gate 3「播放独立与超分」代码侧闭环：P1-P6 全部落地，DoD 只剩真机项（见该节）。**
 Gate 2 的两个方向（源站覆盖、CF 攻坚）已完成，剩 comic 延后项与 DoD 收尾。
 
 ---
@@ -48,7 +50,8 @@ Gate 2 的两个方向（源站覆盖、CF 攻坚）已完成，剩 comic 延后
 
 ## Gate 3「播放独立与超分」—— 内核独立成模块，再谈打磨
 
-状态：**🟡 开工中**（2026-09-24 由"打磨攻坚"重排为 v2，方案A：`:player` 独立模块）
+状态：**🟢 代码侧闭环**（2026-09-24 由"打磨攻坚"重排为 v2，方案A：`:player` 独立模块；
+同日 P6 收尾完成，剩真机 DoD）
 
 来源：`docs/specs/2026-09-24-Gate3-播放独立与超分-tasks.md`（v2，取代 09-23 版 v1）
 依据：mediamp 按 v0.5.0 tag 重验 + animeko 超分读完 + scope 收敛（截图/GIF/预览帧/章节/音轨不做）
@@ -65,16 +68,29 @@ Gate 2 的两个方向（源站覆盖、CF 攻坚）已完成，剩 comic 延后
       真机帧时间 QA 待补（2026-09-24 代码落地，测试 410 项全绿）
 - [x] **P5 mediamp 0.5.0 迁移** —— Android→exo 后端、iOS→avkit 后端、桌面不动；Surface 跟换；
       System 引擎删
-      （2026-09-24 落地：mpv 内核经产品决策**保留为唯一例外**，P6 收尾再议砍留；MediaPlayer 档随
-      System 删除降级到 mediamp-exo；三端编译 + 全量测试全绿；mpv-android 链路仅编译验证，
-      真机回归待手测）
-- [ ] **P6 收尾** —— 删旧引擎/占位/过期注释，DoD 验收
+      （2026-09-24 落地：三端编译 + 全量测试全绿）
+- [x] **P6 收尾** —— 删旧引擎/占位/过期注释，DoD 验收
+      （2026-09-24 落地：**产品决策砍掉 Android mpv 内核**，`MpvPlaybackEngine` / `ExoPlaybackEngine` /
+      `IosAVPlaybackEngine`(+其测试) / `AnimeShaders`+`cacert.pem` 全删；设置页「内核选择」行与
+      `playerKernelSelection` 能力位一并删除；过期注释清 10 处；三端编译 + 410 项测试全绿。
+      详见规划文档 §6）
 
 **DoD**
-- [ ] `:player` 三端独立编译，引擎零直读设置/网关
-- [ ] 缓冲/isBuffering 三端真值；`supportedAspectModes()` 与真机实测一致
-- [ ] 超分诚实 + 1080p+ 不放大 + 帧时间实测数据
-- [ ] 回归测试进 CI；换底结论写回本节
+- [x] `:player` 三端独立编译，引擎零直读设置/网关（本机实测 desktop/android/iOS 三目标全绿；
+      CI 双 runner 覆盖 Windows + macOS）
+- [ ] 缓冲/isBuffering 三端真值（**代码已换成 mediamp 三轴真值**，待真机确认观感）
+- [ ] `supportedAspectModes()` 与真机实测一致（代码三档全给；**待真机矩阵**）
+- [ ] 超分诚实 + 1080p+ 不放大 + 帧时间实测数据（代码齐；**帧时间实测缺设备与流，未做**）
+- [x] 回归测试进 CI（`:player` 42 + `:shared` 368 = 410 项，本地重跑 0 失败）
+- [x] Android mpv 内核去留**已定：砍掉**（2026-09-24 产品决策，见 P6）
+
+**P6 附带的行为变化（不是 bug，是决策的必然结果，已落码注释）**
+- Android 默认档（mediamp-exo）与 iOS 的**截图/GIF 入口消失**：原唯一实现方是 Exo/mpv 两引擎，
+  两者都已删；`supportsFrameCapture()` 默认 false ⇒ UI 自动不出入口。抓帧链路按规划**有意保留**
+  （`GifCaptureDialog` / `ScreenshotCapturer` / `AndroidFrameCapture` / `IosFrameCapture`），
+  将来接回来只差在 mediamp 引擎上实现 `grabFrameArgb`。
+- 设置页**「播放内核」选择行消失**（三平台一致）：只剩一个真引擎，留着就是假开关。
+  `AppSettings.playerKernel` 与 DataStore 键保留（存储兼容），值已成惰性。
 
 ---
 
@@ -129,6 +145,8 @@ Gate 2 的两个方向（源站覆盖、CF 攻坚）已完成，剩 comic 延后
 | `docs/播放页-对比animeko差距清点与重构裁定-审阅.md` | 上文的**逐条代码复核**（纠了 3 处错） | **读上文前先读它** |
 | `docs/播放页-对齐与命中区规范.md` | 间距与命中区数值规范（⚠️ 顶部有状态更正） | 调控件几何 |
 | `docs/播放页-三端布局对比与控件优化方案.md` | 三端像素实测与优化项 | 同上 |
+| `docs/2026-09-24-Codex-ComputerUse-测试流程与提示词.md` | **视觉级自动化测试 playbook**（安全红线 + 场景清单 P0-P4 + 可直接粘贴的提示词） | 交给 computer-use agent 跑 UI 回归前 |
+| `docs/2026-09-24-全功能测试矩阵与流程.md` | **全功能测试矩阵**（38 路由全量：启动/首页/搜索/详情/播放器/弹幕/我的/下载/账号/网络/设置 14 页…） | 要"把所有功能都测一遍"时，先读它 |
 | `docs（不做参考）/` | **归档**：旧 P/M 体系文档、Kazumi/animeko 对照、漫画 Tab 设计等 | 仅作史料，**不要当依据** |
 
 > ⚠️ **文档互相矛盾时的优先级**：`ROADMAP` > `design` > `specs/*-tasks` > 专题分析文档。

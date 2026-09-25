@@ -18,9 +18,11 @@ import kotlin.coroutines.resume
  * 否则直接失败（它不做缩放）。而 `PlaybackEngine.attachSurface` 只拿到一个
  * `android.view.Surface`，**从 Surface 本身读不出宽高**。
  *
- * 于是把 `PlatformVideoSurface` 里 `SurfaceHolder.Callback.surfaceChanged` 拿到的
- * 宽高转交给引擎。此前这段逻辑是**硬编码只给 MpvPlaybackEngine** 的
- * （`if (engine is MpvPlaybackEngine)`），这里提升为一个能力接口，让 Exo 也能用。
+ * 于是把布局阶段拿到的宽高转交给引擎。历史上这是硬编码只给 `MpvPlaybackEngine`
+ * 的（`if (engine is MpvPlaybackEngine)`），后提升为能力接口供多引擎共用；
+ * Gate3-P6 砍掉 mpv 内核后，**唯一实现方是 [MediampExoPlaybackEngine]**
+ * （超分 `needsUpscale` 要渲染面尺寸）。接口保留：它是"引擎需要知道渲染面多大"
+ * 的通用契约，不绑内核。
  */
 internal interface AndroidSurfaceSizeAware {
     fun updateSurfaceSize(width: Int, height: Int)
@@ -29,10 +31,18 @@ internal interface AndroidSurfaceSizeAware {
 /**
  * Bitmap → ARGB `IntArray`（0xAARRGGBB，长度 = 宽×高），并**缩到长边不超过 [targetLongEdge]**。
  *
- * 为什么必须在这里缩、而不是交给公共层的 `FrameScaler`：
+ * ## ⚠️ 当前无调用方（Gate3-P6 起）—— 有意保留，勿当死代码清理
+ * 本文件两个抓帧件（本函数与 [pixelCopyArgb]）原先服务于 `ExoPlaybackEngine` 与
+ * `MpvPlaybackEngine` 的 `grabFrameArgb`。Gate3-P5 替掉了 Exo 引擎、P6 砍掉了 mpv 内核，
+ * Android 于是暂时没有任何引擎实现抓帧。规划口径是「截图/GIF 属 scope 外，链路保留、
+ * 入口先藏」：`supportsFrameCapture()` 默认 false ⇒ UI 自动不出入口，这里留着现成件。
+ * 接回来时只差在 mediamp-exo 上实现 `grabFrameArgb` —— 渲染面是它家 `PlayerView`，
+ * `PixelCopy` 改走 `request(View, …)` 重载（本函数的 `Surface` 版签名随之调整）。
+ *
+ * ## 为什么必须在这里缩、而不是交给公共层的 `FrameScaler`
  * 1080p 一帧的 `IntArray` 就是 8 MB，而录制要同时持有几十帧
  * （`GifCapturePolicy` 的内存预算按**输出尺寸**估算）。
- * 平台侧解码器本来就带缩放能力（mpv 的 `grabThumbnail(dim)`、`Bitmap.createScaledBitmap`），
+ * 平台侧本来就带缩放能力（`Bitmap.createScaledBitmap`），
  * 先缩再转数组能把峰值内存降一个数量级。
  *
  * @return null 表示位图不可用（已回收 / 尺寸非法）
@@ -66,7 +76,8 @@ internal fun Bitmap.toArgbPixels(targetLongEdge: Int): IntArray? {
 }
 
 /**
- * 用 `PixelCopy` 从渲染面抓一帧（Android 的 ExoPlayer / MediaPlayer 路径）。
+ * 用 `PixelCopy` 从渲染面抓一帧（历史上是 Android 的 ExoPlayer / MediaPlayer 路径，
+ * 现状见 [toArgbPixels] 顶部的「当前无调用方」说明：保留待接回）。
  *
  * ⚠️ **必须传与渲染面等大的 [surfaceWidth] × [surfaceHeight]**，PixelCopy 不做缩放。
  * 拿到后再由 [toArgbPixels] 缩到目标尺寸。

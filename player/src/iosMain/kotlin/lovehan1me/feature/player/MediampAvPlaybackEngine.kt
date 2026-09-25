@@ -10,7 +10,7 @@ import platform.AVFoundation.volume
 /**
  * Gate3-P5：iOS 换底 mediamp-avkit（v0.5.0）。
  *
- * 相比旧 [IosAVPlaybackEngine] 的收益：
+ * 相比旧 iOS 引擎（`IosAVPlaybackEngine`，已随 Gate3-P6 删除）的收益：
  * - 状态机从"500ms 协程轮询推导"换成 mediamp 三轴真值（缓冲/seek 完成/错误即时）；
  * - 画面比例三档全真（它家 AVPlayerLayer.videoGravity，与本仓旧实现同机制，
  *   但状态来源统一到 mediamp feature）。

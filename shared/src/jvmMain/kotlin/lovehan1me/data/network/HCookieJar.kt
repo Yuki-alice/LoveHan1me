@@ -37,7 +37,12 @@ class HCookieJar : CookieJar {
             cookies.addAll(CookieString(clearance).toLoginCookieList(host))
         }
 
-        LogUtil.d("HCookieJar", "loadForRequest for $host: $cookies")
+        // 只报数量与键名：值里是 hanime1_session / XSRF-TOKEN / cf_clearance 等凭据，
+        // 原样打出来既刷屏（单行数 KB）又等于泄漏。
+        LogUtil.d(
+            "HCookieJar",
+            "loadForRequest for $host: ${cookies.size} 条 [${cookies.joinToString { it.name }}]",
+        )
 
         return cookies
     }

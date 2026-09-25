@@ -111,7 +111,7 @@ class MyPlayListViewModel : ViewModel(), PlaylistController {
 
     // 加载所有playlist
     override fun loadMyPlayList(page: Int, forceReload: Boolean) {
-        LogUtil.i("current_page",page.toString())
+        LogUtil.d("current_page", page.toString())
         if (page > 1 && (_isLoadingMorePlaylists.value || _noMorePlaylists.value)) return
         if (page == 1 || forceReload) {
             playlistPage = 1

@@ -605,8 +605,10 @@ fun VideoPlayerUi(
                             // 画面缩放（双指 / Ctrl+滚轮）；控件层是兄弟节点，不跟着放大
                             .scale(scale)
                     ) {
-                        // P5-1：Surface 渲染走 shared 插槽（androidMain 内为原 SurfaceView 代码，
-                        // 含 attach/detach 回调 + Mpv updateSurfaceSize；其余 1900 行零改动）
+                        // P5-1：Surface 渲染走 shared 插槽；Gate3-P5/P6 后三端都是 mediamp
+                        // 自家 Surface（Android 的 SurfaceView 分支随 mpv 内核一并删除）。
+                        // 下面两个回调仍按契约传：mediamp 引擎的 attach/detach 是 no-op，
+                        // Android 侧实现干脆不回调（见 PlatformVideoSurface.android）
                         PlatformVideoSurface(
                             engine = playbackEngine,
                             modifier = Modifier.fillMaxSize(),

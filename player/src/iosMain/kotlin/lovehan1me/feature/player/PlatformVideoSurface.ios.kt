@@ -13,7 +13,7 @@ import org.openani.mediamp.avkit.AVKitMediampPlayerSurface
 // aspect 三档真效果走它家 videoGravity（与旧实现同机制，状态来源统一到
 // mediamp VideoAspectRatio feature）。VideoSurface 链路与其无关（引擎
 // attach/detach 为 no-op），假实例保住调用方契约。
-// 旧 IosAVPlaybackEngine 路径已由 Factory 切走，P6 收尾删引擎时同步删本注释。
+// （Gate3-P6：旧 IosAVPlaybackEngine 已删，原先"删引擎时同步删本注释"的待办已完成。）
 @Composable
 actual fun PlatformVideoSurface(
     engine: PlaybackEngine,

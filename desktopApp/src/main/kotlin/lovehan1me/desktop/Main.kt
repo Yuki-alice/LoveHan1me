@@ -69,6 +69,15 @@ import java.net.URI
  *     `AppLanguageManager.applyStoredLanguage`。
  */
 fun main() {
+    // 日志门槛 —— 对应 Android 侧 `LogUtil.enabled = BuildConfig.DEBUG` 的那一步。
+    // 桌面此前**从未设过**任何门槛（`enabled` 只有 :app 会赋值），于是恒为 true：
+    // 所有 d()/v() 的细节日志全量灌进终端（网关逐条 stdout 转发、cookie 内容、
+    // mpv debug 级输出…），把 i()/w() 里真正有用的信号埋掉。
+    // 默认只留 INFO 及以上；要看细节：
+    //     HAN1ME_LOG=debug ./gradlew :desktopApp:run     （d 及以上）
+    //     HAN1ME_LOG=verbose ./gradlew :desktopApp:run   （全放行）
+    LogUtil.setLevelByName(System.getenv("HAN1ME_LOG"))
+
     // M5-2：埋点起点放在最前 —— 连崩溃处理器注册、冒烟判定都算进"启动"里。
     StartupTrace.begin("desktop:main")
 

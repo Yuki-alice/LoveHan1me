@@ -6,9 +6,12 @@ package lovehan1me.core.util
  * 输入格式：`key,value;key,value;…`（分号分条目、逗号分键值）。
  *
  * ## 为什么放在 commonMain
- * Android 侧（原生 libmpv `MPVLib.setOptionString`）与桌面侧（mediamp
- * `MPVHandle.setPropertyString`）下发的是**同一份用户输入**；解析逻辑一旦各写一份，
- * 就会出现"同一串参数在两端理解不同"的隐性分歧 —— 这类 bug 只会在用户手里复现。
+ * 历史上 Android 侧（原生 libmpv `MPVLib.setOptionString`）与桌面侧（mediamp
+ * `MPVHandle.setPropertyString`）下发的是**同一份用户输入**；Gate3-P6 砍掉 Android
+ * mpv 内核后**只剩桌面消费**，但解析逻辑仍留在 commonMain：它是 mpv 语义的一部分，
+ * 不该跟着"当前谁在用"来回搬（且 Android 若将来恢复 mpv 内核即自动复用）。
+ * 解析一旦各写一份，就会出现"同一串参数在两端理解不同"的隐性分歧 —— 这类 bug
+ * 只会在用户手里复现。
  * 故两端共用本函数。
  *
  * ## 容错取向：静默丢弃非法条目

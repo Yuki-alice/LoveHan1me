@@ -30,8 +30,8 @@ import platform.darwin.NSObject
  * 进入条件与 Android 同：设置允许 + 正在播（rate != 0 且有 currentItem）。
  *
  * 管线归属：
- * - 播放器 `AVPlayer` 由 [IosAVPlaybackEngine] 经 [IosPipPlayerHolder] 注册
- *   （引擎每条视频一个实例，release 时解绑）；
+ * - 播放器 `AVPlayer` 由引擎（Gate3-P5 起是 `MediampAvPlaybackEngine`）经
+ *   [IosPipPlayerHolder] 注册（引擎每条视频一个实例，release 时解绑）；
  * - PiP 用**独立** `AVPlayerLayer`（不复用渲染面的 layer——面的 layer 随
  *   Compose 释放，PiP 窗必须在页面销毁后继续活）；
  * - 状态经 [PipModeReporter.pipModeListener] 回共享 pageHost

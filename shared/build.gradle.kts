@@ -130,7 +130,7 @@ kotlin {
             implementation(libs.media3.exoplayer.hls)
             // 阶段一②：Exo 超分走 Media3 GlEffect（effect 与 exoplayer 同版本）
             implementation(libs.media3.effect)
-            implementation(libs.mpv.lib)
+            // Gate3-P6：`libs.mpv.lib`（mpv-android）已随 Android mpv 内核一起移除
             // 引擎编译必需（:app 经 bundles.android.base 间接持有，此处显式声明）：
             // core-ktx（androidx.core.net.toUri）+ coroutines-android（Dispatchers.Main）
             implementation(libs.core.ktx)

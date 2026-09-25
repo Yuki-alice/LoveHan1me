@@ -13,6 +13,7 @@ import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import lovehan1me.core.util.LogUtil
 import org.openani.mediamp.exoplayer.ExoPlayerMediampPlayer
 import org.openani.mediamp.exoplayer.ExoPlayerMediampPlayerFactory
@@ -22,7 +23,7 @@ import org.openani.mediamp.source.UriMediaData
 /**
  * Gate3-P5：Android 换底 mediamp-exo（v0.5.0）。
  *
- * 相比旧 [ExoPlaybackEngine] 的收益：
+ * 相比旧 Exo 引擎（`ExoPlaybackEngine`，已随 Gate3-P6 删除）的收益：
  * - 缓冲/isBuffering 由 mediamp 状态机给真值（含 opening/stall/post-seek 区分）；
  * - 画面比例三档全真（走它家 PlayerView.resizeMode，不再是 setVideoScalingMode 两档）；
  * - aspect fallback 修复：挂 video effects 后 media3 不上报真实尺寸，它家 Surface
@@ -105,12 +106,20 @@ class MediampExoPlaybackEngine(
      * 每次 open 前预置 effect 表（Media3 约束：setVideoEffects 须先于 prepare；
      * mediamp openImpl 内部自己 prepare，这个钩子正好卡在它之前）。
      * 档位记忆沿用旧引擎：OFF 挂空表，非 OFF 挂真表（跨 load 保留档位）。
+     *
+     * B1 修复：此前 OFF 分支在 Default 线程同步直调（线程违规），非 OFF 分支
+     * fire-and-forget 到 Main（可能晚于 prepare，首开超分不生效）。
+     * 现统一切 Main 且挂起等完成，基类随后才 setMediaData。
      */
-    override fun onBeforeOpen() {
-        if (superResolutionLevel == ExoSuperResolution.OFF) {
-            runCatching { exoPlayer.setVideoEffects(emptyList()) }
-        } else {
-            scope.launch(Dispatchers.Main) { applyVideoEffects() }
+    override suspend fun onBeforeOpen() {
+        // openMedia 跑在 Default 线程；setVideoEffects 必须 Main，整个切过去
+        // （applyVideoEffects 内的资产 IO 走内存缓存，首次约几百 KB，主线程可接受）。
+        withContext(Dispatchers.Main) {
+            if (superResolutionLevel == ExoSuperResolution.OFF) {
+                runCatching { exoPlayer.setVideoEffects(emptyList()) }
+            } else {
+                applyVideoEffects()
+            }
         }
     }
 

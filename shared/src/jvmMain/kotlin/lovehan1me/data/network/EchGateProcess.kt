@@ -166,6 +166,20 @@ object EchGateProcess {
      * 进程退出（输出流 EOF）时清掉全部运行态 `[process]/[starting]/[EchGate.port]`，
      * 拦截器的自愈逻辑据此在下次请求时重新拉起。
      */
+    /**
+     * 网关的决策/失败行 —— 这些必须可见，见 [monitor] 里的说明。
+     * 匹配的是 Go 侧 `log.Printf` 的内容（不含 Kotlin 侧加的 `echgate: ` 前缀）。
+     */
+    private fun isDiagnosticLine(line: String): Boolean =
+        line.contains("upstream error") ||
+            line.contains("plan ") ||
+            line.contains("CONNECT ") ||
+            line.contains("拨号失败") ||
+            line.contains("解析无结果") ||
+            line.contains("ECH 试不通") ||
+            line.contains("被阻断，改用 CNAME") ||
+            line.contains("候选 ")
+
     private fun monitor(proc: Process, port: Int) {
         thread(start = true, isDaemon = true, name = "echgate-monitor") {
             runCatching {
@@ -177,6 +191,12 @@ object EchGateProcess {
                             EchGate.port = port
                             starting = false
                             LogUtil.i(TAG, "ECH 网关就绪：$line")
+                        } else if (isDiagnosticLine(line)) {
+                            // ⚠️ 网关的"为什么失败"全在这几行里，而项目默认只留 INFO ——
+                            // 以前这里一律用 d 级打，等于把排障依据全丢掉：客户端只看到
+                            // `[EchGate]网关异常，回退直连 …`，却不知道网关侧是探测超时、
+                            // 拨号被拒还是 CNAME 走了错路（2026-09-25 因此绕了很久）。
+                            LogUtil.i(TAG, "echgate: $line")
                         } else {
                             LogUtil.d(TAG, "echgate: $line")
                         }

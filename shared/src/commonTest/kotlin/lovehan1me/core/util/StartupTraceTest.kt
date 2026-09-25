@@ -28,7 +28,7 @@ class StartupTraceTest {
     fun `begin 只认第一次调用`() {
         StartupTrace.begin("test")
         val first = StartupTrace.elapsedMillis()
-        Thread.sleep(5)
+        kotlinx.coroutines.runBlocking { kotlinx.coroutines.delay(5) }
         StartupTrace.begin("再次调用")
         // 起点不被重置：第二次 begin 后耗时不会回到 0
         assertTrue(StartupTrace.elapsedMillis() >= first)
@@ -39,7 +39,7 @@ class StartupTraceTest {
         StartupTrace.begin("test")
         StartupTrace.mark("coil")
         val afterFirst = StartupTrace.elapsedMillis()
-        Thread.sleep(5)
+        kotlinx.coroutines.runBlocking { kotlinx.coroutines.delay(5) }
         StartupTrace.mark("coil")
         // 幂等：不会因为二次埋点把该段耗时改大（summary 里读到的仍是第一次）
         assertTrue(StartupTrace.elapsedMillis() >= afterFirst)

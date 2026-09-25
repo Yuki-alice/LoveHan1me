@@ -147,12 +147,22 @@ class DesktopMpvPlaybackEngine(
 
     override fun load(request: PlaybackRequest) {
         if (released) return
-        LogUtil.d(TAG, "load: ${request.uri} (headers=${request.headers.keys})")
+        // ⚠️ 直链尾部是 `?secure=<token>,<expiry>` —— 限时访问凭据，只打 origin+path，
+        // 查询串整体省略（调试时如需核对，看请求头/网关日志，别把凭据抄进终端与日志文件）。
+        LogUtil.d(TAG, "load: ${request.uri.substringBefore('?')} (query 已省略, headers=${request.headers.keys})")
         issueLoad(request)
     }
 
-    private fun issueLoad(request: PlaybackRequest) {
+    /**
+     * @param allowGate 本次允许走 ECH 网关。回退重试时传 false 强制直连。
+     */
+    private fun issueLoad(request: PlaybackRequest, allowGate: Boolean = true) {
         mainScope.launch {
+            // 网关改写只算一次：失败时要靠它判断"刚才是不是走的网关"。
+            val gateRewrite = if (allowGate) network.rewriteForGate(request.uri) else null
+            val (mediaUri, mediaHeaders) = gateRewrite
+                ?.let { (url, gateHeaders) -> url to (request.headers + gateHeaders) }
+                ?: (request.uri to request.headers)
             runCatching {
                 // 惰性初始化先在 Default 线程摸热：万一启动预载尚未完成，
                 // 这里也只会挂起等待，不会把 EDT 阻塞在 lazy 锁上。
@@ -162,16 +172,13 @@ class DesktopMpvPlaybackEngine(
                 // 在受限网络下表现为 mpv_error=-13（LOADING_FAILED）——页面能开、视频永远转圈。
                 // 网络选项与「MPV 高级设置」同批下发，都在"打开流"那一步之前生效。
                 mpvHandle()?.let { handle ->
-                    applyNetworkOptions(handle)
+                    applyNetworkOptions(handle, mediaUri)
                     applyMpvSettings(handle)
                     // G2-3b：换流之后重下画面类偏好（新 mpv 实例/新窗口尺寸下属性仍在，
                     // 但 draw 尺寸会变，Stretch 的比值必须按新渲染面重算）。
                     applyVideoAspect(handle, aspectMode)
                     applyPictureAdjust(handle, pictureAdjust)
                 }
-                val (mediaUri, mediaHeaders) = network.rewriteForGate(request.uri)
-                    ?.let { (url, gateHeaders) -> url to (request.headers + gateHeaders) }
-                    ?: (request.uri to request.headers)
                 player.setMediaData(
                     UriMediaData(mediaUri, mediaHeaders),
                     request.playWhenReady,
@@ -184,6 +191,20 @@ class DesktopMpvPlaybackEngine(
                 // R2：失败即停（学 animeko）。此前这里 1.5s 后静默重载同一 URL，
                 // 纹理未释放就再开一流；手动重试（错误卡按钮调 load()）还在。
                 LogUtil.e(TAG, "load failed", it)
+                // ⚠️ 网关失败必须补一次直连重试：mpv 的 URL 是**静态重写**成
+                // `127.0.0.1:<port>` 的，网关回 502（上游拨不通/连接被关）时
+                // ffmpeg 直接拿到 502，mpv 报 mpv_error=-13 结束 —— 而 OkHttp 链路
+                // 有 `EchGateInterceptor` 的"回退直连"兜底，两条链路行为不一致，
+                // 症状就是"同一部片，封面能刷出来、视频打不开"。这里补上同一份兜底，
+                // 只重试一次（直连不通就真的不通，别循环）。
+                if (gateRewrite != null) {
+                    LogUtil.w(
+                        TAG,
+                        "网关链路加载失败，回退直连重试一次 ${request.uri.substringBefore('?')}",
+                    )
+                    issueLoad(request, allowGate = false)
+                    return@launch
+                }
                 _state.value = _state.value.copy(
                     phase = PlaybackPhase.Error,
                     errorMessage = it.message,
@@ -281,22 +302,28 @@ class DesktopMpvPlaybackEngine(
     /**
      * 画面比例 → mpv 属性。
      *
-     * - Fit：`video-aspect-override=-1`（= 关闭覆写，mpv 自己等比留边）；
+     * - Fit：`video-aspect-override=no`（= 关闭覆写，mpv 自己等比留边）；
      * - Crop：`panscan=1.0`（mpv 的"裁切填满"；再叠加覆写会互相打架，故先清覆写）；
      * - Stretch：**没有直接的开关**。mpv 只有"把图像按某个 DAR 绘制"这一件事，
      *   所以这里把 DAR 覆写成**渲染面的宽高比**（`dwidth/dheight`）—— 图像被按
      *   容器形状绘制，即为拉伸。代价是容器尺寸变化时这个比值会过期，
      *   故 [startAspectWatch] 在 Stretch 档下按秒回读重算。
+     *
+     * ⚠️ 曾用 `-1` 表示"不覆写"，但 mpv 新版已废弃该写法，启动即刷
+     * `[vd] Setting video-aspect-override to -1 is deprecated.`
+     * 并提示改用 `no`（`--video-aspect-override=no --video-aspect-mode=container`）。
+     * 一旦新版不再把 `-1` 当"清除"，从 Stretch 切回 Fit 就会清不掉上一次的覆写，
+     * 表现为"比例菜单选了没反应"。故统一改成 `no`。
      */
     private fun applyVideoAspect(handle: MPVHandle, mode: VideoAspectMode) {
         when (mode) {
             VideoAspectMode.Fit -> {
                 handle.setPropertyString("panscan", "0")
-                handle.setPropertyString("video-aspect-override", "-1")
+                handle.setPropertyString("video-aspect-override", ASPECT_OVERRIDE_NONE)
             }
 
             VideoAspectMode.Crop -> {
-                handle.setPropertyString("video-aspect-override", "-1")
+                handle.setPropertyString("video-aspect-override", ASPECT_OVERRIDE_NONE)
                 handle.setPropertyString("panscan", "1.0")
             }
 
@@ -306,7 +333,7 @@ class DesktopMpvPlaybackEngine(
                 val height = handle.getPropertyString("dheight")?.toDoubleOrNull() ?: 0.0
                 if (width <= 0.0 || height <= 0.0) {
                     // 渲染面尺寸还没出来（首帧前）：先退回 Fit，等看门狗补上。
-                    handle.setPropertyString("video-aspect-override", "-1")
+                    handle.setPropertyString("video-aspect-override", ASPECT_OVERRIDE_NONE)
                     return
                 }
                 handle.setPropertyString("video-aspect-override", (width / height).toString())
@@ -435,16 +462,25 @@ class DesktopMpvPlaybackEngine(
      * 用 [MPVHandle.setPropertyString] 设置并把返回值记进日志 ——
      * 若某天 mpv 把它标成不可运行时修改，日志里会直接看到 `set=false`，不必猜。
      */
-    private fun applyNetworkOptions(handle: MPVHandle) {
-        // ⚠️ ECH 网关启用时**不能再给 mpv 设 http-proxy**：媒体 URL 已被改写到
-        // 127.0.0.1（见 [PlayerNetworkConfig.rewriteForGate]），而 ffmpeg 的 http_proxy
-        // 没有 bypass 列表——它会把这条件对本地回环的请求也代理出去，网关永远收不到。
-        // 该互斥由网络配置实现方保证（网关启用时 `proxyUrlFor` 返回 null）。
-        network.proxyUrlFor()?.let { proxy ->
+    private fun applyNetworkOptions(handle: MPVHandle, mediaUri: String) {
+        // ⚠️ 判据是 **mediaUri 本身是不是网关回环地址**，不是"网关有没有在跑"：
+        // 网关启用时 URL 被改写到 127.0.0.1（见 [PlayerNetworkConfig.rewriteForGate]），
+        // 而 ffmpeg 的 http_proxy 没有 bypass 列表，设了它连回环请求也会被代理出去；
+        // 但引擎的"网关失败 → 回退直连"分支（[issueLoad]）用的是**真实源站 URL**，
+        // 那时必须设代理 —— 视频 CDN 多为 CDN77 之类的非 CF 边缘，ECH 帮不上忙，
+        // 不设代理的结果就是裸直连的 `Connection refused`。
+        // 两个方向的判据统一由 [PlayerNetworkConfig.proxyUrlFor] 的实现方给出。
+        val proxy = network.proxyUrlFor(mediaUri)
+        if (proxy != null) {
             val ok = handle.setPropertyString("http-proxy", proxy)
-            LogUtil.d(TAG, "mpv http-proxy=$proxy set=$ok")
+            LogUtil.d(TAG, "mpv http-proxy=$proxy set=$ok (media=${mediaUri.substringBefore('?')})")
             if (!ok) LogUtil.w(TAG, "mpv 不接受运行时设置 http-proxy，视频可能仍走直连")
-        } ?: LogUtil.d(TAG, "ECH 网关启用或无代理，跳过 mpv http-proxy（媒体走本地回环或直连）")
+        } else {
+            // 显式清掉上一次 load 留下的值：player 实例跨视频复用，若上一轮设过代理
+            // 这一轮又走回环，残留的 http-proxy 会把发给网关的请求也代理出去。
+            runCatching { handle.setPropertyString("http-proxy", "") }
+            LogUtil.d(TAG, "mpv 不设 http-proxy（媒体走本地网关回环，或未配置代理）")
+        }
         // UA 与应用 HTTP 层保持一致（站点/CDN 可能按 UA 判定）
         val userAgent = network.userAgent
         val uaOk = runCatching { handle.setPropertyString("user-agent", userAgent) }.getOrDefault(false)
@@ -460,7 +496,11 @@ class DesktopMpvPlaybackEngine(
      * mediamp 的 player 跨视频复用（不会重建），只有重发才能让"改完设置 → 下一个视频
      * 即生效"，也才能把上一个视频留下的状态（如 display-resample）洗干净。
      *
-     * ## 与 Android 侧（`androidMain/MpvPlaybackEngine.mpvOptions`）的三处必要差异
+     * ## 与 Android 侧 mpv 引擎（`androidMain/MpvPlaybackEngine.mpvOptions`，**已随
+     * Gate3-P6 删除**）的三处必要差异
+     *
+     * 保留这张对照表是因为它记的是**桌面自己的取舍理由**（每条都仍然成立），
+     * Android 侧那半已不存在，别按它去找代码。
      *
      * 1. **不下发 `vo`** —— `enableGpuNextRenderer` 在桌面**无法生效，故设置页隐藏该行**
      *    （`SettingsPlatformCapabilities.mpvVideoOutput = false`）。
@@ -495,7 +535,10 @@ class DesktopMpvPlaybackEngine(
                 o.profile.takeIf { it == "gpu-hq" || it == "fast" } ?: "default",
             )
             put("hwdec", if (o.hwdec == "SW") "no" else "auto")
-            put("msg-level", "all=" + if (LogUtil.enabled) "debug" else "warn")
+            // mpv 自己的日志走它的 `msg-level`，**绕不过我们的 LogUtil 门槛**，所以
+            // 必须挂在同一开关上：默认只留 warn（否则 mpv 的 debug 级逐条输出会直接灌终端，
+            // 例如 `[vd] Setting video-aspect-override to -1 is deprecated.`）。
+            put("msg-level", "all=" + if (LogUtil.verboseEnabled) "debug" else "warn")
             put("cache-secs", o.cacheSecs.toString())
             put("framedrop", if (o.framedrop) "vo" else "no")
             put("deband", if (o.deband) "yes" else "no")
@@ -571,6 +614,9 @@ class DesktopMpvPlaybackEngine(
 
         /** 传给 MpvMediampPlayerFactory 的中性 token（桌面端无 Context 概念）。 */
         private const val ENGINE_TOKEN = "LoveHan1meDesktop"
+
+        /** mpv 新版"不覆写 DAR"的写法（旧值 `-1` 已废弃，见 [applyVideoAspect]）。 */
+        private const val ASPECT_OVERRIDE_NONE = "no"
 
         /** 随超分一起调整的 mpv 缩放属性（animeko 同款组合）。 */
         private val SCALING_KEYS = arrayOf("scale", "cscale", "dscale", "sigmoid-upscaling")

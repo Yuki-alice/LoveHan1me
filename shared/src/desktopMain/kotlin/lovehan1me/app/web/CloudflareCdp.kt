@@ -18,6 +18,8 @@ import lovehan1me.core.util.LogUtil
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.CF_CLEARANCE_NAME
 import lovehan1me.data.network.CloudflareChallenges
+import lovehan1me.data.network.EchGate
+import lovehan1me.data.network.EchGatePolicy
 import lovehan1me.data.network.HanimeDns
 import java.io.File
 import java.net.ServerSocket
@@ -315,12 +317,29 @@ object CloudflareCdp {
     }
 
     /**
-     * 代理透传（与 JVM 侧 HanimeProxySelector 同语义）：
-     * Http/Socks 且配了 ip:port → `--proxy-server`；System/Direct 不传参
-     * （Chrome 默认走系统代理，与 JVM 侧一致，cf_clearance 才不会因出口 IP
-     * 不一致而失效）。
+     * 代理透传。
+     *
+     * ## ECH 网关优先 —— 否则 cf_clearance 会一直对不上
+     * 网关在跑时，App 的 HTTP 层**全部经网关出站**（URL 被改写到 `127.0.0.1`），
+     * 出口 = 本机直连。而用户设置是 System/Direct 时，本函数原本**不传参** →
+     * Chrome 走**系统代理** → 出口 = 代理 IP。两边出口不同，clearance 绑的是
+     * 代理 IP、请求却用本机 IP，表现就是"**验证过了仍然要验证**"（`cf_clearance`
+     * 绑定 UA + 出口 IP，见 `SettingsRepository.clearCloudFlareCookie` 的注释）。
+     *
+     * 所以网关在跑时一律把验证窗也指到网关：Chrome 走网关的 **CONNECT 隧道**
+     * （`echgate/gate/gate.go` 的 `handleConnect` 只做 DoH 解析 + 裸 TCP，
+     * 不需要 `X-Ech-Target`，标准 `--proxy-server` 就能用），两边同出口。
+     *
+     * ## 其余情况（网关没跑）
+     * 与 JVM 侧 [HanimeProxySelector] 同语义：Http/Socks 且配了 ip:port →
+     * `--proxy-server`；System/Direct 不传参（Chrome 默认走系统代理，与 JVM 一致）。
      */
     internal fun proxyFlag(): String? {
+        // ECH 网关优先：认证窗必须与 App 同出口，详见上面的 KDoc。
+        val gatePort = runCatching { EchGate.port }.getOrDefault(0)
+        if (gatePort > 0) {
+            return "--proxy-server=http://${EchGatePolicy.GATE_HOST}:$gatePort"
+        }
         // 防御：Settings 未就绪（单测/极早调用）时不带代理，不崩；
         // 生产路径 DataStore 早已初始化，走正常分支。
         return runCatching {

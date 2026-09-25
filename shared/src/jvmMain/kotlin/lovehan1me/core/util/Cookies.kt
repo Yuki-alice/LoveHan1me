@@ -28,18 +28,24 @@ fun CookieString.toLoginCookieList(domain: String): List<Cookie> {
                         .value(cleanValue)
                         .build()
                 } catch (e: IllegalArgumentException) {
+                    // ⚠️ 只报键名与原因，**不回显值**：cookie 值里是 session / XSRF 令牌，
+                    // 打进终端或日志等于把它们又抄了一遍（且这里还是 WARN 级，门槛拦不住）。
                     LogUtil.w(
                         "CookieString",
-                        "无效Cookie: $cleanedName=$cleanValue, error=${e.message}"
+                        "无效Cookie: $cleanedName（值已省略）, error=${e.message}"
                     )
                 }
             } else {
-                LogUtil.w("CookieString", "无效键值: $cookie")
+                LogUtil.w("CookieString", "无效键值（内容已省略，长度=${cookie.length}）")
             }
         }
     }
     return cookieList.also {
-        LogUtil.d("CookieString", "toCookieList: $it")
+        // 只报数量与键名：cookie 的值是凭据，任何日志级别都不该出现在终端里。
+        LogUtil.d(
+            "CookieString",
+            "toCookieList($domain): ${it.size} 条 [${it.joinToString { c -> c.name }}]",
+        )
     }
 }
 

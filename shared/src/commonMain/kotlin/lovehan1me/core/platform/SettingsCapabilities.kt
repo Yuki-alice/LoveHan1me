@@ -15,6 +15,11 @@ package lovehan1me.core.platform
  * 后果是**桌面用户一旦选了 ExoPlayer，正在跑 mpv 的桌面端反而把「MPV 高级设置」置灰了**
  * —— 用户被自己的假设置锁在门外。
  *
+ * Gate3-P6 追加结论：**内核选择项已从三个平台全部消失**（Android 砍掉 mpv 内核后只剩
+ * mediamp-exo，桌面/iOS 本就忽略 kernel 参数），故本表不再有 `playerKernelSelection` 一项。
+ * 设置页那张 `switch_player_kernel` 行与对应对话框一并删除；`AppSettings.playerKernel`
+ * 与 DataStore 键**保留**（存储兼容 + 工厂签名），但已是惰性值。
+ *
  * 本文件把「某平台是否可能让这一项生效」收敛成一份**平台常量**；
  * 设置 UI 一律按它决定「渲染 / 不渲染」，不再按设置值猜。
  *
@@ -33,8 +38,6 @@ data class SettingsPlatformCapabilities(
     val pipMode: Boolean,
     /** 是否有「计费网络」概念 —— 没有的话「移动数据播放提醒」开关毫无意义。 */
     val meteredDataWarning: Boolean,
-    /** 是否存在多个语义不同的播放内核。false ⇒ 内核选择项应当隐藏。 */
-    val playerKernelSelection: Boolean,
     /** 「MPV 高级设置」在本平台是否**可能**生效（具体还要看当前内核）。 */
     val mpvAdvancedSettings: Boolean,
     /** 能否在运行时切换 mpv 视频输出（`vo` 的 gpu / gpu-next）。 */

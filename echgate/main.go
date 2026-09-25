@@ -19,15 +19,27 @@
 // 只管"把请求送出去"。IP 与 ECH 公钥配置都由它自己经 DoH 取，
 // 调用方只负责把请求改写进来。
 //
-// ## 请求约定
+// ## 两条通道（同一个端口，按请求方法分流）
+//
+// ### 主力：反向代理
 //
 //	GET http://127.0.0.1:<port>/path  +  X-Ech-Target: hanime1.me
 //
-// 网关还原为 `https://hanime1.me/path` 并按策略出站。
+// 网关还原为 `https://hanime1.me/path`，**由网关代为 TLS 握手**并按策略出站。
+// 只有这条通道能用 ECH、也能把 SNI 换成 CNAME 真名（见上面 CDN77 那条）。
 //
-// 为什么不走 CONNECT 隧道：浏览器发 CONNECT 后自己做 TLS，SNI 仍是明文，
-// 网关帮不上忙。这条通道只给 App 自己的 HTTP 客户端与 mpv/Exo/AVPlayer 用；
-// 系统 WebView/WKWebView 走内置 hosts + 代理透传（见 CloudflareCdp 注释）。
+// ### 兜底：CONNECT 隧道
+//
+//	CONNECT host:443   —— 客户端把本网关当 http_proxy 用
+//
+// 客户端在隧道内**自己**做 TLS，SNI 对网关不可控、仍是明文，所以：
+//   - 浏览器走它没意义（这正是最初"不做 CONNECT"的原因，结论仍成立）；
+//   - 它只剩两件兜底价值：DoH 解析出未被污染的 IP + 逐 IP 拨号挑能连的。
+//
+// 于是它只作**第二选择**：主力通道失败后，调用方可以改用"真实 URL +
+// http_proxy=127.0.0.1:<port>"，靠它绕开被污染的 DNS。详见 `gate.handleConnect`。
+//
+// 系统 WebView/WKWebView 两条都不走，用内置 hosts + 代理透传（见 CloudflareCdp 注释）。
 //
 // ## 与 gate 包的分工
 // 出站策略/DoH/ECH 全在 `gate` 包（`gate.Start`），本文件只做 CLI flag 解析。

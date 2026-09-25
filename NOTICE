@@ -100,11 +100,12 @@ code.
 Per-backend artifacts additionally carry the licenses of the underlying
 players they wrap:
 
-    mediamp-exoplayer  -> AndroidX Media3 (Apache License, Version 2.0);
-                          the mpv Android AAR bundled with our mpv kernel
-                          (com.github.abdallahmehiz:mpv-android) is built with
-                          `-Dgpl=false` and adds LGPL terms (see that project's
-                          NOTICE).
+    mediamp-exoplayer  -> AndroidX Media3 (Apache License, Version 2.0).
+                          (Gate3-P6 note: the Android mpv kernel and its
+                          AAR com.github.abdallahmehiz:mpv-android were
+                          removed, so no LGPL mpv AAR is distributed for
+                          Android anymore; the -Dgpl=false clause that
+                          used to be recorded here no longer applies.)
     mediamp-avkit     -> Apple AVFoundation (system framework, Apple SDK terms).
     mediamp-mpv-desktop / mediamp-mpv-runtime
                       -> libmpv (LGPLv2.1+); the aggregated Linux runtime

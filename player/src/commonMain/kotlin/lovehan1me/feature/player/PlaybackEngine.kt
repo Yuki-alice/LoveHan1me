@@ -76,7 +76,9 @@ data class PlaybackRequest(
     val mimeType: String? = null,
     val startPositionMs: Long = 0L,
     val playWhenReady: Boolean = true,
-    val looping: Boolean = false,
+
+    // 注：曾有 `looping` 字段（旧 Exo 引擎转 repeatMode），Gate3-P5 换底后
+    // mediamp 无循环语义且全仓零调用方，删除而不是悬空（B2，静默忽略比没有更坏）。
 
     /**
      * 本次 load 是**切换画质**（而非开始播放一个新片子）。
@@ -120,8 +122,10 @@ interface PlaybackEngine {
     /**
      * G2-3b：本引擎**真实支持**的画面比例档位（顺序即 UI 展示顺序）。
      *
-     * 声明式而不是让 UI 去猜：Exo 只有 Fit / Crop（Media3 的 `setVideoScalingMode`
-     * 没有"拉伸"这一档），mpv 与 AVPlayer 三档全有。空列表 = 不支持 → UI 不出入口。
+     * 声明式而不是让 UI 去猜：换底前 Exo 只有 Fit / Crop（Media3 的 `setVideoScalingMode`
+     * 没有"拉伸"这一档）；Gate3-P5 后三端统一为 mediamp 自家 Surface 的三档真实现
+     * （resizeMode / videoGravity），`supportedAspectModes()` 一律三档。
+     * 空列表 = 不支持 → UI 不出入口。
      */
     fun supportedAspectModes(): List<VideoAspectMode> = emptyList()
 
@@ -143,7 +147,8 @@ interface PlaybackEngine {
      * G2-3b：是否支持画面调节（亮度/对比/饱和）。
      *
      * 与 [supportsSuperResolution] 同样的理由：**按能力判断，不要按内核名字判断**。
-     * 目前只有 mpv 内核（桌面 + Android mpv）返回 true。
+     * 换底前只有 mpv 内核返回 true；Gate3-P6 后 Android 已无 mpv，
+     * 只有桌面 mpv 返回 true（iOS 无对等能力，如实 false）。
      */
     fun supportsPictureAdjust(): Boolean = false
 

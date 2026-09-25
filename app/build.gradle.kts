@@ -168,7 +168,7 @@ dependencies {
 
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.exoplayer.hls)
-    implementation(libs.mpv.lib)
+    // Gate3-P6：`libs.mpv.lib` 已随 Android mpv 内核移除（HanimeApplication 不再调 MPVLib）
 
     ksp(libs.room.compiler)
 

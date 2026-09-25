@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
+import lovehan1me.core.util.LogUtil
 import org.openani.mediamp.MediaStatus
 import org.openani.mediamp.MediampPlayer
 import org.openani.mediamp.features.AspectRatioMode
@@ -69,12 +70,12 @@ abstract class MediampPlaybackEngineBase : PlaybackEngine {
         scope.launch {
             (mediampPlayer.features[Buffering.Key] as? Buffering)
                 ?.bufferedPositionMillis
-                ?.collect { bufferedPositionMs = it.coerceAtLeast(0L) }
-        }
-        scope.launch {
-            mediampPlayer.state.collect { snapshot ->
-                if (snapshot.mediaStatus == MediaStatus.Ended) publish()
-            }
+                ?.collect {
+                    bufferedPositionMs = it.coerceAtLeast(0L)
+                    // B3 修复：只存不发会导致初始缓冲期 UI 缓冲条恒 0
+                    //（position 不动、状态机稳在 Opening，combine 不触发）。
+                    publish()
+                }
         }
     }
 
@@ -102,6 +103,16 @@ abstract class MediampPlaybackEngineBase : PlaybackEngine {
                 // 已在 Opening 新媒体——只有真 Error 才落到 UI。
                 if (mediampPlayer.state.value.mediaStatus is MediaStatus.Error) {
                     publish()
+                } else {
+                    // B4 修复：同步抛（未及状态机翻 Error）此前永留 Preparing 转圈。
+                    // 不是顶掉就是真失败，直接落 Error 带异常信息。
+                    LogUtil.e(TAG, "openMedia failed", e)
+                    mutableState.value = mutableState.value.copy(
+                        phase = PlaybackPhase.Error,
+                        isPlaying = false,
+                        isBuffering = false,
+                        errorMessage = e.message ?: e.toString(),
+                    )
                 }
             }
         }
@@ -118,16 +129,21 @@ abstract class MediampPlaybackEngineBase : PlaybackEngine {
             playWhenReady = request.playWhenReady,
             // 切画质从当前播放位置续（mediamp 的 open 天然支持起始位），
             // 新片用请求的起始位（0 或续播位）。
+            // B6 修复：用播放器即时位置而非上次发布值（最大 250ms+ 延迟，切档系统性偏小）。
             startPositionMillis = if (request.isQualitySwitch) {
-                mutableState.value.positionMs
+                mediampPlayer.currentPositionMillis.value.coerceAtLeast(0L)
             } else {
                 request.startPositionMs
             },
         )
     }
 
-    /** 每次 open 前的主线程钩子（如 Android 预置空超分表：setVideoEffects 须先于 prepare）。 */
-    protected open fun onBeforeOpen() {}
+    /** 每次 open 前的钩子（如 Android 预置空超分表：setVideoEffects 须先于 prepare）。
+     *
+     * 挂起函数：实现方按需切线程，但**必须在返回前做完**（基类随后立即 setMediaData，
+     * fire-and-forget 会导致配置晚于 prepare，首开档位不生效，见 B1）。
+     */
+    protected open suspend fun onBeforeOpen() {}
 
     final override fun play() {
         if (released) return
@@ -146,9 +162,16 @@ abstract class MediampPlaybackEngineBase : PlaybackEngine {
 
     final override fun setPlaybackSpeed(speed: Float) {
         val safeSpeed = speed.coerceIn(0.25f, 5f)
+        val previous = requestedSpeed
         requestedSpeed = safeSpeed
         commandScope.launch {
-            mediampPlayer.features[PlaybackSpeed.Key]?.set(safeSpeed)
+            // B5 修复：feature 缺失/设置失败时回滚本地乐观值并重发，否则 UI 显示假倍速。
+            runCatching { mediampPlayer.features[PlaybackSpeed.Key]?.set(safeSpeed) }
+                .onFailure {
+                    LogUtil.w(TAG, "setPlaybackSpeed failed, revert to $previous: ${it.message}")
+                    requestedSpeed = previous
+                    publish()
+                }
         }
     }
 
@@ -233,5 +256,9 @@ abstract class MediampPlaybackEngineBase : PlaybackEngine {
         VideoAspectMode.Fit -> AspectRatioMode.FIT
         VideoAspectMode.Stretch -> AspectRatioMode.STRETCH
         VideoAspectMode.Crop -> AspectRatioMode.CROP
+    }
+
+    private companion object {
+        const val TAG = "MediampEngineBase"
     }
 }

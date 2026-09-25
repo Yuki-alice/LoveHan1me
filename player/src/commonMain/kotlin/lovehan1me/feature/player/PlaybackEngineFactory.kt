@@ -8,7 +8,8 @@ package lovehan1me.feature.player
  * - [mpvOptions]：mpv 选项快照提供器（每次 load 取一次，用户改设置下个视频生效）。
  *
  * - androidMain：经 `Han1meDatabaseContext.appContext` 取 Context，走 `PlaybackEngineFactory`；
- * - desktopMain / iosMain：忽略 kernel，恒返本端唯一引擎。
+ * - 三端统一忽略 kernel（Gate3-P6 后 Android 也不再分叉，恒返 mediamp-exo），
+ *   恒返本端唯一引擎；desktop 仍真用 [mpvOptions]，另两端为惰性参数（签名统一）。
  */
 expect fun createPlaybackEngine(
     kernel: PlayerKernel,

@@ -148,8 +148,18 @@ func Start(cfg Config) (*Server, error) {
 	if err != nil {
 		return nil, err
 	}
+	// Handler 分流：CONNECT 走正向代理隧道（兜底通道），其余走反向代理（主力通道）。
+	// 两条通道的分工见 handleConnect 的 KDoc——主力通道才能用 ECH，别搞反。
 	srv := &Server{listener: ln}
-	srv.httpServer = &http.Server{Handler: proxy}
+	srv.httpServer = &http.Server{
+		Handler: http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Method == http.MethodConnect {
+				handleConnect(w, r)
+				return
+			}
+			proxy.ServeHTTP(w, r)
+		}),
+	}
 	go func() {
 		// nolint:errcheck — Serve 的返回只在 Close 时有意义，调用方看 Close 的 error。
 		_ = srv.httpServer.Serve(ln)
@@ -210,6 +220,105 @@ func onUpstreamError(w http.ResponseWriter, r *http.Request, err error) {
 	invalidatePlan(origin)
 	w.WriteHeader(http.StatusBadGateway)
 	_, _ = io.WriteString(w, "echgate: "+err.Error())
+}
+
+// handleConnect 标准正向代理隧道（CONNECT）—— **兜底通道，不是主力**。
+//
+// ## 与主力通道（反向代理 + X-Ech-Target）的分工必须分清
+// 主力通道里 TLS 由**网关代为**握手，所以能用 ECH、也能把 SNI 换成 CNAME 真名
+// （`vdownload.hembed.com` → `…rsc.cdn77.org` 就是靠这条通的）。
+// CONNECT 隧道里客户端（mpv / OkHttp）在隧道内**自己做** TLS，SNI 对网关不可控、
+// 仍是明文 —— 网关帮不上 ECH 的忙。main.go 顶部"为什么不走 CONNECT"说的就是这事，
+// 它对浏览器成立，对 mpv 同样成立。
+//
+// ⚠️ 上游 Han1meViewer 的 `echproxy.handleConnect` 也是纯隧道（它注释写着
+// "ECH is negotiated by the client's own TLS inside the tunnel"）。所以照搬上游
+// 只会把主力通道的 ECH 能力换掉，是对 CF 站点的**降级**，不是升级。
+//
+// ## 那它还有什么用
+// 只剩两件，但足够当兜底：
+//  1. **DoH 解析**：客户端自己解析会撞上被污染的 DNS，这里给的是干净 IP；
+//  2. **逐 IP 拨号**：解析出多个 IP 时逐个试，挑第一个能建连的。
+//
+// 于是调用方在主力通道失败后的回退顺序变成：
+// 真实 URL + 用户代理 → 真实 URL + 本通道（DoH 路由）→ 裸直连。
+func handleConnect(w http.ResponseWriter, r *http.Request) {
+	hostport := r.Host
+	if hostport == "" {
+		http.Error(w, "echgate: missing CONNECT host", http.StatusBadRequest)
+		return
+	}
+	host, port := hostport, "443"
+	if h, p, err := net.SplitHostPort(hostport); err == nil {
+		host, port = h, p
+	}
+	if host == "" {
+		http.Error(w, "echgate: missing CONNECT host", http.StatusBadRequest)
+		return
+	}
+
+	ips, _ := lookupAWithCNAME(host)
+	if len(ips) == 0 {
+		log.Printf("echgate: CONNECT %s DoH 解析无结果", host)
+		http.Error(w, "echgate: resolve "+host, http.StatusBadGateway)
+		return
+	}
+
+	ctx, cancel := context.WithTimeout(r.Context(), connTimeout)
+	defer cancel()
+	var upstream net.Conn
+	var lastErr error
+	for _, ip := range ips {
+		upstream, lastErr = (&net.Dialer{Timeout: connTimeout}).DialContext(
+			ctx, "tcp", net.JoinHostPort(ip, port),
+		)
+		if lastErr == nil {
+			break
+		}
+	}
+	if upstream == nil {
+		log.Printf("echgate: CONNECT %s 拨号失败：%v", host, lastErr)
+		http.Error(w, "echgate: connect "+host+": "+lastErr.Error(), http.StatusBadGateway)
+		return
+	}
+	defer upstream.Close()
+	log.Printf("echgate: CONNECT %s 隧道已建立（裸 TCP；IP 来自 DoH %v）", host, ips)
+
+	hj, ok := w.(http.Hijacker)
+	if !ok {
+		http.Error(w, "echgate: hijack unsupported", http.StatusInternalServerError)
+		return
+	}
+	client, buf, err := hj.Hijack()
+	if err != nil {
+		return
+	}
+	defer client.Close()
+
+	if _, err := buf.WriteString("HTTP/1.1 200 Connection Established\r\n\r\n"); err != nil {
+		return
+	}
+	if err := buf.Flush(); err != nil {
+		return
+	}
+
+	// 双向转发。任一端关掉就发 FIN 收掉另一端，避免 goroutine 泄漏。
+	done := make(chan struct{}, 2)
+	go func() {
+		_, _ = io.Copy(upstream, buf)
+		if tc, ok := upstream.(*net.TCPConn); ok {
+			_ = tc.CloseWrite()
+		}
+		done <- struct{}{}
+	}()
+	go func() {
+		_, _ = io.Copy(client, upstream)
+		if tc, ok := client.(*net.TCPConn); ok {
+			_ = tc.CloseWrite()
+		}
+		done <- struct{}{}
+	}()
+	<-done
 }
 
 // dialUpstream 按已定好的策略建立到上游的连接。

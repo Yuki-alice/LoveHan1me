@@ -63,6 +63,11 @@ jobs:
         # Gate3-P1：纯逻辑测试已随代码进 :player（commonTest 经 desktop 跑），两边都跑。
         run: ./gradlew :player:desktopTest :shared:desktopTest --console=plain
 
+      - name: Android host unit tests
+        # Gate3-P6：commonTest 在 Android host（JVM，无需模拟器）再跑一遍——
+        # 覆盖 assets 管线等平台 actual 与桌面不同的路径。
+        run: ./gradlew :player:testAndroidHostTest :shared:testAndroidHostTest --console=plain
+
       - name: Upload test reports
         if: always()
         uses: actions/upload-artifact@v4

@@ -296,7 +296,9 @@ class CommentViewModel : ViewModel() {
         reportableId: String?
     ){
         viewModelScope.launch {
-            LogUtil.i("ReportComment", "csrfToken:${csrfToken}")
+            // ⚠️ 不打 csrfToken 本身（它是凭据，且这行是 INFO 级，日志门槛拦不住）；
+            // 只需知道"拿到没拿到"。
+            LogUtil.d("ReportComment", "提交举报（csrfToken ${if (csrfToken.isNullOrBlank()) "缺失" else "已取到"}）")
             NetworkRepo.reportComment(
                 csrfToken = csrfToken,
                 reason = reason,

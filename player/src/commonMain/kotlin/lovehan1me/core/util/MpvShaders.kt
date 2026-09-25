@@ -3,8 +3,8 @@ package lovehan1me.core.util
 /**
  * 阶段一②：视频超分（Anime4K）档位定义与 shader 落盘入口。
  *
- * shader 本体放在 `commonMain/composeResources/files/shaders/`，三端共用；
- * mpv 只接受**磁盘路径**（`change-list glsl-shaders`），所以各端要把它们
+ * shader 本体放在 `commonMain/composeResources/files/shaders/`；
+ * mpv 只接受**磁盘路径**（`change-list glsl-shaders`），所以要用它的端要把文件
  * 落到自己可写的目录再拼成 `:` 分隔的绝对路径字符串。
  *
  * 档位：
@@ -12,6 +12,10 @@ package lovehan1me.core.util
  * - [PERFORMANCE]：`Clamp_Highlights + Restore_CNN_S + Upscale_CNN_x2_S`（轻量）
  * - [QUALITY]：`Clamp_Highlights + Restore_CNN_VL + Upscale_CNN_x2_VL +
  *   AutoDownscalePre_x2 + Upscale_CNN_x2_M`（保真优先，GPU 开销大）
+ *
+ * ⚠️ Gate3-P6 后**只有桌面**真的走这条 mpv shader 路（Android 砍掉 mpv 内核、
+ * iOS 无 mpv；两端超分各走自己的实现，Android 见 `ExoSuperResolution`）。
+ * 档位常量本身仍三端共用（UI 菜单与 `PlaybackEngine.setSuperResolution` 的取值域）。
  */
 object MpvShaders {
 

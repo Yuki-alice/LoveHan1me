@@ -27,9 +27,7 @@
 
 -keep class androidx.appcompat.view.** { *; }
 -keep class androidx.window.extensions.embedding.** { *; }
--keep class is.xyz.mpv.** { *; }
--keep class lis.xyz.mpv.** { *; }
-
--keepclasseswithmembernames class me.lovehan1me.ui.screen.video.VideoRouteHostScreenKt {
-    native <methods>;
-}
+# Gate3-P6 删掉三处过期 keep（都是已删引擎的遗留）：
+#   -keep class is.xyz.mpv.** / -keep class lis.xyz.mpv.**   ← mpv-android，随 Android mpv 内核移除
+#   -keepclasseswithmembernames class me.lovehan1me.ui.screen.video.VideoRouteHostScreenKt
+#       { native <methods>; }                                ← 旧包名，且本仓该文件已无 native 方法

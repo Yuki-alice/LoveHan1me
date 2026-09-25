@@ -34,6 +34,10 @@ import lovehan1me.core.util.withLock
  *   就在 UI 里用 `LaunchedEffect(...)` 埋，避免在屏幕边界堆一对"镜像状态"。
  *
  * 线程：可从任意线程调用（内部加锁），与 StartupTrace 同理。
+ *
+ * ## 日志级别
+ * 全部走 `LogUtil.d`（**debug 级**）：这是性能探针，日常运行不该占屏；要看它请用
+ * `HAN1ME_LOG=debug ./gradlew :desktopApp:run`（`desktopTest` 里门槛默认放行，纯打印不受影响）。
  */
 object PlayerTrace {
 
@@ -63,7 +67,7 @@ object PlayerTrace {
                 true
             }
         }
-        if (changed) LogUtil.i(TAG, "会话开始：$sessionKey")
+        if (changed) LogUtil.d(TAG, "会话开始：$sessionKey")
     }
 
     /** 记录距会话起点多少毫秒；同名只记第一次（幂等，多处埋点也不会刷屏）。 */
@@ -77,7 +81,7 @@ object PlayerTrace {
                 value
             }
         } ?: return false
-        LogUtil.i(TAG, "[$sessionKey] $name +${delta}ms")
+        LogUtil.d(TAG, "[$sessionKey] $name +${delta}ms")
         return true
     }
 
@@ -85,13 +89,13 @@ object PlayerTrace {
     fun event(name: String, detail: String = "") {
         val delta = lock.withLock { if (started) currentEpochMillis() - originMillis else null }
         val at = delta?.let { " +${it}ms" } ?: ""
-        LogUtil.i(TAG, "[$sessionKey] $name${if (detail.isBlank()) "" else ": $detail"}$at")
+        LogUtil.d(TAG, "[$sessionKey] $name${if (detail.isBlank()) "" else ": $detail"}$at")
     }
 
     /** 开始一段（如缓冲）。同名重复调用以最后一次为准。 */
     fun spanStart(name: String) {
         lock.withLock { spans[name] = currentEpochMillis() }
-        LogUtil.i(TAG, "[$sessionKey] $name 开始")
+        LogUtil.d(TAG, "[$sessionKey] $name 开始")
     }
 
     /** 结束一段并打出耗时；没有对应的 [spanStart] 时静默返回（例如刚进页面时的 false）。 */
@@ -100,7 +104,7 @@ object PlayerTrace {
             val from = spans.remove(name) ?: return
             currentEpochMillis() - from
         }
-        LogUtil.i(TAG, "[$sessionKey] $name ${elapsed}ms")
+        LogUtil.d(TAG, "[$sessionKey] $name ${elapsed}ms")
     }
 
     /** 一行汇总（离开播放页时打）。 */
@@ -109,7 +113,7 @@ object PlayerTrace {
             val total = if (started) currentEpochMillis() - originMillis else 0L
             marks.entries.joinToString(" | ") { "${it.key}+${it.value}ms" } to total
         }
-        LogUtil.i(TAG, "[$sessionKey] 汇总：$line | 合计 ${total}ms")
+        LogUtil.d(TAG, "[$sessionKey] 汇总：$line | 合计 ${total}ms")
     }
 
     /** 单测用：清空状态（全局单例，测试之间必须隔离）。 */

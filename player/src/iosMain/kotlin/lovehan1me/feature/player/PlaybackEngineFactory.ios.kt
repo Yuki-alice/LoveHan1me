@@ -10,6 +10,6 @@ actual fun createPlaybackEngine(
     network: PlayerNetworkConfig,
     mpvOptions: PlayerMpvOptionsProvider,
 ): PlaybackEngine {
-    LogUtil.d("IosAVPlayer", "createPlaybackEngine(kernel=$kernel, mediamp-avkit)")
+    LogUtil.d("MediampAvkit", "createPlaybackEngine(kernel=$kernel, mediamp-avkit)")
     return MediampAvPlaybackEngine()
 }

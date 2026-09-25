@@ -94,7 +94,9 @@ object Parser {
 
         val userIdRegex = Regex("""/user/(\d+)""")
         val userId: String = userIdRegex.find(userHomePageLink)?.groupValues?.get(1) ?: ""
-        LogUtil.i("userInfo","name:$username;id:$userId")
+        // 解析结果自检：含用户名/UID，属"调试才需要"的细节 —— 降到 debug（原 INFO
+        // 每次解析都打，且把个人信息长期留在终端/日志里）。
+        LogUtil.d("userInfo", "name:$username;id:$userId")
 
         // 头图及其描述
         val bannerCSS = parseBody.selectFirst("div[id=home-banner-wrapper]")
@@ -380,7 +382,7 @@ object Parser {
 
         var likeStatus = parseBody.selectFirst("[name=like-status]")
             ?.attr("value")
-        LogUtil.i("likeStatus", likeStatus.toString())
+        LogUtil.d("likeStatus", likeStatus.toString())
         if (!likeStatus.isNullOrEmpty()) {
             likeStatus = "1"
         }
@@ -965,7 +967,9 @@ object Parser {
                 )
             )
         }
-        LogUtil.d("commentList", commentList.toString())
+        // 只报条数：整表 toString 会把评论正文与头像的签名 URL（`?secure=` 令牌）
+        // 打成数 KB 的长行，既刷屏又留下了凭据。
+        LogUtil.d("commentList", "size=${commentList.size}")
         return WebsiteState.Success(
             VideoComments(
                 commentList,

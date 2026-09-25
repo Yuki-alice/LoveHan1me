@@ -42,7 +42,6 @@ import lovehan1me.auto_play_next_title
 import lovehan1me.auto_play_next_summary
 import lovehan1me.ic_skip
 import lovehan1me.data.danmaku.asValidBaseUrl
-import lovehan1me.switch_player_kernel
 import lovehan1me.mpv_settings_disabled_summary
 import lovehan1me.mpv_advanced_settings
 import lovehan1me.long_press_speed_summary
@@ -89,17 +88,9 @@ import lovehan1me.ui.component.segmentedSection
 import lovehan1me.ui.component.lazy.LazyColumn
 
 data class PlayerSettingsUiState(
-    val kernel: String,
-    val kernelDisplay: String,
-    /**
-     * 本平台是否存在多个**语义不同**的内核（见 `SettingsPlatformCapabilities.playerKernelSelection`）。
-     *
-     * 桌面与 iOS 的 `createPlaybackEngine` 都忽略 kernel 参数，给出的选项纯属摆设，故不展示。
-     */
-    val showKernelSelection: Boolean,
-    /** 本平台是否可能让「MPV 高级设置」生效（iOS 无 mpv，整项不展示）。 */
+    /** 本平台是否可能让「MPV 高级设置」生效（Android/iOS 无 mpv，整项不展示）。 */
     val showMpvSettings: Boolean,
-    /** 展示 MPV 入口时它是否可点（Android 需先切到 MPV 内核；桌面恒可点）。 */
+    /** 展示 MPV 入口时它是否可点。 */
     val mpvSettingsEnabled: Boolean,
     val mpvSettingsSummary: String,
     val playerSpeed: String,
@@ -145,7 +136,6 @@ data class PlayerSettingsUiState(
 )
 
 private enum class PlayerChoiceDialog {
-    Kernel,
     Speed,
     LongPressSpeed,
 }
@@ -159,10 +149,8 @@ private enum class DanmakuTextField { Proxy, AppId, AppSecret }
 @Composable
 fun PlayerSettingsScreen(
     state: PlayerSettingsUiState,
-    kernelOptions: List<Pair<String, String>>,
     speedOptions: List<Pair<String, String>>,
     longPressSpeedOptions: List<Pair<String, String>>,
-    onKernelChange: (String) -> Unit,
     onPlayerSpeedChange: (String) -> Unit,
     onLongPressSpeedChange: (String) -> Unit,
     onAutoPlayNextChange: (Boolean) -> Unit = {},
@@ -184,18 +172,6 @@ fun PlayerSettingsScreen(
 ) {
     var activeDialog by rememberSaveable { mutableStateOf<PlayerChoiceDialog?>(null) }
     var activeTextField by rememberSaveable { mutableStateOf<DanmakuTextField?>(null) }
-
-    ChoiceDialog(
-        visible = activeDialog == PlayerChoiceDialog.Kernel,
-        title = stringResource(Res.string.switch_player_kernel),
-        options = kernelOptions,
-        selectedValue = state.kernel,
-        onDismiss = { activeDialog = null },
-        onSelect = {
-            activeDialog = null
-            onKernelChange(it)
-        },
-    )
 
     ChoiceDialog(
         visible = activeDialog == PlayerChoiceDialog.Speed,
@@ -278,18 +254,9 @@ fun PlayerSettingsScreen(
     ) {
         segmentedSection(titleRes = Res.string.player_settings_controls) {
             segmentedGroup {
-                // 内核选择：只有 Android 真有三个语义不同的引擎。桌面/iOS 的
-                // createPlaybackEngine 忽略 kernel 参数，列出选项等于骗人。
-                if (state.showKernelSelection) {
-                    SettingNavigationItem(
-                        title = stringResource(Res.string.switch_player_kernel),
-                        valueText = state.kernelDisplay,
-                        iconRes = Res.drawable.ic_player_setting,
-                        onClick = { activeDialog = PlayerChoiceDialog.Kernel },
-                    )
-                }
-                // MPV 高级设置：iOS 无 mpv（AVPlayer），整项不展示；
-                // Android 需先切到 MPV 内核才可点；桌面引擎就是 mpv，恒可点。
+                // Gate3-P6：内核选择行已删 —— Android 砍掉 mpv 内核后三端都只剩一个真引擎，
+                // kernel 参数在工厂里是惰性值（`SettingsPlatformCapabilities` 已无该判据）。
+                // MPV 高级设置：Android/iOS 无 mpv，整项不展示；桌面引擎就是 mpv。
                 if (state.showMpvSettings) {
                     SettingNavigationItem(
                         title = stringResource(Res.string.mpv_advanced_settings),

@@ -31,6 +31,12 @@ import platform.Foundation.NSNumber
 
 private const val TAG = "IosFrameCapture"
 
+// ⚠️ 本文件当前无调用方（Gate3-P6 起）—— 有意保留，勿当死代码清理。
+// [grabIosFrameArgb] 原先只被 `IosAVPlaybackEngine.grabFrameArgb` 调用，该引擎随
+// Gate3-P5 换底（mediamp-avkit）退出、P6 删除。规划口径是「截图/GIF 属 scope 外，
+// 链路保留、入口先藏」（`supportsFrameCapture()` 默认 false ⇒ UI 不出入口），
+// 故留着这个 iOS 抓帧件；接回来时在 `MediampAvPlaybackEngine` 上实现 `grabFrameArgb` 即可。
+
 /** 等 `AVPlayerItemVideoOutput` 产出该时刻解码帧的上限。 */
 private const val OUTPUT_READY_TIMEOUT_MS = 2_000L
 private const val POLL_MS = 40L

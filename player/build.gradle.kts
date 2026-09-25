@@ -41,7 +41,6 @@ kotlin {
             implementation(libs.media3.exoplayer)
             implementation(libs.media3.exoplayer.hls)
             implementation(libs.media3.effect)
-            implementation(libs.mpv.lib)
             implementation(libs.core.ktx)
             implementation(libs.coroutines.android)
             // Gate3-P5：mediamp-exo 换底（真缓冲值 + aspect 真效果走它家 Surface）
