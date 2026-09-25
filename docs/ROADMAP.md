@@ -98,12 +98,14 @@ Gate 2 的两个方向已完成，剩 comic 延后项；Gate 3 代码侧闭环�
 
 状态：**🟡 开工中**（2026-09-25，规划见 `docs/specs/2026-09-25-Gate4-齐整-tasks.md`）
 
-- [ ] G4-1 平台能力补位：iOS 触感/相册写入/ImageLoader×2/IsDebugBuild；桌面触感标 by-design；
-      `SettingsCapabilities` 三端注释同步（13 处 `Gate4-平台能力` 注释，代码里已预埋）
-- [ ] G4-2 Gate 2/3 新功能三平台查漏 + 真机 sweep（含 Gate3 遗留：真机播放/P4 帧时间 QA）
-- [ ] G4-3 性能基线：live test 加门槛/隔离策略；列表滑动/搜索响应先记录后定线
-- [ ] G4-4 下载链路三平台拉齐（`VideoCacheStore` 双端 no-op；先定语义再实现）
-- [ ] G4-5 soak（播放器连续自用两周计时）+ 交接 Gate5 的构建预检
+- [x] G4-1 平台能力补位：iOS 触感/相册写入/ImageLoader×2/IsDebugBuild；桌面触感标 by-design；
+      `SettingsCapabilities` 三端注释同步（2026-09-25，Mac 单机落地）
+- [x] G4-3 性能基线：live 隔离审计（无网即过，无需改）+ 首条弹幕基线（avg 3.69ms/p95 1.91ms）
+- [x] G4-4 下载链路三平台拉齐（`VideoCacheStore` 双端真实现 + 映射单测；
+      真机下载→断网→播合并入 G4-2 sweep 手工项）
+- [ ] G4-2 Gate 2/3 新功能三平台查漏 + 真机 sweep（Mac 侧：iOS UITest 双绿/Android 冒烟已做；
+      待 Windows 桌面端 + P4 超分 QA + Gate2 回归）
+- [ ] G4-5 soak（2026-09-25 起计时，播放器连续自用两周）+ 交接 Gate5 的构建预检
 
 **DoD**
 - [ ] 全仓无占位型 no-op（平台本无语义的 by-design no-op 除外，需注释标明）
