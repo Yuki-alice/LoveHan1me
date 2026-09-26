@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_gesture_brightness">Brightness</string>
+    <string name="player_gesture_progress">Progress</string>
+    <string name="player_gesture_volume">Volume</string>
+    <string name="player_progress_percent">%1$d%%</string>
+    <string name="player_seek_release_to_cancel">Release to cancel</string>
+    <string name="auto_play_next_short">Auto</string>
+    <string name="player_aspect_crop">Crop</string>
+    <string name="player_aspect_fit">Fit</string>
+    <string name="player_aspect_stretch">Stretch</string>
+    <string name="player_speed_format">%1$sx</string>
+    <string name="speed">Speed</string>
+    <string name="switch_off">Off</string>
+    <string name="switch_on">On</string>
+    <string name="gif_capture">Record GIF</string>
+    <string name="screenshot">Screenshot</string>
+    <string name="playback_finished">Playback finished</string>
+    <string name="player_play_from_beginning">Play from beginning</string>
+    <string name="replay">Replay</string>
+    <string name="retry">Retry</string>
+    <string name="video_loading_failed">Video loading failed</string>
+    <string name="cancel">Cancel</string>
+    <string name="gif_capture_duration">Length</string>
+    <string name="gif_capture_failed">GIF failed: %1$s</string>
+    <string name="gif_capture_generating">Generating GIF… %1$s/%2$s</string>
+    <string name="gif_capture_saved">GIF saved: %1$s</string>
+    <string name="player_auto_quality">Auto</string>
+</resources>

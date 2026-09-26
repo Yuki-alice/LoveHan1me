@@ -3,7 +3,6 @@ package lovehan1me.core.platform
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.flowOn
 import lovehan1me.core.domain.model.HanimeVideo
 import lovehan1me.data.DatabaseRepo
@@ -24,12 +23,6 @@ private object DesktopVideoCacheStore : VideoCacheStore {
             emit(null)
         }
     }.flowOn(Dispatchers.IO)
-}
-
-private object NoOpDownloadWorkController : DownloadWorkController {
-    override fun prune() {}
-    override suspend fun initialize() {}
-    override fun runningCount() = flowOf(0)
 }
 
 internal actual fun downloadWorkController(): DownloadWorkController = DesktopDownloadWorkController

@@ -1,5 +1,7 @@
 package lovehan1me.core.domain.model
 
+import lovehan1me.video.contract.VideoEnhancementLevels
+
 val DOWNLOAD_SPEED_BYTES = longArrayOf(
     0L,
     128 * 1024L,
@@ -38,7 +40,7 @@ enum class PaletteStyle(val id: Int) {
     }
 }
 
-// PlayerKernel / VideoAspectMode / PictureAdjust 已搬入 :player 同包 PlaybackModels.kt
+// PlayerKernel / VideoAspectMode / PictureAdjust 已搬入 :video:contract（本包 PlaybackModels.kt 只留别名）
 //（包名不变，全仓 import 零改动；本文件持久化它们，见下）。
 
 enum class ProxyType(val id: Int) {
@@ -196,6 +198,18 @@ data class AppSettings(
      * 换到支持的引擎上（比如从 Exo 切到 mpv）用户的选择还能回来。
      */
     val videoAspect: VideoAspectMode = VideoAspectMode.Fit,
+    /**
+     * 超分（Anime4K）档位：0=关 / 1=效率 / 2=质量（见 [VideoEnhancementLevels]）。
+     *
+     * 与 [videoAspect] 同一套取舍：存的是**用户选的那个**，不是引擎用成的那个 ——
+     * 档位不可用时引擎会降级并把生效值报回来，显示取生效值、落盘取请求值，
+     * 换到支持的引擎上用户的选择还能回来。
+     *
+     * 新增键：老存档没有 `super_resolution`，读出即本默认值 OFF，与升级前
+     * "每次进页面都是关"的语义一致；越界或换引擎导致的无效档位由
+     * `resolveEnhancementLevel` 在调用侧降到 OFF，不把无效索引交给引擎。
+     */
+    val superResolutionLevel: Int = VideoEnhancementLevels.OFF,
     /** G2-3b：画面亮度（-100~100，0 = 原始）。仅 mpv 内核生效。 */
     val pictureBrightness: Float = 0f,
     /** G2-3b：画面对比度（-100~100，0 = 原始）。仅 mpv 内核生效。 */

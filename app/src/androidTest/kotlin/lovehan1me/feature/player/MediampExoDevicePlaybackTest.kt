@@ -6,6 +6,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import lovehan1me.data.network.defaultPlayerNetworkConfig
+import lovehan1me.video.contract.VideoEnhancementLevels
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -60,7 +61,10 @@ class MediampExoDevicePlaybackTest {
             // 编译失败 "No matching function for call to 'go_0'"，且编译是异步的，
             // 失败浮上来是播放错误而非挂载异常）。不断言画质（肉眼项），只断言：
             // 挂 PERFORMANCE 后不进 Error、位置继续推进（编译失败即红）。
-            engine.setSuperResolution(ExoSuperResolution.PERFORMANCE)
+            // 超分已从引擎方法迁到能力对象（不支持即 null）；Android 引擎必须表态支持，
+            // 真机把 PERFORMANCE 档挂下去，验证 GL 链路不把播放搞挂。
+            val enhancement = requireNotNull(engine.enhancement) { "Android 引擎应声明超分能力" }
+            enhancement.setLevel(VideoEnhancementLevels.PERFORMANCE)
             val stillFine = withTimeoutOrNull(30.seconds) {
                 while (true) {
                     val s = engine.state.value

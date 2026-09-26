@@ -24,7 +24,7 @@ import kotlin.test.assertTrue
  * 容器与画面宽高比不一致时（桌面双栏的日常），品红必须一像素不差地
  * 盖住画面区，且一像素都不进黑边。
  *
- * 手法：`playbackEngine = null` 走画面占位分支 —— 占位与真画面用的是
+ * 手法：不传 `videoSurface`（默认 null）走画面占位分支 —— 占位与真画面用的是
  * **同一个** `videoModifier`，测占位就等于测真机；弹幕插槽里放纯色块，
  * 模拟路由层 `DanmakuLayer(modifier = fillMaxSize())` 的契约。
  * `showControls = false` 藏掉顶栏/底栏/手势 HUD，画面里只剩三样东西：

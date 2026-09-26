@@ -48,9 +48,12 @@ kotlin {
         binaries.framework {
             baseName = "ComposeApp"
             isStatic = true
-            // Gate3-P1：:player 是独立 KMP 库，iOS framework 必须 export，
+            // 视频各层都是独立 KMP 库，iOS framework 必须 export，
             // 否则 Swift 侧看不到引擎类型（api 依赖不会自动进 framework）。
-            export(project(":player"))
+            export(project(":video:contract"))
+            export(project(":video:engine"))
+            export(project(":video:ui"))
+            export(project(":video:surface"))
         }
     }
 
@@ -110,8 +113,14 @@ kotlin {
             implementation(libs.aboutlibraries.core)
             implementation(libs.aboutlibraries.compose.m3)
 
-            // Gate3-P1：播放内核独立模块。UI 签名透传引擎类型，必须 api 导出。
-            api(project(":player"))
+            // 视频契约层：持久化侧要读 VideoAspectMode 等模型，且 iOS framework 要 export。
+            api(project(":video:contract"))
+            // 播放引擎：UI 签名透传引擎类型，必须 api 导出。
+            api(project(":video:engine"))
+            // 视频 UI 层：页面装配透传它的 composable，同样 api 导出。
+            api(project(":video:ui"))
+            // 渲染面：只在 :shared 内部被组合调用，不进公开签名；api 只为满足 iOS framework export。
+            api(project(":video:surface"))
         }
 
         androidMain.dependencies {
@@ -161,10 +170,10 @@ kotlin {
                 // M1：Dispatchers.Main 的桌面实现（Swing EDT，供 viewModelScope）。
                 // 此前误放在 commonMain，导致 iOS 元数据编译解析失败（swing 只有 JVM 变体）。
                 implementation(libs.coroutines.swing)
-                // M3：桌面 mpv 引擎（mediamp，含 Skia 渲染 + 各 OS native）
-                implementation(libs.mediamp.mpv.desktop)
-                // M3：mpv 原生库运行时（按平台解包；mediamp-mpv-runtime 聚合全平台）
-                runtimeOnly(libs.mediamp.mpv.runtime)
+                // 桌面的 mediamp-mpv 与 mpv 原生库**不在此声明**：:video:engine 的
+                // desktopMain 已有同款 implementation + runtimeOnly，经
+                // `api(project(":video:engine"))` 传递到本模块的 desktopRuntimeClasspath。
+                // 本模块源码零 `org.openani.mediamp` 引用，重复声明只会多一条解析路径。
                 // 主题重做 P2：m3color 提为 api——桌面的预生成工具（desktopApp 的
                 // GenThemeBoards，走 HAN1ME_GEN_BOARDS=1 触发）直接用它跑色算；
                 // 运行时只有 Android 跟随系统槽还需要它。

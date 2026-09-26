@@ -302,7 +302,6 @@
     <string name="online">在线</string>
     <string name="popular">热门</string>
     <string name="watch_history_online_help">下拉刷新，滑到底部自动加载更多。</string>
-    <string name="speed">倍速</string>
     <string name="cancel_thumb_up_success">取消点赞成功！</string>
     <string name="thumb_up_success">点赞成功！</string>
     <string name="cancel_thumb_down_success">取消点踩成功！</string>
@@ -507,9 +506,6 @@
     <string name="auto_play_on_enter_summary">打开影片页后立即开始播放。默认关闭：会先加载并停在首帧，点播放键才开始</string>
     <string name="auto_play_next_title">系列自动连播</string>
     <string name="auto_play_next_summary">本集播完自动播放下一集，仅系列视频有效，单片不受影响</string>
-    <string name="auto_play_next_short">连播</string>
-    <string name="switch_on">开</string>
-    <string name="switch_off">关</string>
     <string name="resume_playback_summary">如有播放记录，将自动跳转到上次退出时的位置</string>
     <string name="saved">已保存</string>
     <string name="i_understand">我明白了</string>
@@ -675,9 +671,6 @@
     <string name="watch_history_minutes_short">%1$d 分钟</string>
     <string name="invalid_ip_or_port">无效的 IPv4 地址或端口 (0..65535)</string>
     <string name="click_to_restart">点击重新开始</string>
-    <string name="replay">重播</string>
-    <string name="playback_finished">影片播放完毕</string>
-    <string name="video_loading_failed">视频加载失败</string>
     <string name="update_available_title">发现新版本 %1$s</string>
     <string name="force_update_notice">本次为强制更新</string>
     <string name="update_now">立即更新</string>
@@ -752,15 +745,7 @@
     <string name="no_license_items">没有可显示的项目</string>
     <string name="no_licenses_found">未搜索到项目</string>
     <string name="global_search">全站搜索</string>
-    <string name="player_auto_quality">自动</string>
     <string name="player_time_format">%1$s / %2$s</string>
-    <string name="player_speed_format">%1$sx</string>
-    <string name="player_progress_percent">%1$d%%</string>
-    <string name="player_gesture_brightness">亮度</string>
-    <string name="player_gesture_volume">音量</string>
-    <string name="player_gesture_progress">进度</string>
-    <string name="player_seek_release_to_cancel">松手取消</string>
-    <string name="player_play_from_beginning">从头开始播放</string>
     <string name="perception">感知</string>
     <string name="check_in_feature_name">冲了么</string>
     <string name="enable_check_in_feature">启用冲了么</string>
@@ -884,12 +869,6 @@
     <string name="cf_manual_ua_hint">浏览器 User-Agent（必填：cf_clearance 与 UA 绑定，缺了它请求仍会 403）。在刚验证过的那个浏览器的控制台执行 navigator.userAgent 后复制过来。</string>
     <string name="cf_manual_submit">提交并继续</string>
     <string name="cf_manual_retry">重试自动验证</string>
-    <string name="gif_capture">录制 GIF</string>
-    <string name="gif_capture_duration">时长</string>
-    <string name="gif_capture_generating">正在生成 GIF… %1$s/%2$s</string>
-    <string name="gif_capture_saved">GIF 已保存：%1$s</string>
-    <string name="gif_capture_failed">GIF 生成失败：%1$s</string>
-    <string name="screenshot">截图</string>
     <string name="screenshot_saved">截图已保存：%1$s</string>
     <string name="screenshot_failed">截图失败：%1$s</string>
     <string name="onboarding_welcome_title">LoveHan1me</string>
@@ -910,9 +889,6 @@
 
     <!-- G2-3b 画面比例 / 画面调节 -->
     <string name="player_aspect_label">画面比例</string>
-    <string name="player_aspect_fit">适应</string>
-    <string name="player_aspect_stretch">拉伸</string>
-    <string name="player_aspect_crop">裁切</string>
     <string name="player_aspect_summary">画面如何填满屏幕</string>
     <string name="player_aspect_fit_summary">保持原比例，多余处留黑边</string>
     <string name="player_aspect_stretch_summary">填满屏幕，画面会变形</string>

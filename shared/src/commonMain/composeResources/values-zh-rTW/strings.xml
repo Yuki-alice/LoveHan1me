@@ -296,7 +296,6 @@
     <string name="online">線上</string>
     <string name="popular">熱門</string>
     <string name="watch_history_online_help">下拉重新整理，滑到底部會自動載入更多。</string>
-    <string name="speed">倍速</string>
     <string name="cancel_thumb_up_success">取消按讚成功！</string>
     <string name="thumb_up_success">按讚成功！</string>
     <string name="cancel_thumb_down_success">取消倒讚成功！</string>
@@ -657,9 +656,6 @@
     <string name="watch_history_minutes_short">%1$d 分鐘</string>
     <string name="invalid_ip_or_port">無效的 IPv4 位址或連接埠 (0..65535)</string>
     <string name="click_to_restart">點擊重新開始</string>
-    <string name="replay">重播</string>
-    <string name="playback_finished">影片播放完畢</string>
-    <string name="video_loading_failed">影片載入失敗</string>
     <string name="update_available_title">發現新版本 %1$s</string>
     <string name="force_update_notice">本次為強制更新</string>
     <string name="update_now">立即更新</string>
@@ -734,15 +730,7 @@
     <string name="no_license_items">沒有可顯示的項目</string>
     <string name="no_licenses_found">找不到項目</string>
     <string name="global_search">全站搜尋</string>
-    <string name="player_auto_quality">自動</string>
     <string name="player_time_format">%1$s / %2$s</string>
-    <string name="player_speed_format">%1$sx</string>
-    <string name="player_progress_percent">%1$d%%</string>
-    <string name="player_gesture_brightness">亮度</string>
-    <string name="player_gesture_volume">音量</string>
-    <string name="player_gesture_progress">進度</string>
-    <string name="player_seek_release_to_cancel">鬆手取消</string>
-    <string name="player_play_from_beginning">從頭開始播放</string>
     <string name="perception">感知</string>
     <string name="check_in_feature_name">沖了麼</string>
     <string name="enable_check_in_feature">啟用沖了麼</string>
@@ -866,12 +854,6 @@
     <string name="cf_manual_ua_hint">瀏覽器 User-Agent（必填：cf_clearance 與 UA 綁定，缺了它請求仍會 403）。在剛驗證過的那個瀏覽器的主控台執行 navigator.userAgent 後複製過來。</string>
     <string name="cf_manual_submit">送出並繼續</string>
     <string name="cf_manual_retry">重試自動驗證</string>
-    <string name="gif_capture">錄製 GIF</string>
-    <string name="gif_capture_duration">時長</string>
-    <string name="gif_capture_generating">正在產生 GIF… %1$s/%2$s</string>
-    <string name="gif_capture_saved">GIF 已儲存：%1$s</string>
-    <string name="gif_capture_failed">GIF 產生失敗：%1$s</string>
-    <string name="screenshot">截圖</string>
     <string name="screenshot_saved">截圖已儲存：%1$s</string>
     <string name="screenshot_failed">截圖失敗：%1$s</string>
     <string name="onboarding_welcome_title">LoveHan1me</string>
@@ -892,9 +874,6 @@
 
     <!-- G2-3b 画面比例 / 画面调节 -->
     <string name="player_aspect_label">畫面比例</string>
-    <string name="player_aspect_fit">適應</string>
-    <string name="player_aspect_stretch">拉伸</string>
-    <string name="player_aspect_crop">裁切</string>
     <string name="player_aspect_summary">畫面如何填滿螢幕</string>
     <string name="player_aspect_fit_summary">保持原比例，多餘處留黑邊</string>
     <string name="player_aspect_stretch_summary">填滿螢幕，畫面會變形</string>

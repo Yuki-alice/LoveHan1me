@@ -2,8 +2,8 @@ package lovehan1me.feature.home.homepage
 
 /**
  * P6d-2：从 :app HomePageUtils 拆分（包名不变）。
- * 纯函数部分留 commonMain；[saveImageToGallery] 为 expect（android = MediaStore 原逻辑，
- * desktop = pictures 目录写文件，ios = no-op false）。
+ * 纯函数部分留 commonMain；[saveImageToGallery] 为 expect（android = MediaStore、
+ * desktop = pictures 目录写文件、ios = Darwin 拉字节写相册，三端均为真实现）。
  */
 
 /**

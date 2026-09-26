@@ -302,7 +302,6 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="online">Online</string>
     <string name="popular">Popular</string>
     <string name="watch_history_online_help">Pull to refresh and scroll to the bottom to load more.</string>
-    <string name="speed">Speed</string>
     <string name="cancel_thumb_up_success">Thumb Up Cancelled Successfully!</string>
     <string name="thumb_up_success">Thumb Up Successful!</string>
     <string name="cancel_thumb_down_success">Thumb Down Cancelled Successfully!</string>
@@ -506,9 +505,6 @@ Recommendations are as follows:\n
     <string name="auto_play_on_enter_summary">Start playing as soon as a video page opens. Off by default: the video loads and shows its first frame but stays paused until you tap play.</string>
     <string name="auto_play_next_title">Auto-play next episode</string>
     <string name="auto_play_next_summary">Automatically play the next episode when this one ends. Series only, single videos unaffected.</string>
-    <string name="auto_play_next_short">Auto</string>
-    <string name="switch_on">On</string>
-    <string name="switch_off">Off</string>
     <string name="resume_playback_summary">Automatically jump to the last playback position if there is play history</string>
     <string name="saved">Saved</string>
     <string name="i_understand">I understand</string>
@@ -692,9 +688,6 @@ Recommendations are as follows:\n
     <string name="cookies_label">Cookies</string>
     <string name="invalid_ip_or_port">Invalid IP(v4) or port (0..65535)</string>
     <string name="click_to_restart">Click to restart</string>
-    <string name="replay">Replay</string>
-    <string name="playback_finished">Playback finished</string>
-    <string name="video_loading_failed">Video loading failed</string>
     <string name="update_available_title">New version %1$s available</string>
     <string name="force_update_notice">This is a required update.</string>
     <string name="update_now">Update now</string>
@@ -770,15 +763,7 @@ Recommendations are as follows:\n
     <string name="no_licenses_found">No items found</string>
     <string name="global_search">Global Search</string>
     <string name="player_anime4k_label">Anime4K</string>
-    <string name="player_auto_quality">Auto</string>
     <string name="player_time_format">%1$s / %2$s</string>
-    <string name="player_speed_format">%1$sx</string>
-    <string name="player_progress_percent">%1$d%%</string>
-    <string name="player_gesture_brightness">Brightness</string>
-    <string name="player_gesture_volume">Volume</string>
-    <string name="player_gesture_progress">Progress</string>
-    <string name="player_seek_release_to_cancel">Release to cancel</string>
-    <string name="player_play_from_beginning">Play from beginning</string>
     <string name="perception">Sensing</string>
     <string name="check_in_feature_name">Cum Tracker</string>
     <string name="enable_check_in_feature">Enable Cum Tracker</string>
@@ -903,12 +888,6 @@ Recommendations are as follows:\n
     <string name="cf_manual_ua_hint">Browser User-Agent (required: cf_clearance is bound to the UA, requests still get 403 without it). Copy it from the console of the browser you just verified with: navigator.userAgent</string>
     <string name="cf_manual_submit">Submit and continue</string>
     <string name="cf_manual_retry">Retry automatic verification</string>
-    <string name="gif_capture">Record GIF</string>
-    <string name="gif_capture_duration">Length</string>
-    <string name="gif_capture_generating">Generating GIF… %1$s/%2$s</string>
-    <string name="gif_capture_saved">GIF saved: %1$s</string>
-    <string name="gif_capture_failed">GIF failed: %1$s</string>
-    <string name="screenshot">Screenshot</string>
     <string name="screenshot_saved">Screenshot saved: %1$s</string>
     <string name="screenshot_failed">Screenshot failed: %1$s</string>
     <string name="onboarding_welcome_title">LoveHan1me</string>
@@ -929,9 +908,6 @@ Recommendations are as follows:\n
 
     <!-- G2-3b 画面比例 / 画面调节 -->
     <string name="player_aspect_label">Aspect</string>
-    <string name="player_aspect_fit">Fit</string>
-    <string name="player_aspect_stretch">Stretch</string>
-    <string name="player_aspect_crop">Crop</string>
     <string name="player_aspect_summary">How the picture fills the screen</string>
     <string name="player_aspect_fit_summary">Keep proportions, black bars fill the rest</string>
     <string name="player_aspect_stretch_summary">Fill the screen, picture gets distorted</string>

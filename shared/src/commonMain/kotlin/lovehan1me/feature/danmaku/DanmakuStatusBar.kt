@@ -5,9 +5,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
@@ -36,6 +33,10 @@ import lovehan1me.ui.theme.HanimeDefaults
  * 胶囊要说的话搬进设置弹窗的"状况"段，中间位只留动作 ——
  * 开关一眼可见状态（关掉时图标变暗），设置一点即达。
  *
+ * 设置钮**不自己弹窗**：底栏随控件自动隐藏被销毁，弹窗挂在这里会被连带销毁。
+ * 弹窗改由调用方挂在播放器最上层槽（`VideoPlayerUi` 的 `dialogHost`），
+ * 本控件只上报"有人点了设置"。
+ *
  * @param session null = 两路全关（功能休眠），此时只剩设置钮（去设置页开）。
  */
 @Composable
@@ -44,7 +45,6 @@ fun DanmakuControls(
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    var showDialog by remember { mutableStateOf(false) }
     Row(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
@@ -65,11 +65,7 @@ fun DanmakuControls(
                 )
             }
         }
-        IconButton(
-            onClick = {
-                if (session != null) showDialog = true else onOpenSettings()
-            },
-        ) {
+        IconButton(onClick = onOpenSettings) {
             Icon(
                 painter = painterResource(Res.drawable.ic_settings),
                 contentDescription = null,
@@ -77,14 +73,6 @@ fun DanmakuControls(
                 modifier = Modifier.size(24.dp),
             )
         }
-    }
-
-    if (showDialog && session != null) {
-        DanmakuSettingsDialog(
-            session = session,
-            onOpenSettings = onOpenSettings,
-            onDismiss = { showDialog = false },
-        )
     }
 }
 

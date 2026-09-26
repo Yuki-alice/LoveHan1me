@@ -6,7 +6,7 @@ import lovehan1me.feature.player.PlayerMpvOptionsProvider
 import lovehan1me.feature.player.PlayerNetworkConfig
 
 /**
- * `:player` 注入接口的 `:shared` 实现（Gate3-P1）。
+ * `:video:engine` 注入接口的 `:shared` 实现（Gate3-P1）。
  *
  * 平台差异只在网络配置（UA/代理实现各端不同），mpv 选项快照是 common 的
  * （直读设置源，每次 load 取一次，与独立前"每次 load 重读设置"同语义）。

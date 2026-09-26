@@ -52,7 +52,7 @@
 
 ## 4. 验证闭环
 
-改 `:shared` / `:player` 之后，跑 `.github/workflows/ci.yml` 里那两组任务
+改 `:shared` / `:video:engine` 之后，跑 `.github/workflows/ci.yml` 里那两组任务
 （三端编译 + `desktopTest` + Android host 单测 + iOS 编译），并报告**用例数与失败数**。
 只跑桌面编译不等于三端通过；"测试跑不起来"不等于"测试通过"。
 具体任务名以 `ci.yml` 为准，不要在本文件里复制命令行。

@@ -11,6 +11,7 @@ import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
+import java.net.Proxy
 import java.net.ServerSocket
 import java.util.concurrent.TimeUnit
 import kotlin.test.Test
@@ -76,7 +77,19 @@ class EchGateLiveTest {
         }
     }
 
+    /**
+     * 两个客户端都显式 `Proxy.NO_PROXY`——**这不是冗余配置**。
+     *
+     * 同进程的其它 live 用例（`SitePageCaptureLiveTest` / `WatchFetchPerfLiveTest`）会
+     * `setProperty("java.net.useSystemProxies","true")`，那是 JVM 级全局状态、不会自动还原。
+     * OkHttp 默认取 `ProxySelector.getDefault()`，于是本类指向 `127.0.0.1:<网关>` 的请求
+     * 会被系统代理接管：代理对回环地址直接回 502（`server=null`，网关侧连 plan 日志都没有），
+     * CDN 断言随测试顺序随机变红——单独跑本类则无污染、必绿。
+     *
+     * 对照组同样必须 NO_PROXY：用"系统代理"去测"直连是否被阻断"本身就不成立。
+     */
     private fun clientWithGate(port: Int): OkHttpClient = OkHttpClient.Builder()
+        .proxy(Proxy.NO_PROXY)
         .connectTimeout(20, TimeUnit.SECONDS)
         .readTimeout(30, TimeUnit.SECONDS)
         .addInterceptor(UserAgentInterceptor)
@@ -144,6 +157,8 @@ class EchGateLiveTest {
         EchGate.port = -1
 
         val client = OkHttpClient.Builder()
+            // 见 clientWithGate：必须绕过可能被其它 live 用例全局置上的系统代理。
+            .proxy(Proxy.NO_PROXY)
             .connectTimeout(6, TimeUnit.SECONDS)
             .readTimeout(6, TimeUnit.SECONDS)
             .addInterceptor(UserAgentInterceptor)

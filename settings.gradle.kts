@@ -57,5 +57,13 @@ include(":app")
 
 // KMP 共享模块与新增平台入口
 include(":shared")
-include(":player")
 include(":desktopApp")
+
+// 视频模块分层（契约 / 引擎 / UI / 渲染面）。契约层最底，其余都只依赖它。
+// 引擎：三端 mediamp 实现 + 派生函数，禁 Compose（T9 守）。
+// ui：Compose 控件与弹幕绘制层，禁 mediamp。
+// surface：宿主渲染面（既是 @Composable 又必须引用 mediamp，故单独一层），它是唯一两者共存处。
+include(":video:contract")
+include(":video:engine")
+include(":video:ui")
+include(":video:surface")

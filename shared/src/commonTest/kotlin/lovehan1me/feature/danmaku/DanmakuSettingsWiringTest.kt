@@ -6,7 +6,7 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 // 设置 → 观感映射的接线测试（Gate3-P1 后留守 :shared）。
-// 纯折算测试已随 DanmakuRenderOptions 进 :player；这里只钉"同源"：
+// 纯折算测试已随 DanmakuRenderOptions 进 :video:contract；这里只钉"同源"：
 // 默认值必须只有一个来源，四个字段必须各自流向对应的观感量。
 class DanmakuSettingsWiringTest {
 

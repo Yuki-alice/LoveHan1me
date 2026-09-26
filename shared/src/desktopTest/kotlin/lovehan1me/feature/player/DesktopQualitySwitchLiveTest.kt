@@ -53,7 +53,7 @@ class DesktopQualitySwitchLiveTest {
             // 独立作用域：controller.release() 会 cancel 传进去的 scope，
             // 用 runBlocking 的 context 会把测试自己取消掉。
             val playerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
-            val controller = ComposePlaybackController(engine, playerScope)
+            val controller = PlaybackController(engine, playerScope)
             try {
                 controller.load(
                     title = "quality-switch-probe",
@@ -117,7 +117,7 @@ class DesktopQualitySwitchLiveTest {
 
     /** 等"本次加载"进入某个阶段（用于首次加载：那时状态还没到过该阶段）。 */
     private suspend fun awaitPhase(
-        controller: ComposePlaybackController,
+        controller: PlaybackController,
         phase: PlaybackPhase,
         timeoutMs: Long,
     ): Boolean = withTimeoutOrNull(timeoutMs) {
@@ -127,9 +127,9 @@ class DesktopQualitySwitchLiveTest {
 
     /** 等某个条件成立（用于"切换完成"这类**不能靠阶段判定**的场景，见调用点注释）。 */
     private suspend fun awaitCondition(
-        controller: ComposePlaybackController,
+        controller: PlaybackController,
         timeoutMs: Long,
-        predicate: (ComposePlaybackState) -> Boolean,
+        predicate: (PlaybackSessionState) -> Boolean,
     ): Boolean = withTimeoutOrNull(timeoutMs) {
         controller.state.first(predicate)
         true

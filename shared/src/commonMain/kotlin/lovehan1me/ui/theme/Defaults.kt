@@ -53,166 +53,27 @@ object HanimeDefaults {
      * 收到 640dp 会影响信息密度；纯阅读内容再宽一档。两者都远好于原来的无限制。
      */
     /**
-     * M3 官方**控件尺寸档**（icon button / 同类方形控件的**容器视觉尺寸**）：XS 32 / S 40 / M 56。
+     * M3 官方**控件尺寸档**（icon button / 同类方形控件的**容器视觉尺寸**）：M 档 56dp。
      *
      * 与 [Spacing] 是两回事：Spacing 是留白阶梯，这里是控件自身的档位。
-     * 也**不等于触控目标** —— 触控目标恒 ≥48dp（M3 硬指标），由命中区放大处理，
-     * 见 `VideoPlayerUi` 的 `playerHitTarget`：视觉走这里的档位，命中区另行补到 48dp。
+     * 也**不等于触控目标** —— 触控目标恒 ≥48dp（M3 硬指标），由命中区放大处理。
      *
      * 替换原则与 [Spacing] 相同：**值一一对应**，换 token 不改像素。
      */
     object Sizes {
-        /** XS：32dp —— 顶栏/浮层里的紧凑图标按钮。 */
-        val controlXS = 32.dp
-        /** S：40dp —— M3 icon button 的默认档。 */
-        val controlS = 40.dp
         /** M：56dp —— 需要强调的主控按钮（如浮动操作键）。 */
         val controlM = 56.dp
     }
 
     /**
-     * 播放器**叠层透明度阶梯** —— 播放器里所有"白/黑的第 N 档"都只从这里取。
+     * 叠层基色 —— 只剩纯白基色一档。
      *
-     * 背景：播放器一度有 25 处裸 `alpha = 0.xx`（按千行密度约是 animeko 播放器模块的 18 倍），
-     * 导致"把控制栏压暗一点"这种改动要满文件找同类值。这里按**语义角色**归并，
-     * 值与原硬编码**逐一对应**（只改名与位置，不改值）。
-     */
-    object OverlayAlpha {
-        /** 玻璃底（chip / 药丸按钮）。 */
-        const val glass = 0.08f
-        /** 描边（1dp 白描边）。 */
-        const val border = 0.06f
-        /** 分隔线 / 滑块轨道的浅描边。 */
-        const val divider = 0.12f
-        /** 进度轨道底。 */
-        const val track = 0.14f
-        /** 已缓冲进度。对齐 animeko（`onSurface.weaken()` = 50%）。 */
-        const val trackBuffered = 0.5f
-        /** thumb 外圈光晕。 */
-        const val thumbGlow = 0.22f
-        /** 顶栏 scrim 起点（渐变最深端）。 */
-        const val scrim = 0.75f
-        /** 底栏 scrim 起点（比顶栏更深一档）。 */
-        const val scrimDeep = 0.82f
-        /** 底部控制栏的玻璃底（作用在模糊层之上）。 */
-        const val barSurface = 0.18f
-        /**
-         * 进度条时间预览气泡的底。
-         *
-         * 比 [barSurface] 实得多：气泡是**压在画面上**的独立浮层，不像控制栏那样有模糊底兜着，
-         * 0.18 的玻璃在亮画面上读不出白字。
-         */
-        const val previewBubble = 0.82f
-        /** 侧栏遮罩。 */
-        const val panelDim = 0.72f
-        /** 模糊压暗（posterBlur 之上的那层黑）。 */
-        const val blurDim = 0.32f
-        /** 画面压暗（非 scrim 的整屏压暗）。 */
-        const val videoDim = 0.46f
-        /** 锁定按钮底。 */
-        const val lockButton = 0.45f
-        /** 正文极淡（水印级）。 */
-        const val textFaint = 0.04f
-        /** 三级文字（时间/次要信息）。 */
-        const val textTertiary = 0.72f
-        /** 二级文字（正文说明）。 */
-        const val textSecondary = 0.88f
-        /** 一级半文字（强调正文）。 */
-        const val textStrong = 0.92f
-        /** 标题文字。 */
-        const val textPrimary = 0.95f
-    }
-
-    /**
-     * 播放器**叠层颜色** —— scrim 渐变档 / 玻璃底 / 描边 / 图标。
-     * 全部由 [OverlayAlpha] 合成，改透明度只动一处。
+     * 播放器那套叠层色表（scrim 渐变 / 轨道 / 玻璃底 / 叠层文字档）已随播放器控件
+     * 整体迁去 `:video:ui`，本对象不再承载它们。
      */
     object Overlay {
         /** 叠层上的图标/文字基色（纯白）。 */
         val onScrim = Color.White
-        /** 画面底（无视频时的黑底）。 */
-        val backdrop = Color.Black
-
-        val glass = Color.White.copy(alpha = OverlayAlpha.glass)
-        val border = Color.White.copy(alpha = OverlayAlpha.border)
-        val divider = Color.White.copy(alpha = OverlayAlpha.divider)
-        val track = Color.White.copy(alpha = OverlayAlpha.track)
-        val trackBuffered = Color.White.copy(alpha = OverlayAlpha.trackBuffered)
-        val thumbGlow = Color.White.copy(alpha = OverlayAlpha.thumbGlow)
-
-        /** 进度条时间预览气泡的底（深色胶囊，压在画面上保证白字可读）。 */
-        val previewBubble = Color.Black.copy(alpha = OverlayAlpha.previewBubble)
-
-        /** 顶栏 scrim 渐变的两端（透明 → [OverlayAlpha.scrim]）。 */
-        val scrimTopStart = Color.Transparent
-        val scrimTopEnd = Color.Black.copy(alpha = OverlayAlpha.scrim)
-        /** 底栏 scrim 渐变的两端。 */
-        val scrimBottomStart = Color.Transparent
-        val scrimBottomEnd = Color.Black.copy(alpha = OverlayAlpha.scrimDeep)
-
-        val barSurface = Color.Black.copy(alpha = OverlayAlpha.barSurface)
-        val panelDim = Color.Black.copy(alpha = OverlayAlpha.panelDim)
-        val blurDim = Color.Black.copy(alpha = OverlayAlpha.blurDim)
-        val videoDim = Color.Black.copy(alpha = OverlayAlpha.videoDim)
-        val lockButton = Color.Black.copy(alpha = OverlayAlpha.lockButton)
-
-        val textFaint = Color.White.copy(alpha = OverlayAlpha.textFaint)
-        val textTertiary = Color.White.copy(alpha = OverlayAlpha.textTertiary)
-        val textSecondary = Color.White.copy(alpha = OverlayAlpha.textSecondary)
-        val textStrong = Color.White.copy(alpha = OverlayAlpha.textStrong)
-        val textPrimary = Color.White.copy(alpha = OverlayAlpha.textPrimary)
-    }
-
-    /**
-     * 播放器**专属尺寸**（与 [Sizes] 的通用控件档位分开：这里都是"播放器结构尺寸"）。
-     *
-     * 通用间距不在这里 —— 那些落 [Spacing]（值相等的直接换 token，不新建体系）。
-     */
-    object PlayerSizes {
-        /** 触控目标下限（M3 硬指标）。 */
-        val minTouchTarget = 48.dp
-        /** 顶栏 scrim 渐变高度。 */
-        val scrimTop = 120.dp
-        /** 底栏 scrim 渐变高度。 */
-        val scrimBottom = 180.dp
-        /** 顶栏最小高度。 */
-        val topBarMinHeight = 52.dp
-        /** 底栏按钮的**视觉**行高（图标本体的高度档位）。 */
-        val bottomRow = 30.dp
-        /**
-         * 底栏控制行的**布局**高度。
-         *
-         * 复刻 animeko 后进度条内联进按钮行，行内必须容得下进度条的 48dp 命中区 ——
-         * 因此行高按 [minTouchTarget] 而不是 [bottomRow] 给。
-         */
-        val bottomControlRow = minTouchTarget
-        /** 中央大播放键。 */
-        val centerButton = 72.dp
-        /** 中央大键里的图标。 */
-        val centerIcon = 42.dp
-        /** 右中锁定按钮。42 → 48：可见填充圆钮**就是**点击面（FilledIconButton 的 clickable
-         *  边界 = 容器尺寸），42 不是任何官方档位、也达不到 M3 触控目标，直接归一到 48。 */
-        val lockButton = 48.dp
-        /** 顶栏/底栏的次级图标（返回、主页…）。20 → **24**：对齐 animeko 顶栏的 24dp。 */
-        val iconLarge = 24.dp
-        /** 底栏主图标（播放/暂停、下一集）。对齐 animeko `PlaybackIcon`/`NextEpisodeIcon` 的 36dp。 */
-        val bottomPrimaryIcon = 36.dp
-        /** 底栏次级图标（全屏）。对齐 animeko `FullscreenIcon` 的 32dp，与主图标拉开一档做层级。 */
-        val bottomSecondaryIcon = 32.dp
-        /** 侧栏面板宽度。 */
-        val panelWidth = 156.dp
-        /** 进度轨道厚度（视觉）。对齐 animeko（6dp）。 */
-        val track = 6.dp
-        /** 轨道容器高（thumb 光晕的容纳盒）。18 → **22**：对齐 animeko 的 22dp 容器。 */
-        val trackBox = 22.dp
-        /** 轨道触摸区高（Media3：进度触摸 48dp）。 */
-        val trackTouch = 48.dp
-        /** thumb 外圈容器。14 → **16**。 */
-        val thumbBox = 16.dp
-        /** thumb 光晕。15 → **18**。 */
-        val thumbGlow = 18.dp
-        /** thumb（实心）。对齐 animeko（半径 8dp 即直径 16dp 的 primary 圆，无光晕）。 */
-        val thumb = 16.dp
     }
 
     object Widths {

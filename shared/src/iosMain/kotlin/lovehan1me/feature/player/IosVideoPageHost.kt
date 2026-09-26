@@ -63,8 +63,8 @@ object IosPipPlayerHolder {
     }
 }
 
-// Gate3-P5：引擎侧（:player）经 IosPlayerPipBridge 注册 PiP 播放器（依赖方向
-// :shared → :player，引擎拿不到本文件符号）。此注入是 bridge 的唯一接线点。
+// Gate3-P5：引擎侧（:video:engine）经 IosPlayerPipBridge 注册 PiP 播放器（依赖方向
+// :shared → :video:engine，引擎拿不到本文件符号）。此注入是 bridge 的唯一接线点。
 private val pipBridgeWiring: Unit = run {
     IosPlayerPipBridge.register(
         onPlayerCreated = { IosPipPlayerHolder.attach(it) },

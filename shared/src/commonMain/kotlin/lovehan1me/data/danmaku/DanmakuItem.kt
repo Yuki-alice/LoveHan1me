@@ -1,6 +1,6 @@
 package lovehan1me.data.danmaku
 
-// DanmakuItem / DanmakuSource / DanmakuLocation 已搬入 :player 同包文件
+// DanmakuItem / DanmakuSource / DanmakuLocation 已搬入 :video:contract 同包文件
 //（包名不变，全仓 import 零改动）。本文件只剩匹配逻辑。
 
 /**

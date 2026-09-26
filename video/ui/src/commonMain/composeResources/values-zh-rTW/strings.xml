@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="player_gesture_brightness">亮度</string>
+    <string name="player_gesture_progress">進度</string>
+    <string name="player_gesture_volume">音量</string>
+    <string name="player_progress_percent">%1$d%%</string>
+    <string name="player_seek_release_to_cancel">鬆手取消</string>
+    <string name="player_aspect_crop">裁切</string>
+    <string name="player_aspect_fit">適應</string>
+    <string name="player_aspect_stretch">拉伸</string>
+    <string name="player_speed_format">%1$sx</string>
+    <string name="speed">倍速</string>
+    <string name="gif_capture">錄製 GIF</string>
+    <string name="screenshot">截圖</string>
+    <string name="playback_finished">影片播放完畢</string>
+    <string name="player_play_from_beginning">從頭開始播放</string>
+    <string name="replay">重播</string>
+    <string name="retry">重試</string>
+    <string name="video_loading_failed">影片載入失敗</string>
+    <string name="cancel">取消</string>
+    <string name="gif_capture_duration">時長</string>
+    <string name="gif_capture_failed">GIF 產生失敗：%1$s</string>
+    <string name="gif_capture_generating">正在產生 GIF… %1$s/%2$s</string>
+    <string name="gif_capture_saved">GIF 已儲存：%1$s</string>
+    <string name="player_auto_quality">自動</string>
+</resources>

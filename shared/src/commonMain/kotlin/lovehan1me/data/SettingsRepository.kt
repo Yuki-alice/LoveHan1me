@@ -61,6 +61,8 @@ object SettingsRepository : SettingsStore {
     val videoQuality get() = current.videoQuality
     /** G2-3b：画面比例偏好。引擎不支持时会降级，实际生效值看引擎状态。 */
     val videoAspect get() = current.videoAspect
+    /** 超分档位偏好。存"用户选的"，无效档位由调用侧收敛，实际生效值看引擎。 */
+    val superResolutionLevel get() = current.superResolutionLevel
     /** G2-3b：画面调节（仅 mpv 内核生效）。 */
     val pictureAdjust get() = PictureAdjust(
         brightness = current.pictureBrightness,
@@ -174,6 +176,10 @@ object SettingsRepository : SettingsStore {
 
     /** G2-3b：画面比例偏好（存"用户选的"，不管引擎能否生效）。 */
     suspend fun setVideoAspect(value: VideoAspectMode) = update { it.copy(videoAspect = value) }
+
+    /** 超分档位偏好（同样存"用户选的"；引擎降级不回写，免得换引擎后选择丢失）。 */
+    suspend fun setSuperResolutionLevel(value: Int) =
+        update { it.copy(superResolutionLevel = value) }
 
     /** G2-3b：画面亮度（-100~100）。 */
     suspend fun setPictureBrightness(value: Float) =

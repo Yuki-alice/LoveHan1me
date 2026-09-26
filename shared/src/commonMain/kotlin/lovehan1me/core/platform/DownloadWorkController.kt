@@ -10,7 +10,11 @@ import kotlinx.coroutines.flow.Flow
  * 是唯一事实源——任务/进度/分组全部落库，UI（Downloading/DownloadedScreen）直接观察 DB 流。
  * 控制面（本契约）：平台各自实现队列执行器——
  * - Android：WorkManager（HanimeDownloadManager 转发，进程死亡可恢复）
- * - 桌面/iOS：P7 起为协程队列（当前 NoOp，浏览/删除已下载功能不受影响）
+ * - 桌面：`DesktopDownloadWorkController`（协程队列 + Range 续传）
+ * - iOS：`IosDownloadWorkController`（1:1 移植桌面，网络栈换 Ktor Darwin、文件 IO 换 posix）
+ *
+ * Gate4：三端均为真实现，契约里的空默认体只作为「平台不支持该动作」的兜底，
+ * 不再是"待实现"的占位。
  */
 interface DownloadWorkController {
     fun prune()

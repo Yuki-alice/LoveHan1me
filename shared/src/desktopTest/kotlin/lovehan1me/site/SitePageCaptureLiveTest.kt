@@ -61,14 +61,22 @@ class SitePageCaptureLiveTest {
             "g2b2_playlist.html" to "https://hanime1.me/playlist?list=976998&sort=latest",
         )
         for ((file, url) in targets) {
-            val body = withTimeoutOrNull(120_000) {
-                val resp = HanimeNetwork.hanimeService.getHomePage(url)
-                println("[capture] $url status=${resp.status.value}")
-                if (!resp.status.isSuccess()) return@withTimeoutOrNull null
-                resp.bodyAsText()
+            // 抓包工具不该把构建搞红：受限网络下 DNS 能通但 TLS 被 DPI 重置（CF 挡站）是常态，
+            // 抛出来的 SocketException 必须按"抓取失败"记录 —— 本类只保证"抓得到"，
+            // 夹具缺失由消费方 skip（见 AuthorPlaylistParserTest）。
+            val body = runCatching {
+                withTimeoutOrNull(120_000) {
+                    val resp = HanimeNetwork.hanimeService.getHomePage(url)
+                    println("[capture] $url status=${resp.status.value}")
+                    if (!resp.status.isSuccess()) return@withTimeoutOrNull null
+                    resp.bodyAsText()
+                }
+            }.getOrElse { error ->
+                println("[capture] $url 抓取异常：${error::class.simpleName} ${error.message}")
+                null
             }
             if (body == null) {
-                println("[capture] $url 抓取失败（超时或非 2xx，疑似 CF 墙）")
+                println("[capture] $url 抓取失败（超时/异常/非 2xx，疑似 CF 墙）")
             } else {
                 File(outDir(), file).writeText(body)
                 println("[capture] $url len=${body.length} -> .workbuddy/$file")

@@ -14,7 +14,7 @@ import lovehan1me.core.domain.model.VideoComments
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.danmaku.DanmakuProvider
 import lovehan1me.data.danmaku.EmptyDanmakuProvider
-import lovehan1me.feature.player.ComposePlaybackState
+import lovehan1me.feature.player.PlaybackSessionState
 import lovehan1me.feature.player.PlaybackPhase
 
 /**
@@ -26,7 +26,7 @@ import lovehan1me.feature.player.PlaybackPhase
  * 评论开关关了但弹弹配了时，行为与以前完全一致。
  *
  * 为什么不塞进 ViewModel：本仓的既有做法是「纯逻辑类 + 屏幕持有」
- * （`ComposePlaybackController` / [PlaybackStallDetector][lovehan1me.feature.player.PlaybackStallDetector] 同理），
+ * （`PlaybackController` / [PlaybackStallDetector][lovehan1me.feature.player.PlaybackStallDetector] 同理），
  * 弹幕对播放器是**旁路**，它挂了不该牵连播放，换片子时也不该跟着重建整个 ViewModel。
  *
  * 休眠判定只看 [DanmakuProvider.from]（代理与凭据都没配 → null），
@@ -36,7 +36,7 @@ import lovehan1me.feature.player.PlaybackPhase
 fun rememberDanmakuSession(
     videoCode: String,
     title: String,
-    playbackState: ComposePlaybackState?,
+    playbackState: PlaybackSessionState?,
     comments: List<VideoComments.VideoComment> = emptyList(),
 ): DanmakuSession? {
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()

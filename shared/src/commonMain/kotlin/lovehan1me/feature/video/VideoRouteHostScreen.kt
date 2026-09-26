@@ -80,7 +80,7 @@ import lovehan1me.app.navigation.main.ArtistRoute
 import lovehan1me.app.navigation.main.SitePlaylistRoute
 import lovehan1me.app.navigation.main.VideoRoute
 import lovehan1me.feature.player.BindOrientationAutoFullscreen
-import lovehan1me.feature.player.ComposePlaybackController
+import lovehan1me.feature.player.PlaybackController
 import lovehan1me.feature.player.PlaybackEngine
 import lovehan1me.feature.player.PlaybackPhase
 import lovehan1me.feature.player.PlaybackQuality
@@ -89,8 +89,10 @@ import lovehan1me.feature.player.PlayerKernel
 import lovehan1me.feature.player.createPlaybackEngine
 import lovehan1me.feature.player.isActiveNetworkMetered
 import lovehan1me.feature.player.shouldAutoPlayNext
+import lovehan1me.video.contract.VideoEnhancementLevels
 import lovehan1me.feature.danmaku.DanmakuLayer
 import lovehan1me.feature.danmaku.DanmakuControls
+import lovehan1me.feature.danmaku.DanmakuSettingsDialog
 import lovehan1me.feature.danmaku.rememberDanmakuRenderOptions
 import lovehan1me.feature.danmaku.rememberDanmakuSession
 import lovehan1me.feature.video.CommentViewModel
@@ -170,7 +172,7 @@ fun VideoRouteHostScreen(
             PlayerTrace.mark("engine-create-end")
         }
     }
-    val playbackController = remember(playbackEngine) { ComposePlaybackController(playbackEngine) }
+    val playbackController = remember(playbackEngine) { PlaybackController(playbackEngine) }
     val playbackState by playbackController.state.collectAsStateWithLifecycle()
     // 单栏 / 双栏判定：对齐 animeko `EpisodePage.showExpandedUI`
     // （`showExpandedUI = (w >= 840) || (w >= 600 && h < 480)`）。
@@ -230,12 +232,22 @@ fun VideoRouteHostScreen(
     var mobilePlaybackConfirmed by remember(route.videoCode, route.localUri) {
         mutableStateOf(false)
     }
-    var superResolutionIndex by remember { mutableStateOf(0) }
+    // 超分档位。存的是**档位值**（0/1/2）而不是菜单下标：引擎可选档位可能是子集，
+    // 用下标会把"档位"和"位置"混成一件事（下标在渲染前才换算）。
+    var superResolutionIndex by remember { mutableStateOf(VideoEnhancementLevels.OFF) }
+    // 重进播放页要把落盘档位重新下发一次：`remember` 的本地态活不过页面销毁，存档才活得下去。
+    // 引擎降级/分辨率门控时返回的是**生效值**，直接拿它刷新显示，不显示"选了却没生效"的档。
+    LaunchedEffect(playbackController) {
+        playbackController.setEnhancementLevel(SettingsRepository.superResolutionLevel)
+            ?.let { superResolutionIndex = it }
+    }
     // G2-3b：画面比例。初值取"引擎真实生效值"，而不是直接读设置 ——
     // 设置里可能存着 Stretch，但当前引擎是 Exo（无此档），引擎已经降级成 Fit 了；
     // 拿引擎状态当唯一真相，菜单就不会显示一个"选中了却没生效"的档。
     val aspectOptions = playbackController.supportedAspectModes
     val currentVideoAspect = playbackState.engine.videoAspect
+    // 超分可选档位由引擎声明（空 = 本端不支持 → 底栏整块不画）。
+    val enhancementLevels = playbackController.enhancement?.levels.orEmpty()
     LaunchedEffect(playbackController, aspectOptions) {
         // 首次进入时把用户存的偏好下发（引擎不支持的档会被降级并回报）。
         playbackController.setVideoAspect(SettingsRepository.videoAspect)
@@ -809,6 +821,10 @@ fun VideoRouteHostScreen(
             comments = danmakuComments,
         )
     }
+    // 弹幕设置弹窗的开关由**页面层**持有：弹窗挂在播放器最上层槽位，
+    // 不随底栏自动隐藏被销毁（底栏里挂弹窗，点开后一松手弹窗就跟着没）。
+    // 换关联键（换片/换文件）时关掉，避免弹窗里留着上一部片的会话。
+    var showDanmakuSettingsDialog by remember(danmakuVideoCode) { mutableStateOf(false) }
 
     VideoShellContent(
         isDualPane = isDualPane,
@@ -905,19 +921,25 @@ fun VideoRouteHostScreen(
         playbackSpeed = playbackState.engine.playbackSpeed,
         onPlaybackSpeedSelected = playbackController::setPlaybackSpeed,
         superResolutionLabel = stringResource(Res.string.player_anime4k_label),
-        superResolutionOptions = if (playbackEngine.supportsSuperResolution()) {
-            listOf(
-                stringResource(Res.string.super_resolution_off),
-                stringResource(Res.string.super_resolution_performance),
-                stringResource(Res.string.super_resolution_quality),
+        // 文案按**档位值**取，不按序号 —— 引擎哪天只给子集（比如只有 OFF/PERFORMANCE）也不会错位。
+        superResolutionOptions = enhancementLevels.map { level ->
+            stringResource(
+                when (level) {
+                    VideoEnhancementLevels.PERFORMANCE -> Res.string.super_resolution_performance
+                    VideoEnhancementLevels.QUALITY -> Res.string.super_resolution_quality
+                    else -> Res.string.super_resolution_off
+                }
             )
-        } else {
-            emptyList()
         },
-        selectedSuperResolutionIndex = superResolutionIndex,
+        selectedSuperResolutionIndex = enhancementLevels.indexOf(superResolutionIndex)
+            .coerceAtLeast(0),
         onSuperResolutionSelected = { index ->
-            superResolutionIndex = index
-            playbackEngine.setSuperResolution(index)
+            val level = enhancementLevels.getOrNull(index) ?: VideoEnhancementLevels.OFF
+            // 落盘存**请求值**（用户意图；换了引擎选择还在），显示取引擎回报的生效值。
+            scope.launch {
+                playbackController.setEnhancementLevel(level)?.let { superResolutionIndex = it }
+                SettingsRepository.setSuperResolutionLevel(level)
+            }
         },
         // G2-3b：画面比例 —— 引擎真实支持的档 + 引擎真实生效的值。
         // 选完即存偏好：下次起播由上面的 LaunchedEffect 下发。
@@ -960,13 +982,15 @@ fun VideoRouteHostScreen(
             if (duration > 0L) playbackController.seekTo((duration * value).toLong())
         },
         progressGestureSensitivity = PlayerDefaults.PROGRESS_SLIDE_SENSITIVITY,
+        // 引擎还没报尺寸时传 0（"未上报"），由播放器的 resolveVideoAspectRatio 兜底。
+        // 这里不写死 16:9：兜底比例是**一个**所有者，两处各写一份迟早对不上。
         videoAspectRatio = if (
             playbackState.engine.videoWidth > 0 &&
             playbackState.engine.videoHeight > 0
         ) {
             playbackState.engine.videoWidth.toFloat() / playbackState.engine.videoHeight.toFloat()
         } else {
-            16f / 9f
+            0f
         },
         // 首帧未到不画：弹幕飘在海报上是穿帮。PiP 由 VideoShellContent 统一收掉。
         danmakuLayer = danmakuSession?.takeIf {
@@ -988,8 +1012,28 @@ fun VideoRouteHostScreen(
             @Composable {
                 DanmakuControls(
                     session = danmakuSession,
-                    onOpenSettings = onOpenDanmakuSettings,
+                    // 有关联会话时开播放器内的设置弹窗；会话为 null（功能休眠）时
+                    // 去设置页开——弹窗里的"状况/外观"对 null 会话无从下手。
+                    onOpenSettings = {
+                        if (danmakuSession != null) {
+                            showDanmakuSettingsDialog = true
+                        } else {
+                            onOpenDanmakuSettings()
+                        }
+                    },
                 )
+            }
+        },
+        // 弹窗宿主：挂在播放器最上层槽位（见 VideoShellContent 的 dialogHost 文档）。
+        dialogHost = danmakuSession?.let { session ->
+            @Composable {
+                if (showDanmakuSettingsDialog) {
+                    DanmakuSettingsDialog(
+                        session = session,
+                        onOpenSettings = onOpenDanmakuSettings,
+                        onDismiss = { showDanmakuSettingsDialog = false },
+                    )
+                }
             }
         },
         onPlayerBoundsChanged = { platformHost.setPipSourceRect(it) },
@@ -1035,6 +1079,14 @@ fun VideoRouteHostScreen(
             onDismiss = { showGifCapture = false },
             captureFrameAt = { positionMs, width, height ->
                 playbackController.grabFrameArgb(positionMs, width, height)
+            },
+            // 平台「保存 / 分享」留在本层：同一套 exportMediaAndShare 也服务上面的截图路径
+            exportGif = { bytes, fileName ->
+                when (val export = exportMediaAndShare(bytes, fileName, "image/gif")) {
+                    is MediaExportOutcome.Shared -> GifExportOutcome.Saved(export.location)
+                    is MediaExportOutcome.SavedOnly -> GifExportOutcome.Saved(export.location)
+                    is MediaExportOutcome.Failed -> GifExportOutcome.Failed(export.message)
+                }
             },
         )
     }

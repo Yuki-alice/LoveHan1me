@@ -8,7 +8,7 @@ import lovehan1me.core.domain.model.AppSettings
 import lovehan1me.data.SettingsRepository
 
 // 设置 → 弹幕观感的接线（Gate3-P1 后留守 :shared 的部分）。
-// 纯件（DanmakuRenderOptions 数据类 + DanmakuLayer 绘制件）已进 :player，
+// 纯件（DanmakuRenderOptions 数据类 → :video:contract，DanmakuLayer 绘制件 → :video:ui）已分层，
 // 这里只剩"读设置流"这两小段——它们依赖 SettingsRepository，不能进内核模块。
 
 fun AppSettings.danmakuRenderOptions(): DanmakuRenderOptions = DanmakuRenderOptions(

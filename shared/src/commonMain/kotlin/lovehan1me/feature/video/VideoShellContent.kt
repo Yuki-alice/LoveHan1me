@@ -19,16 +19,28 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
+import lovehan1me.core.util.LogUtil
 import lovehan1me.feature.player.PlaybackEngine
 import lovehan1me.feature.player.PlaybackQuality
+import lovehan1me.feature.player.PlatformVideoSurface
 import lovehan1me.feature.player.VideoAspectMode
+import lovehan1me.ui.component.HanimeAsyncImage
+import lovehan1me.ui.component.rememberHapticFeedback
 import lovehan1me.ui.theme.HanimeDefaults
+import lovehan1me.ui.transition.sharedCoverElement
+import lovehan1me.video.ui.LocalPlayerDiagnostics
+import lovehan1me.video.ui.LocalPlayerHaptic
+import lovehan1me.video.ui.PlayerDiagnostics
 
 @Composable
 fun VideoShellContent(
@@ -125,6 +137,13 @@ fun VideoShellContent(
      * 与 [danmakuLayer] 一起在 PiP 下被收掉：PiP 的底栏不是这套控件。
      */
     danmakuControls: (@Composable () -> Unit)? = null,
+    /**
+     * 弹幕设置弹窗宿主（null = 不挂）。
+     *
+     * 弹窗必须挂在播放器的**最上层槽位**而不是底栏里：底栏随控件自动隐藏被销毁，
+     * 弹窗跟着一起没。PiP 下也收掉 —— PiP 没有打开它的入口，窗口也只有几百分宽。
+     */
+    dialogHost: (@Composable () -> Unit)? = null,
     tabsContent: @Composable () -> Unit,
     /**
      * 宽屏右栏 Tab（详情｜评论），null = 回退到 [tabsContent]。
@@ -173,78 +192,123 @@ fun VideoShellContent(
     // 全项目只有 MainContent 一处调用点，movable 的跨分支搬运能力本就用不上，故回归直接调用。
     @Composable
     fun PlayerBox(playerModifier: Modifier) {
-        VideoPlayerUi(
-            modifier = playerModifier,
-            danmakuLayer = resolvedDanmakuLayer,
-            danmakuControls = resolvedDanmakuControls,
-            playbackEngine = playbackEngine,
-            posterUrl = posterUrl,
-            title = title,
-            currentTime = currentTime,
-            totalTime = totalTime,
-            progress = progress,
-            bufferedProgress = bufferedProgress,
-            currentVolume = currentVolume,
-            currentBrightness = currentBrightness,
-            isFullscreen = isFullscreen,
-            isPlaying = isPlaying,
-            isPlaybackEnded = isPlaybackEnded,
-            isLocked = isLocked || isInPipMode,
-            showPoster = showPoster,
-            sharedElementKey = sharedElementKey,
-            showControls = !isInPipMode,
-            showLoading = showLoading,
-            showRetry = showRetry,
-            showResumeButton = showResumeButton,
-            onPlayClick = onPlayClick,
-            onReplay = onReplay,
-            onBackClick = onBackClick,
-            onHomeClick = onHomeClick,
-            onFullscreenClick = onFullscreenClick,
-            onLockClick = onLockClick,
-            onNextClick = onNextClick,
-            autoPlayNext = autoPlayNext,
-            onAutoPlayNextChange = onAutoPlayNextChange,
-            onProgressChange = onProgressChange,
-            onRetry = onRetry,
-            onResumeClick = onResumeClick,
-            qualities = qualities,
-            selectedQuality = selectedQuality,
-            onQualitySelected = onQualitySelected,
-            playbackSpeed = playbackSpeed,
-            onPlaybackSpeedSelected = onPlaybackSpeedSelected,
-            superResolutionLabel = superResolutionLabel,
-            superResolutionOptions = superResolutionOptions,
-            selectedSuperResolutionIndex = selectedSuperResolutionIndex,
-            onSuperResolutionSelected = onSuperResolutionSelected,
-            videoAspectOptions = videoAspectOptions,
-            selectedVideoAspect = selectedVideoAspect,
-            onVideoAspectSelected = onVideoAspectSelected,
-            frameCaptureEnabled = frameCaptureEnabled,
-            onOpenGifCapture = onOpenGifCapture,
-            onCaptureScreenshot = onCaptureScreenshot,
-            errorMessage = errorMessage,
-            brightnessGestureEnabled = brightnessGestureEnabled,
-            onSeekBy = onSeekBy,
-            scale = scale,
-            onScaleChange = onScaleChange,
-            durationMs = durationMs,
-            fullscreenEnabled = fullscreenEnabled,
-            onLongPressStart = onLongPressStart,
-            onLongPressEnd = onLongPressEnd,
-            onVolumeChange = onVolumeChange,
-            onBrightnessChange = onBrightnessChange,
-            onProgressGesture = onProgressGesture,
-            progressGestureSensitivity = progressGestureSensitivity,
-            videoAspectRatio = videoAspectRatio,
-            bilibiliStyle = bilibiliStyle,
-            expanded = expandedBottomBar,
-            showSidebarToggle = showSidebarToggle,
-            sidebarVisible = sidebarVisible,
-            onToggleSidebar = onToggleSidebar,
-            isFavVideo = isFavVideo,
-            onToggleFavoriteVideo = onToggleFavoriteVideo,
-        )
+        // 渲染面的身份归壳层（它才持有引擎）：key 只认引擎实例，画面比例变化不该
+        // 把 Surface 连根重建（会黑一帧）。控件层只拿到"往这个矩形里画视频"的插槽。
+        val engine = playbackEngine
+        val videoSurface: (@Composable (Modifier) -> Unit)? = if (engine != null) {
+            { surfaceModifier ->
+                key(engine) {
+                    PlatformVideoSurface(
+                        engine = engine,
+                        modifier = surfaceModifier,
+                        onSurfaceAvailable = { engine.attachSurface(it) },
+                        onSurfaceDestroyed = { engine.detachSurface(it) },
+                    )
+                }
+            }
+        } else {
+            null
+        }
+        // 封面槽位：怎么加载、要不要配列表页卡片的形变过渡（共享元素）都是本层（编排层）的
+        // 知识，控件层只负责"往这个矩形里画封面"。
+        val cover: (@Composable () -> Unit)? = posterUrl?.let { url ->
+            {
+                HanimeAsyncImage(
+                    model = url,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .sharedCoverElement(sharedElementKey),
+                    contentScale = ContentScale.Crop,
+                )
+            }
+        }
+        val haptic = rememberHapticFeedback()
+        val hapticSlot: () -> Unit = remember(haptic) { { haptic() } }
+        val diagnostics = remember {
+            object : PlayerDiagnostics {
+                override fun log(tag: String, message: String) = LogUtil.d(tag, message)
+
+                override fun event(name: String, detail: String) = PlayerTrace.event(name, detail)
+            }
+        }
+        CompositionLocalProvider(
+            LocalPlayerHaptic provides hapticSlot,
+            LocalPlayerDiagnostics provides diagnostics,
+        ) {
+            VideoPlayerUi(
+                modifier = playerModifier,
+                danmakuLayer = resolvedDanmakuLayer,
+                danmakuControls = resolvedDanmakuControls,
+                dialogHost = if (isInPipMode) null else dialogHost,
+                videoSurface = videoSurface,
+                cover = cover,
+                title = title,
+                currentTime = currentTime,
+                totalTime = totalTime,
+                progress = progress,
+                bufferedProgress = bufferedProgress,
+                currentVolume = currentVolume,
+                currentBrightness = currentBrightness,
+                isFullscreen = isFullscreen,
+                isPlaying = isPlaying,
+                isPlaybackEnded = isPlaybackEnded,
+                isLocked = isLocked || isInPipMode,
+                showPoster = showPoster,
+                showControls = !isInPipMode,
+                showLoading = showLoading,
+                showRetry = showRetry,
+                showResumeButton = showResumeButton,
+                onPlayClick = onPlayClick,
+                onReplay = onReplay,
+                onBackClick = onBackClick,
+                onHomeClick = onHomeClick,
+                onFullscreenClick = onFullscreenClick,
+                onLockClick = onLockClick,
+                onNextClick = onNextClick,
+                autoPlayNext = autoPlayNext,
+                onAutoPlayNextChange = onAutoPlayNextChange,
+                onProgressChange = onProgressChange,
+                onRetry = onRetry,
+                onResumeClick = onResumeClick,
+                qualities = qualities,
+                selectedQuality = selectedQuality,
+                onQualitySelected = onQualitySelected,
+                playbackSpeed = playbackSpeed,
+                onPlaybackSpeedSelected = onPlaybackSpeedSelected,
+                superResolutionLabel = superResolutionLabel,
+                superResolutionOptions = superResolutionOptions,
+                selectedSuperResolutionIndex = selectedSuperResolutionIndex,
+                onSuperResolutionSelected = onSuperResolutionSelected,
+                videoAspectOptions = videoAspectOptions,
+                selectedVideoAspect = selectedVideoAspect,
+                onVideoAspectSelected = onVideoAspectSelected,
+                frameCaptureEnabled = frameCaptureEnabled,
+                onOpenGifCapture = onOpenGifCapture,
+                onCaptureScreenshot = onCaptureScreenshot,
+                errorMessage = errorMessage,
+                brightnessGestureEnabled = brightnessGestureEnabled,
+                onSeekBy = onSeekBy,
+                scale = scale,
+                onScaleChange = onScaleChange,
+                durationMs = durationMs,
+                fullscreenEnabled = fullscreenEnabled,
+                onLongPressStart = onLongPressStart,
+                onLongPressEnd = onLongPressEnd,
+                onVolumeChange = onVolumeChange,
+                onBrightnessChange = onBrightnessChange,
+                onProgressGesture = onProgressGesture,
+                progressGestureSensitivity = progressGestureSensitivity,
+                videoAspectRatio = videoAspectRatio,
+                bilibiliStyle = bilibiliStyle,
+                expanded = expandedBottomBar,
+                showSidebarToggle = showSidebarToggle,
+                sidebarVisible = sidebarVisible,
+                onToggleSidebar = onToggleSidebar,
+                isFavVideo = isFavVideo,
+                onToggleFavoriteVideo = onToggleFavoriteVideo,
+            )
+        }
     }
 
     @Composable

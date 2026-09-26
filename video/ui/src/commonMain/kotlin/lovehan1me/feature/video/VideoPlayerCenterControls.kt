@@ -1,0 +1,343 @@
+package lovehan1me.feature.video
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
+import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.hoverable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsHoveredAsState
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.aspectRatio
+import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ContainedLoadingIndicator
+import androidx.compose.material3.ElevatedButton
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButtonDefaults
+import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ModalBottomSheet
+import androidx.compose.material3.Slider
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.rememberModalBottomSheetState
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableFloatStateOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.input.pointer.PointerEventType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.layout.layout
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import kotlin.math.abs
+import kotlin.time.Duration.Companion.milliseconds
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.datetime.Instant
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
+import lovehan1me.video.ui.Res
+import lovehan1me.video.ui.FilledTonalIconButton
+import lovehan1me.video.ui.IconButton
+import lovehan1me.video.ui.LocalPlayerHaptic
+import lovehan1me.video.ui.PlayerTokens
+import lovehan1me.video.ui.ic_camera
+import lovehan1me.video.ui.ic_lock
+import lovehan1me.video.ui.ic_pause
+import lovehan1me.video.ui.ic_play_arrow
+import lovehan1me.video.ui.ic_unlock
+import org.jetbrains.compose.resources.painterResource
+import org.jetbrains.compose.resources.stringResource
+
+/**
+ * 播放器中央控件：大号播放/暂停键、播放中自动隐藏时的小暂停键、右侧悬浮钮（截图/锁定）。
+ *
+ * 从 `VideoPlayerUi` 主函数提取；三块都只读主函数状态（零改写），
+ * 右侧悬浮钮的 `align(CenterEnd)` 需要 BoxScope 接收者。
+ */
+@Composable
+internal fun BoxScope.PlayerCenterControls(
+    isLocked: Boolean,
+    gestureType: GestureIndicatorType?,
+    isPlaybackEnded: Boolean,
+    showLoading: Boolean,
+    isPlaying: Boolean,
+    effectiveShowControls: Boolean,
+    showUnlockButton: Boolean,
+    playerUiVisible: Boolean,
+    onPlayClick: () -> Unit,
+    onLockClick: () -> Unit,
+    /**
+     * Kazumi 哔哩哔哩风：中央没有大播放键（整块中央是透明手势层，暂停只走底栏）。
+     * 只在宽屏/全屏由调用方打开，窄屏竖屏保持 false → 原分支逐像素不变。
+     * 锁定按钮不受影响（Kazumi 右侧锁照样有）。
+     */
+    bilibiliStyle: Boolean = false,
+    /**
+     * 右侧截图悬浮钮（对齐 animeko `ScreenshotButton` 的位置与样式）。
+     * 调用方按"能抓帧 && expanded"置位；窄屏非全屏恒 false。
+     */
+    showScreenshotButton: Boolean = false,
+    onScreenshotClick: () -> Unit = {},
+) {
+    // B 站风下中央大键与 minimal 小暂停键都不画（与上面的大键互斥的 minimal 键同理）。
+    val showCenterPlayControls = !bilibiliStyle
+/**
+ * 中间播放/暂停按钮
+ */
+AnimatedVisibility(
+    visible =
+        showCenterPlayControls &&
+                !isLocked &&
+                gestureType == null &&
+                !isPlaybackEnded &&
+                !showLoading &&
+                (!isPlaying || effectiveShowControls),
+    enter = fadeIn(),
+    exit = fadeOut(),
+) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center
+    ) {
+        if (!isPlaying) {
+            FilledTonalIconButton(
+                onClick = onPlayClick,
+                modifier = Modifier.size(PlayerTokens.PlayerSizes.centerButton)
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_play_arrow),
+                    contentDescription = null,
+                    modifier = Modifier.size(PlayerTokens.PlayerSizes.centerIcon)
+                )
+            }
+        } else {
+            // Playing: small pause button when controls are visible
+            IconButton(
+                onClick = onPlayClick,
+                modifier = Modifier.size(PlayerTokens.PlayerSizes.centerButton)
+            ) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_pause),
+                    contentDescription = null,
+                    tint = PlayerTokens.Overlay.onScrim,
+                    modifier = Modifier.size(PlayerTokens.PlayerSizes.centerIcon)
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 最小控件（Minimal controls）：**播放中且控件已自动隐藏**时，中央给一枚小号暂停键，
+ * 点它**直接暂停**，而不是把整排控件叫回来（Media3 minimal controls 的行为）。
+ *
+ * 与上面的大键互斥：大键要求 `!isPlaying || effectiveShowControls`，
+ * 本键要求 `isPlaying && !effectiveShowControls` —— 两者不可能同时为真。
+ * 锁屏态不出现（PiP 在壳层被折算成 `isLocked = true`，见 VideoShellContent 的两处调用，
+ * 所以 PiP 也一并排除）。
+ *
+ * 只有 `onPlayClick` 一个动作、点击后只切换播放状态：事务脚本只有一步，
+ * 因此**绝不可能**出现"点了没反应"（PiP 态同理：不显示就不会被误点）。
+ */
+AnimatedVisibility(
+    visible =
+        showCenterPlayControls &&
+                isPlaying &&
+                !effectiveShowControls &&
+                !isLocked,
+    enter = fadeIn(),
+    exit = fadeOut(),
+) {
+    Box(
+        modifier = Modifier.fillMaxSize(),
+        contentAlignment = Alignment.Center,
+    ) {
+        IconButton(
+            onClick = onPlayClick,
+            modifier = Modifier
+                // 透明无底：命中区 48dp（M3 硬指标）/ 视觉 XS(32dp)，向上仍报告 XS
+                .playerHitTarget(visual = PlayerTokens.Sizes.controlXS)
+                .size(PLAYER_MIN_TOUCH_TARGET)
+        ) {
+            Icon(
+                painter = painterResource(Res.drawable.ic_pause),
+                contentDescription = null,
+                tint = PlayerTokens.Overlay.onScrim,
+                modifier = Modifier.size(PlayerTokens.Sizes.controlXS)
+            )
+        }
+    }
+}
+
+/**
+ * 右侧悬浮钮 —— 交给具名槽位 [PlayerGestureLockButton]（实现见文件末尾）。
+ * 对齐 animeko `VideoScaffold` 的 `rhsButtons` + `gestureLock` 槽：
+ * 截图与锁竖排、垂直居中、距右 16dp。
+ * 保留这一行调用是为了让三个中央控件的**可见性条件**能在同一屏里读完。
+ */
+PlayerGestureLockButton(
+    isLocked = isLocked,
+    showUnlockButton = showUnlockButton,
+    playerUiVisible = playerUiVisible,
+    onLockClick = onLockClick,
+    showScreenshotButton = showScreenshotButton,
+    onScreenshotClick = onScreenshotClick,
+)
+}
+
+/**
+ * 右侧悬浮钮槽位（对应 animeko `VideoScaffold` 的 `rhsButtons` + `gestureLock` 具名槽）。
+ *
+ * 样式对原型：48dp、`RoundedCornerShape(16.dp)`（圆角矩形**不是圆**）、
+ * 黑 5% 底 + 0.5dp 描边（`outline.slightlyWeaken()`），竖排 gap 8dp，
+ * 距右 16dp、播放器内垂直居中。锁定时锁图标 tint 切 primary。
+ *
+ * **可见性规则**（两侧源码逐个核对后的实情）：
+ * - 截图钮：跟 [playerUiVisible] 一起显隐（未锁定时）—— 它就是"控件的一部分"；
+ * - 锁钮未锁定：跟 [playerUiVisible] 一起显隐；
+ * - 锁钮已锁定：**点屏**才亮 [showUnlockButton] 那一下（3s），其余时间收起。
+ */
+@Composable
+internal fun BoxScope.PlayerGestureLockButton(
+    isLocked: Boolean,
+    showUnlockButton: Boolean,
+    playerUiVisible: Boolean,
+    onLockClick: () -> Unit,
+    showScreenshotButton: Boolean = false,
+    onScreenshotClick: () -> Unit = {},
+) {
+    val lockVisible = if (isLocked) showUnlockButton else playerUiVisible
+    Column(
+        modifier = Modifier
+            .align(Alignment.CenterEnd)
+            .padding(end = PlayerTokens.Spacing.extraLarge),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(PlayerTokens.Spacing.medium),
+    ) {
+        AnimatedVisibility(
+            visible = showScreenshotButton && playerUiVisible && !isLocked,
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            RhsFloatButton(onClick = onScreenshotClick) {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_camera),
+                    contentDescription = null,
+                    tint = PlayerTokens.Overlay.onScrim
+                )
+            }
+        }
+        AnimatedVisibility(
+            visible = lockVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+        ) {
+            RhsFloatButton(onClick = onLockClick) {
+                Icon(
+                    painter = painterResource(if (isLocked) Res.drawable.ic_lock
+                    else Res.drawable.ic_unlock),
+                    contentDescription = null,
+                    tint = if (isLocked) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        PlayerTokens.Overlay.onScrim
+                    }
+                )
+            }
+        }
+    }
+}
+
+/**
+ * 右侧悬浮单钮：48dp / 16dp 圆角 / 深色 5% 底 + 0.5dp 暗灰描边。
+ *
+ * 对齐 animeko `PlayerFloatingButtonBox`：底是深色 `background` 的 5%
+ * （播放器恒深色域，取纯黑 5% 等价），描边是深色域 `outline`（#938F99）
+ * 的 61.8%（`slightlyWeaken`）—— 不是纯白，纯白在暗画面上会显得过亮。
+ */
+@Composable
+private fun RhsFloatButton(
+    onClick: () -> Unit,
+    content: @Composable () -> Unit,
+) {
+    val haptic = LocalPlayerHaptic.current
+    val shape = androidx.compose.foundation.shape.RoundedCornerShape(16.dp)
+    Box(
+        modifier = Modifier
+            .size(PlayerTokens.PlayerSizes.lockButton)
+            .clip(shape)
+            .background(PlayerTokens.Overlay.backdrop.copy(alpha = 0.05f))
+            .border(
+                0.5.dp,
+                FLOAT_BUTTON_BORDER,
+                shape,
+            )
+            .clickable {
+                haptic()
+                onClick()
+            },
+        contentAlignment = Alignment.Center,
+    ) {
+        content()
+    }
+}
+
+/** animeko `slightlyWeaken()` = 0.618（描边透明度，见 SPEC §2.1）。 */
+private const val WEAKEN_SLIGHTLY = 0.618f
+
+/** 悬浮钮描边：深色域 outline（#938F99）× 61.8%，见上注释。 */
+private val FLOAT_BUTTON_BORDER = androidx.compose.ui.graphics.Color(0xFF938F99)
+    .copy(alpha = WEAKEN_SLIGHTLY)

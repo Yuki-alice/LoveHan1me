@@ -82,7 +82,7 @@ object ScreenshotCapturer {
      * @param sourceWidth / [sourceHeight] 视频源尺寸（来自播放器 state）：
      *        既用于算目标尺寸，也是"引擎只给源尺寸"时唯一的还原依据。
      * @param captureFrameArgb 抓帧回调，由
-     *        [lovehan1me.feature.player.ComposePlaybackController.grabFrameArgb] 提供
+     *        [lovehan1me.feature.player.PlaybackController.grabFrameArgb] 提供
      * @param maxLongEdgePx 长边上限，见 [DEFAULT_MAX_LONG_EDGE_PX]
      */
     suspend fun capture(

@@ -66,20 +66,20 @@ jobs:
           echo "platforms OK"
 
       - name: Compile Android + Desktop
-        # Gate3-P1：:player 独立模块，显式编译（shared 的 project 依赖也会间接触发，这里写明防漏）。
-        run: ./gradlew :player:compileAndroidMain :player:compileKotlinDesktop :shared:compileAndroidMain :shared:compileKotlinDesktop :app:compileDebugKotlin :desktopApp:compileKotlin --console=plain
+        # 视频各层都是独立模块，显式编译（project 依赖也会间接触发，这里写明防漏）。
+        run: ./gradlew :video:contract:compileAndroidMain :video:contract:compileKotlinDesktop :video:engine:compileAndroidMain :video:engine:compileKotlinDesktop :video:ui:compileAndroidMain :video:ui:compileKotlinDesktop :video:surface:compileAndroidMain :video:surface:compileKotlinDesktop :shared:compileAndroidMain :shared:compileKotlinDesktop :app:compileDebugKotlin :desktopApp:compileKotlin --console=plain
 
       - name: Assemble debug APK
         run: ./gradlew :app:assembleDebug --console=plain
 
       - name: desktopTest
-        # Gate3-P1：纯逻辑测试已随代码进 :player（commonTest 经 desktop 跑），两边都跑。
-        run: ./gradlew :player:desktopTest :shared:desktopTest --console=plain
+        # 纯逻辑测试随代码进各视频模块 / :video:contract（commonTest 经 desktop 跑），逐一都跑。
+        run: ./gradlew :video:contract:desktopTest :video:engine:desktopTest :video:ui:desktopTest :shared:desktopTest --console=plain
 
       - name: Android host unit tests
-        # Gate3-P6：commonTest 在 Android host（JVM，无需模拟器）再跑一遍——
+        # commonTest 在 Android host（JVM，无需模拟器）再跑一遍——
         # 覆盖 assets 管线等平台 actual 与桌面不同的路径。
-        run: ./gradlew :player:testAndroidHostTest :shared:testAndroidHostTest --console=plain
+        run: ./gradlew :video:contract:testAndroidHostTest :video:engine:testAndroidHostTest :video:ui:testAndroidHostTest :shared:testAndroidHostTest --console=plain
 
       - name: Upload test reports
         if: always()
@@ -87,7 +87,9 @@ jobs:
         with:
           name: desktop-test-reports
           path: |
-            player/build/test-results/desktopTest/
+            video/contract/build/test-results/desktopTest/
+            video/engine/build/test-results/desktopTest/
+            video/ui/build/test-results/desktopTest/
             shared/build/test-results/desktopTest/
           if-no-files-found: ignore
 
@@ -107,5 +109,5 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Compile iOS (device + simulator)
-        # Gate3-P1：:player 含 iosMain（引擎/LogUtil/时钟），与 :shared 同编。
-        run: ./gradlew :player:compileKotlinIosArm64 :player:compileKotlinIosSimulatorArm64 :shared:compileKotlinIosArm64 :shared:compileKotlinIosSimulatorArm64 --console=plain
+        # 视频各层都含 iosMain（引擎/LogUtil/时钟/渲染面），与 :shared 同编。
+        run: ./gradlew :video:engine:compileKotlinIosArm64 :video:engine:compileKotlinIosSimulatorArm64 :video:ui:compileKotlinIosArm64 :video:ui:compileKotlinIosSimulatorArm64 :video:surface:compileKotlinIosArm64 :video:surface:compileKotlinIosSimulatorArm64 :shared:compileKotlinIosArm64 :shared:compileKotlinIosSimulatorArm64 --console=plain

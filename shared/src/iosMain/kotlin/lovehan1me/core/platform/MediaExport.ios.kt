@@ -68,9 +68,14 @@ actual suspend fun exportMediaAndShare(
     }
 }
 
-// 相簿写入须在主线程（UIKit 约束）。成功判据是**事先拿到授权**而不是事后回调：
+/**
+ * 相簿写入须在主线程（UIKit 约束）。成功判据是**事先拿到授权**而不是事后回调：
+ *
+ * Gate4：`internal` 供同模块复用（首页公告图 [lovehan1me.feature.home.homepage.saveImageToGallery]
+ * 就是 Darwin 拉字节后直接调这里），落地一次、两处共用。
+ */
 @OptIn(ExperimentalForeignApi::class)
-private suspend fun saveImageToPhotoLibrary(bytes: ByteArray): Boolean {
+internal suspend fun saveImageToPhotoLibrary(bytes: ByteArray): Boolean {
     if (bytes.isEmpty()) return false
     return withContext(Dispatchers.Main) {
         val authorized = suspendCancellableCoroutine { continuation ->

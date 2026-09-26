@@ -23,8 +23,9 @@ package lovehan1me.core.platform
  * 本文件把「某平台是否可能让这一项生效」收敛成一份**平台常量**；
  * 设置 UI 一律按它决定「渲染 / 不渲染」，不再按设置值猜。
  *
- * ## 与 `PlaybackEngine.supportsSuperResolution()` 的分工
- * 那是**引擎实例**能力：要引擎在手，且构造引擎要几百 ms（播放器 lazy）。
+ * ## 与 `PlaybackEngine.enhancement` 的分工
+ * 那是**引擎实例**能力（`VideoEnhancementController`，null = 不支持）：要引擎在手，
+ * 且构造引擎要几百 ms（播放器 lazy）。
  * 本表是**设置页**需要的静态答案 —— 设置页没有引擎实例，也不该为了渲染一行而初始化播放器。
  * 两者判据不同、用途不同，不可互相替代：
  * 「播放中要不要显示超分入口」问引擎，「设置页要不要列出这一项」问本表。
