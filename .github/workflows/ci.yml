@@ -24,6 +24,21 @@ jobs:
       - name: Check document citations
         run: python tools/check_doc_citations.py
 
+      # 临时探针（查完即撤）：jvm-android 任务在 runner 上报 KSP 插件 marker
+      # "was not found in any of the following sources"，而同一制品在本机冷缓存下能解析。
+      # 这里从 runner 侧直接打四个仓库的 marker URL，判断是"runner 到不了"还是"Gradle 找不到"。
+      - name: TEMP probe plugin repositories
+        run: |
+          for u in \
+            "https://maven.aliyun.com/repository/gradle-plugin/com/google/devtools/ksp/com.google.devtools.ksp.gradle.plugin/2.3.12/com.google.devtools.ksp.gradle.plugin-2.3.12.pom" \
+            "https://plugins.gradle.org/m2/com/google/devtools/ksp/com.google.devtools.ksp.gradle.plugin/2.3.12/com.google.devtools.ksp.gradle.plugin-2.3.12.pom" \
+            "https://dl.google.com/dl/android/maven2/com/google/devtools/ksp/com.google.devtools.ksp.gradle.plugin/2.3.12/com.google.devtools.ksp.gradle.plugin-2.3.12.pom" \
+            "https://repo.maven.apache.org/maven2/com/google/devtools/ksp/com.google.devtools.ksp.gradle.plugin/2.3.12/com.google.devtools.ksp.gradle.plugin-2.3.12.pom" \
+          ; do
+            printf '%-24s ' "$(echo "$u" | cut -d/ -f3)"
+            curl -sS -o /dev/null -w 'code=%{http_code} t=%{time_total}s\n' --max-time 25 "$u" || echo "curl FAILED"
+          done
+
   # Windows runner：desktopTest 里的 skiko runtimeOnly 钉的是 windows-x64 原生库，
   # 换 Linux runner 会因原生库不匹配导致 Skia 相关测试失败。
   jvm-android:
