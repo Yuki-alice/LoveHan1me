@@ -7,6 +7,9 @@
 3. docs/plan/ 同时只允许一份活计划；docs/decisions.md 每条应带失效条件。
 
 引用失效 / 结构违规 = 退出码 1；过期 = 只打印告警。
+
+`reference/` 一族引用是**例外**：那是研读用的上游副本，被 .gitignore 排除，
+CI 和别人的机器上都没有。它的校验规则见 [resolve]。
 """
 
 import datetime
@@ -31,9 +34,23 @@ for path in tracked:
 by_path = {p: p for p in tracked}
 
 
+# 引用本身合法、但本机无从校验（reference/ 副本不在）。既不是错也不是普通告警，
+# 单独一个状态，免得后面走到 line_count 去读一个不存在的文件。
+UNVERIFIABLE = object()
+
+
 def resolve(raw):
-    """返回 (真实路径, 告警)。找不到返回 (None, ...)。"""
+    """返回 (真实路径, 告警)。找不到返回 (None, ...)；本机无从校验返回 (UNVERIFIABLE, ...)。"""
     if raw.startswith("reference/"):
+        # reference/ 是研读用的上游副本，被 .gitignore 排除，CI 与别人的机器上都不存在。
+        # 所以这一族引用**只在"本机真有这份副本"时才校验**：
+        #   本机没有 reference/  ⇒ 无从校验，算 UNVERIFIABLE（告警）——
+        #                          在这里判 error 等于这个任务在 CI 上结构必挂；
+        #   本机有 reference/ 但文件不在 ⇒ 路径确实写错了，仍按 error 报。
+        # 注意用 isdir 判"副本在不在"，不要用被引用的那个文件：单个文件missing
+        # 恰恰是我们要抓的写错路径。
+        if not os.path.isdir(os.path.join(ROOT, "reference")):
+            return UNVERIFIABLE, "本机引用（reference/ 不入库，本机无副本，跳过校验）"
         return (raw if os.path.exists(os.path.join(ROOT, raw)) else None), "本机引用（reference/ 不入库）"
     if raw in by_path or os.path.exists(os.path.join(ROOT, raw)):
         return raw, None
@@ -70,6 +87,9 @@ for doc in markdown_files():
     text = open(os.path.join(ROOT, doc), encoding="utf-8").read()
     for raw, start, end in CITATION.findall(text):
         path, note = resolve(raw)
+        if path is UNVERIFIABLE:
+            warnings.append("%s: %s → %s" % (doc, raw, note))
+            continue
         if path is None:
             errors.append("%s: 引用 %r 找不到文件（%s）" % (doc, raw, note or "未入库"))
             continue
