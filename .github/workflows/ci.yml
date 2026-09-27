@@ -26,34 +26,35 @@ jobs:
 
       # 临时探针（查完即撤）：jvm-android 任务在 runner 上报 KSP 插件 marker
       # "was not found in any of the following sources"，而同一制品在本机冷缓存下能解析。
-      # 第一轮探针（curl）显示 runner 侧 maven.aliyun.com 是 502、maven central 200。
-      # 这一轮直接让 runner 跑 Gradle，对比"带 aliyun / 去掉 aliyun"两种 pluginManagement。
+      # curl 探针：runner 侧 maven.aliyun.com 502、maven central 200、plugin portal 303。
+      # 上一轮 A/B 对比显示"去掉 aliyun 就能解析"，但 A 先跑、可能污染了 B。
+      # 这一轮给两种配置**各自全新的 GRADLE_USER_HOME**，并颠倒顺序做定论。
       - name: TEMP probe gradle plugin resolution
         run: |
-          mkdir -p /tmp/km && cd /tmp/km
-          cat > settings.gradle.kts <<'EOF'
-          pluginManagement {
-              repositories {
-                  maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
-                  gradlePluginPortal()
-                  google()
-                  mavenCentral()
-              }
+          mk() {
+            d="$1"; shift
+            mkdir -p "$d"
+            { echo 'pluginManagement {'
+              echo '    repositories {'
+              for r in "$@"; do echo "        $r"; done
+              echo '        gradlePluginPortal()'
+              echo '        google()'
+              echo '        mavenCentral()'
+              echo '    }'
+              echo '}'
+              echo 'rootProject.name = "km"'
+            } > "$d/settings.gradle.kts"
+            echo 'plugins { id("com.google.devtools.ksp") version "2.3.12" apply false }' > "$d/build.gradle.kts"
           }
-          rootProject.name = "km"
-          EOF
-          cat > build.gradle.kts <<'EOF'
-          plugins { id("com.google.devtools.ksp") version "2.3.12" apply false }
-          EOF
-          echo "===== A) 带 aliyun（与仓库现状一致）====="
-          "$GITHUB_WORKSPACE/gradlew" -p /tmp/km --no-daemon :help --console=plain 2>&1 | tail -14 || true
-          python3 - <<'PY'
-          p = '/tmp/km/settings.gradle.kts'
-          s = open(p).read().replace('maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }', '// aliyun 已移除')
-          open(p, 'w').write(s)
-          PY
-          echo "===== B) 去掉 aliyun ====="
-          "$GITHUB_WORKSPACE/gradlew" -p /tmp/km --no-daemon :help --console=plain 2>&1 | tail -14 || true
+          A='maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }'
+
+          echo "===== 1) 全新 home + 不带 aliyun ====="
+          mk /tmp/km1
+          "$GITHUB_WORKSPACE/gradlew" -g /tmp/gh1 -p /tmp/km1 --no-daemon :help --console=plain 2>&1 | tail -4 || true
+
+          echo "===== 2) 另一个全新 home + 带 aliyun ====="
+          mk /tmp/km2 "$A"
+          "$GITHUB_WORKSPACE/gradlew" -g /tmp/gh2 -p /tmp/km2 --no-daemon :help --console=plain 2>&1 | tail -8 || true
 
   # Windows runner：desktopTest 里的 skiko runtimeOnly 钉的是 windows-x64 原生库，
   # 换 Linux runner 会因原生库不匹配导致 Skia 相关测试失败。
