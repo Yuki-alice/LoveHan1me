@@ -2,7 +2,14 @@ pluginManagement {
     // convention plugin 所在的独立构建，须先于 repositories 声明
     includeBuild("build-logic")
     repositories {
-        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
+        // ⚠️ 插件仓库里**刻意不放** maven.aliyun.com/repository/gradle-plugin。
+        // 该镜像对插件 marker 请求在 GitHub runner 上返回 502，而 Gradle 在插件解析阶段
+        // 遇到 5xx 会把整条解析判失败（不会翻到后面的仓库），表现为一句和镜像毫无关系的
+        // "Plugin [id: 'com.google.devtools.ksp', version: '2.3.12'] was not found in any
+        // of the following sources" —— 而该制品其实在 gradlePluginPortal()/mavenCentral() 上都有。
+        // 2026-09-27 在 runner 上实测：同一份最小工程、两个各自全新的 GRADLE_USER_HOME
+        // （排除缓存影响），不带这一行 BUILD SUCCESSFUL、带上它 BUILD FAILED。
+        // 依赖仓库（下面 dependencyResolutionManagement）里的阿里云镜像不受影响，保留。
         gradlePluginPortal()
         google()
         mavenCentral()
