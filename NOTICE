@@ -1,8 +1,14 @@
 LoveHan1me Attribution Notice
 =============================
 
-LoveHan1me is distributed under the GNU General Public License, version 3.
-See LICENSE for the full license text.
+LoveHan1me is distributed under the GNU Affero General Public License,
+version 3 (AGPLv3). See LICENSE for the full license text.
+
+The license is AGPLv3 rather than GPLv3 because this repository contains
+source code ported from open-ani/animeko, which is AGPLv3 (see the animeko
+section below). The additional terms of AGPLv3 section 13 apply: users who
+interact with the software remotely over a computer network must be offered
+the corresponding source.
 
 This project is an independent Kotlin Multiplatform implementation of a
 client for the hanime1.me website. It is NOT affiliated with, endorsed by,
@@ -67,16 +73,45 @@ Version 2.0. This is a legacy attribution and does not replace the GPLv3 terms
 applicable to the combined work.
 
 
+### animeko  (AGPLv3)
+
+This repository contains source code derived from the animeko project by
+OpenAni and contributors:
+
+    https://github.com/open-ani/animeko
+
+The ported code is the video player UI layer: gesture handling, controller
+visibility arbitration, progress sliders and drag preview, the player
+scaffold, top bar, playback-speed and aspect-ratio controls, and supporting
+utilities. It lives mainly in the `:video:ui` module
+(`video/ui/src/*Main/kotlin/lovehan1me/video/player/ui/`), plus a small number
+of contract types in `:video:contract` and the player screen layout in
+`:shared`. Each derived file carries a header naming animeko as its source and
+pointing at the AGPLv3 terms; those headers must be preserved when the code is
+redistributed.
+
+Two bundled GLSL shader assets used by the Android super-resolution scaling
+pass are also copied from animeko's shader resources:
+
+    video/engine/src/commonMain/composeResources/files/shaders/exo-effects/ewa_lanczossharp.vert
+    video/engine/src/commonMain/composeResources/files/shaders/exo-effects/ewa_lanczossharp.frag
+
+They are distributed under the GNU AGPLv3 as part of this work. These two files
+are kept byte-for-byte as upstream wrote them (a leading comment before
+`#version` is rejected by some Android GL drivers, and the whole point of the
+scaling pass is that it compiles everywhere), so their attribution lives here
+instead of in a header comment.
+
+Because these components are AGPLv3, the combined work in this repository is
+offered under AGPLv3 (see the note at the top of this file).
+
+
 Architecture references (no source code included)
 -------------------------------------------------
 
 The module layering, Gradle convention-plugin setup, and several engineering
-practices used here were informed by studying the following project:
-
-    open-ani/animeko        https://github.com/open-ani/animeko        (AGPLv3)
-
-No source code from animeko is included in this repository. Any such reuse
-would be subject to AGPLv3 terms.
+practices used here were also informed by studying upstream projects that are
+not otherwise reproduced in this repository.
 
 
 Third-party dependencies
@@ -101,13 +136,13 @@ Per-backend artifacts additionally carry the licenses of the underlying
 players they wrap:
 
     mediamp-exoplayer  -> AndroidX Media3 (Apache License, Version 2.0).
-                          (Gate3-P6 note: the Android mpv kernel and its
-                          AAR com.github.abdallahmehiz:mpv-android were
-                          removed, so no LGPL mpv AAR is distributed for
-                          Android anymore; the -Dgpl=false clause that
-                          used to be recorded here no longer applies.)
+                          Android plays through this backend only: the Android
+                          mpv kernel and its AAR
+                          com.github.abdallahmehiz:mpv-android are not
+                          dependencies of this repository, so no LGPL mpv
+                          binary is distributed for Android.
     mediamp-avkit     -> Apple AVFoundation (system framework, Apple SDK terms).
     mediamp-mpv-desktop / mediamp-mpv-runtime
                       -> libmpv (LGPLv2.1+); the aggregated Linux runtime
                           packages are GPL-3.0, compatible with this
-                          repository's GPLv3.
+                          repository's AGPLv3.

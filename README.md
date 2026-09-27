@@ -62,6 +62,6 @@ han1me.danmaku.dandan.app.secret=你的 AppSecret
 
 ## 许可与归属
 
-以 **GNU GPL v3.0** 发布（[`LICENSE`](LICENSE)）。
-上游归属与第三方许可（Han1meViewer / MomoQR / Anime4K shaders / mediamp / libmpv）
+以 **GNU AGPL v3.0** 发布（[`LICENSE`](LICENSE)）。
+上游归属与第三方许可（Han1meViewer / MomoQR / Anime4K shaders / animeko / mediamp / libmpv）
 完整列在 [`NOTICE`](NOTICE)。
