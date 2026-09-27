@@ -26,18 +26,34 @@ jobs:
 
       # 临时探针（查完即撤）：jvm-android 任务在 runner 上报 KSP 插件 marker
       # "was not found in any of the following sources"，而同一制品在本机冷缓存下能解析。
-      # 这里从 runner 侧直接打四个仓库的 marker URL，判断是"runner 到不了"还是"Gradle 找不到"。
-      - name: TEMP probe plugin repositories
+      # 第一轮探针（curl）显示 runner 侧 maven.aliyun.com 是 502、maven central 200。
+      # 这一轮直接让 runner 跑 Gradle，对比"带 aliyun / 去掉 aliyun"两种 pluginManagement。
+      - name: TEMP probe gradle plugin resolution
         run: |
-          for u in \
-            "https://maven.aliyun.com/repository/gradle-plugin/com/google/devtools/ksp/com.google.devtools.ksp.gradle.plugin/2.3.12/com.google.devtools.ksp.gradle.plugin-2.3.12.pom" \
-            "https://plugins.gradle.org/m2/com/google/devtools/ksp/com.google.devtools.ksp.gradle.plugin/2.3.12/com.google.devtools.ksp.gradle.plugin-2.3.12.pom" \
-            "https://dl.google.com/dl/android/maven2/com/google/devtools/ksp/com.google.devtools.ksp.gradle.plugin/2.3.12/com.google.devtools.ksp.gradle.plugin-2.3.12.pom" \
-            "https://repo.maven.apache.org/maven2/com/google/devtools/ksp/com.google.devtools.ksp.gradle.plugin/2.3.12/com.google.devtools.ksp.gradle.plugin-2.3.12.pom" \
-          ; do
-            printf '%-24s ' "$(echo "$u" | cut -d/ -f3)"
-            curl -sS -o /dev/null -w 'code=%{http_code} t=%{time_total}s\n' --max-time 25 "$u" || echo "curl FAILED"
-          done
+          mkdir -p /tmp/km && cd /tmp/km
+          cat > settings.gradle.kts <<'EOF'
+          pluginManagement {
+              repositories {
+                  maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
+                  gradlePluginPortal()
+                  google()
+                  mavenCentral()
+              }
+          }
+          rootProject.name = "km"
+          EOF
+          cat > build.gradle.kts <<'EOF'
+          plugins { id("com.google.devtools.ksp") version "2.3.12" apply false }
+          EOF
+          echo "===== A) 带 aliyun（与仓库现状一致）====="
+          "$GITHUB_WORKSPACE/gradlew" -p /tmp/km --no-daemon :help --console=plain 2>&1 | tail -14 || true
+          python3 - <<'PY'
+          p = '/tmp/km/settings.gradle.kts'
+          s = open(p).read().replace('maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }', '// aliyun 已移除')
+          open(p, 'w').write(s)
+          PY
+          echo "===== B) 去掉 aliyun ====="
+          "$GITHUB_WORKSPACE/gradlew" -p /tmp/km --no-daemon :help --console=plain 2>&1 | tail -14 || true
 
   # Windows runner：desktopTest 里的 skiko runtimeOnly 钉的是 windows-x64 原生库，
   # 换 Linux runner 会因原生库不匹配导致 Skia 相关测试失败。
