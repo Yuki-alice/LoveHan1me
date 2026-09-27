@@ -43,7 +43,7 @@ data class PlaybackSessionState(
  * delegating actual decoding and rendering to a selected [PlaybackEngine].
  */
 class PlaybackController(
-    private val playbackEngine: PlaybackEngine,
+    val playbackEngine: PlaybackEngine,
     private val scope: CoroutineScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate),
 ) {
     private val mutableState = MutableStateFlow(PlaybackSessionState())

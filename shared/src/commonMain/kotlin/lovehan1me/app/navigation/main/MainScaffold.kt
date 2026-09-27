@@ -132,7 +132,11 @@ fun MainScaffold(
         return
     }
 
-    if (rememberWindowWidthSizeClass() >= WindowWidthSizeClass.Medium) {
+    // 窗口宽度一帧只采样一次：分支与 Rail 展开共用同一快照，
+    // 拖拽窗口跨越断点时两者不会看到不同的档。
+    val windowWidthSizeClass = rememberWindowWidthSizeClass()
+
+    if (windowWidthSizeClass >= WindowWidthSizeClass.Medium) {
         // M3E 内容 sheet：窗底走 surfaceContainerLow，Rail 透明坐底，
         // 内容区是 surface 圆角（`Corners.contentSheet`，左上 28dp）大卡片 ——
         // 分界靠"底色差 + 圆角"，不再靠一条细分隔线（细线在同系底色下约等于没有）。
@@ -146,7 +150,7 @@ fun MainScaffold(
                 selectedTab = selectedTab,
                 onSelectTab = onSelectTab,
                 onOpenSettings = onOpenSettings,
-                expanded = rememberWindowWidthSizeClass() >= WindowWidthSizeClass.ExtraLarge,
+                expanded = windowWidthSizeClass >= WindowWidthSizeClass.ExtraLarge,
             )
             // 权重 Box 负责把「剩余宽度」交给内容；ProvideContentWidth 内部的
             // BoxWithConstraints 才能测到已扣掉 Rail 的真实内容宽。

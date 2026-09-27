@@ -2,11 +2,15 @@ package lovehan1me.feature.video
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.ImageComposeScene
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Density
+import androidx.compose.ui.unit.dp
+import lovehan1me.feature.player.PlaybackEngineState
+import lovehan1me.feature.player.PlaybackSessionState
 import lovehan1me.ui.preview.HanimePreviewTheme
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
@@ -17,27 +21,39 @@ import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * 弹幕层落位：品红块走真实 [VideoPlayerUi] 插槽，断言它与画面同矩形。
+ * 弹幕层落位：品红块走真实 [VideoPlayerShell] 插槽，断言它铺满**播放器区**。
  *
- * 背景故事：线上曾出现"字从窗口顶部开始飘，画面却在下面"的错位。
- * 引擎的轨道算式再对，也防不住**层摆错地方** —— 这一测只认像素：
- * 容器与画面宽高比不一致时（桌面双栏的日常），品红必须一像素不差地
- * 盖住画面区，且一像素都不进黑边。
+ * 钉的是这条不变量：弹幕区的上下沿 = 播放器容器上下沿各内缩 8dp，左右铺到容器边，
+ * **与画面比例、画面尺寸无关**。弹幕跟着的是播放器这块地方，不是画面那块矩形 ——
+ * 渲染面按画面比例留的黑边也在弹幕区之内，宽容器下弹幕因此能用到整条宽度。
  *
- * 手法：不传 `videoSurface`（默认 null）走画面占位分支 —— 占位与真画面用的是
- * **同一个** `videoModifier`，测占位就等于测真机；弹幕插槽里放纯色块，
- * 模拟路由层 `DanmakuLayer(modifier = fillMaxSize())` 的契约。
- * `showControls = false` 藏掉顶栏/底栏/手势 HUD，画面里只剩三样东西：
- * 根底色、画面占位（被品红盖住）、品红弹幕层。
+ * 手法：`videoSurface` 给一块纯黑 —— 渲染面在真机上就是"按画面比例自己留黑边"的那块，
+ * 黑边与真画面的分界靠颜色就够分辨；弹幕插槽放纯色块，模拟路由层
+ * `DanmakuLayer(modifier = fillMaxSize())` 的契约。`showControls = false` 把顶栏/底栏/
+ * 手势 HUD 一并锁掉，画面里只剩三样东西：根底色、黑画面、品红弹幕层。
+ *
+ * 期望值怎么来的（[Density] 取 1f，dp 就是像素）：容器高 H → 品红行 8..H-9，列 0..W-1。
  */
 class DanmakuPlacementTest {
+
+    init {
+        installInMemorySettingsStore()
+    }
 
     private fun renderPlacement(
         name: String,
         containerW: Int,
         containerH: Int,
-        videoAspect: Float,
+        videoWidth: Int,
+        videoHeight: Int,
     ): Image {
+        val engine = FakePlaybackEngine(
+            PlaybackEngineState(
+                videoWidth = videoWidth,
+                videoHeight = videoHeight,
+                hasRenderedFirstFrame = true,
+            ),
+        )
         val scene = ImageComposeScene(
             width = containerW,
             height = containerH,
@@ -45,18 +61,26 @@ class DanmakuPlacementTest {
             density = Density(1f),
             content = {
                 HanimePreviewTheme(modifier = Modifier.fillMaxSize()) {
-                    VideoPlayerUi(
+                    VideoPlayerShell(
+                        player = FakeMediampPlayer(
+                            videoWidth = videoWidth,
+                            videoHeight = videoHeight,
+                        ),
+                        controller = fakePlaybackController(engine),
+                        playbackState = PlaybackSessionState(
+                            engine = PlaybackEngineState(
+                                videoWidth = videoWidth,
+                                videoHeight = videoHeight,
+                                hasRenderedFirstFrame = true,
+                            ),
+                        ),
+                        videoSurface = { Box(Modifier.fillMaxSize().background(Color.Black)) },
                         modifier = Modifier.fillMaxSize(),
-                        title = "",
-                        currentTime = "",
-                        totalTime = "",
-                        progress = 0f,
-                        bufferedProgress = 0f,
-                        currentVolume = 0f,
-                        currentBrightness = 0f,
+                        expanded = true,
+                        // 控件全锁：本用例只认弹幕那一层摆没摆对地方
                         showControls = false,
-                        superResolutionLabel = "",
-                        videoAspectRatio = videoAspect,
+                        contentWindowInsets = WindowInsets(0.dp),
+                        danmakuEnabled = true,
                         danmakuLayer = {
                             Box(Modifier.fillMaxSize().background(Color.Magenta))
                         },
@@ -129,24 +153,24 @@ class DanmakuPlacementTest {
     }
 
     @Test
-    fun `高容器弹幕不进上下黑边`() {
-        // 1280×980（双栏日常：比 16:9 高）→ 画面 1280×720 居中，上下各 130 黑边
-        val image = renderPlacement("placement-tall", 1280, 980, 16f / 9f)
+    fun `高容器弹幕铺满播放器区`() {
+        // 1280×980（双栏日常：比 16:9 高）→ 画面 1280×720 居中，上下各 130 黑边；
+        // 弹幕区仍是整块容器（上下各缩 8）：行 8..971，列 0..1279
+        val image = renderPlacement("placement-tall", 1280, 980, 1600, 900)
         try {
-            val first = firstMagentaRow(image, 640)
-            val last = lastMagentaRow(image, 640)
-            assertTrue(first >= 0, "中心列整列无品红：弹幕层根本没画出来")
-            assertNear(130, first, "品红首行（画面上沿）")
-            assertNear(849, last, "品红末行（画面下沿）")
-            // 上黑边正中不能有品红：这是线上事故的原样（字飘进黑边）
+            assertNear(8, firstMagentaRow(image, 640), "品红首行（容器上沿 + 留白）")
+            assertNear(971, lastMagentaRow(image, 640), "品红末行（容器下沿 - 留白）")
+            assertNear(0, firstMagentaCol(image, 490), "品红首列（容器左沿）")
+            assertNear(1279, lastMagentaCol(image, 490), "品红末列（容器右沿）")
+            // 上黑边正中必须有品红：画面之上的空地也是弹幕区
             val pixels = image.peekPixels()!!
             assertTrue(
-                !isMagenta(pixels.getColor(640, 65)),
-                "上黑边正中 (640,65) 有品红：弹幕铺满了整个容器而不是画面矩形",
+                isMagenta(pixels.getColor(640, 65)),
+                "上黑边正中 (640,65) 没有品红：弹幕区被夹到画面矩形了",
             )
             assertTrue(
-                !isMagenta(pixels.getColor(640, 915)),
-                "下黑边正中 (640,915) 有品红：弹幕铺满了整个容器而不是画面矩形",
+                isMagenta(pixels.getColor(640, 915)),
+                "下黑边正中 (640,915) 没有品红：弹幕区被夹到画面矩形了",
             )
         } finally {
             image.close()
@@ -154,24 +178,20 @@ class DanmakuPlacementTest {
     }
 
     @Test
-    fun `宽容器弹幕不进左右黑边`() {
-        // 1440×634（封顶 55% 窗高的双栏播放器：比 16:9 宽）→ 画面 1128×634 居中
-        val image = renderPlacement("placement-wide", 1440, 634, 16f / 9f)
+    fun `宽容器弹幕铺满整条宽度`() {
+        // 1440×634（封顶 55% 窗高的双栏播放器：比 16:9 宽）→ 画面 1127×634 居中，
+        // 左右各 156 黑边；弹幕照旧铺满 1440
+        val image = renderPlacement("placement-wide", 1440, 634, 1600, 900)
         try {
             val midY = 317
-            val first = firstMagentaCol(image, midY)
-            val last = lastMagentaCol(image, midY)
-            assertTrue(first >= 0, "中间行整行无品红：弹幕层根本没画出来")
-            assertNear(156, first, "品红首列（画面左沿）")
-            assertNear(1283, last, "品红末列（画面右沿）")
+            assertNear(0, firstMagentaCol(image, midY), "品红首列（容器左沿）")
+            assertNear(1439, lastMagentaCol(image, midY), "品红末列（容器右沿）")
+            assertNear(8, firstMagentaRow(image, 720), "品红首行（容器上沿 + 留白）")
+            assertNear(625, lastMagentaRow(image, 720), "品红末行（容器下沿 - 留白）")
             val pixels = image.peekPixels()!!
             assertTrue(
-                !isMagenta(pixels.getColor(78, midY)),
-                "左黑边正中 (78,$midY) 有品红：弹幕铺满了整个容器而不是画面矩形",
-            )
-            assertTrue(
-                !isMagenta(pixels.getColor(1361, midY)),
-                "右黑边正中 (1361,$midY) 有品红：弹幕铺满了整个容器而不是画面矩形",
+                isMagenta(pixels.getColor(78, midY)),
+                "左黑边正中 (78,$midY) 没有品红：弹幕区被画面左右黑边挤窄了",
             )
         } finally {
             image.close()
@@ -179,14 +199,36 @@ class DanmakuPlacementTest {
     }
 
     @Test
-    fun `正好16比9时铺满容器`() {
-        // 1280×720：无黑边，品红应盖住每一行每一列（回归基线：不断言错位，只断言层在）
-        val image = renderPlacement("placement-exact", 1280, 720, 16f / 9f)
+    fun `正好16比9时铺满容器宽度`() {
+        // 1280×720：无黑边，品红左右铺到边，上下只剩那 8dp 留白（回归基线：不断言错位，只断言层在）
+        val image = renderPlacement("placement-exact", 1280, 720, 1600, 900)
         try {
-            assertEquals(0, firstMagentaRow(image, 640))
-            assertEquals(719, lastMagentaRow(image, 640))
+            assertNear(8, firstMagentaRow(image, 640), "品红首行")
+            assertNear(711, lastMagentaRow(image, 640), "品红末行")
             assertEquals(0, firstMagentaCol(image, 360))
             assertEquals(1279, lastMagentaCol(image, 360))
+        } finally {
+            image.close()
+        }
+    }
+
+    @Test
+    fun `画面比例不改变弹幕区`() {
+        // 同一容器 1280×720 播 4:3（1200×900）→ 画面 960×720 居中，左右各 160 黑边。
+        // 这一测盯着"引擎上报的比例不许夹窄弹幕区"：4:3 与 16:9 拿到的矩形必须相同。
+        val image = renderPlacement("placement-four-thirds", 1280, 720, 1200, 900)
+        try {
+            assertNear(0, firstMagentaCol(image, 360), "品红首列（容器左沿）")
+            assertNear(1279, lastMagentaCol(image, 360), "品红末列（容器右沿）")
+            val pixels = image.peekPixels()!!
+            assertTrue(
+                isMagenta(pixels.getColor(80, 360)),
+                "左黑边正中 (80,360) 没有品红：4:3 的画面比例把弹幕区夹窄了",
+            )
+            assertTrue(
+                isMagenta(pixels.getColor(1200, 360)),
+                "右黑边正中 (1200,360) 没有品红：4:3 的画面比例把弹幕区夹窄了",
+            )
         } finally {
             image.close()
         }

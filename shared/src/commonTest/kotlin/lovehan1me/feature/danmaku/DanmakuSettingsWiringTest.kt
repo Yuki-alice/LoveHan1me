@@ -5,8 +5,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-// 设置 → 观感映射的接线测试（Gate3-P1 后留守 :shared）。
-// 纯折算测试已随 DanmakuRenderOptions 进 :video:contract；这里只钉"同源"：
+// 设置 → 观感映射的接线测试。
+// 纯折算测试在 :video:contract 的 DanmakuRenderOptionsTest；这里只钉"同源"：
 // 默认值必须只有一个来源，四个字段必须各自流向对应的观感量。
 class DanmakuSettingsWiringTest {
 
@@ -26,7 +26,8 @@ class DanmakuSettingsWiringTest {
         assertEquals(24, options.clampedFontSizeSp)
         assertClose(0.45f, options.opacity)
         assertClose(0.7f, options.displayAreaRatio)
-        assertEquals(16_666L, options.scrollTraverseMs)
+        // 60% × 88dp/s = 52.8 px/s（density 1）
+        assertClose(52.8f, options.baseSpeedPxPerSecond(1f))
     }
 
     private fun assertClose(

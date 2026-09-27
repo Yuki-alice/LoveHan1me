@@ -13,7 +13,10 @@ import lovehan1me.data.danmaku.DanmakuLocation
  * 生产是「引擎每 250ms(Android) / 500ms(iOS) / 事件驱动(桌面) 推一次位置」，
  * 而 `DanmakuLayer` 每帧（~16ms）问一次位置 —— 中间那段全靠 [DanmakuPositionTracker]
  * 外推。渲染回归用例是**每帧都喂一条快照**，等于把采样抖动设成了 0，
- * 于是"采样间隔 > 外推上限""迟到窗口 vs 时间跳变"这两类只在真机上出现的失效全被绕过。
+ * 于是"采样间隔 > 外推上限""时间跳变 vs 回看铺屏"这两类只在真机上出现的失效全被绕过。
+ *
+ * 这里的外推只喂**视频时间**那一条轴（挑哪条弹幕到点），飞行位置走 [DanmakuClock]；
+ * 所以节拍错了会漏发射，但不会让屏上的字跳 —— 后者另有倍速用例钉着。
  */
 class DanmakuClockCadenceTest {
 
@@ -33,7 +36,9 @@ class DanmakuClockCadenceTest {
     private val viewport = DanmakuViewport(widthPx = 1_000f, heightPx = 300f, lineHeightPx = 30f)
     private val measure: (DanmakuItem) -> Float = { it.text.length * 10f }
 
-    private fun session(): DanmakuSession {
+    private fun session(
+        items: List<DanmakuItem> = items(),
+    ): DanmakuSession {
         val scope = kotlinx.coroutines.CoroutineScope(
             kotlinx.coroutines.SupervisorJob() + kotlinx.coroutines.Dispatchers.Unconfined,
         )
@@ -42,8 +47,8 @@ class DanmakuClockCadenceTest {
             title = "某番",
             provider = StubProvider,
             scope = scope,
-            resolve = { _, _, _ -> DanmakuLoadResult.Ready(episode, items()) },
-            linkTo = { _, _, _ -> DanmakuLoadResult.Ready(episode, items()) },
+            resolve = { _, _, _ -> DanmakuLoadResult.Ready(episode, items) },
+            linkTo = { _, _, _ -> DanmakuLoadResult.Ready(episode, items) },
             unlinkFrom = { },
         )
     }
@@ -62,16 +67,17 @@ class DanmakuClockCadenceTest {
      * 暂停的建模要点：**位置在冻结期间不走**（引擎就是原地回显同一个 position），
      * 只有墙钟在走 —— 否则测出来的是"seek"，不是"暂停"。
      *
-     * @return 屏上曾出现过的弹幕条数
+     * @return session 本体：用例各自要读的计数器不同（发射数 / 游标）
      */
     private fun run(
         session: DanmakuSession,
         wallMs: Long,
         sampleIntervalMs: Long,
         frameIntervalMs: Long = 16L,
+        playbackSpeed: Float = 1f,
         frozenFromMs: Long? = null,
         frozenToMs: Long? = null,
-    ): Int {
+    ): DanmakuSession {
         var frameNanos = 0L
         var lastSampleMs = -sampleIntervalMs
         var positionMs = 0L
@@ -84,53 +90,89 @@ class DanmakuClockCadenceTest {
                 session.onPlaybackSnapshot(
                     positionMs = positionMs,
                     durationMs = 1_500_000L,
-                    playbackSpeed = 1f,
+                    playbackSpeed = playbackSpeed,
                     frozen = frozen,
                 )
             }
-            if (!frozen) positionMs += frameIntervalMs
+            if (!frozen) positionMs += (frameIntervalMs * playbackSpeed).toLong()
             frameNanos += frameIntervalMs * DanmakuPositionTracker.NANOS_PER_MILLI
             session.advance(frameNanos, viewport, measure)
             wallTimeMs += frameIntervalMs
         }
-        return session.engine.emittedCount
+        return session
     }
+
+    private fun emitted(session: DanmakuSession): Int = session.engine.emittedCount
 
     @Test
     fun `Android 节拍 每250ms一次采样 弹幕全部上场`() {
-        val emitted = run(session(), wallMs = 5_000L, sampleIntervalMs = 250L)
-        assertTrue(emitted >= 10, "5 秒里只上场了 $emitted/10 条（采样间隔 250ms）")
+        val session = run(session(), wallMs = 5_000L, sampleIntervalMs = 250L)
+        val count = emitted(session)
+        assertTrue(count >= 10, "5 秒里只上场了 $count/10 条（采样间隔 250ms）")
     }
 
     @Test
     fun `iOS 节拍 每500ms一次采样 弹幕全部上场`() {
-        val emitted = run(session(), wallMs = 5_000L, sampleIntervalMs = 500L)
-        assertTrue(emitted >= 10, "5 秒里只上场了 $emitted/10 条（采样间隔 500ms）")
+        val session = run(session(), wallMs = 5_000L, sampleIntervalMs = 500L)
+        val count = emitted(session)
+        assertTrue(count >= 10, "5 秒里只上场了 $count/10 条（采样间隔 500ms）")
     }
 
     @Test
     fun `桌面事件驱动 一秒才推一次位置 弹幕也要全部上场`() {
-        val emitted = run(session(), wallMs = 5_000L, sampleIntervalMs = 1_000L)
-        assertTrue(emitted >= 10, "5 秒里只上场了 $emitted/10 条（采样间隔 1s）")
+        val session = run(session(), wallMs = 5_000L, sampleIntervalMs = 1_000L)
+        val count = emitted(session)
+        assertTrue(count >= 10, "5 秒里只上场了 $count/10 条（采样间隔 1s）")
     }
 
     @Test
     fun `暂停三秒再恢复 冻结期间到期的弹幕不该整批丢掉`() {
-        val emitted = run(
+        val session = run(
             session(),
             wallMs = 8_000L,
             sampleIntervalMs = 250L,
             frozenFromMs = 1_000L,
             frozenToMs = 4_000L,
         )
-        assertTrue(emitted >= 10, "暂停后只上场了 $emitted/10 条：冻结期间到期的弹幕被当成迟到了")
+        val count = emitted(session)
+        assertTrue(count >= 10, "暂停后只上场了 $count/10 条：冻结期间到期的弹幕被当成迟到了")
     }
 
     @Test
     fun `采样恰好落在弹幕时刻之前 也不能把它挤掉`() {
         // 1.2s 采样：0.4s 与 0.8s 两条都落在"上一次采样~下一次采样"之间，
         // 只能靠外推覆盖。外推若被上限截住，这两条就永远追不上。
-        val emitted = run(session(), wallMs = 5_000L, sampleIntervalMs = 1_200L)
-        assertTrue(emitted >= 10, "5 秒里只上场了 $emitted/10 条（采样间隔 1.2s > 外推上限）")
+        val session = run(session(), wallMs = 5_000L, sampleIntervalMs = 1_200L)
+        val count = emitted(session)
+        assertTrue(count >= 10, "5 秒里只上场了 $count/10 条（采样间隔 1.2s > 外推上限）")
+    }
+
+    /**
+     * 倍速的可见代价：**变密，不变快**。
+     *
+     * 4 倍速下同一段墙钟里视频走过 4 倍时长，扫描游标也就推进 4 倍 ——
+     * 这是"弹幕不跟倍速"这条取舍的另一面，写下来免得日后被当成 bug 改掉。
+     */
+    @Test
+    fun `4 倍速下同一段墙钟扫过的条数翻倍`() {
+        val items = (0 until 40).map { index ->
+            DanmakuItem(
+                id = index + 1L,
+                playTimeMillis = index * 400L,
+                text = "弹幕文本$index",
+                color = 0xFFFFFFFF.toInt(),
+                location = DanmakuLocation.SCROLL,
+            )
+        }
+        fun cursorAfterSpeed(speed: Float): Int = run(
+            session(items),
+            wallMs = 4_000L,
+            sampleIntervalMs = 250L,
+            playbackSpeed = speed,
+        ).engine.cursorIndex
+
+        val normal = cursorAfterSpeed(1f)
+        val fast = cursorAfterSpeed(4f)
+        assertTrue(fast >= normal * 3, "4 倍速只扫过 $fast 条（常速 $normal 条）：密度那条没实现")
     }
 }

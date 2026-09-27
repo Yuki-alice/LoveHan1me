@@ -14,12 +14,13 @@ import androidx.media3.effect.GlShaderProgram
 import lovehan1me.player.Res
 import kotlin.math.roundToInt
 
-// Exo 真 CNN 链的 GL 装配（Gate3-P4）。
+// Exo 真 CNN 链的 GL 装配。
 //
-// 形态照 animeko 的三 effect 设计（只搬设计，模板与胶水全自写，AGPL 代码零复制）：
-// PERFORMANCE = 还原 S（N 卷积 + 1 合并，同尺寸）；
-// QUALITY = 还原 M + 放大 x2 M（7 卷积 + 合并 + depth-to-space，输出 2x）[+ 落地 scaler]。
-// CNN 权重体全部取自仓内 MIT `.glsl`，运行时按 `//!DESC` 切分（见 ExoAnime4kPasses）。
+// 三张 effect 表（与 mpv 侧同一套档位编号，观感对齐）：
+// PERFORMANCE = 还原 S（3 卷积 + 1 合并，同尺寸）；
+// QUALITY = 还原 M（7 卷积 + 合并）+ 放大 x2 M（合并 + depth-to-space，输出 2x）+ 落地 scaler。
+// CNN 权重体取自仓内 MIT `.glsl`，运行时按 `//!DESC` 切分（见 ExoAnime4kPasses）；
+// 落地 scaler 用 files/shaders/exo-effects/ 下的现成 GLSL，不在 Kotlin 里嵌大段着色器。
 //
 // 失败语义：GL 编译/资产缺失一律抛给调用方（引擎的 applyVideoEffects 会吞掉并降级 OFF，
 // 绝不崩播放）。不要在这里吞异常——吞了调用方就分不清"没生效"与"生效了"。
@@ -293,25 +294,44 @@ internal class Anime4kRestoreProgram(
     }
 }
 
-// 落地 scaler：把上游输出 fit 到视口（自研 lanczos-2 近似 + 钳制抗振铃）。
-// 只在"真需要放大且视口已知"时挂（见 effectsFor 的门控），缩小路径不走这里。
-internal class FitLanczosScalerEffect(
+// 落地 scaler：单趟径向 EWA 近似的 ewa_lanczossharp（素材见 files/shaders/exo-effects/）。
+// 观感对标桌面 mpv 的 presentation 链 —— sigmoid 放大 + 0.7 抗振铃，
+// 但不在移动端多分配一张全尺寸中间纹理。片源与视口尺寸都已知时才挂（见 effectsFor）。
+//
+// 着色器源码由挂起上下文读好后传进来：资产读取是 IO，而 GlProgram 在 GL 线程构造，
+// 在那条线程上读 APK 会把出帧卡住。
+internal class LanczosSharpScalerEffect(
+    private val vertexSource: String,
+    private val fragmentSource: String,
     private val viewportWidth: Int,
     private val viewportHeight: Int,
 ) : GlEffect {
     override fun toGlShaderProgram(context: Context, useHdr: Boolean): GlShaderProgram =
-        FitLanczosScalerProgram(viewportWidth, viewportHeight)
+        LanczosSharpScalerProgram(vertexSource, fragmentSource, viewportWidth, viewportHeight)
 }
 
 @OptIn(UnstableApi::class)
-private class FitLanczosScalerProgram(
+private class LanczosSharpScalerProgram(
+    vertexSource: String,
+    fragmentSource: String,
     private val viewportWidth: Int,
     private val viewportHeight: Int,
 ) : BaseGlShaderProgram(
     /* useHighPrecisionColorComponents = */ true,
     /* texturePoolCapacity = */ 1,
 ) {
-    private val program: GlProgram = newAnime4kProgram(SCALER_FRAGMENT, "fit scaler")
+    private val program: GlProgram = try {
+        GlProgram(vertexSource, fragmentSource).also {
+            it.setBufferAttribute(
+                "aFramePosition",
+                GlUtil.getNormalizedCoordinateBounds(),
+                GlUtil.HOMOGENEOUS_COORDINATE_VECTOR_SIZE,
+            )
+        }
+    } catch (e: GlUtil.GlException) {
+        throw VideoFrameProcessingException("Could not compile desktop-style scaler", e)
+    }
+
     private var inputWidth = 0
     private var inputHeight = 0
 
@@ -321,10 +341,6 @@ private class FitLanczosScalerProgram(
         val scale = minOf(
             viewportWidth.toDouble() / inputWidth,
             viewportHeight.toDouble() / inputHeight,
-        )
-        program.setFloatsUniform(
-            "uTexelSize",
-            floatArrayOf(1f / inputWidth, 1f / inputHeight),
         )
         return Size(
             (inputWidth * scale).roundToInt().coerceAtLeast(1),
@@ -336,6 +352,10 @@ private class FitLanczosScalerProgram(
         try {
             program.use()
             program.setSamplerTexIdUniform("uTexSampler", inputTexId, /* texUnitIndex = */ 0)
+            program.setFloatsUniform(
+                "uInputSize",
+                floatArrayOf(inputWidth.toFloat(), inputHeight.toFloat()),
+            )
             program.bindAttributesAndUniforms()
             GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, /* first = */ 0, /* count = */ 4)
             GlUtil.checkGlError()
@@ -348,7 +368,7 @@ private class FitLanczosScalerProgram(
         try {
             program.delete()
         } catch (e: GlUtil.GlException) {
-            throw VideoFrameProcessingException(e)
+            throw VideoFrameProcessingException("Could not release desktop-style scaler", e)
         }
         super.release()
     }
@@ -401,40 +421,23 @@ void main() {
 }
 """
 
-// 落地 scaler 片元：lanczos-2（4x4）+ 十字邻域钳制抗振铃（自研近似，
-// 对标 mpv ewa_lanczossharp presentation 链的观感，单 pass 省移动端显存）。
-private const val SCALER_FRAGMENT = """
-#version 100
-precision highp float;
-uniform sampler2D uTexSampler;
-uniform vec2 uTexelSize;
-varying vec2 vTexSamplingCoord;
-float lanczosWeight(float x) {
-  x = abs(x);
-  if (x < 0.0001) return 1.0;
-  if (x >= 2.0) return 0.0;
-  float pix = 3.14159265 * x;
-  return 2.0 * sin(pix) * sin(pix * 0.5) / (pix * pix);
-}
-void main() {
-  vec2 src = vTexSamplingCoord / uTexelSize;
-  vec2 base = floor(src - 1.5);
-  vec3 sum = vec3(0.0);
-  float wsum = 0.0;
-  vec3 mn = vec3(1.0e9);
-  vec3 mx = vec3(-1.0e9);
-  for (int j = 0; j < 4; j++) {
-    for (int i = 0; i < 4; i++) {
-      vec2 tap = base + vec2(float(i), float(j)) + 0.5;
-      vec2 d = tap - src;
-      float w = lanczosWeight(d.x) * lanczosWeight(d.y);
-      vec3 c = texture2D(uTexSampler, tap * uTexelSize).rgb;
-      sum += c * w;
-      wsum += w;
-      if (abs(d.x) <= 1.0 && abs(d.y) <= 1.0) { mn = min(mn, c); mx = max(mx, c); }
+// scaler 的两段素材：径向 EWA 近似版 ewa_lanczossharp（顶点无矩阵 uniform，
+// 与 CNN 链用的 [VERTEX_SHADER] 不是一张表，故不共用）。
+private const val LANZOS_VERTEX_ASSET = "files/shaders/exo-effects/ewa_lanczossharp.vert"
+private const val LANZOS_FRAGMENT_ASSET = "files/shaders/exo-effects/ewa_lanczossharp.frag"
+
+private var scalerSources: Pair<String, String>? = null
+
+/** 读 scaler 的两段着色器（进程内缓存一次；切档不该反复解 APK）。 */
+internal suspend fun loadScalerSources(): Pair<String, String> {
+    scalerSources?.let { return it }
+    val sources = try {
+        Res.readBytes(LANZOS_VERTEX_ASSET).decodeToString() to
+            Res.readBytes(LANZOS_FRAGMENT_ASSET).decodeToString()
+    } catch (e: Exception) {
+        throw VideoFrameProcessingException("缺少 scaler 素材 $LANZOS_FRAGMENT_ASSET", e)
     }
-  }
-  vec3 outc = sum / max(wsum, 0.000001);
-  gl_FragColor = vec4(clamp(outc, mn, mx), 1.0);
+    scalerSources = sources
+    return sources
 }
-"""
+

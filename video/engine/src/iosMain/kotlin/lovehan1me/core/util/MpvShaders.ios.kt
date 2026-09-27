@@ -1,6 +1,6 @@
 package lovehan1me.core.util
 
 // 阶段一②：iOS 不做超分（AVPlayer 原生管线不支持挂自定义 shader）。
-actual suspend fun materializeMpvShaders(level: Int): String? = null
+actual suspend fun materializeMpvShaders(level: Int): List<String>? = null
 
 actual suspend fun mpvShaderTargetDir(): String? = null

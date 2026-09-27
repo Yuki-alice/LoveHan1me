@@ -116,7 +116,7 @@ class DanmakuLayerRenderTest {
      * 为什么每帧要**真等** [FRAME_STEP_MS]（见 [tickScene]）：空屏时帧循环里那个
      * `delay(50)` 挂在 `Dispatchers.Unconfined` 上，用的是墙上时钟，不跟 `render()`
      * 的纳秒走。推进度快过真实速度时，绘制层每醒一次面对的是跳了几百毫秒的位置，
-     * 引擎按 `lateGraceMs=150` 把它们全当迟到丢掉 —— 图上就什么都没有了。
+     * 一条弹幕会在两次采样之间整个飞过去 —— 图上抓不到正在飞的字。
      */
     private fun renderScene(name: String, session: DanmakuSession, atPositionMs: Long): File {
         val scene = ImageComposeScene(
@@ -245,7 +245,7 @@ class DanmakuLayerRenderTest {
         const val BASE_NANOS = 1_000_000_000L
         const val NANOS_PER_MILLI = 1_000_000L
 
-        /** 步长：约 20Hz，比 vsync 粗三倍，但远小于引擎的迟到窗口，不会因此把弹幕丢光。 */
+        /** 步长：约 20Hz，比 vsync 粗三倍；再粗就会有弹幕在两次采样之间整个飞完。 */
         const val FRAME_STEP_MS = 50L
 
         /** 出图前多推几帧：`withFrameNanos` 写进的帧时刻要下一帧才被 Canvas 看到。 */

@@ -48,19 +48,22 @@ class ModuleLayeringTest {
     }
 
     @Test
-    fun `领域与 UI 层不得出现 mediamp 类型`() {
+    fun `UI 与编排层只许用 mediamp-api 不许用后端实现`() {
         val root = repoRoot()
-        // 渲染面（Compose + mediamp）单独放在 :video:surface，所以这里能同时守 shared 与 ui。
         val guardedRoots = listOf("shared/src", "video/ui/src").map { File(root, it) }
         guardedRoots.forEach { assertTrue(it.isDirectory, "找不到源码目录 ${it.path}") }
 
-        val mediamp = guardedRoots.flatMap { guardRoot ->
-            mainKotlinFiles(guardRoot).flatMap { file -> linesMatching(root, file, "org.openani.mediamp") }
+        // 后端实现包只在 :video:engine 出现。UI 直接绑 MediampPlayer（org.openani.mediamp 本体），
+        // 但一旦引用到 mpv/exoplayer/avkit，Android 就得把三种后端全打进包，iOS 也会在
+        // framework export 上长出真正解不掉的坑。
+        val backendPackages = listOf("org.openani.mediamp.mpv", "org.openani.mediamp.exoplayer", "org.openani.mediamp.avkit")
+        val violations = guardedRoots.flatMap { guardRoot ->
+            mainKotlinFiles(guardRoot).flatMap { file -> backendPackages.flatMap { pkg -> linesMatching(root, file, pkg) } }
         }
         assertTrue(
-            mediamp.isEmpty(),
-            "shared / :video:ui 不得依赖 mediamp（引擎模块对它只是 implementation，抬成 api 会漏进 iOS 导出框架）：\n" +
-                mediamp.joinToString("\n"),
+            violations.isEmpty(),
+            "shared / :video:ui 引用了 mediamp 后端实现包（引擎后端只能在 :video:engine 出现）：\n" +
+                violations.joinToString("\n"),
         )
     }
 

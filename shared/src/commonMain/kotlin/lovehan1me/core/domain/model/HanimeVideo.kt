@@ -56,6 +56,15 @@ data class HanimeVideo(
             (((favTimes ?: 0) * 100f) / total).toInt()
         }
 
+    /**
+     * 展示用主标题：优先中文标题，退回站内原标题。
+     *
+     * 播放器顶栏与右栏简介第一行**共用这一条**。两处各写一遍这段判断，
+     * 迟早会漂成"顶栏一个名字、简介另一个名字"。
+     */
+    val primaryTitle: String
+        get() = chineseTitle?.takeIf { it.isNotBlank() } ?: title
+
     fun rateVideo(isPositive: Boolean): HanimeVideo {
         val liked = isFav
         val unliked = isUnlike

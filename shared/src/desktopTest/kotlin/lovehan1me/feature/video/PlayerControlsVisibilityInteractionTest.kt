@@ -15,27 +15,27 @@ import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.semantics.getAllSemanticsNodes
 import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.unit.Density
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import lovehan1me.core.domain.model.AppSettings
-import lovehan1me.core.domain.model.SettingsStore
-import lovehan1me.data.SettingsRepository
 import lovehan1me.feature.danmaku.DanmakuControls
+import lovehan1me.feature.player.PlaybackEngineState
+import lovehan1me.feature.player.PlaybackSessionState
 import lovehan1me.ui.preview.HanimePreviewTheme
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
 /**
- * 控件可见性与弹窗存活的**可交互**用例：真实 [VideoPlayerUi] + 真实指针事件。
+ * 播放器外壳的**可交互**用例：真实 [VideoPlayerShell] + 真实指针事件 + 真实 mediamp 契约。
  *
- * 两条不变量：
- *  - 单击画面切控件可见性，再点又回来（可见性只有一个所有者，点几次都不会卡住）；
- *  - 弹幕设置弹窗挂在最上层槽位，**底栏因控件隐藏而销毁后弹窗仍在**。
+ * 三条不变量：
+ *  - 进播放页控件就是亮的（触屏端没有"鼠标动一下"这回事，默认藏起来等于死屏）；
+ *  - 单击画面真的把播放意图写进了 mediamp（桌面鼠标族的单击只管播放/暂停，不碰显隐）；
+ *  - 弹幕设置弹窗挂在最上层槽位，**底栏整棵销毁后弹窗仍在**。
  *
  * 探针不去数像素：底栏内容与弹窗各用 `SideEffect` 记"组合"、`DisposableEffect` 记"销毁"。
- * 底栏内容被 `PlayerBottomBar` 的 `AnimatedVisibility` 包着 —— 只有真人看得见时才组合，
- * 于是这两个计数就是可见性的直接证据。
+ * 底栏内容被 `PlayerControllerBar` 外面那层 `AnimatedVisibility` 包着 —— 只有真人看得见时才
+ * 组合，于是这两个计数就是可见性的直接证据。
+ *
+ * 自动隐藏是 3 秒**真实时间**的倒计时，所以每个断言都紧跟着事件跑完，不给它插手的机会。
  *
  * 跑法：`:shared:desktopTest --tests "lovehan1me.feature.video.PlayerControlsVisibilityInteractionTest" --offline`
  */
@@ -48,93 +48,103 @@ class PlayerControlsVisibilityInteractionTest {
         var dialogDisposed = 0
     }
 
-    private class InMemorySettingsStore : SettingsStore {
-        private val state = MutableStateFlow(AppSettings())
-        override val settings: StateFlow<AppSettings> = state
-        override suspend fun update(transform: (AppSettings) -> AppSettings) {
-            state.value = transform(state.value)
-        }
-    }
-
     init {
         // 真按钮点击会读触感开关（SettingsRepository），不装 store 就 UninitializedPropertyAccess。
-        // 同 JVM 多测试类时只允许 install 一次，故与既有用例同法 runCatching。
-        runCatching { SettingsRepository.install(InMemorySettingsStore()) }
+        installInMemorySettingsStore()
     }
 
     private val dialogOpen = mutableStateOf(false)
+    private val showControls = mutableStateOf(true)
+    private val player = FakeMediampPlayer()
 
-    /** 弹幕设置弹窗的开关：只由设置钮的点击回调打开，与页面层的接线同构。 */
-    private fun sceneOf(probe: Probe): ImageComposeScene = ImageComposeScene(
-        width = SCENE_WIDTH_PX,
-        height = SCENE_HEIGHT_PX,
-        density = Density(2f),
-        content = {
-            HanimePreviewTheme(modifier = Modifier.fillMaxSize()) {
-                VideoPlayerUi(
-                    modifier = Modifier.fillMaxSize(),
-                    title = "控件可见性交互用例",
-                    currentTime = "00:00",
-                    totalTime = "04:47",
-                    progress = 0.1f,
-                    bufferedProgress = 0.2f,
-                    currentVolume = 1f,
-                    currentBrightness = 1f,
-                    // 播放在跑才会启动自动隐藏倒计时。本用例只验"交互改可见性"与
-                    // "弹窗存活"，把 5 秒真实倒计时拉进来只会让用例变成对时钟的赌注。
-                    isPlaying = false,
-                    superResolutionLabel = "关闭",
-                    // 弹幕双钮只存在于宽屏底栏的中间位：窄屏底栏没有中间位，槽永远不组合，
-                    // 用例也就永远找不到它。宽屏形态由 expanded 决定。
-                    expanded = true,
-                    danmakuControls = {
-                        // 外面套一层只为让用例按 testTag 找到它的位置（真按钮本身没有 testTag）。
-                        Box(modifier = Modifier.testTag(DANMAKU_SLOT_TAG)) {
-                            SideEffect { probe.bottomComposed++ }
-                            DisposableEffect(Unit) {
-                                onDispose { probe.bottomDisposed++ }
+    /** 只由设置钮的点击回调打开，与页面层的接线同构。 */
+    private fun sceneOf(probe: Probe): ImageComposeScene {
+        val engine = FakePlaybackEngine(
+            PlaybackEngineState(
+                videoWidth = 1600,
+                videoHeight = 900,
+                hasRenderedFirstFrame = true,
+            ),
+        )
+        return ImageComposeScene(
+            width = SCENE_WIDTH_PX,
+            height = SCENE_HEIGHT_PX,
+            density = Density(2f),
+            content = {
+                HanimePreviewTheme(modifier = Modifier.fillMaxSize()) {
+                    VideoPlayerShell(
+                        player = player,
+                        controller = fakePlaybackController(engine),
+                        playbackState = PlaybackSessionState(
+                            title = "控件可见性交互用例",
+                            engine = PlaybackEngineState(
+                                videoWidth = 1600,
+                                videoHeight = 900,
+                                hasRenderedFirstFrame = true,
+                            ),
+                        ),
+                        videoSurface = {},
+                        modifier = Modifier.fillMaxSize(),
+                        title = "控件可见性交互用例",
+                        // 播放在跑才会启动自动隐藏倒计时；本用例自己掌握显隐时机
+                        showControls = showControls.value,
+                        expanded = true,
+                        danmakuEnabled = true,
+                        danmakuLayer = { Box(Modifier.fillMaxSize()) },
+                        danmakuEditor = {
+                            // 外面套一层只为让用例按 testTag 找到它的位置（真按钮本身没有 testTag）。
+                            Box(modifier = Modifier.testTag(DANMAKU_SLOT_TAG)) {
+                                SideEffect { probe.bottomComposed++ }
+                                DisposableEffect(Unit) {
+                                    onDispose { probe.bottomDisposed++ }
+                                }
+                                // 真实控件：底栏中间位只剩设置钮（开关在启停栏，见
+                                // PlayerControllerDefaults.DanmakuIcon）。
+                                DanmakuControls(
+                                    onOpenSettings = { dialogOpen.value = true },
+                                )
                             }
-                            // 真实双钮；session = null → 只剩设置钮。
-                            DanmakuControls(
-                                session = null,
-                                onOpenSettings = { dialogOpen.value = true },
-                            )
-                        }
-                    },
-                    dialogHost = {
-                        if (dialogOpen.value) {
-                            SideEffect { probe.dialogComposed++ }
-                            DisposableEffect(Unit) {
-                                onDispose { probe.dialogDisposed++ }
+                        },
+                        dialogHost = {
+                            if (dialogOpen.value) {
+                                SideEffect { probe.dialogComposed++ }
+                                DisposableEffect(Unit) {
+                                    onDispose { probe.dialogDisposed++ }
+                                }
+                                Box(modifier = Modifier.fillMaxSize())
                             }
-                            Box(modifier = Modifier.fillMaxSize())
-                        }
-                    },
-                )
-            }
-        },
-    )
+                        },
+                    )
+                }
+            },
+        )
+    }
 
     @Test
-    fun `D11 单击画面切换控件可见性_再点回来`() {
+    fun `D11 进页面控件就亮_单击画面把播放意图写进mediamp`() {
         val probe = Probe()
         val scene = sceneOf(probe)
         try {
             scene.renderFrames()
-            assertTrue(probe.bottomComposed > 0, "首帧底栏就没组合出来，用例本身没跑起来")
+            assertTrue(probe.bottomComposed > 0, "首帧底栏就没组合出来：控件默认是藏着的")
             assertEquals(0, probe.bottomDisposed, "没人操作时控件不该消失")
+            assertEquals(false, player.state.value.playWhenReady, "用例前提：开场是暂停的")
 
             scene.tap(EMPTY_SPOT_PX)
             assertTrue(
-                scene.awaitCondition { probe.bottomDisposed > 0 },
-                "点了画面控件却没隐藏：可见性没跟着交互走",
+                scene.awaitCondition { player.state.value.playWhenReady },
+                "点了画面却没让 mediamp 的播放意图翻转：控件到后端这段没接上",
+            )
+            assertEquals(
+                0,
+                probe.bottomDisposed,
+                "单击把控件弄没了：显隐又多了个所有者",
             )
 
-            val composedBefore = probe.bottomComposed
             scene.tap(EMPTY_SPOT_PX)
             assertTrue(
-                scene.awaitCondition { probe.bottomComposed > composedBefore },
-                "再点一下控件没回来：可见性被上一次隐藏卡死了",
+                scene.awaitCondition { !player.state.value.playWhenReady },
+                "再点一下没暂停：播放意图被上一次点击卡死了",
             )
         } finally {
             scene.close()
@@ -142,7 +152,7 @@ class PlayerControlsVisibilityInteractionTest {
     }
 
     @Test
-    fun `D10 底栏随控件隐藏销毁后弹幕设置弹窗仍在`() {
+    fun `D10 底栏整棵销毁后弹幕设置弹窗仍在`() {
         val probe = Probe()
         val scene = sceneOf(probe)
         try {
@@ -156,10 +166,10 @@ class PlayerControlsVisibilityInteractionTest {
             )
             assertEquals(0, probe.dialogDisposed, "弹窗刚打开就被销毁了")
 
-            scene.tap(EMPTY_SPOT_PX)
+            showControls.value = false
             assertTrue(
                 scene.awaitCondition { probe.bottomDisposed > 0 },
-                "控件没被隐藏，D10 的前提没成立",
+                "底栏没被销毁，D10 的前提没成立",
             )
             assertEquals(
                 0,
@@ -168,6 +178,8 @@ class PlayerControlsVisibilityInteractionTest {
             )
         } finally {
             scene.close()
+            dialogOpen.value = false
+            showControls.value = true
         }
     }
 
@@ -192,7 +204,7 @@ class PlayerControlsVisibilityInteractionTest {
      * 只轮询到"看得见"为止 —— 阈值一旦写死，用例就变成对时钟的赌注。
      */
     private fun ImageComposeScene.awaitCondition(
-        timeoutMillis: Long = 3_000L,
+        timeoutMillis: Long = 1_500L,
         condition: () -> Boolean,
     ): Boolean {
         val deadline = System.nanoTime() + timeoutMillis * 1_000_000L
@@ -204,11 +216,19 @@ class PlayerControlsVisibilityInteractionTest {
         return condition()
     }
 
-    /** 真实指针事件：先移入定位，再按下抬起 —— 与桌面鼠标点击同一条路径。 */
+    /**
+     * 真实指针事件：先移入定位，再按下抬起 —— 与桌面鼠标点击同一条路径。
+     *
+     * 事件时刻逐次推开 [TAP_INTERVAL_MILLIS]：都填 0 的话，第二次按下比第一次抬起还早，
+     * 双击判定就变成看实现了。间隔必须大于双击窗口（300ms），否则两下并成一记双击全屏。
+     */
+    private var eventTimeMillis = 0L
+
     private fun ImageComposeScene.tap(position: Offset) {
-        sendPointerEvent(PointerEventType.Move, position, timeMillis = 0L)
-        sendPointerEvent(PointerEventType.Press, position, timeMillis = 0L)
-        sendPointerEvent(PointerEventType.Release, position, timeMillis = 40L)
+        eventTimeMillis += TAP_INTERVAL_MILLIS
+        sendPointerEvent(PointerEventType.Move, position, timeMillis = eventTimeMillis)
+        sendPointerEvent(PointerEventType.Press, position, timeMillis = eventTimeMillis + 10L)
+        sendPointerEvent(PointerEventType.Release, position, timeMillis = eventTimeMillis + 50L)
     }
 
     private fun ImageComposeScene.boundsOfTestTag(tag: String): Rect =
@@ -224,12 +244,13 @@ class PlayerControlsVisibilityInteractionTest {
         const val DANMAKU_SLOT_TAG = "danmaku-slot"
 
         /**
-         * 画面上的空白处：避开顶栏、底栏与中央播放键。
-         * 中央键在 (640, 360) 附近、半径约 64dp，本点距它有 440px，够远。
+         * 画面上的空白处：避开顶栏、底栏与右侧键位列。
+         * 场景 1280×720 @2f，本点是 (100dp, 180dp) —— 垂直正中、离右缘 540dp。
          */
         val EMPTY_SPOT_PX = Offset(200f, 360f)
 
         const val FIRST_FRAME_NANOS = 1_000_000_000L
         const val FRAME_STEP_NANOS = 16_666_666L
+        const val TAP_INTERVAL_MILLIS = 500L
     }
 }

@@ -1,5 +1,7 @@
 package lovehan1me.video.contract
 
+import kotlinx.coroutines.flow.StateFlow
+
 /**
  * 超分档位的规范取值域（0=关 / 1=效率 / 2=质量，三端一致）。
  *
@@ -32,17 +34,24 @@ interface VideoEnhancementController {
     val levels: List<Int>
 
     /**
-     * 当前**生效**档位（不是请求值）。
+     * 用户选定的档位。
      *
-     * 与 [setLevel] 的返回值同源：降级（QUALITY 不可用 → PERFORMANCE → OFF）后
-     * 这里读到的也是降级后的档位，UI 才不会显示一个"选中了但其实没生效"的假状态。
+     * 是流而不是快照：它会在用户没点菜单的情况下自己变 —— shader 落盘失败、mpv/GL
+     * 拒绝挂载，引擎把这一档收回（通常是收到 [VideoEnhancementLevels.OFF]），
+     * UI 订阅它才不会显示一个"选中了但其实挂不上"的假状态。
+     *
+     * 但**分辨率门控不改它**：片源已经够大、这一帧不需要放大时，档位照旧保留，
+     * 只是暂时不挂。把门控结果写进流会让菜单在用户点下去的同一帧弹回「关闭」，
+     * 看上去等于按钮坏了。
      */
-    val level: Int
+    val level: StateFlow<Int>
 
     /**
      * 切到 [level]。
      *
-     * @return **实际生效**的档位。与入参不同即表示发生了降级，调用方应据此刷新显示。
+     * @return 这一帧**真正挂上**的档位。与入参不同有两种成因，处理方式不一样：
+     *         分辨率门控（片源不需要放大）只是暂时不挂，[level] 保持入参；
+     *         挂不上（shader 缺失、后端拒绝）才会把 [level] 一起收回。
      */
     suspend fun setLevel(level: Int): Int
 }

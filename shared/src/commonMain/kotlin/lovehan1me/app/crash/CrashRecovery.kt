@@ -34,3 +34,32 @@ fun buildCrashReport(throwable: Throwable): String = buildString {
     appendLine("====== beginning of crash ======")
     appendLine(throwable.stackTraceToString())
 }
+
+/**
+ * 桌面渲染 teardown 竞态是否为可忽略的一帧。
+ *
+ * 拉伸窗口时 Skiko 的 onRender 与 scene teardown 可能交错，
+ * 抛 `IllegalArgumentException: RootNodeOwner is already disposed`
+ *（或关闭弹窗场景的 `IllegalStateException: ComposeScene is closed`）。
+ * 这只是当前帧被丢弃，下一帧会正常合成，不代表应用状态已损坏，
+ * 崩溃处理器不应为此落盘与退出进程。沿因果链逐层判定，
+ * 因为 EDT 上拿到的往往是包了多层 cause 的转包装异常。
+ */
+fun isBenignDesktopRenderRace(throwable: Throwable): Boolean {
+    var current: Throwable? = throwable
+    while (current != null) {
+        val message = current.message ?: ""
+        if (current is IllegalArgumentException &&
+            message.contains("RootNodeOwner is already disposed")
+        ) {
+            return true
+        }
+        if (current is IllegalStateException &&
+            message.contains("ComposeScene is closed")
+        ) {
+            return true
+        }
+        current = current.cause
+    }
+    return false
+}

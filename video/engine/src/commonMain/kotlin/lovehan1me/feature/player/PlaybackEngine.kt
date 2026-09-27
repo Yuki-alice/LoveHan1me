@@ -2,6 +2,7 @@ package lovehan1me.feature.player
 
 import kotlinx.coroutines.flow.StateFlow
 import lovehan1me.video.contract.VideoEnhancementController
+import org.openani.mediamp.MediampPlayer
 
 typealias PlayerKernel = lovehan1me.video.contract.PlayerKernel
 typealias VideoAspectMode = lovehan1me.video.contract.VideoAspectMode
@@ -69,6 +70,17 @@ interface PlaybackEngine {
      * 而不是静默退化成一个"不支持"的默认值。
      */
     val enhancement: VideoEnhancementController?
+
+    /**
+     * 本引擎背后的 mediamp 实例，给控件层直读实时状态用。
+     *
+     * **挂起而不是属性**：桌面端 mpv 是惰性初始化（解压 + dlopen + mpv_create，几百毫秒），
+     * 组合期直读会让 EDT 卡在懒锁上，整个界面冻住 —— 渲染面等同样的理由。
+     * 实现方在慢后端上必须自己挑线程。
+     *
+     * null = 本端不是 mediamp 后端。
+     */
+    suspend fun acquireMediampPlayer(): MediampPlayer? = null
 
     /**
      * G2-3b：本引擎**真实支持**的画面比例档位（顺序即 UI 展示顺序）。

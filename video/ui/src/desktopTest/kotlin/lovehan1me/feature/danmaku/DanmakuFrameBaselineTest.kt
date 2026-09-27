@@ -11,13 +11,13 @@ import kotlin.test.Test
 import kotlin.test.assertTrue
 import kotlin.time.Duration.Companion.nanoseconds
 
-// 弹幕绘制基线（Gate4-3：先有数，不定线）。
+// 弹幕绘制基线：先有数，不定线。
 //
-// 背景：Gate3-10 的"开超分卡顿 + 弹幕抖"缺的从来不是优化点子，而是"各档位 ×
+// 背景：「开超分卡顿 + 弹幕抖」这类问题缺的从来不是优化点子，而是"各档位 ×
 // 各分辨率到底多少毫秒"的数据。本测试在 headless 离屏渲染里连渲 60 帧，
 // 打印总耗时/均值/p95/最大值 —— 机器相关故**不断言时间**（CI 机器与开发者机器
 // 差一个数量级是常态，定了线就是 flaky），只断言"60 帧真跑完了"。
-// 用法：改弹幕/超分/渲染管线前后各跑一次，对比打印值；真机帧时间另见 Gate3 §4 QA 清单。
+// 用法：改弹幕/超分/渲染管线前后各跑一次，对比打印值。
 //
 // 跑法：`:video:ui:desktopTest --tests "lovehan1me.feature.danmaku.DanmakuFrameBaselineTest" --offline`
 class DanmakuFrameBaselineTest {
@@ -33,7 +33,8 @@ class DanmakuFrameBaselineTest {
             measureWidth: (DanmakuItem) -> Float,
         ): Long? {
             val nowMs = frameNanos / 1_000_000L
-            engine.tick(nowMs, viewport, measureWidth)
+            // 两条轴同一个数：假驱动建模的是常速播放
+            engine.tick(nowMs, nowMs, viewport, measureWidth)
             return nowMs
         }
     }

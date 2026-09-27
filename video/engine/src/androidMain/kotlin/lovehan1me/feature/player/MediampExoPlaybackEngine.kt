@@ -12,7 +12,15 @@ import androidx.media3.exoplayer.hls.HlsMediaSource
 import androidx.media3.exoplayer.source.MediaSource
 import androidx.media3.exoplayer.source.ProgressiveMediaSource
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import lovehan1me.core.util.LogUtil
 import lovehan1me.video.contract.VideoEnhancementController
@@ -57,6 +65,7 @@ class MediampExoPlaybackEngine(
 
     init {
         startObserving()
+        startEnhancementObserver()
     }
 
     // ── 网络：ECH 逐请求改写（复用 P1 的 EchGateDataSource） ──
@@ -82,92 +91,109 @@ class MediampExoPlaybackEngine(
         }
     }
 
-    // ── 超分（P4 成果原样接续） ──
+    // ── 超分（视频增强） ──
+    //
+    // 生效档位是**流**，而且有两个"用户没碰过任何东西"也会变的触发源：视口尺寸
+    // （转屏、进/出全屏）与片源尺寸（换清晰度）。落地 scaler 的目标尺寸就是视口，
+    // 尺寸一变整条 effect 表必须重挂 —— 不重挂的话 scaler 仍按旧视口出图，
+    // 表现就是画面被压扁或拉伸，且用户看不出自己该做什么来恢复。
+    //
+    // 失败一律降回 OFF 而不是上抛：GL 编译是异步的，失败浮上来时已经是播放错误，
+    // 那时只剩"放弃超分"这一条路能保住播放。
 
-    private var superResolutionLevel = ExoSuperResolution.OFF
+    private val requestedLevel = MutableStateFlow(VideoEnhancementLevels.OFF)
+    private val mutableEnhancementLevel = MutableStateFlow(VideoEnhancementLevels.OFF)
+    private val enhancementLock = Mutex()
+
+    /** 渲染面尺寸（px）。0 = 尚未量出；0 参与时不挂 scaler，见 [ExoSuperResolution.effectsFor]。 */
+    private val surfaceSize = MutableStateFlow(0 to 0)
 
     override val enhancement: VideoEnhancementController = object : VideoEnhancementController {
         override val levels: List<Int> = VideoEnhancementLevels.ALL
-        override val level: Int get() = superResolutionLevel
+        override val level: StateFlow<Int> = mutableEnhancementLevel.asStateFlow()
 
         override suspend fun setLevel(level: Int): Int {
-            applyEffectLevel(level.coerceIn(ExoSuperResolution.OFF, ExoSuperResolution.QUALITY))
-            // applyVideoEffects 失败时内部已把档位降回 OFF，所以这里读到的就是生效值。
-            return superResolutionLevel
+            if (isReleased) return mutableEnhancementLevel.value
+            requestedLevel.value = level
+            return applyEnhancement()
         }
     }
 
-    /** 换档并等它落定（setVideoEffects 必须 Main）。 */
-    private suspend fun applyEffectLevel(level: Int) {
-        superResolutionLevel = level
-        withContext(Dispatchers.Main) { applyVideoEffects() }
-    }
-
-    // 超分致错自愈（Gate4-2 真机教训）：GL 编译是异步的，失败浮上来时已经是播放错误。
-    // 这里把档位降回 OFF（下次 load/onBeforeOpen 即空表），用户点重试就回到正常播放；
-    // 不自动重载、不吞错误卡；档位已是 OFF 时不动作，不可能循环。
-    override fun onEnteredError() {
-        if (superResolutionLevel != ExoSuperResolution.OFF) {
-            LogUtil.w(TAG, "疑似超分致错，自动降回 OFF，用户重试即恢复播放")
-            superResolutionLevel = ExoSuperResolution.OFF
-            scope.launch(Dispatchers.Main) { applyVideoEffects() }
+    private fun startEnhancementObserver() {
+        scope.launch {
+            combine(
+                state.map { it.videoWidth to it.videoHeight },
+                surfaceSize,
+            ) { video, surface -> video to surface }
+                .distinctUntilChanged()
+                .collect {
+                    if (requestedLevel.value != ExoSuperResolution.OFF) applyEnhancement()
+                }
         }
     }
 
-    /** 渲染面尺寸（超分 scaler 判断 needsUpscale 用）：由 PlatformVideoSurface 按布局尺寸转交。 */
-    private var surfaceWidth = 0
-    private var surfaceHeight = 0
-
-    override fun updateSurfaceSize(width: Int, height: Int) {
-        if (width > 0) surfaceWidth = width
-        if (height > 0) surfaceHeight = height
+    /** 加锁重挂当前请求档位，返回**实际生效**档位（失败即 OFF）。 */
+    private suspend fun applyEnhancement(): Int = enhancementLock.withLock {
+        val level = requestedLevel.value
+        val applied = if (runCatching { applyEffects(level) }.isSuccess) {
+            level
+        } else {
+            LogUtil.w(TAG, "超分档位 $level 挂载失败，降回 OFF")
+            runCatching { applyEffects(ExoSuperResolution.OFF) }
+            ExoSuperResolution.OFF
+        }
+        mutableEnhancementLevel.value = applied
+        applied
     }
 
     /**
-     * 每次 open 前预置 effect 表（Media3 约束：setVideoEffects 须先于 prepare；
-     * mediamp openImpl 内部自己 prepare，这个钩子正好卡在它之前）。
-     * 档位记忆沿用旧引擎：OFF 挂空表，非 OFF 挂真表（跨 load 保留档位）。
+     * 按当前档位与现取尺寸挂 effect。
      *
-     * B1 修复：此前 OFF 分支在 Default 线程同步直调（线程违规），非 OFF 分支
-     * fire-and-forget 到 Main（可能晚于 prepare，首开超分不生效）。
-     * 现统一切 Main 且挂起等完成，基类随后才 setMediaData。
+     * 资产读取（首次约几百 KB，解 APK）留在调用线程，只有 `setVideoEffects` 切 Main ——
+     * 那是 Media3 的线程约束，而把 IO 也搬过去会让首开在主线程上读文件。
+     */
+    private suspend fun applyEffects(level: Int) {
+        val video: VideoSize = exoPlayer.videoSize
+        val (width, height) = surfaceSize.value
+        val effects = ExoSuperResolution.effectsFor(
+            level = level,
+            videoWidth = (video.width * video.pixelWidthHeightRatio).toInt(),
+            videoHeight = video.height,
+            surfaceWidth = width,
+            surfaceHeight = height,
+        )
+        withContext(Dispatchers.Main) { exoPlayer.setVideoEffects(effects) }
+        LogUtil.i(TAG, "超分档位 $level：挂 ${effects.size} 条 effect（片源 ${video.width}x${video.height}，渲染面 ${width}x$height）")
+    }
+
+    /**
+     * 超分致错自愈：GL 编译是异步的，失败浮上来时已经是播放错误。
+     * 这里把请求档位降回 OFF（下次 load/onBeforeOpen 即空表），用户点重试就回到正常播放；
+     * 不自动重载、不吞错误卡；档位已是 OFF 时不动作，不可能循环。
+     */
+    override fun onEnteredError() {
+        if (mutableEnhancementLevel.value == ExoSuperResolution.OFF) return
+        LogUtil.w(TAG, "疑似超分致错，自动降回 OFF，用户重试即恢复播放")
+        requestedLevel.value = ExoSuperResolution.OFF
+        scope.launch { applyEnhancement() }
+    }
+
+    /** 渲染面尺寸（超分 scaler 的落地目标）：由 PlatformVideoSurface 按布局尺寸转交。 */
+    override fun updateSurfaceSize(width: Int, height: Int) {
+        val current = surfaceSize.value
+        val next = (if (width > 0) width else current.first) to
+            (if (height > 0) height else current.second)
+        if (next != current) surfaceSize.value = next
+    }
+
+    /**
+     * 每次 open 前预置 effect 表（Media3 约束：`setVideoEffects` 须先于 prepare，
+     * 否则播放中途换表不生效；mediamp openImpl 内部自己 prepare，这个钩子正好卡在它之前）。
+     * OFF 也走同一条路：挂空表就是"把 effect 图建起来但什么都不做"。
      */
     override suspend fun onBeforeOpen() {
-        // openMedia 跑在 Default 线程；setVideoEffects 必须 Main，整个切过去
-        // （applyVideoEffects 内的资产 IO 走内存缓存，首次约几百 KB，主线程可接受）。
-        withContext(Dispatchers.Main) {
-            if (superResolutionLevel == ExoSuperResolution.OFF) {
-                runCatching { exoPlayer.setVideoEffects(emptyList()) }
-            } else {
-                applyVideoEffects()
-            }
-        }
-    }
-
-    /**
-     * 按当前档位挂 effect，失败即降级 OFF（吞异常回空管线，最差"超分没生效但片子照播"）。
-     */
-    private suspend fun applyVideoEffects() {
-        try {
-            val videoSize: VideoSize = exoPlayer.videoSize
-            exoPlayer.setVideoEffects(
-                ExoSuperResolution.effectsFor(
-                    level = superResolutionLevel,
-                    videoWidth = (videoSize.width * videoSize.pixelWidthHeightRatio).toInt(),
-                    videoHeight = videoSize.height,
-                    surfaceWidth = surfaceWidth,
-                    surfaceHeight = surfaceHeight,
-                )
-            )
-        } catch (e: Exception) {
-            LogUtil.e(TAG, "setVideoEffects failed, fallback to OFF", e)
-            superResolutionLevel = ExoSuperResolution.OFF
-            try {
-                exoPlayer.setVideoEffects(emptyList())
-            } catch (fallbackError: Exception) {
-                LogUtil.e(TAG, "fallback to OFF also failed", fallbackError)
-            }
-        }
+        runCatching { applyEffects(requestedLevel.value) }
+            .onFailure { LogUtil.w(TAG, "预置 effect 表失败，按 OFF 播放", it) }
     }
 
     // ── 音量（mediamp-exo 无 AudioLevelController feature，直调，一行） ──

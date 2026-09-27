@@ -203,7 +203,8 @@ class DanmakuSessionTest {
             ),
         )
         fixture.snapshot(positionMs = 0L)
-        assertEquals(0L, fixture.session.advance(1_000_000_000L, fixture.viewport, fixture.measure))
+        // advance 返回的是弹幕时刻（帧时刻 1s），不是播放位置
+        assertEquals(1_000L, fixture.session.advance(1_000_000_000L, fixture.viewport, fixture.measure))
         assertEquals(listOf("开场"), fixture.session.engine.activeScrollSlots.map { it.item.text })
 
         // 位置跳变超过 seek 阈值：tracker 换代，session 让引擎 seekTo 而不是继续外推
@@ -225,10 +226,46 @@ class DanmakuSessionTest {
             listOf("开场"),
             fixture.session.engine.activeScrollSlots.map { it.item.text },
         )
-        // 冻结期间的帧推进不产生位移
-        val before = fixture.session.advance(9_000_000_000L, fixture.viewport, fixture.measure)
-        val after = fixture.session.advance(19_000_000_000L, fixture.viewport, fixture.measure)
-        assertEquals(before, after)
+        // 冻结期间的帧推进不产生位移（位置是弹幕时刻的闭式函数，读数不动即屏幕不动）
+        val atFreeze = fixture.session.advance(9_000_000_000L, fixture.viewport, fixture.measure)
+        val afterFreeze = fixture.session.advance(19_000_000_000L, fixture.viewport, fixture.measure)
+        assertEquals(atFreeze, afterFreeze)
+    }
+
+    /**
+     * 倍速只变密度，不变飞行速度。
+     *
+     * 弹幕基准速度 88px/s、逐条抖动 ±8.75% ⇒ 一秒墙钟里最多飞 ~96px。飞行若跟着视频
+     * 倍速走，这 63 帧里视频走了 4 秒、就要飞 ~380px —— 而播放位置是 250ms 一跳的采样
+     * 外推来的，那个修正台阶正是被倍速放大成整屏抖动的东西。
+     */
+    @Test
+    fun `4 倍速下一秒墙钟只飞一秒的距离`() {
+        val items = (0L until 40L).map { scrollAt(it * 1_000L, "弹幕$it") }
+        val fixture = Fixture(firstResult = DanmakuLoadResult.Ready(episode, items))
+        var frameNanos = 1_000_000_000L
+        var videoMs = 0L
+
+        fun frame(): Long {
+            fixture.snapshot(positionMs = videoMs, playbackSpeed = 4f)
+            val danmakuNowMs = fixture.session.advance(frameNanos, fixture.viewport, fixture.measure)
+            frameNanos += 16_000_000L
+            videoMs += 64L  // 4 倍速 × 16ms
+            return danmakuNowMs ?: 0L
+        }
+
+        repeat(4) { frame() }  // 视频才走 256ms：屏上只有第 0 条
+        val engine = fixture.session.engine
+        val slot = engine.activeScrollSlots.single()
+        var nowMs = frame()
+        val leftAtStart = engine.leftEdgeOf(slot, nowMs, fixture.viewport)
+        repeat(63) { nowMs = frame() }
+        val travelledPx = leftAtStart - engine.leftEdgeOf(slot, nowMs, fixture.viewport)
+
+        assertTrue(
+            travelledPx in 70f..100f,
+            "1 秒墙钟里飞了 $travelledPx px：飞行跟着倍速走了（应为 88px/s 上下 8.75%）",
+        )
     }
 
     // ---------- 人工选集 ----------
@@ -376,7 +413,7 @@ class DanmakuSessionTest {
         assertTrue(fixture.session.engine.activeFixedSlots.isEmpty())
 
         fixture.session.setLocationVisibility(scroll = true, top = true, bottom = false)
-        // 重铺后游标回到当前位置：重新快照锚定，避免"迟到"把刚放行的顶弹丢掉
+        // 重铺会把游标回看到现在：把时钟钉在同一刻，顶弹的入场时刻才不会被算成已过期
         fixture.snapshot(positionMs = 0L)
         fixture.session.advance(1_050_000_000L, fixture.viewport, fixture.measure)
         assertEquals(listOf("滚动"), fixture.session.engine.activeScrollSlots.map { it.item.text })

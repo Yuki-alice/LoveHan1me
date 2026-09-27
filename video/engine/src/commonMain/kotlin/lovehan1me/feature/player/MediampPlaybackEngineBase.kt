@@ -62,6 +62,8 @@ abstract class MediampPlaybackEngineBase : PlaybackEngine {
     /** 子类构造的后端实例（exo / avkit）。public 只读：PlatformVideoSurface 要转交它家 Surface。 */
     abstract val mediampPlayer: MediampPlayer
 
+    override suspend fun acquireMediampPlayer(): MediampPlayer = mediampPlayer
+
     /** 用户请求值（意图）。引擎每次开流都会丢画面类偏好，必须记住并在开流后重下。 */
     private var requests = PlaybackRequests()
 

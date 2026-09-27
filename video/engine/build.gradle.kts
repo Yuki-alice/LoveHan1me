@@ -35,7 +35,9 @@ kotlin {
             implementation("org.jetbrains.kotlinx:kotlinx-io-core:0.9.1")
             // Gate3-P5：mediamp 核心契约（PlayerState/MediaData/VideoAspectRatio），
             // 桥接基类 MediampPlaybackEngineBase 在 commonMain。
-            implementation(libs.mediamp.api)
+            // api 而非 implementation：基类公开交出 mediampPlayer，UI 层要按 animeko 的
+            // 同构方式直接绑 MediampPlayer，类型必须可见。
+            api(libs.mediamp.api)
         }
 
         androidMain.dependencies {

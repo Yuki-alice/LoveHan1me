@@ -12,17 +12,16 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertTrue
 
-// 播放稳态不重组回归（Gate3-P2，钉 f4c2e4a 那类事故）。
+// 播放稳态不重组回归（钉住"字照样画、组合次数却随帧线性增长"那类事故）。
 //
-// 那次事故的根因是每帧重建 movableContentOf：落墨数完全正常（字照样画），
-// 但组合次数随帧线性增长，顺带把 Skia 撑崩。落墨断言抓不到它，
-// 只能数字符——稳态播放时组合树每帧重组就是 bug。
+// 根因是每帧重建 movableContentOf：落墨数完全正常，但组合次数随帧增长，
+// 顺带把 Skia 撑崩。落墨断言抓不到它，只能数字符——稳态播放时组合树每帧重组就是 bug。
 //
 // 跑法：`:video:ui:desktopTest --tests "lovehan1me.feature.danmaku.DanmakuLayerSteadyTest" --offline`
 class DanmakuLayerSteadyTest {
 
     // 假驱动：时钟由 render() 的帧时刻推进，不依赖播放快照与数据源。
-    // 语义与 DanmakuSession.advance 一致（返回本次位置，null 即不画）。
+    // 语义与 DanmakuSession.advance 一致（返回本帧弹幕时刻，null 即不画）。
     private class FakeDriver(items: List<DanmakuItem>) : DanmakuFrameDriver {
         override val engine = DanmakuEngine().also {
             if (items.isNotEmpty()) it.setItems(items)
@@ -34,7 +33,8 @@ class DanmakuLayerSteadyTest {
             measureWidth: (DanmakuItem) -> Float,
         ): Long? {
             val nowMs = frameNanos / 1_000_000L
-            engine.tick(nowMs, viewport, measureWidth)
+            // 两条轴同一个数：假驱动建模的是常速播放
+            engine.tick(nowMs, nowMs, viewport, measureWidth)
             return nowMs
         }
     }

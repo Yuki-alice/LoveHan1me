@@ -63,6 +63,7 @@ kotlin {
             implementation(libs.cmp.runtime)
             implementation(libs.cmp.foundation)
             implementation(libs.cmp.material3)
+            implementation(libs.compose.material.icons.extended)
             implementation(libs.cmp.ui)
 
             // Lifecycle / ViewModel：JetBrains 移植版，全平台可用

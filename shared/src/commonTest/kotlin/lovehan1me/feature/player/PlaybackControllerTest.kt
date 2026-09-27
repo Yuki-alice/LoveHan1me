@@ -80,14 +80,14 @@ class PlaybackControllerTest {
     /** 记录下发档位、可模拟引擎降级的假超分控制器。 */
     private class FakeEnhancement(private val downgradeTo: Int? = null) : VideoEnhancementController {
         override val levels: List<Int> = VideoEnhancementLevels.ALL
-        override var level: Int = VideoEnhancementLevels.OFF
-            private set
+        private val mutableLevel = MutableStateFlow(VideoEnhancementLevels.OFF)
+        override val level: StateFlow<Int> = mutableLevel
         val requested = mutableListOf<Int>()
 
         override suspend fun setLevel(level: Int): Int {
             requested += level
-            this.level = downgradeTo ?: level
-            return this.level
+            mutableLevel.value = downgradeTo ?: level
+            return mutableLevel.value
         }
     }
 
@@ -285,6 +285,7 @@ class PlaybackControllerTest {
         val engine = FakeEngine().apply {
             enhancement = FakeEnhancement(downgradeTo = VideoEnhancementLevels.OFF)
         }
+        val enhancement = engine.enhancement as FakeEnhancement
         val (c, _) = controller(engine)
         try {
             // 请求 QUALITY 但引擎降级到 OFF：显示值必须取返回值（生效值）。
@@ -292,6 +293,8 @@ class PlaybackControllerTest {
                 VideoEnhancementLevels.OFF,
                 runBlocking { c.setEnhancementLevel(VideoEnhancementLevels.QUALITY) },
             )
+            // 生效值同时上报到流上：UI 订阅的是流，门控/降级在用户没操作时也会翻。
+            assertEquals(VideoEnhancementLevels.OFF, enhancement.level.value)
         } finally {
             c.release()
         }

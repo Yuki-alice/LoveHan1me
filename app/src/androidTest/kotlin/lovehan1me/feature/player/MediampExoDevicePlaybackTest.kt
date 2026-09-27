@@ -7,17 +7,17 @@ import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.withTimeoutOrNull
 import lovehan1me.data.network.defaultPlayerNetworkConfig
 import lovehan1me.video.contract.VideoEnhancementLevels
+import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import kotlin.time.Duration.Companion.seconds
 
-// Gate4-2：Android mediamp-exo 真机播放验证（emulator / 真机，需公网）。
-// iOS 侧同等覆盖由 XCUITest PlayerUITests + iosTest 承担；Android 侧此前只有
-// host 单测（无框架）与桌面端 live 测试，mediamp-exo 上线后这是第一条真播放链路。
-// 用 Apple bipbop 公开流（与 iOS 测试同源），不断言站点内容（CF 环境相关）。
-// 运行：`./gradlew :app:connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=...`
-// 或 Android Studio 内直接运行（需连接设备/模拟器，CI 不跑）。
+// Android mediamp-exo 真机播放验证（emulator / 真机，需公网；CI 不跑）。
+// 用 Apple bipbop 公开流（与 iOS 侧同源），不断言站点内容（CF 环境相关）。
+// 运行：`./gradlew :app:connectedDebugAndroidTest
+//        -Pandroid.testInstrumentationRunnerArguments.class=lovehan1me.feature.player.MediampExoDevicePlaybackTest`
+// 或 Android Studio 内直接运行（需连接设备/模拟器）。
 @RunWith(AndroidJUnit4::class)
 class MediampExoDevicePlaybackTest {
 
@@ -57,30 +57,43 @@ class MediampExoDevicePlaybackTest {
                 engine.state.value.bufferedPositionMs > 0L,
             )
 
-            // P4 真 CNN 链真机验证（Gate4-2 实机教训：模板拼接缺换行曾让 Mali
-            // 编译失败 "No matching function for call to 'go_0'"，且编译是异步的，
-            // 失败浮上来是播放错误而非挂载异常）。不断言画质（肉眼项），只断言：
-            // 挂 PERFORMANCE 后不进 Error、位置继续推进（编译失败即红）。
-            // 超分已从引擎方法迁到能力对象（不支持即 null）；Android 引擎必须表态支持，
-            // 真机把 PERFORMANCE 档挂下去，验证 GL 链路不把播放搞挂。
+            // 真机挂 GL 效果链只验"不把播放搞挂"：画质是肉眼项，不断言。
+            // 编译失败的表现形式是异步的播放 Error（不是挂载异常）——曾经模板拼接
+            // 少一个换行就让 Mali 报 "No matching function for call to 'go_0'"。
+            // 两档都过：PERFORMANCE 是"还原 + 落地 scaler"，QUALITY 再多一条放大 pass，
+            // 两者用的是不同的 shader 程序，漏验其中一档等于没验。
             val enhancement = requireNotNull(engine.enhancement) { "Android 引擎应声明超分能力" }
-            enhancement.setLevel(VideoEnhancementLevels.PERFORMANCE)
-            val stillFine = withTimeoutOrNull(30.seconds) {
-                while (true) {
-                    val s = engine.state.value
-                    if (s.phase == PlaybackPhase.Error) break
-                    if (s.positionMs > 15_000L && s.isPlaying) break
-                    delay(500L)
-                }
-                val s = engine.state.value
-                s.phase != PlaybackPhase.Error && s.isPlaying
-            } ?: false
-            assertTrue(
-                "挂超分 PERFORMANCE 后播放异常（GL 编译失败会进 Error）：${engine.state.value}",
-                stillFine,
+            assertEquals(
+                "PERFORMANCE 档不应被降级（降级说明引擎没真挂上）",
+                VideoEnhancementLevels.PERFORMANCE,
+                enhancement.setLevel(VideoEnhancementLevels.PERFORMANCE),
             )
+            assertPlaysPast(engine, 15_000L, "挂超分 PERFORMANCE")
+
+            assertEquals(
+                "QUALITY 档不应被降级",
+                VideoEnhancementLevels.QUALITY,
+                enhancement.setLevel(VideoEnhancementLevels.QUALITY),
+            )
+            assertEquals(VideoEnhancementLevels.QUALITY, enhancement.level.value)
+            assertPlaysPast(engine, 25_000L, "挂超分 QUALITY")
         } finally {
             engine.release()
         }
+    }
+
+    /** 档位挂下去之后仍要在播、且不能进 Error。 */
+    private suspend fun assertPlaysPast(engine: MediampExoPlaybackEngine, targetMs: Long, what: String) {
+        val stillFine = withTimeoutOrNull(30.seconds) {
+            while (true) {
+                val s = engine.state.value
+                if (s.phase == PlaybackPhase.Error) break
+                if (s.positionMs > targetMs && s.isPlaying) break
+                delay(500L)
+            }
+            val s = engine.state.value
+            s.phase != PlaybackPhase.Error && s.isPlaying
+        } ?: false
+        assertTrue("$what 后播放异常（GL 编译失败会进 Error）：${engine.state.value}", stillFine)
     }
 }

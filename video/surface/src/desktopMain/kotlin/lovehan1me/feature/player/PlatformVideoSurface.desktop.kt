@@ -11,6 +11,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.onSizeChanged
 import lovehan1me.core.util.LogUtil
 import org.openani.mediamp.mpv.MpvMediampPlayer
 import org.openani.mediamp.mpv.compose.MpvMediampPlayerSurface
@@ -38,6 +39,11 @@ actual fun PlatformVideoSurface(
         readyPlayer = mpvEngine?.awaitPlayer()
     }
     val player = readyPlayer
+    // 渲染面尺寸是超分分辨率门控的唯一真相（mpv 属性给不了：它报的是视频显示尺寸，
+    // 与片源比值恒等于 1）。窗口缩放、进全屏都会重报，引擎据此重算要不要挂 shader。
+    val sizedModifier = modifier.onSizeChanged { size ->
+        mpvEngine?.updateViewportSize(size.width, size.height)
+    }
     if (player != null) {
         DisposableEffect(mpvEngine) {
             val surface = VideoSurface()
@@ -47,9 +53,8 @@ actual fun PlatformVideoSurface(
         // 用顶层 MpvMediampPlayerSurface 而非 MpvMediampPlayerSurfaceProvider().Surface：
         // provider 未覆写 equals，组合里每次 new 都让 Compose 认为接收者变了，
         // Surface body 反复重跑 → mpv Skia 层反复 detach/attach（闪帧/闪退）。
-        // animeko 同库同版本就是这个写法（reference/animeko/.../VideoPlayer.desktop.kt:25）。
-        MpvMediampPlayerSurface(player, modifier)
+        MpvMediampPlayerSurface(player, sizedModifier)
     } else {
-        Box(modifier.background(Color.Black))
+        Box(sizedModifier.background(Color.Black))
     }
 }

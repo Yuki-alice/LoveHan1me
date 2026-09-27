@@ -18,10 +18,10 @@ import kotlin.coroutines.resume
  * 否则直接失败（它不做缩放）。而 `PlaybackEngine.attachSurface` 只拿到一个
  * `android.view.Surface`，**从 Surface 本身读不出宽高**。
  *
- * 于是把布局阶段拿到的宽高转交给引擎。历史上这是硬编码只给 `MpvPlaybackEngine`
- * 的（`if (engine is MpvPlaybackEngine)`），后提升为能力接口供多引擎共用；
- * Gate3-P6 砍掉 mpv 内核后，**唯一实现方是 [MediampExoPlaybackEngine]**
- * （超分 `needsUpscale` 要渲染面尺寸）。接口保留：它是"引擎需要知道渲染面多大"
+ * 于是把布局阶段拿到的宽高转交给引擎。历史上这是硬编码只给 mpv 引擎的
+ * （`if (engine is MpvPlaybackEngine)`），后提升为能力接口供多引擎共用；
+ * 砍掉 mpv 内核后**唯一实现方是 [MediampExoPlaybackEngine]**
+ * （超分的落地 scaler 要按渲染面尺寸出图）。接口保留：它是"引擎需要知道渲染面多大"
  * 的通用契约，不绑内核。
  */
 internal interface AndroidSurfaceSizeAware {

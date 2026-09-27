@@ -12,10 +12,19 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 import kotlin.concurrent.thread
+import org.openani.mediamp.MediampPlayer
 import org.openani.mediamp.features.AudioLevelController
 import org.openani.mediamp.features.FramePreview
 import org.openani.mediamp.mpv.MPVHandle
@@ -51,9 +60,6 @@ class DesktopMpvPlaybackEngine(
         MpvMediampPlayerFactory().create(ENGINE_TOKEN, scope.coroutineContext)
     }
 
-    /** mpv 缩放相关属性的原始值（首次切档时记录，OFF 时还原）。 */
-    private var originalScaling: Map<String, String>? = null
-
     /** G2-3b：当前画面调节（mpv 的 brightness/contrast/saturation）。 */
     private var pictureAdjust: PictureAdjust = PictureAdjust.Neutral
 
@@ -67,10 +73,13 @@ class DesktopMpvPlaybackEngine(
     suspend fun awaitPlayer(): MpvMediampPlayer =
         withContext(Dispatchers.Default) { mediampPlayer }
 
+    override suspend fun acquireMediampPlayer(): MediampPlayer = awaitPlayer()
+
     init {
         startObserving()
         // G2-3b：Stretch 档看门狗（默认 Fit 档下完全不碰 mpv，不会提前触发原生初始化）。
         startAspectWatch()
+        startEnhancementObserver()
     }
 
     // ── 加载：ECH 网关改写 + 失败回退直连（桌面独有）───────────────
@@ -106,6 +115,9 @@ class DesktopMpvPlaybackEngine(
                 // 但 draw 尺寸会变，Stretch 的比值必须按新渲染面重算）。
                 applyVideoAspect(handle, currentAspect)
                 applyPictureAdjust(handle, pictureAdjust)
+                // 超分属性排在最后：`profile=gpu-hq` 会顺手改一串 scale/deband，
+                // 让它盖不回已经生效的超分档。
+                refreshEnhancementProperties(handle)
             }
             player.setMediaData(
                 data = UriMediaData(mediaUri, mediaHeaders),
@@ -152,64 +164,196 @@ class DesktopMpvPlaybackEngine(
         }
     }
 
-    // 阶段一②：视频超分（Anime4K）。mpv 通过 `change-list glsl-shaders` 挂 shader。
+    // ── 视频超分（Anime4K over mpv）───────────────────────────────
     //
-    // 与 animeko 的差异（它的两个短板）：
-    // 1. shader 失败/不支持时**自动降级**而不是抛异常——animeko 会抛
-    //    VideoFrameProcessingException，本项目则 QUALITY → PERFORMANCE → OFF；
-    // 2. 切档前先记住原始缩放属性，OFF 时精确还原，而不是写死默认值。
+    // 挂载只用 `change-list glsl-shaders append`，一条命令一个路径，卸载按逆序 `remove`。
+    // 两个理由：mpv 的列表属性以**逗号**分隔，把多个路径拼成 `:`/`;` 串会被当成一个
+    // 不存在的路径（命令照样回 true，静默不生效）；而 `set` 会连带清掉用户在
+    // 「自定义参数」里自己挂的 shader —— 我们不该替别人清空列表。
+    //
+    // 生效档位流暴露的是**用户选的那一档**，不是"这一帧真的挂上了什么"：分辨率门控会在
+    // 片源已经够大时整档不挂，若把门控结果写进流，菜单会在用户点下去的同一帧弹回「关闭」，
+    // 看起来就是按钮坏了。只有"这一档在这台机器上挂不上"（shader 落盘失败、mpv 拒绝命令）
+    // 才把流收回 —— 那是真不生效，UI 该跟着变。
 
-    /** 当前**生效**档位；降级后写回这里，故 [VideoEnhancementController.level] 读的是真值。 */
-    private var superResolutionLevel = MpvShaders.OFF
+    private val requestedLevel = MutableStateFlow(VideoEnhancementLevels.OFF)
+
+    /** 渲染面尺寸（px），由 [lovehan1me.feature.player.PlatformVideoSurface] 的组合期回调喂。 */
+    private val viewportSize = MutableStateFlow(0 to 0)
+    private val enhancementLock = Mutex()
+
+    /** 已 append 进 mpv 的 shader，顺序即挂载顺序，卸载时逆序。 */
+    private var appliedShaderPaths = listOf<String>()
+
+    /** 已下发的生效档位：与上次相同就不重发属性，避免每次片源尺寸抖动都过一遍 mpv。 */
+    private var appliedLevel = MpvShaders.OFF
+
+    /** 进本项目之前 mpv 的属性原值，OFF 时逐项还原（首次拿到句柄时快照一次）。 */
+    private var originalProperties: Map<String, String>? = null
 
     override val enhancement: VideoEnhancementController = object : VideoEnhancementController {
         override val levels: List<Int> = VideoEnhancementLevels.ALL
-        override val level: Int get() = superResolutionLevel
+        override val level: StateFlow<Int> = requestedLevel.asStateFlow()
 
         override suspend fun setLevel(level: Int): Int {
-            if (isReleased) return superResolutionLevel
-            return applySuperResolutionWithFallback(level)
+            if (isReleased) return requestedLevel.value
+            requestedLevel.value = level
+            return applyEnhancement()
         }
     }
 
-    /**
-     * 切档并返回**实际生效**的档位。
-     *
-     * 降级链（QUALITY → PERFORMANCE → OFF）是为了"别因为超分把播放搞挂"：任一档不可用就退一档，
-     * 退到 OFF 就放弃功能本身，绝不影响播放。返回值与 [superResolutionLevel] 同源，
-     * UI 据此刷新显示，而不是显示用户选的那个没生效的档位。
-     *
-     * 注意门控（[needsUpscale] 不成立）**不算失败**：那时生效值本来就是 OFF，
-     * 直接返回 OFF 而不触发降级链 —— 否则会把"本来就不需要放大"误当成"这一档有问题"。
-     */
-    private suspend fun applySuperResolutionWithFallback(index: Int): Int {
-        val applied = runCatching { applySuperResolution(index) }.getOrNull()
-        if (applied != null) {
-            superResolutionLevel = applied
-            return applied
-        }
-        if (index == MpvShaders.OFF) {
-            superResolutionLevel = MpvShaders.OFF
-            return MpvShaders.OFF
-        }
+    /** 渲染面尺寸变化 → 门控要重算（窗口拉大、进全屏都走这里）。 */
+    fun updateViewportSize(width: Int, height: Int) {
+        val next = width to height
+        if (next != viewportSize.value) viewportSize.value = next
+    }
 
-        val fallback = if (index == MpvShaders.QUALITY) MpvShaders.PERFORMANCE else MpvShaders.OFF
-        LogUtil.w(TAG, "超分档位 $index 不可用，自动降级到 $fallback")
-        val appliedFallback = runCatching { applySuperResolution(fallback) }.getOrNull()
-        if (appliedFallback != null) {
-            superResolutionLevel = appliedFallback
-            return appliedFallback
+    /**
+     * 请求档位、片源尺寸、渲染面尺寸任一变化 → 重算门控并重挂。
+     *
+     * 三者都在流里，所以"打开超分 → 之后才拖大窗口""窗口不变但换了清晰度"
+     * 这两种时序都会自己收敛，不靠用户再点一次。
+     */
+    private fun startEnhancementObserver() {
+        scope.launch {
+            combine(
+                requestedLevel,
+                state.map { it.videoWidth to it.videoHeight },
+                viewportSize,
+            ) { level, videoSize, viewport -> Triple(level, videoSize, viewport) }
+                .distinctUntilChanged()
+                .collect { applyEnhancement() }
         }
-        if (fallback != MpvShaders.OFF) {
-            LogUtil.w(TAG, "降级档位仍然不可用，关闭超分")
-            val appliedOff = runCatching { applySuperResolution(MpvShaders.OFF) }.getOrNull()
-            if (appliedOff != null) {
-                superResolutionLevel = appliedOff
-                return appliedOff
+    }
+
+    /** 加锁走完"算门控 → 挂 shader → 下属性"，返回**实际挂上**的档位。 */
+    private suspend fun applyEnhancement(): Int = enhancementLock.withLock {
+        // 从没开过超分也没挂过任何东西时别去碰 mpv：句柄是惰性的（解压 + dlopen +
+        // mpv_create），观察者首帧（档位 OFF、尺寸为 0）不该为这条空操作把原生库叫醒。
+        if (requestedLevel.value == MpvShaders.OFF && originalProperties == null) {
+            return@withLock MpvShaders.OFF
+        }
+        val target = gatedLevel(requestedLevel.value)
+        val applied = applyWithFallback(target)
+        if (applied != target) {
+            // 挂不上才收回用户那档；门控（target == OFF）不动它，否则菜单会自己弹回。
+            LogUtil.w(TAG, "超分档位 $target 挂不上，收回为 $applied")
+            requestedLevel.value = applied
+        }
+        applied
+    }
+
+    private fun gatedLevel(requested: Int): Int {
+        if (requested == MpvShaders.OFF) return MpvShaders.OFF
+        if (mpvHandle() == null) return requested
+        val (videoWidth, videoHeight) = state.value.let { it.videoWidth to it.videoHeight }
+        val (viewportWidth, viewportHeight) = viewportSize.value
+        val gated = gateEnhancementByScale(requested, videoWidth, videoHeight, viewportWidth, viewportHeight)
+        if (gated == MpvShaders.OFF) {
+            LogUtil.d(TAG, "超分门控：渲染面 ${viewportWidth}x$viewportHeight 不比片源 ${videoWidth}x$videoHeight 大，暂不挂")
+        }
+        return gated
+    }
+
+    /** 依次尝试 [target] → 低档 → OFF，第一个成功的即生效。 */
+    private suspend fun applyWithFallback(target: Int): Int {
+        val chain = buildList {
+            add(target)
+            if (target == MpvShaders.QUALITY) add(MpvShaders.PERFORMANCE)
+            if (target != MpvShaders.OFF) add(MpvShaders.OFF)
+        }
+        for (candidate in chain) {
+            val applied = runCatching { applyLevel(candidate) }.getOrNull()
+            if (applied != null) {
+                if (candidate != target) LogUtil.w(TAG, "超分档位 $target 不可用，降级到 $candidate")
+                return applied
             }
         }
-        superResolutionLevel = MpvShaders.OFF
+        LogUtil.w(TAG, "超分无法下发（含 OFF），保持关闭")
         return MpvShaders.OFF
+    }
+
+    /**
+     * @return 实际落到 mpv 的档位；句柄没起来 / 落盘失败 / mpv 拒绝命令时返回 null，
+     *         调用方据此走降级链。
+     */
+    private suspend fun applyLevel(level: Int): Int? {
+        val handle = mpvHandle() ?: return null
+        val paths = materializeMpvShaders(level) ?: return null
+        if (level == appliedLevel && paths == appliedShaderPaths) return level
+
+        removeAppliedShaders(handle)
+        applyEnhancementProperties(handle, level)
+        paths.forEach { path ->
+            if (!handle.command("change-list", "glsl-shaders", "append", path)) {
+                error("mpv 拒绝挂载 shader：$path")
+            }
+            appliedShaderPaths += path
+        }
+        appliedLevel = level
+        LogUtil.i(TAG, "超分档位 $level 已挂载（${paths.size} 条 shader）")
+        return level
+    }
+
+    private fun removeAppliedShaders(handle: MPVHandle) {
+        appliedShaderPaths.asReversed().forEach { path ->
+            if (!handle.command("change-list", "glsl-shaders", "remove", path)) {
+                LogUtil.w(TAG, "mpv 卸载 shader 失败：$path")
+            }
+        }
+        appliedShaderPaths = emptyList()
+    }
+
+    /**
+     * 「MPV 高级设置」每次 load 都重下发（`profile`/`deband` 会盖掉超分写的缩放属性），
+     * 所以超分生效时要在它之后把属性重推一遍。shader 挂在 mpv 核心上，
+     * `setMediaData` 不会清掉它，不需要重挂。
+     */
+    private fun refreshEnhancementProperties(handle: MPVHandle) {
+        val level = appliedLevel
+        if (level == MpvShaders.OFF) return
+        runCatching { applyEnhancementProperties(handle, level) }
+            .onFailure { LogUtil.w(TAG, "重推超分属性失败：${it.message}") }
+    }
+
+    /** 释放时把挂上去的东西摘干净。句柄已由释放链建起来时才碰它，不为清理去触发惰性初始化。 */
+    override fun onRelease() {
+        if (originalProperties == null) return
+        val handle = mpvHandle() ?: return
+        runCatching {
+            removeAppliedShaders(handle)
+            originalProperties?.forEach { (name, value) -> handle.setPropertyString(name, value) }
+        }.onFailure { LogUtil.w(TAG, "释放时清理超分失败：${it.message}") }
+        appliedLevel = MpvShaders.OFF
+        requestedLevel.value = MpvShaders.OFF
+    }
+
+    /**
+     * 下发/还原超分要用到的 mpv 属性。
+     *
+     * 超分链是"放大"，缩放滤镜与色空间换算必须一起换才看得出差别：`ewa_lanczossharp`
+     * 配 sigmoid 放大、0.7 抗振铃，再叠一层轻 deband 压掉片源的色带（放大后色带更明显）。
+     * Windows 走轻量档：那里的硬解路径上 deband 是实打实的额外一趟全屏 pass。
+     *
+     * OFF 还原的是**首次快照**，不是写死的 mpv 默认值 —— 用户在「MPV 高级设置」里
+     * 自己设的 deband/profile 得原样还回去。
+     */
+    private fun applyEnhancementProperties(handle: MPVHandle, level: Int) {
+        if (originalProperties == null) {
+            originalProperties = ENHANCEMENT_PROPERTY_NAMES.associateWith {
+                handle.getPropertyString(it).orEmpty()
+            }
+        }
+        val values = if (level == MpvShaders.OFF) {
+            originalProperties ?: return
+        } else {
+            if (isWindowsDesktop()) WINDOWS_LITE_PROFILE else FULL_PROFILE
+        }
+        values.forEach { (name, value) ->
+            check(handle.setPropertyString(name, value)) {
+                "mpv 拒绝视频增强属性 $name=$value"
+            }
+        }
     }
 
     // ── G2-3b：画面比例 / 画面调节（mpv 原生三档全支持）──────────
@@ -332,59 +476,6 @@ class DesktopMpvPlaybackEngine(
                 preview.getPreviewFrame(positionMs, targetWidth, targetHeight)?.pixels
             }
         }.getOrNull()
-    }
-
-    /**
-     * @return 实际生效的档位（门控命中时即 [MpvShaders.OFF]）；
-     *         shader 落盘失败或 mpv 命令失败返回 null（调用方据此走降级链）。
-     */
-    private suspend fun applySuperResolution(level: Int): Int? {
-        val handle = mpvHandle() ?: return null
-        // P4-1 分辨率门控（对齐 animeko `getEffectiveMode`，只搬设计）：
-        // 渲染面相对片源没有放大时，x2 放大链等于"放大再缩回"，纯烧 GPU。
-        // 此时按 OFF 处理（清 shader + 还原缩放属性）。
-        val effective = if (level != MpvShaders.OFF && !needsUpscale(handle)) {
-            LogUtil.d(TAG, "超分门控：片源无需放大，档位 $level 按 OFF 处理")
-            MpvShaders.OFF
-        } else {
-            level
-        }
-        val paths = materializeMpvShaders(effective) ?: return null
-        if (!handle.command("change-list", "glsl-shaders", "set", paths)) return null
-        applyScalingOptions(handle, effective)
-        return effective
-    }
-
-    // 渲染面 / 片源的最小边比 > 1 即真需要放大。任一尺寸未知时不门控——
-    // 宁可多花算力，也不静默关掉用户显式打开的功能。
-    private fun needsUpscale(handle: MPVHandle): Boolean {
-        val vw = state.value.videoWidth.toDouble()
-        val vh = state.value.videoHeight.toDouble()
-        val dw = handle.getPropertyString("dwidth")?.toDoubleOrNull() ?: 0.0
-        val dh = handle.getPropertyString("dheight")?.toDoubleOrNull() ?: 0.0
-        if (vw <= 0 || vh <= 0 || dw <= 0 || dh <= 0) return true
-        return minOf(dw / vw, dh / vh) > 1.0
-    }
-
-    private fun applyScalingOptions(handle: MPVHandle, level: Int) {
-        // 首次调用时记下原始值，之后 OFF 才能精确还原
-        if (originalScaling == null) {
-            originalScaling = SCALING_KEYS.associateWith { handle.getPropertyString(it).orEmpty() }
-        }
-        if (level == MpvShaders.OFF) {
-            originalScaling?.forEach { (key, value) -> handle.setPropertyString(key, value) }
-        } else {
-            SCALING_KEYS.forEach { key ->
-                val value = when (key) {
-                    "sigmoid-upscaling" -> "yes"
-                    // P4-1：dscale 是缩小路径，用 ewa_lanczossharp 又贵又容易振铃；
-                    // 缩小 bilinear 足够（mpv 文档同建议），scale/cscale 保留 lanczos。
-                    "dscale" -> "bilinear"
-                    else -> "ewa_lanczossharp"
-                }
-                handle.setPropertyString(key, value)
-            }
-        }
     }
 
     /**
@@ -538,8 +629,50 @@ class DesktopMpvPlaybackEngine(
         /** mpv 新版"不覆写 DAR"的写法（旧值 `-1` 已废弃，见 [applyVideoAspect]）。 */
         private const val ASPECT_OVERRIDE_NONE = "no"
 
-        /** 随超分一起调整的 mpv 缩放属性（animeko 同款组合）。 */
-        private val SCALING_KEYS = arrayOf("scale", "cscale", "dscale", "sigmoid-upscaling")
+        /**
+         * 超分会读写的 mpv 属性名 —— 同时也是"OFF 时要还原"的清单。
+         *
+         * 快照必须按这份名单去读，写入的是它的子集 + deband 系列；两边共用一份，
+         * 才不会加了新属性却忘了还原，把放大滤镜永久留在 mpv 里。
+         */
+        private val ENHANCEMENT_PROPERTY_NAMES = listOf(
+            "correct-downscaling",
+            "linear-downscaling",
+            "sigmoid-upscaling",
+            "scale",
+            "dscale",
+            "cscale",
+            "scale-antiring",
+            "dscale-antiring",
+            "deband",
+            "deband-iterations",
+            "deband-threshold",
+            "deband-range",
+            "deband-grain",
+        )
+
+        /** 超分开启时的属性：三向缩放都换 ewa_lanczossharp，配 0.7 抗振铃 + 轻 deband。 */
+        private val FULL_PROFILE = mapOf(
+            "correct-downscaling" to "yes",
+            "linear-downscaling" to "yes",
+            "sigmoid-upscaling" to "yes",
+            "scale" to "ewa_lanczossharp",
+            "dscale" to "ewa_lanczossharp",
+            "cscale" to "ewa_lanczossharp",
+            "scale-antiring" to "0.7",
+            "dscale-antiring" to "0.7",
+            "deband" to "yes",
+            "deband-iterations" to "1",
+            "deband-threshold" to "32",
+            "deband-range" to "16",
+            "deband-grain" to "0",
+        )
+
+        /** Windows 轻量档：只省掉 deband（那里的硬解路径上它是实打实的全屏额外一趟）。 */
+        private val WINDOWS_LITE_PROFILE = FULL_PROFILE + ("deband" to "no")
+
+        private fun isWindowsDesktop(): Boolean =
+            System.getProperty("os.name").orEmpty().contains("windows", ignoreCase = true)
 
         /** mediamp 里 mpv 句柄 getter 的 JVM 名字（internal 成员被 mangled）。 */
         private const val MPV_HANDLE_GETTER = "getHandle\$mediamp_mpv"
@@ -627,3 +760,27 @@ class DesktopMpvPlaybackEngine(
 // `mediaUrlForGate` / `resolveMediaProxyUrl` 已搬入 `:shared` 的 `data.network`
 //（`PlayerWiring.desktop.kt` + `gateRewrite`）：网关判定与代理选择是应用层策略，
 // 不属于引擎内核。引擎经 [PlayerNetworkConfig] 拿结果，不再直读网关与选择器。
+
+/**
+ * 分辨率门控：两条边都放大不到 1 倍时这档没意义（Anime4K 是放大链，等比或缩着放
+ * 只会白烧 GPU），整档按 [MpvShaders.OFF] 处理。
+ *
+ * 尺寸来源是渲染面（Compose 侧回调），不是 mpv 的属性 —— `dwidth`/`dheight` 语义是
+ * 视频显示尺寸，拿它和片源尺寸比会得到恒定 1.0 附近的比值，把每一档都判死。
+ * 任一尺寸还不知道时**不门控**：宁可多花算力，也不静默关掉用户显式打开的功能。
+ */
+internal fun gateEnhancementByScale(
+    requested: Int,
+    videoWidth: Int,
+    videoHeight: Int,
+    viewportWidth: Int,
+    viewportHeight: Int,
+): Int {
+    if (requested == MpvShaders.OFF) return MpvShaders.OFF
+    if (videoWidth <= 0 || videoHeight <= 0 || viewportWidth <= 0 || viewportHeight <= 0) return requested
+    val scale = minOf(
+        viewportWidth.toDouble() / videoWidth,
+        viewportHeight.toDouble() / videoHeight,
+    )
+    return if (scale > 1.0) requested else MpvShaders.OFF
+}

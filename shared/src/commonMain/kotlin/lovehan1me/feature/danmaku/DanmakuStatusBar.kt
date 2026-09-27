@@ -4,11 +4,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import lovehan1me.Res
@@ -21,27 +19,23 @@ import lovehan1me.danmaku_status_no_danmaku
 import lovehan1me.danmaku_status_off
 import lovehan1me.danmaku_status_unavailable
 import lovehan1me.danmaku_status_unmatched
-import lovehan1me.ic_comment
 import lovehan1me.ic_settings
 import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.theme.HanimeDefaults
 
 /**
- * 底栏中间位的弹幕双钮：**开关** + **设置**。
+ * 底栏中间位的弹幕设置钮。
  *
- * 此前这里是状态胶囊（再之前是"点了只提示暂未开放"的假发送框）：
- * 胶囊要说的话搬进设置弹窗的"状况"段，中间位只留动作 ——
- * 开关一眼可见状态（关掉时图标变暗），设置一点即达。
+ * 此前这里是"开关 + 设置"双钮。开关与启停栏的 `PlayerControllerDefaults.DanmakuIcon`
+ * 是同一件事的两个入口 —— 同一条动作在底栏摆两处，用户得先判断"这两个有什么不一样"
+ * 才敢点。开关只留启停栏那一个，这里只剩设置。
  *
  * 设置钮**不自己弹窗**：底栏随控件自动隐藏被销毁，弹窗挂在这里会被连带销毁。
- * 弹窗改由调用方挂在播放器最上层槽（`VideoPlayerUi` 的 `dialogHost`），
+ * 弹窗改由调用方挂在播放器最上层槽（`VideoPlayerShell` 的 `dialogHost`），
  * 本控件只上报"有人点了设置"。
- *
- * @param session null = 两路全关（功能休眠），此时只剩设置钮（去设置页开）。
  */
 @Composable
 fun DanmakuControls(
-    session: DanmakuSession?,
     onOpenSettings: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -49,22 +43,6 @@ fun DanmakuControls(
         modifier = modifier,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        if (session != null) {
-            val status by session.status.collectAsStateWithLifecycle()
-            val on = status != DanmakuStatus.Disabled
-            IconButton(onClick = { session.setEnabled(!on) }) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_comment),
-                    contentDescription = null,
-                    tint = if (on) {
-                        HanimeDefaults.Overlay.onScrim
-                    } else {
-                        HanimeDefaults.Overlay.onScrim.copy(alpha = 0.35f)
-                    },
-                    modifier = Modifier.size(24.dp),
-                )
-            }
-        }
         IconButton(onClick = onOpenSettings) {
             Icon(
                 painter = painterResource(Res.drawable.ic_settings),

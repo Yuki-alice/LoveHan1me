@@ -8,35 +8,54 @@ import kotlin.test.assertTrue
  * 设置页那四个观感量到"引擎听得懂的单位"之间的折算。
  *
  * 这一层是整个弹幕功能里最容易**悄悄漂移**的地方：滑杆摆的是百分比，
- * 引擎吃的是毫秒与比例，中间只有一处换算（[DanmakuRenderOptions] 的派生属性）。
- * 一旦这处换算写错或被绕过，症状是"拖了没反应"或"拖到最慢反而最快"，
- * 而两边各自的单测都会绿。
+ * 引擎吃的是 px/s 与比例，中间只有一处换算（[DanmakuRenderOptions] 与
+ * [danmakuBaseSpeedPxPerSecond]）。一旦这处换算写错或被绕过，症状是"拖了没反应"
+ * 或"拖到最慢反而最快"，而两边各自的单测都会绿。
  */
 class DanmakuRenderOptionsTest {
 
     // ---------- 速度 ----------
 
     @Test
-    fun `标准速度就是 10 秒走完一屏`() {
-        assertEquals(10_000L, danmakuTraverseMs(100))
+    fun `标准速度就是基准弹幕每秒 88 物理像素`() {
+        assertEquals(88f, danmakuBaseSpeedPxPerSecond(100, 1f), 0.01f)
     }
 
     /**
-     * 百分比是**倍率**不是时长：数值越大越快，所以换算取反比。
-     * 写成正比的话"调快"会变成"飘得更慢"，而且不会有任何报错。
+     * 百分比是**倍率**：数值越大越快。写成"乘 100 除百分比"那种反比就会
+     * 让"调快"变成"飘得更慢"，而且不会有任何报错。
      */
     @Test
-    fun `速度百分比与所需时长成反比`() {
-        assertEquals(20_000L, danmakuTraverseMs(50))
-        assertEquals(5_000L, danmakuTraverseMs(200))
+    fun `速度百分比与像素速度成正比`() {
+        assertEquals(44f, danmakuBaseSpeedPxPerSecond(50, 1f), 0.01f)
+        assertEquals(176f, danmakuBaseSpeedPxPerSecond(200, 1f), 0.01f)
     }
 
-    /** 盘上可能是历史版本写下的 0 或负数：除零会直接崩，负数会把方向翻掉。 */
+    /**
+     * 基准速度是物理速度：手机上密度 3，px/s 也要跟着涨三倍，
+     * 否则同一份设置在手机上会慢成桌面上看着那样。
+     */
+    @Test
+    fun `密度把物理速度换算成像素速度`() {
+        assertEquals(264f, danmakuBaseSpeedPxPerSecond(100, 3f), 0.01f)
+        assertEquals(528f, danmakuBaseSpeedPxPerSecond(200, 3f), 0.01f)
+    }
+
+    /** 盘上可能是历史版本写下的 0 或负数：除零与反向都在这一步收敛掉。 */
     @Test
     fun `越界的速度值夹到最近可用档`() {
-        assertEquals(20_000L, danmakuTraverseMs(0))
-        assertEquals(20_000L, danmakuTraverseMs(-300))
-        assertEquals(5_000L, danmakuTraverseMs(9_999))
+        assertEquals(danmakuBaseSpeedPxPerSecond(DANMAKU_SPEED_MIN_PERCENT, 1f),
+            danmakuBaseSpeedPxPerSecond(0, 1f), 0.01f)
+        assertEquals(danmakuBaseSpeedPxPerSecond(DANMAKU_SPEED_MIN_PERCENT, 1f),
+            danmakuBaseSpeedPxPerSecond(-300, 1f), 0.01f)
+        assertEquals(danmakuBaseSpeedPxPerSecond(DANMAKU_SPEED_MAX_PERCENT, 1f),
+            danmakuBaseSpeedPxPerSecond(9_999, 1f), 0.01f)
+    }
+
+    /** 密度小于 1 会把弹幕拖成慢动作：夹到 1，"再小的屏也不许比桌面慢"。 */
+    @Test
+    fun `异常低的密度不会把速度压到标准以下`() {
+        assertEquals(88f, danmakuBaseSpeedPxPerSecond(100, 0.5f), 0.01f)
     }
 
     // ---------- 夹取 ----------
@@ -53,7 +72,11 @@ class DanmakuRenderOptionsTest {
         assertClose(1f, options.opacity, "超出上限的不透明度应夹成完全不透明")
         // 显示区域下限 25%：再小就只剩一两行车道，弹幕基本等于不显示
         assertClose(0.25f, options.displayAreaRatio)
-        assertEquals(5_000L, options.scrollTraverseMs)
+        assertEquals(
+            danmakuBaseSpeedPxPerSecond(DANMAKU_SPEED_MAX_PERCENT, 1f),
+            options.baseSpeedPxPerSecond(1f),
+            0.01f,
+        )
     }
 
     @Test
@@ -67,8 +90,8 @@ class DanmakuRenderOptionsTest {
         assertEquals(20, options.clampedFontSizeSp)
         assertClose(0.65f, options.opacity)
         assertClose(0.8f, options.displayAreaRatio)
-        // 150% ⇒ 10000×100/150 = 6666.66…，整数除法取 6666
-        assertEquals(6_666L, options.scrollTraverseMs)
+        // 150% ⇒ 88×1.5 = 132 px/s
+        assertEquals(132f, options.baseSpeedPxPerSecond(1f), 0.01f)
     }
 
     /**
@@ -86,7 +109,11 @@ class DanmakuRenderOptionsTest {
         assertEquals(DANMAKU_FONT_SIZE_RANGE.last, endpoints.clampedFontSizeSp)
         assertClose(0.3f, endpoints.opacity)
         assertClose(1f, endpoints.displayAreaRatio)
-        assertEquals(danmakuTraverseMs(DANMAKU_SPEED_RANGE.last), endpoints.scrollTraverseMs)
+        assertEquals(
+            danmakuBaseSpeedPxPerSecond(DANMAKU_SPEED_RANGE.last, 2f),
+            endpoints.baseSpeedPxPerSecond(2f),
+            0.01f,
+        )
 
         val opposite = DanmakuRenderOptions(
             fontSizeSp = DANMAKU_FONT_SIZE_RANGE.first,
@@ -96,8 +123,14 @@ class DanmakuRenderOptionsTest {
         )
         assertEquals(DANMAKU_FONT_SIZE_RANGE.first, opposite.clampedFontSizeSp)
         assertClose(1f, opposite.opacity)
+        // 默认显示区域就是区间下限：一屏四分之一
         assertClose(0.25f, opposite.displayAreaRatio)
-        assertEquals(danmakuTraverseMs(DANMAKU_SPEED_RANGE.first), opposite.scrollTraverseMs)
+        assertEquals(DANMAKU_DEFAULT_DISPLAY_AREA_PERCENT, opposite.displayAreaPercent)
+        assertEquals(
+            danmakuBaseSpeedPxPerSecond(DANMAKU_SPEED_RANGE.first, 2f),
+            opposite.baseSpeedPxPerSecond(2f),
+            0.01f,
+        )
     }
 
     private fun assertClose(

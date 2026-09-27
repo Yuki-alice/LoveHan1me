@@ -8,7 +8,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -93,6 +92,7 @@ import lovehan1me.video.contract.VideoEnhancementLevels
 import lovehan1me.feature.danmaku.DanmakuLayer
 import lovehan1me.feature.danmaku.DanmakuControls
 import lovehan1me.feature.danmaku.DanmakuSettingsDialog
+import lovehan1me.feature.danmaku.DanmakuStatus
 import lovehan1me.feature.danmaku.rememberDanmakuRenderOptions
 import lovehan1me.feature.danmaku.rememberDanmakuSession
 import lovehan1me.feature.video.CommentViewModel
@@ -106,6 +106,8 @@ import lovehan1me.core.util.rememberShareText
 import lovehan1me.ui.transition.coverSharedElementKey
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.getString
@@ -215,16 +217,20 @@ fun VideoRouteHostScreen(
     var pendingDownloadPrompt by remember(route.videoCode, route.localUri) {
         mutableStateOf<DownloadPromptState?>(null)
     }
+    // 两个标题，各有各的用途，不要合并：
+    //  - [videoTitle] 是**站内原标题**，弹幕会话拿它当检索关键字（见 DanmakuSession.title），
+    //    换成中文标题会改变弹弹play 的匹配结果；
+    //  - [playerTitle] 是**展示用主标题**（中文标题优先，见 HanimeVideo.primaryTitle），
+    //    顶栏与右栏简介第一行用同一份，两处才不会各叫一个名字。
     var videoTitle by remember(route.videoCode, route.localUri) { mutableStateOf("") }
+    var playerTitle by remember(route.videoCode, route.localUri) { mutableStateOf("") }
     var isFullscreen by remember { mutableStateOf(false) }
-    var isPlayerLocked by remember { mutableStateOf(false) }
     // animeko 右栏折叠（EpisodeViewModel.sidebarVisible）：宽屏下顶栏按钮切换，
     // 换片不重置（与选集/tab 状态同级，会话级 UI 状态）。
     var sidebarVisible by remember { mutableStateOf(true) }
     var volume by remember { mutableStateOf(1f) }
     var brightness by remember { mutableStateOf(platformHost.currentBrightness()) }
     var previousScreenBrightness by remember { mutableStateOf<Float?>(null) }
-    var speedBeforeLongPress by remember { mutableStateOf<Float?>(null) }
     var showResumeButton by remember { mutableStateOf(false) }
     /** 本次实际用于起播的位置（用于"上次看到结尾则从头"的判定）。 */
     var startPositionUsed by remember(route.videoCode) { mutableStateOf(0L) }
@@ -232,22 +238,24 @@ fun VideoRouteHostScreen(
     var mobilePlaybackConfirmed by remember(route.videoCode, route.localUri) {
         mutableStateOf(false)
     }
-    // 超分档位。存的是**档位值**（0/1/2）而不是菜单下标：引擎可选档位可能是子集，
+    // 超分档位。菜单项按**档位值**（0/1/2）取文案而不是按下标：引擎可选档位可能是子集，
     // 用下标会把"档位"和"位置"混成一件事（下标在渲染前才换算）。
-    var superResolutionIndex by remember { mutableStateOf(VideoEnhancementLevels.OFF) }
-    // 重进播放页要把落盘档位重新下发一次：`remember` 的本地态活不过页面销毁，存档才活得下去。
-    // 引擎降级/分辨率门控时返回的是**生效值**，直接拿它刷新显示，不显示"选了却没生效"的档。
+    //
+    // 显示值订阅引擎那条档位流：挂不上时（shader 缺失、后端拒绝）引擎会自己收回，
+    // UI 跟着走才不说谎。分辨率门控不在这条流里 —— 那是"暂时不挂"，用户的选择要留着。
+    val enhancementLevels = playbackController.enhancement?.levels.orEmpty()
+    val enhancementLevel: StateFlow<Int> = playbackController.enhancement?.level
+        ?: remember { MutableStateFlow(VideoEnhancementLevels.OFF) }
+    val superResolutionIndex by enhancementLevel.collectAsStateWithLifecycle()
+    // 重进播放页要把落盘档位重新下发一次：存档里存的是**请求值**（用户意图），
+    // 收回与门控由引擎自己判。
     LaunchedEffect(playbackController) {
         playbackController.setEnhancementLevel(SettingsRepository.superResolutionLevel)
-            ?.let { superResolutionIndex = it }
     }
     // G2-3b：画面比例。初值取"引擎真实生效值"，而不是直接读设置 ——
     // 设置里可能存着 Stretch，但当前引擎是 Exo（无此档），引擎已经降级成 Fit 了；
     // 拿引擎状态当唯一真相，菜单就不会显示一个"选中了却没生效"的档。
     val aspectOptions = playbackController.supportedAspectModes
-    val currentVideoAspect = playbackState.engine.videoAspect
-    // 超分可选档位由引擎声明（空 = 本端不支持 → 底栏整块不画）。
-    val enhancementLevels = playbackController.enhancement?.levels.orEmpty()
     LaunchedEffect(playbackController, aspectOptions) {
         // 首次进入时把用户存的偏好下发（引擎不支持的档会被降级并回报）。
         playbackController.setVideoAspect(SettingsRepository.videoAspect)
@@ -513,6 +521,7 @@ fun VideoRouteHostScreen(
         checkedQuality = null
         pendingDownloadPrompt = null
         videoTitle = ""
+        playerTitle = ""
         viewModel.videoCode = route.videoCode
         viewModel.fromDownload = route.videoCode == "-1" || route.localUri != null
         if (route.localUri == null && route.videoCode != "-1") {
@@ -539,6 +548,7 @@ fun VideoRouteHostScreen(
                     is VideoLoadingState.Success -> {
                         val info = state.info
                         videoTitle = info.title
+                        playerTitle = info.primaryTitle
                         val qualities = info.videoUrls.map { (label, link) ->
                             PlaybackQuality(
                                 label = label,
@@ -659,7 +669,6 @@ fun VideoRouteHostScreen(
     }
 
     // 画面缩放（双指 / 桌面 Ctrl+滚轮）：状态归屏幕边界持有，UI 只拿值与回调
-    var videoScale by remember { mutableFloatStateOf(1f) }
 
     LaunchedEffect(showResumeButton) {
         if (showResumeButton) {
@@ -826,71 +835,34 @@ fun VideoRouteHostScreen(
     // 换关联键（换片/换文件）时关掉，避免弹窗里留着上一部片的会话。
     var showDanmakuSettingsDialog by remember(danmakuVideoCode) { mutableStateOf(false) }
 
+    val danmakuStatusValue = danmakuSession?.status?.collectAsStateWithLifecycle()
+    val danmakuOn = danmakuStatusValue?.value?.let { it != DanmakuStatus.Disabled } ?: false
+
     VideoShellContent(
         isDualPane = isDualPane,
         isInPipMode = hostUiState.isInPipMode,
         isFullscreen = isFullscreen,
+        playerHeightDp = resolvedPlayerHeightDp,
+        controller = playbackController,
+        playbackState = playbackState,
         sidebarVisible = sidebarVisible,
         onToggleSidebar = { sidebarVisible = it },
         isFavVideo = video?.isFav == true,
         onToggleFavoriteVideo = {
             video?.let(actions::toggleFavorite)
         },
-        playerHeightDp = resolvedPlayerHeightDp,
-        playbackEngine = playbackEngine,
         posterUrl = video?.coverUrl,
         // 与首页/搜索页的卡片封面配对（同 videoCode）
         sharedElementKey = route.videoCode.takeIf { it != "-1" }?.let(::coverSharedElementKey),
-        title = videoTitle,
-        currentTime = formatPlaybackTime(playbackState.engine.positionMs),
-        totalTime = formatPlaybackTime(playbackState.engine.durationMs),
-        progress = playbackProgress(
-            playbackState.engine.positionMs,
-            playbackState.engine.durationMs
-        ),
-        bufferedProgress = playbackProgress(
-            playbackState.engine.bufferedPositionMs,
-            playbackState.engine.durationMs,
-        ),
-        currentVolume = volume,
-        currentBrightness = brightness,
-        isPlaying = playbackState.engine.isPlaying,
-        isPlaybackEnded = playbackState.engine.phase == PlaybackPhase.Ended,
-        isLocked = isPlayerLocked,
-        showPoster = !playbackState.engine.hasRenderedFirstFrame,
+        title = playerTitle,
         showLoading = showLoading,
-        showRetry = playbackState.engine.phase == PlaybackPhase.Error,
-        errorMessage = playbackState.engine.errorMessage,
-        brightnessGestureEnabled = platformHost.supportsBrightness(),
-        onSeekBy = { deltaMs ->
-            playbackController.seekBy(deltaMs)
-            PlayerTrace.event("seek-by", "delta=${deltaMs}ms")
-        },
-        scale = videoScale,
-        onScaleChange = { videoScale = it },
-        durationMs = playbackState.engine.durationMs,
-        fullscreenEnabled = platformHost.supportsFullscreen(),
         showResumeButton = showResumeButton,
-        onPlayClick = {
-            playbackController.togglePlayPause()
-            // isPlaying 是点击**前**的值，所以这里记的是"点了要变成的状态"
-            PlayerTrace.event("play-click", if (playbackState.engine.isPlaying) "暂停" else "播放")
+        onFullscreenChange = { target ->
+            if (target) enterFullscreen() else exitFullscreen()
         },
         onReplay = playbackController::replay,
         onBackClick = onBack,
         onHomeClick = onNavigateHome,
-        onFullscreenClick = {
-            if (isFullscreen) exitFullscreen() else enterFullscreen()
-        },
-        onLockClick = { isPlayerLocked = !isPlayerLocked },
-        onProgressChange = { value ->
-            val duration = playbackState.engine.durationMs
-            if (duration > 0L) {
-                playbackController.seekTo((duration * value).toLong())
-                // 埋点：P3-1 后此处只在松手/手势结束时调一次（拖动期间零 seek），不会刷屏
-                PlayerTrace.event("seek", "-> ${(value * 100).toInt()}%")
-            }
-        },
         onRetry = {
             PlayerTrace.event("retry")
             video?.let { info ->
@@ -903,8 +875,8 @@ fun VideoRouteHostScreen(
                     qualities = qualities,
                     preferredQuality = SettingsRepository.videoQuality,
                     artworkUri = info.coverUrl,
-                    // M5-3：从**失败发生的位置**重试。此前不传 startPositionMs（默认 0），
-                    // 于是一次播放错误就把用户送回片头，"重试"名不副实。
+                    // 从**失败发生的位置**重试。不传 startPositionMs（默认 0）的话，
+                    // 一次播放错误就把用户送回片头，"重试"名不副实。
                     startPositionMs = playbackController.state.value.engine.positionMs,
                 )
             }
@@ -913,16 +885,14 @@ fun VideoRouteHostScreen(
             playbackController.seekTo(0L)
             showResumeButton = false
         },
-        qualities = playbackState.qualities,
-        selectedQuality = playbackState.qualities
-            .getOrNull(playbackState.selectedQualityIndex)
-            ?.label,
+        hasNextEpisode = nextPlaylistItem != null,
+        onClickNextEpisode = {
+            nextPlaylistItem?.let { onNavigateToVideo(it.videoCode) }
+        },
         onQualitySelected = playbackController::selectQuality,
-        playbackSpeed = playbackState.engine.playbackSpeed,
-        onPlaybackSpeedSelected = playbackController::setPlaybackSpeed,
-        superResolutionLabel = stringResource(Res.string.player_anime4k_label),
+        enhancementLabel = stringResource(Res.string.player_anime4k_label),
         // 文案按**档位值**取，不按序号 —— 引擎哪天只给子集（比如只有 OFF/PERFORMANCE）也不会错位。
-        superResolutionOptions = enhancementLevels.map { level ->
+        enhancementOptions = enhancementLevels.map { level ->
             stringResource(
                 when (level) {
                     VideoEnhancementLevels.PERFORMANCE -> Res.string.super_resolution_performance
@@ -931,45 +901,28 @@ fun VideoRouteHostScreen(
                 }
             )
         },
-        selectedSuperResolutionIndex = enhancementLevels.indexOf(superResolutionIndex)
+        selectedEnhancementIndex = enhancementLevels.indexOf(superResolutionIndex)
             .coerceAtLeast(0),
-        onSuperResolutionSelected = { index ->
+        onEnhancementSelected = { index ->
             val level = enhancementLevels.getOrNull(index) ?: VideoEnhancementLevels.OFF
-            // 落盘存**请求值**（用户意图；换了引擎选择还在），显示取引擎回报的生效值。
+            // 落盘存**请求值**（用户意图；换了引擎选择还在），显示取引擎上报的生效值。
             scope.launch {
-                playbackController.setEnhancementLevel(level)?.let { superResolutionIndex = it }
+                playbackController.setEnhancementLevel(level)
                 SettingsRepository.setSuperResolutionLevel(level)
             }
         },
-        // G2-3b：画面比例 —— 引擎真实支持的档 + 引擎真实生效的值。
-        // 选完即存偏好：下次起播由上面的 LaunchedEffect 下发。
-        videoAspectOptions = aspectOptions,
-        selectedVideoAspect = currentVideoAspect,
-        onVideoAspectSelected = { mode ->
-            playbackController.setVideoAspect(mode)
-            scope.launch { SettingsRepository.setVideoAspect(mode) }
-        },
-        // M3-b/M3-c：能力判断（不用内核名）—— 引擎不支持抓帧时两个入口都自动不显示
+        // 能力判断（不用内核名）—— 引擎不支持抓帧时，「更多」菜单里的截图 / 录 GIF 自动不出现
         frameCaptureEnabled = playbackController.supportsFrameCapture,
         onOpenGifCapture = { showGifCapture = true },
         onCaptureScreenshot = ::captureScreenshot,
-        onLongPressStart = {
-            if (playbackState.engine.isPlaying) {
-                val currentSpeed = playbackState.engine.playbackSpeed
-                speedBeforeLongPress = currentSpeed
-                playbackController.setPlaybackSpeed(
-                    (currentSpeed * SettingsRepository.longPressSpeedTime).coerceAtMost(5f)
-                )
-            }
-        },
-        onLongPressEnd = {
-            speedBeforeLongPress?.let(playbackController::setPlaybackSpeed)
-            speedBeforeLongPress = null
-        },
+        fullscreenEnabled = platformHost.supportsFullscreen(),
+        brightnessGestureEnabled = platformHost.supportsBrightness(),
+        currentVolume = volume,
         onVolumeChange = { value ->
             volume = value
             playbackController.setVolume(value)
         },
+        currentBrightness = brightness,
         onBrightnessChange = { value ->
             brightness = value
             if (previousScreenBrightness == null) {
@@ -977,20 +930,10 @@ fun VideoRouteHostScreen(
             }
             platformHost.applyBrightness(value.coerceIn(0.01f, 1f))
         },
-        onProgressGesture = { value ->
-            val duration = playbackState.engine.durationMs
-            if (duration > 0L) playbackController.seekTo((duration * value).toLong())
-        },
-        progressGestureSensitivity = PlayerDefaults.PROGRESS_SLIDE_SENSITIVITY,
-        // 引擎还没报尺寸时传 0（"未上报"），由播放器的 resolveVideoAspectRatio 兜底。
-        // 这里不写死 16:9：兜底比例是**一个**所有者，两处各写一份迟早对不上。
-        videoAspectRatio = if (
-            playbackState.engine.videoWidth > 0 &&
-            playbackState.engine.videoHeight > 0
-        ) {
-            playbackState.engine.videoWidth.toFloat() / playbackState.engine.videoHeight.toFloat()
-        } else {
-            0f
+        fastForwardSpeed = SettingsRepository.longPressSpeedTime,
+        danmakuEnabled = danmakuOn,
+        onToggleDanmaku = {
+            danmakuSession?.let { it.setEnabled(!danmakuOn) }
         },
         // 首帧未到不画：弹幕飘在海报上是穿帮。PiP 由 VideoShellContent 统一收掉。
         danmakuLayer = danmakuSession?.takeIf {
@@ -1006,12 +949,11 @@ fun VideoRouteHostScreen(
                 )
             }
         },
-        // 双钮不等首帧：开关与设置在海报阶段就该能点（关联动作不依赖画面）。
+        // 设置钮不等首帧：海报阶段就该能点（关联动作不依赖画面）。
         // 连关联键都没有时不摆——点了也没东西可关联，那才是假动作。
-        danmakuControls = danmakuVideoCode?.let {
+        danmakuEditor = danmakuVideoCode?.let {
             @Composable {
                 DanmakuControls(
-                    session = danmakuSession,
                     // 有关联会话时开播放器内的设置弹窗；会话为 null（功能休眠）时
                     // 去设置页开——弹窗里的"状况/外观"对 null 会话无从下手。
                     onOpenSettings = {
@@ -1037,16 +979,10 @@ fun VideoRouteHostScreen(
             }
         },
         onPlayerBoundsChanged = { platformHost.setPipSourceRect(it) },
-        onNextClick = nextPlaylistItem?.let { item ->
-            { onNavigateToVideo(item.videoCode) }
-        },
-        autoPlayNext = autoPlayNext,
-        onAutoPlayNextChange = { scope.launch { SettingsRepository.setAutoPlayNext(it) } },
         tabsContent = {
             HostVideoTabs(wideRail = false)
         },
-        // Animeko 宽屏右栏：详情｜评论（弹幕占位条 + 标题收藏钮），左列纯播放器。
-        // 非双栏传 null，Shell 回退窄屏行为。
+        // 宽屏右栏：详情｜评论，左列纯播放器。非双栏传 null，回退窄屏行为。
         railTabsContent = if (isDualPane) {
             { HostVideoTabs(wideRail = true) }
         } else {
@@ -1146,22 +1082,6 @@ private const val PNG_MIME = "image/png"
 
 /** "上次看到结尾"的容差：起播位置距总时长不足这么久，就认为上次已经看完（M5-3）。 */
 private const val NEAR_END_TOLERANCE_MS = 10_000L
-
-private fun playbackProgress(positionMs: Long, durationMs: Long): Float =
-    if (durationMs <= 0L) 0f else (positionMs.toFloat() / durationMs).coerceIn(0f, 1f)
-
-private fun formatPlaybackTime(positionMs: Long): String {
-    val totalSeconds = (positionMs / 1000L).coerceAtLeast(0L)
-    val hours = totalSeconds / 3600L
-    val minutes = (totalSeconds % 3600L) / 60L
-    val seconds = totalSeconds % 60L
-    // M3：原 "%d:%02d" String.format（JVM-only）；padStart 等价实现。
-    return if (hours > 0L) {
-        "$hours:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
-    } else {
-        "${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}"
-    }
-}
 
 private data class PendingPlayback(
     val title: String,

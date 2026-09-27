@@ -252,7 +252,7 @@ internal fun ArtistSection(
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 internal fun TitleSection(video: HanimeVideo) {
-    val primaryTitle = video.chineseTitle?.takeIf { it.isNotBlank() } ?: video.title
+    val primaryTitle = video.primaryTitle
     val secondaryTitle = video.title.takeIf { it != primaryTitle }
 
     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {

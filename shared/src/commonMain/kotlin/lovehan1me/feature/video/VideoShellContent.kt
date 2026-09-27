@@ -1,10 +1,11 @@
 package lovehan1me.feature.video
 
 import androidx.compose.foundation.background
-import lovehan1me.ui.adaptive.rememberRelatedPaneWidth
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.consumeWindowInsets
@@ -13,6 +14,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
+import androidx.compose.foundation.layout.safeContent
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -20,198 +22,148 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.geometry.Rect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.boundsInWindow
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.unit.Dp
-import lovehan1me.core.util.LogUtil
+import androidx.compose.ui.unit.dp
+import lovehan1me.feature.player.PlaybackController
 import lovehan1me.feature.player.PlaybackEngine
-import lovehan1me.feature.player.PlaybackQuality
+import lovehan1me.feature.player.PlaybackSessionState
 import lovehan1me.feature.player.PlatformVideoSurface
-import lovehan1me.feature.player.VideoAspectMode
+import lovehan1me.ui.adaptive.rememberRelatedPaneWidth
 import lovehan1me.ui.component.HanimeAsyncImage
 import lovehan1me.ui.component.rememberHapticFeedback
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.transition.sharedCoverElement
-import lovehan1me.video.ui.LocalPlayerDiagnostics
 import lovehan1me.video.ui.LocalPlayerHaptic
-import lovehan1me.video.ui.PlayerDiagnostics
+import org.openani.mediamp.MediampPlayer
 
+/**
+ * 播放页的版式：播放器占哪块、右栏占哪块、PiP/全屏时收掉什么。
+ *
+ * 播放器**内部**的一切（控件、手势、进度、倍速、画面比例、弹幕叠层）都交给
+ * [VideoPlayerShell]，本文件只决定给它什么样的框。
+ */
 @Composable
 fun VideoShellContent(
-    /** 双栏（内容 + 侧栏）是否启用。P0 起由调用方按**内容区可用宽度 ≥ 840dp** 计算。 */
+    /** 双栏（内容 + 侧栏）是否启用，由调用方按**内容区可用宽度 ≥ 840dp** 计算。 */
     isDualPane: Boolean,
     isInPipMode: Boolean,
     isFullscreen: Boolean,
+    /** 窄屏播放器的框高（null = 由剩余空间决定）。宽屏左列与 PiP 传 null。 */
     playerHeightDp: Dp?,
-    playbackEngine: PlaybackEngine,
+    controller: PlaybackController,
+    playbackState: PlaybackSessionState,
     posterUrl: String?,
     // 与列表页卡片封面配对的共享元素 key（null = 不做过渡）
     sharedElementKey: String? = null,
     title: String,
-    currentTime: String,
-    totalTime: String,
-    progress: Float,
-    bufferedProgress: Float,
-    currentVolume: Float,
-    currentBrightness: Float,
-    isPlaying: Boolean,
-    isPlaybackEnded: Boolean,
-    isLocked: Boolean,
-    showPoster: Boolean,
     showLoading: Boolean,
-    showRetry: Boolean,
     showResumeButton: Boolean,
-    onPlayClick: () -> Unit,
+    onFullscreenChange: (Boolean) -> Unit,
     onReplay: () -> Unit,
-    onBackClick: () -> Unit,
-    onHomeClick: () -> Unit,
-    onFullscreenClick: () -> Unit,
-    onLockClick: () -> Unit,
-    /** 下一集（系列视频才有，null = 不显示）。只在 B 站风底栏使用。 */
-    onNextClick: (() -> Unit)? = null,
-    /**
-     * 系列自动连播开关值 + 变更回调（与 [onNextClick] 同条件透传，
-     * 单片时底栏不展示，见 PlayerBottomBar）。
-     */
-    autoPlayNext: Boolean = true,
-    onAutoPlayNextChange: (Boolean) -> Unit = {},
-    onProgressChange: (Float) -> Unit,
     onRetry: () -> Unit,
     onResumeClick: () -> Unit,
-    qualities: List<PlaybackQuality>,
-    selectedQuality: String?,
+    onBackClick: () -> Unit,
+    onHomeClick: () -> Unit,
+    hasNextEpisode: Boolean,
+    onClickNextEpisode: () -> Unit,
     onQualitySelected: (Int) -> Unit,
-    playbackSpeed: Float,
-    onPlaybackSpeedSelected: (Float) -> Unit,
-    superResolutionLabel: String,
-    superResolutionOptions: List<String>,
-    selectedSuperResolutionIndex: Int,
-    onSuperResolutionSelected: (Int) -> Unit,
-    /** G2-3b：画面比例可选档位（引擎真实支持的那些）。 */
-    videoAspectOptions: List<VideoAspectMode> = emptyList(),
-    selectedVideoAspect: VideoAspectMode = VideoAspectMode.Fit,
-    onVideoAspectSelected: (VideoAspectMode) -> Unit = {},
-    /** M3-b/M3-c：是否显示「截图 / 录 GIF」入口（= controller.supportsFrameCapture）。 */
+    enhancementLabel: String,
+    enhancementOptions: List<String>,
+    selectedEnhancementIndex: Int,
+    onEnhancementSelected: (Int) -> Unit,
     frameCaptureEnabled: Boolean,
-    /** M3-b：点「录 GIF」的回调。 */
     onOpenGifCapture: () -> Unit,
-    /** M3-c：点「截图」的回调。 */
     onCaptureScreenshot: () -> Unit,
-    /** 播放失败的真实原因，透传给播放器重试卡。 */
-    errorMessage: String?,
-    /** 左半屏竖滑调亮度是否真的生效（桌面/iOS 无亮度 API → false，UI 不接管该手势）。 */
-    brightnessGestureEnabled: Boolean,
-    /** M5-3：双击左右快退/快进的相对跳转。 */
-    onSeekBy: (Long) -> Unit,
-    /** 画面缩放倍率（1f = 原始尺寸）。 */
-    scale: Float = 1f,
-    onScaleChange: (Float) -> Unit = {},
-    /** M5-3：视频总时长（双击 HUD 换算百分比用）。 */
-    durationMs: Long,
     /** 平台是否支持全屏（iOS 未实现 → false 时隐藏入口）。 */
     fullscreenEnabled: Boolean,
-    onLongPressStart: () -> Unit,
-    onLongPressEnd: () -> Unit,
+    /** 左半屏竖滑调亮度是否真的生效（桌面无亮度 API → false，UI 不接管该手势）。 */
+    brightnessGestureEnabled: Boolean,
+    currentVolume: Float,
     onVolumeChange: (Float) -> Unit,
+    currentBrightness: Float,
     onBrightnessChange: (Float) -> Unit,
-    onProgressGesture: (Float) -> Unit,
-    progressGestureSensitivity: Float,
-    videoAspectRatio: Float,
-    onPlayerBoundsChanged: (Rect) -> Unit,
+    /** 长按快进倍速。 */
+    fastForwardSpeed: Float,
+    danmakuEnabled: Boolean,
+    onToggleDanmaku: () -> Unit,
     /**
      * 弹幕绘制层插槽（null = 不画）。
      *
      * PiP 在这里统一折算成 null，而不是让每个调用方记得判断：画中画只有几百分宽，
      * 弹幕上去就是一糊，而且 PiP 期间没有帧循环驱动时钟，弹幕会定在原地。
      */
-    danmakuLayer: (@Composable () -> Unit)? = null,
-    /**
-     * 弹幕状态条插槽（底栏中间位）。null = 该位置留空。
-     *
-     * 与 [danmakuLayer] 一起在 PiP 下被收掉：PiP 的底栏不是这套控件。
-     */
-    danmakuControls: (@Composable () -> Unit)? = null,
+    danmakuLayer: (@Composable BoxScope.() -> Unit)? = null,
+    /** 底栏中间位的弹幕控件（开关 + 设置）。PiP 下同样收掉。 */
+    danmakuEditor: (@Composable RowScope.() -> Unit)? = null,
     /**
      * 弹幕设置弹窗宿主（null = 不挂）。
      *
      * 弹窗必须挂在播放器的**最上层槽位**而不是底栏里：底栏随控件自动隐藏被销毁，
-     * 弹窗跟着一起没。PiP 下也收掉 —— PiP 没有打开它的入口，窗口也只有几百分宽。
+     * 弹窗跟着一起没。PiP 下也收掉 —— PiP 没有打开它的入口。
      */
     dialogHost: (@Composable () -> Unit)? = null,
     tabsContent: @Composable () -> Unit,
     /**
      * 宽屏右栏 Tab（详情｜评论），null = 回退到 [tabsContent]。
-     * 窄屏/经典双栏传 null。弹幕相关控件在播放器底栏（见 [danmakuControls]），不挂这里。
+     * 窄屏/经典双栏传 null。弹幕相关控件在播放器底栏（见 [danmakuEditor]），不挂这里。
      */
     railTabsContent: (@Composable () -> Unit)? = null,
-    /**
-     * animeko 右栏折叠（EpisodeVideo `sidebarVisible`）：宽屏下顶栏的折叠按钮切换它。
-     * false → 右栏隐藏、左列播放器占满整宽（全屏/PiP 语义不变）。
-     * 默认 true，保持老行为零变化。
-     */
     sidebarVisible: Boolean = true,
     onToggleSidebar: (Boolean) -> Unit = {},
-    /** 顶栏收藏心（对齐 Kazumi 顶栏 collect 键）。 */
     isFavVideo: Boolean = false,
     onToggleFavoriteVideo: () -> Unit = {},
+    onPlayerBoundsChanged: (Rect) -> Unit = {},
     modifier: Modifier = Modifier,
 ) {
-    // P0：不再要求「横屏」。原 `isTabletMode && isLandscapeOrientation()` 有两个问题：
-    //   1) iOS 侧 `isLandscapeOrientation()` 恒为 false → iPad 永远拿不到双栏；
-    //   2) 双栏与否本应由宽度决定（横屏手机的宽度天然超过阈值，方向语义已被宽度蕴含）。
-    // 对齐 animeko `EpisodeScreenTabletVeryWide`：`isFullscreen || !sidebarVisible` 时
-    // 右栏不占位（`return@Row`），视频独占整行。
+    // 双栏与否由宽度决定（横屏手机的宽度天然超过阈值，方向语义已被宽度蕴含）。
+    // 对齐 animeko EpisodeVideo：`isFullscreen || !sidebarVisible` 时右栏不占位。
     val showSideRelated = isDualPane && sidebarVisible && !isInPipMode && !isFullscreen
-    // 顶栏折叠按钮只在「右栏存在过」时出现：宽屏非全屏非 PiP（与 animeko
-    // `expanded && isDesktop` 的桌面限定不同 —— 我们三端都给，触摸端同样需要收起右栏看片）。
+    // 顶栏折叠按钮只在「右栏存在过」时出现。
     val showSidebarToggle = isDualPane && !isInPipMode && !isFullscreen
-    // Kazumi B 站风总开关：宽屏双栏或全屏（非 PiP）才开，窄屏竖屏恒 false。
-    val bilibiliStyle = (isDualPane || isFullscreen) && !isInPipMode
-    // animeko 的「expanded」形态（底栏进度条独占一行）：宽屏双栏或全屏。
-    // 与 bilibiliStyle **当前同源但语义不同**——那是皮肤，这是行结构，
-    // 所以各自派生一次，将来要拆开时只改这一行。
-    val expandedBottomBar = (isDualPane || isFullscreen) && !isInPipMode
-    // PiP 不给弹幕层（见参数文档）；其余三条布局路径共用同一个插槽。
-    val resolvedDanmakuLayer: (@Composable () -> Unit)? =
-        if (isInPipMode) null else danmakuLayer
-    val resolvedDanmakuControls: (@Composable () -> Unit)? =
-        if (isInPipMode) null else danmakuControls
+    // animeko 的 expanded 形态（底栏进度条独占一行、控件全展开）：宽屏双栏或全屏。
+    val expanded = (isDualPane || isFullscreen) && !isInPipMode
+    // PiP 不给弹幕层（见参数文档）；三条布局路径共用同一组插槽。
+    val resolvedDanmakuLayer = if (isInPipMode) null else danmakuLayer
+    val resolvedDanmakuEditor = if (isInPipMode) null else danmakuEditor
+    // 非全屏时页面自己给播放器加了 statusBarsPadding，这里再要一遍就是双份状态栏高度。
+    val contentWindowInsets = if (isFullscreen) WindowInsets.safeContent else WindowInsets(0.dp)
 
     // 播放器内容：单一组合路径，**刻意不再使用 movableContentOf**。
-    // 本组合函数持有 progress / currentTime / isPlaying 等逐帧变化的参数，会持续高频重组；
-    // 而这里的 movableContentOf 每次重组都被重新创建（未 remember），身份不稳定，
-    // Compose 会把它当作「新内容」→ 播放器子树连同 Skia 渲染面被反复销毁重建：
-    // 表现为持续闪烁，并最终把 Skia GPU 资源缓存搞崩
-    // （崩溃栈稳定停在 SkSurface_Ganesh::~SkSurface_Ganesh）。
-    // 全项目只有 MainContent 一处调用点，movable 的跨分支搬运能力本就用不上，故回归直接调用。
+    // 本组合函数持有 isPlaying 等逐帧变化的参数，会持续高频重组；而这里的 movableContentOf
+    // 每次重组都被重新创建（未 remember），身份不稳定，Compose 会把它当作「新内容」→
+    // 播放器子树连同 Skia 渲染面被反复销毁重建：表现为持续闪烁，并最终把 Skia GPU 资源缓存
+    // 搞崩（崩溃栈稳定停在 SkSurface_Ganesh::~SkSurface_Ganesh）。
     @Composable
     fun PlayerBox(playerModifier: Modifier) {
-        // 渲染面的身份归壳层（它才持有引擎）：key 只认引擎实例，画面比例变化不该
+        // 渲染面的身份归本层（它才持有引擎）：key 只认引擎实例，画面比例变化不该
         // 把 Surface 连根重建（会黑一帧）。控件层只拿到"往这个矩形里画视频"的插槽。
-        val engine = playbackEngine
-        val videoSurface: (@Composable (Modifier) -> Unit)? = if (engine != null) {
-            { surfaceModifier ->
-                key(engine) {
-                    PlatformVideoSurface(
-                        engine = engine,
-                        modifier = surfaceModifier,
-                        onSurfaceAvailable = { engine.attachSurface(it) },
-                        onSurfaceDestroyed = { engine.detachSurface(it) },
-                    )
-                }
+        val engine = controller.playbackEngine
+        val player = rememberMediampPlayer(engine)
+        val videoSurface: @Composable BoxScope.() -> Unit = {
+            key(engine) {
+                PlatformVideoSurface(
+                    engine = engine,
+                    modifier = Modifier.fillMaxSize(),
+                    onSurfaceAvailable = { engine.attachSurface(it) },
+                    onSurfaceDestroyed = { engine.detachSurface(it) },
+                )
             }
-        } else {
-            null
         }
-        // 封面槽位：怎么加载、要不要配列表页卡片的形变过渡（共享元素）都是本层（编排层）的
-        // 知识，控件层只负责"往这个矩形里画封面"。
-        val cover: (@Composable () -> Unit)? = posterUrl?.let { url ->
+        // 封面槽位：怎么加载、要不要配列表页卡片的形变过渡（共享元素）都是本层的知识，
+        // 控件层只负责"往这个矩形里画封面"。
+        val cover: (@Composable BoxScope.() -> Unit)? = posterUrl?.let { url ->
             {
                 HanimeAsyncImage(
                     model = url,
@@ -225,89 +177,62 @@ fun VideoShellContent(
         }
         val haptic = rememberHapticFeedback()
         val hapticSlot: () -> Unit = remember(haptic) { { haptic() } }
-        val diagnostics = remember {
-            object : PlayerDiagnostics {
-                override fun log(tag: String, message: String) = LogUtil.d(tag, message)
-
-                override fun event(name: String, detail: String) = PlayerTrace.event(name, detail)
+        CompositionLocalProvider(LocalPlayerHaptic provides hapticSlot) {
+            if (player == null) {
+                // 后端还没就绪（桌面 mpv 在 Default 线程惰性初始化）。先画黑盒而不是把
+                // 控件挂上去：渲染面与控件层都要等同一个实例，提前挂上去只会建了又拆。
+                Box(playerModifier.background(Color.Black))
+            } else {
+                VideoPlayerShell(
+                    player = player,
+                    controller = controller,
+                    playbackState = playbackState,
+                    videoSurface = videoSurface,
+                    modifier = playerModifier,
+                    expanded = expanded,
+                    isFullscreen = isFullscreen,
+                    showControls = !isInPipMode,
+                    gesturesEnabled = !isInPipMode,
+                    fullscreenEnabled = fullscreenEnabled,
+                    contentWindowInsets = contentWindowInsets,
+                    title = title,
+                    cover = cover,
+                    showLoading = showLoading,
+                    showResumeButton = showResumeButton,
+                    onFullscreenChange = onFullscreenChange,
+                    onReplay = onReplay,
+                    onRetry = onRetry,
+                    onResumeClick = onResumeClick,
+                    onBackClick = onBackClick,
+                    onHomeClick = onHomeClick,
+                    isFavVideo = isFavVideo,
+                    onToggleFavoriteVideo = onToggleFavoriteVideo,
+                    showSidebarToggle = showSidebarToggle,
+                    sidebarVisible = sidebarVisible,
+                    onToggleSidebar = onToggleSidebar,
+                    hasNextEpisode = hasNextEpisode,
+                    onClickNextEpisode = onClickNextEpisode,
+                    onQualitySelected = onQualitySelected,
+                    enhancementLabel = enhancementLabel,
+                    enhancementOptions = enhancementOptions,
+                    selectedEnhancementIndex = selectedEnhancementIndex,
+                    onEnhancementSelected = onEnhancementSelected,
+                    frameCaptureEnabled = frameCaptureEnabled,
+                    onOpenGifCapture = onOpenGifCapture,
+                    onCaptureScreenshot = onCaptureScreenshot,
+                    danmakuEnabled = danmakuEnabled,
+                    onToggleDanmaku = onToggleDanmaku,
+                    danmakuLayer = resolvedDanmakuLayer,
+                    danmakuEditor = resolvedDanmakuEditor ?: {},
+                    dialogHost = if (isInPipMode) null else dialogHost,
+                    currentVolume = currentVolume,
+                    onVolumeChange = onVolumeChange,
+                    brightnessGestureEnabled = brightnessGestureEnabled,
+                    currentBrightness = currentBrightness,
+                    onBrightnessChange = onBrightnessChange,
+                    fastForwardSpeed = fastForwardSpeed,
+                )
             }
-        }
-        CompositionLocalProvider(
-            LocalPlayerHaptic provides hapticSlot,
-            LocalPlayerDiagnostics provides diagnostics,
-        ) {
-            VideoPlayerUi(
-                modifier = playerModifier,
-                danmakuLayer = resolvedDanmakuLayer,
-                danmakuControls = resolvedDanmakuControls,
-                dialogHost = if (isInPipMode) null else dialogHost,
-                videoSurface = videoSurface,
-                cover = cover,
-                title = title,
-                currentTime = currentTime,
-                totalTime = totalTime,
-                progress = progress,
-                bufferedProgress = bufferedProgress,
-                currentVolume = currentVolume,
-                currentBrightness = currentBrightness,
-                isFullscreen = isFullscreen,
-                isPlaying = isPlaying,
-                isPlaybackEnded = isPlaybackEnded,
-                isLocked = isLocked || isInPipMode,
-                showPoster = showPoster,
-                showControls = !isInPipMode,
-                showLoading = showLoading,
-                showRetry = showRetry,
-                showResumeButton = showResumeButton,
-                onPlayClick = onPlayClick,
-                onReplay = onReplay,
-                onBackClick = onBackClick,
-                onHomeClick = onHomeClick,
-                onFullscreenClick = onFullscreenClick,
-                onLockClick = onLockClick,
-                onNextClick = onNextClick,
-                autoPlayNext = autoPlayNext,
-                onAutoPlayNextChange = onAutoPlayNextChange,
-                onProgressChange = onProgressChange,
-                onRetry = onRetry,
-                onResumeClick = onResumeClick,
-                qualities = qualities,
-                selectedQuality = selectedQuality,
-                onQualitySelected = onQualitySelected,
-                playbackSpeed = playbackSpeed,
-                onPlaybackSpeedSelected = onPlaybackSpeedSelected,
-                superResolutionLabel = superResolutionLabel,
-                superResolutionOptions = superResolutionOptions,
-                selectedSuperResolutionIndex = selectedSuperResolutionIndex,
-                onSuperResolutionSelected = onSuperResolutionSelected,
-                videoAspectOptions = videoAspectOptions,
-                selectedVideoAspect = selectedVideoAspect,
-                onVideoAspectSelected = onVideoAspectSelected,
-                frameCaptureEnabled = frameCaptureEnabled,
-                onOpenGifCapture = onOpenGifCapture,
-                onCaptureScreenshot = onCaptureScreenshot,
-                errorMessage = errorMessage,
-                brightnessGestureEnabled = brightnessGestureEnabled,
-                onSeekBy = onSeekBy,
-                scale = scale,
-                onScaleChange = onScaleChange,
-                durationMs = durationMs,
-                fullscreenEnabled = fullscreenEnabled,
-                onLongPressStart = onLongPressStart,
-                onLongPressEnd = onLongPressEnd,
-                onVolumeChange = onVolumeChange,
-                onBrightnessChange = onBrightnessChange,
-                onProgressGesture = onProgressGesture,
-                progressGestureSensitivity = progressGestureSensitivity,
-                videoAspectRatio = videoAspectRatio,
-                bilibiliStyle = bilibiliStyle,
-                expanded = expandedBottomBar,
-                showSidebarToggle = showSidebarToggle,
-                sidebarVisible = sidebarVisible,
-                onToggleSidebar = onToggleSidebar,
-                isFavVideo = isFavVideo,
-                onToggleFavoriteVideo = onToggleFavoriteVideo,
-            )
         }
     }
 
@@ -352,17 +277,13 @@ fun VideoShellContent(
     }
 
     if (showSideRelated) {
-        // Animeko 宽屏（EpisodeScreenTabletVeryWide）：左列纯播放器（expanded video，
-        // 撑满整列高度，不再定 16:9 高），右栏 = 详情｜评论 Tab
-        // （弹幕占位条 + 标题收藏钮，见 VideoRouteContent wideRail）。
+        // 宽屏：左列纯播放器（expanded，撑满整列高度），右栏 = 详情｜评论 Tab。
         Row(
             modifier = modifier
                 .fillMaxSize()
                 // 本页是 edge-to-edge，状态栏区域统一由 pageSurface 填充；左列播放器
                 // 不再顶到状态栏之下。否则浅色模式下系统栏图标是深色，压在纯黑画面上
-                // 会看不见 —— 原先这点是被右栏那层 `HanimeTheme(darkTheme = true)`
-                // 意外「兜住」的（它顺带把系统栏图标强制成浅色），右栏改为跟随主题后
-                // 必须在这里显式处理。
+                // 会看不见。
                 .background(HanimeDefaults.Colors.pageSurface),
         ) {
             Box(
@@ -379,15 +300,8 @@ fun VideoShellContent(
                         },
                 )
             }
-            // P5：固定 360dp（内容宽 < 1000dp 时 320dp）。原 `fillMaxWidth(0.38f)`
-            // 在 2560dp 窗口下会变成 973dp 的巨型侧栏，注意力被完全拉走。
-            // 右栏配色**跟随设置的主题**。原先这里按 `bilibiliStyle` 硬编码
-            // `Color(0xFF111111)`（Kazumi 沉浸黑详情栏），但该分支在宽屏时恒为 true
-            // —— 因为能进这个 Row 的条件本身就是 `isDualPane && !isInPipMode`，
-            // 于是浅色模式下右栏也被迫变黑。`pageSurface` 那条 else 实际是死代码。
-            // 现统一走 `pageSurface`：浅色近白 / 深色近黑，与 App 其余页面同一色板。
-            // 注意：播放器顶栏/底栏的 B 站风皮肤仍由 `bilibiliStyle` 控制，未受影响
-            // （那是叠加在视频画面上的控件，本就该是深色场景）。
+            // 右栏**跟随设置的主题**（本仓不复刻 animeko 的右栏），固定宽度而不是按比例：
+            // `fillMaxWidth(0.38f)` 在 2560dp 窗口下会变成 973dp 的巨型侧栏。
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -398,12 +312,11 @@ fun VideoShellContent(
                     .background(HanimeDefaults.Colors.pageSurface)
                     .width(rememberRelatedPaneWidth()),
             ) {
-                // 右栏 Tab（详情｜评论）；null 回退旧行为（简介/评论 Tab）。
                 (railTabsContent ?: tabsContent)()
             }
         }
     } else if (isDualPane && !sidebarVisible && !isInPipMode && !isFullscreen) {
-        // animeko 折叠态：右栏隐藏，播放器独占整宽整高（不再回退到「下方挂简介」的窄屏结构）。
+        // 折叠态：右栏隐藏，播放器独占整宽整高（不回退到「下方挂简介」的窄屏结构）。
         Box(
             modifier = modifier
                 .fillMaxSize()
@@ -426,4 +339,19 @@ fun VideoShellContent(
     } else {
         MainContent(contentModifier = modifier.fillMaxSize())
     }
+}
+
+/**
+ * 取引擎背后的 mediamp 实例。
+ *
+ * 必须挂起取：桌面端 mpv 惰性初始化（解压 + dlopen + mpv_create）在组合线程直读会冻住 UI。
+ * 换引擎时重置为 null，由 [LaunchedEffect] 再取一次。
+ */
+@Composable
+private fun rememberMediampPlayer(engine: PlaybackEngine): MediampPlayer? {
+    var player by remember(engine) { mutableStateOf<MediampPlayer?>(null) }
+    LaunchedEffect(engine) {
+        player = engine.acquireMediampPlayer()
+    }
+    return player
 }

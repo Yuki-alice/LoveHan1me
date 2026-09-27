@@ -3,8 +3,8 @@ package lovehan1me.feature.danmaku
 /**
  * 弹幕观感的四个可调量（全部来自设置页，区间见下面的常量）。
  *
- * 存的是**百分比与 sp**而不是比例和毫秒：设置项要显示成"80%""1.0×"这种用户能核对的数，
- * 而折算规则（尤其速度那条是反比）只该有一处实现 —— 就是本类的派生属性。
+ * 存的是**百分比与 sp**而不是比例和像素速度：设置项要显示成"80%""1.0×"这种用户能核对的数，
+ * 而折算规则只该有一处实现 —— 就是本类的派生属性与 [danmakuBaseSpeedPxPerSecond]。
  *
  * 这个类型刻意不碰 Compose：设置页要读同一批区间来摆滑杆，
  * 让常量住在绘制件里就等于逼设置页去 import 一个 `Canvas`。
@@ -19,13 +19,20 @@ data class DanmakuRenderOptions(
     val clampedFontSizeSp: Int get() = fontSizeSp.coerceIn(DANMAKU_FONT_SIZE_RANGE)
     val opacity: Float get() = opacityPercent.clampedPercent(DANMAKU_OPACITY_RANGE)
     val displayAreaRatio: Float get() = displayAreaPercent.clampedPercent(DANMAKU_DISPLAY_AREA_RANGE)
-    val scrollTraverseMs: Long get() = danmakuTraverseMs(speedPercent)
+
+    /**
+     * 基准像素速度。密度是必需输入：弹幕速度是**物理速度**（同一份设置放在手机上与桌面上
+     * 看着一样快），而绘制层才知道当前密度 —— 所以折算留给它，这里只把百分比传下去。
+     */
+    fun baseSpeedPxPerSecond(density: Float): Float = danmakuBaseSpeedPxPerSecond(speedPercent, density)
 }
 
 /** 默认值与 [AppSettings] 里的弹幕默认值一致：两处不一致时，滑杆初始位置会骗人。 */
 const val DANMAKU_DEFAULT_FONT_SIZE_SP = 18
 const val DANMAKU_DEFAULT_OPACITY_PERCENT = 80
-const val DANMAKU_DEFAULT_DISPLAY_AREA_PERCENT = 50
+
+/** 25%：显示区只占画面四分之一，也就是最上面那几行 —— 再大就压到画面正中。 */
+const val DANMAKU_DEFAULT_DISPLAY_AREA_PERCENT = 25
 const val DANMAKU_DEFAULT_SPEED_PERCENT = 100
 
 /** 设置页滑杆与绘制层**共用**这些区间：分头写就会出现"能拖到的值被绘制层偷偷夹掉"。 */

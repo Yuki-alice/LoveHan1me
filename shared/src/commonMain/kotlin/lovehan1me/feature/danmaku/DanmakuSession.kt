@@ -56,15 +56,15 @@ sealed interface DanmakuStatus {
 }
 
 /**
- * 一个视频页一个 session：把「仓库 / 位置时钟 / 引擎」拧成一件事。
+ * 一个视频页一个 session：把「仓库 / 位置时钟 / 弹幕时钟 / 引擎」拧成一件事。
  *
  * 持有时机由 `rememberDanmakuSession` 决定（本仓的既有习惯是"纯逻辑类 + 屏幕持有"，
  * 不是每个功能塞一个 ViewModel）。它刻意**不依赖播放器类型** ——
  * 状态由 [onPlaybackSnapshot] 以裸参数喂进来，于是这条链在 desktopTest 里可全量覆盖。
  *
- * [advance] 是绘制循环的唯一入口，帧回调之外没有第二个时钟源：
- * 引擎的发射判断只看视频时间（见 [DanmakuEngine]），所以"谁在什么时刻调它"
- * 不影响布局结果，只影响最多一帧的入场延迟。
+ * [advance] 是绘制循环的唯一入口，并且是这里**唯一同时读两条时间轴**的地方：
+ * 视频位置（[tracker] 外推）决定哪些弹幕到点了，弹幕时钟（[clock]）决定屏上的字飞到哪。
+ * 倍速只作用于前者，所以快进时弹幕变密而不是变快 —— 变快会把采样台阶放大成整屏抖动。
  */
 class DanmakuSession(
     val videoCode: String,
@@ -101,6 +101,12 @@ class DanmakuSession(
     private var lastPositionMs = 0L
     private var lastDurationMs = 0L
     private var lastSeekGeneration = 0L
+
+    /** 弹幕自己的时钟：飞行位置的唯一自变量，与播放位置互不干涉。 */
+    private val clock = DanmakuClock()
+
+    /** 最近一次快照的"播放没在推进"结论（暂停 / 缓冲 / 卡顿 / 切画质），交给 [clock]。 */
+    private var frozen = false
 
     /** 弹弹那路装载的一集（增强层）；null = 没关联/没拉到/被充足门跳过。 */
     private var dandanEpisode: DanmakuEpisodeRef? = null
@@ -234,7 +240,7 @@ class DanmakuSession(
     /**
      * 播放状态的一次快照。
      *
-     * @param frozen 暂停 / 缓冲 / 卡顿 / 切画质 —— 时钟停摆但**不清空**弹幕
+     * @param frozen 暂停 / 缓冲 / 卡顿 / 切画质 —— 两条时钟一起停摆，但**不清空**弹幕
      * @param reset phase 离开 Ready：位置彻底失去参考意义，整套丢掉重来
      */
     fun onPlaybackSnapshot(
@@ -249,6 +255,7 @@ class DanmakuSession(
             engine.reset()
             loadAttempted = false
             lastPositionMs = 0L
+            this.frozen = false
             // 列表留着（关联记录没变，重 resolve 基本命中缓存），只重铺时间轴
             remerge()
             return
@@ -261,6 +268,7 @@ class DanmakuSession(
         }
         tracker.onSample(positionMs, playbackSpeed, durationMs)
         tracker.setFrozen(frozen)
+        this.frozen = frozen
         start()
     }
 
@@ -268,7 +276,7 @@ class DanmakuSession(
      * 帧循环入口。
      *
      * @param frameNanos `withFrameNanos` 给的帧时刻，必须每帧同源
-     * @return 本次使用的播放位置；null = 尚无锚点或已关闭，调用方什么都不画
+     * @return 本帧的弹幕时刻（绘制层拿它算左边界）；null = 尚无锚点或已关闭，调用方什么都不画
      */
     override fun advance(
         frameNanos: Long,
@@ -276,6 +284,7 @@ class DanmakuSession(
         measureWidth: (DanmakuItem) -> Float,
     ): Long? {
         if (!enabled) return null
+        val danmakuNowMs = clock.nowMs(frameNanos, frozen)
         val positionMs = tracker.positionAt(frameNanos)
         if (heartbeatArmed) {
             heartbeatArmed = false
@@ -284,7 +293,7 @@ class DanmakuSession(
                 if (positionMs == null) {
                     "弹幕帧循环已进入，但位置追踪器还没有锚点（未收到播放快照）"
                 } else {
-                    "弹幕帧循环 position=${positionMs}ms " +
+                    "弹幕帧循环 position=${positionMs}ms 弹幕时钟=${danmakuNowMs}ms " +
                         "视口=${viewport.widthPx}x${viewport.heightPx}/行高${viewport.lineHeightPx} " +
                         "屏上=${engine.activeScrollSlots.size + engine.activeFixedSlots.size} " +
                         "发射=${engine.emittedCount} 丢弃=${engine.droppedCount} 游标=${engine.cursorIndex}"
@@ -298,8 +307,8 @@ class DanmakuSession(
             lastSeekGeneration = generation
             engine.seekTo(positionMs)
         }
-        engine.tick(positionMs, viewport, measureWidth)
-        return positionMs
+        engine.tick(danmakuNowMs, positionMs, viewport, measureWidth)
+        return danmakuNowMs
     }
 
     // ---------- 人工选集（状态条与选集弹窗用） ----------
@@ -375,7 +384,7 @@ class DanmakuSession(
             return
         }
         val merged = mergeDanmakuItems(dandanItems, commentItems, visibleLocations)
-        engine.setItems(merged, startPositionMs = lastPositionMs)
+        engine.setItems(merged, videoNowMs = lastPositionMs)
         refreshStatus()
     }
 

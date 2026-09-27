@@ -154,6 +154,10 @@ jetbrains-lifecycle-runtime-compose = { module = "org.jetbrains.androidx.lifecyc
 cmp-runtime = { module = "org.jetbrains.compose.runtime:runtime", version.ref = "composeMultiplatform" }
 cmp-foundation = { module = "org.jetbrains.compose.foundation:foundation", version.ref = "composeMultiplatform" }
 cmp-material3 = { module = "org.jetbrains.compose.material3:material3", version.ref = "composeMultiplatformMaterial3" }
+# 播放器控件用的 Icons.Outlined.* / Icons.Rounded.* 全档。CMP 在 1.7.3 之后停止发布
+# material-icons（随 androidx 一起弃用），所以这一项不跟随 composeMultiplatform，
+# 也不许"顺手升级"到不存在的版本。
+compose-material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version = "1.7.3" }
 cmp-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
 # @Preview 注解：CMP 平台必须用 JetBrains 坐标——androidx 的 ui-tooling-preview 只有
 # Android 变体，放 commonMain 会报 KMP Dependencies Resolution Failure（desktop/iOS 解析不到）

@@ -16,7 +16,7 @@ import org.openani.mediamp.exoplayer.compose.ExoPlayerMediampPlayerSurface
 // 现状：
 // - aspect 三档真效果走它家 `resizeMode`；挂 video effects 后 media3 不上报尺寸时
 //   它从选中轨道 Format 兜底（对 P4 超分链是免费修复）。
-// - 渲染面尺寸从布局转交（[AndroidSurfaceSizeAware]），超分 `needsUpscale` 用。
+// - 渲染面尺寸从布局转交（[AndroidSurfaceSizeAware]），超分的落地 scaler 要按它出图。
 // - `VideoSurface` 契约在本端**不回调**：mediamp 的 `attachSurface/detachSurface`
 //   在基类即 no-op，而 Android 的 `VideoSurface` 是 `android.view.Surface` 的
 //   typealias（不是可 new 的类），造"假实例"只能调 deprecated 的空构造 ——
