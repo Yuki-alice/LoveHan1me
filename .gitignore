@@ -30,6 +30,11 @@ out/
 # Reference projects (external repos for study, 214M)
 reference/
 
+# clipstream/ —— animeko 参考提取（"影子树"）。保留原相对路径与原包名 me.him188.ani.*，
+# 依赖外部 mediamp/Koin/Compose，**不是可编译工程**，仅作研读，故与 reference/ 同等对待。
+# 由 clipstream/extract.sh 生成、可重跑，重复入库没有意义。
+clipstream/
+
 # Caches
 .cxx/
 local.properties
