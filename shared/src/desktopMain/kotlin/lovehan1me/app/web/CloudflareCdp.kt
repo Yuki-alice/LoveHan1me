@@ -18,9 +18,9 @@ import lovehan1me.core.util.LogUtil
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.CF_CLEARANCE_NAME
 import lovehan1me.data.network.CloudflareChallenges
-import lovehan1me.data.network.EchGate
-import lovehan1me.data.network.EchGatePolicy
 import lovehan1me.data.network.HanimeDns
+import lovehan1me.data.network.egress.connectTunnelUrl
+import lovehan1me.data.network.egress.currentEgressState
 import java.io.File
 import java.net.ServerSocket
 import java.net.URI
@@ -335,11 +335,13 @@ object CloudflareCdp {
      * `--proxy-server`；System/Direct 不传参（Chrome 默认走系统代理，与 JVM 一致）。
      */
     internal fun proxyFlag(): String? {
-        // ECH 网关优先：认证窗必须与 App 同出口，详见上面的 KDoc。
-        val gatePort = runCatching { EchGate.port }.getOrDefault(0)
-        if (gatePort > 0) {
-            return "--proxy-server=http://${EchGatePolicy.GATE_HOST}:$gatePort"
-        }
+        // 网关可用时认证窗也指到它：认证窗必须与 App 同出口，详见上面的 KDoc。
+        // 判据经 EgressPlanner —— 熔断/关闭期间它会返回 null，于是下面回落到用户代理。
+        // **这一步不能省**：网关不通时仍把验证窗押在网关上，等于连"做验证"这条
+        // 唯一的自救通道一起堵死（用户既过不了验证、也没机会退到代理）。
+        runCatching { currentEgressState().gate.connectTunnelUrl() }
+            .getOrNull()
+            ?.let { return "--proxy-server=$it" }
         // 防御：Settings 未就绪（单测/极早调用）时不带代理，不崩；
         // 生产路径 DataStore 早已初始化，走正常分支。
         return runCatching {

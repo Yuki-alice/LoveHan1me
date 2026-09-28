@@ -1,6 +1,7 @@
 package lovehan1me.data.network
 
 import lovehan1me.data.SettingsRepository
+import lovehan1me.data.network.egress.EgressPlanner
 import lovehan1me.feature.player.PlayerMpvOptions
 import lovehan1me.feature.player.PlayerMpvOptionsProvider
 import lovehan1me.feature.player.PlayerNetworkConfig
@@ -32,9 +33,13 @@ val defaultPlayerMpvOptionsProvider: PlayerMpvOptionsProvider = ::defaultPlayerM
 
 /**
  * 网关改写（原 `mediaUrlForGate` / `applyEchGateForLoad` / `EchGateDataSource.open`
- * 三处收敛到此）：返回改写后 URL + 需附加的网关头，网关未运行返回 null。
+ * 三处收敛到此）：返回改写后 URL + 需附加的网关头；**不该用网关时返回 null**。
+ *
+ * 判定经 [EgressPlanner]：播放链路与 HTTP 链路共用同一份"该不该用网关"
+ * （用户开着 / 进程在跑 / 未熔断 / 每条 URL 自己的条件）。此处只看端口的话，
+ * 熔断期间媒体仍会被改写——那正是"页面上已经好了、视频还在撞网关"的形态。
  */
 internal fun gateRewrite(uri: String): Pair<String, Map<String, String>>? {
-    val rewrite = EchGatePolicy.rewrite(uri, EchGate.port) ?: return null
+    val rewrite = EgressPlanner.gateRewriteFor(uri) ?: return null
     return rewrite.url to mapOf(EchGatePolicy.TARGET_HEADER to rewrite.targetHost)
 }

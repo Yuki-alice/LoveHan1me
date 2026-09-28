@@ -3,16 +3,18 @@ package lovehan1me.data.network
 import io.ktor.client.plugins.api.createClientPlugin
 import io.ktor.http.URLProtocol
 import lovehan1me.core.constant.DESKTOP_USER_AGENT
+import lovehan1me.data.network.egress.EgressPlanner
 
 /**
  * 图片管线的 Ktor 侧通用配置（Gate4-1，common，引擎无关）。
  *
  * 对齐 jvmMain OkHttp 链（`GetchuImageLoader.jvm` + `HanimeImageLoader.jvm`）里与引擎
  * 无关的那两件事，iOS 的 Darwin 引擎同样需要：
- * 1. **ECH 改写**：图片同样在 CDN 上，和视频一样被 SNI 阻断；网关运行时把 URL 改写到
- *    本地回环 + 补目标头（判定收敛到 [EchGatePolicy]，与 OkHttp 的 EchGateInterceptor 同语义）。
- *    网关未运行（port <= 0）零改动透传。回环走明文 HTTP，iOS 侧 Info.plist 已开
- *    `NSAllowsLocalNetworking`，ATS 不拦截。
+ * 1. **ECH 改写**：图片同样在 CDN 上，和视频一样被 SNI 阻断；网关可用时把 URL 改写到
+ *    本地回环 + 补目标头。判定经 [EgressPlanner]（与 OkHttp 的 EchGateInterceptor、
+ *    播放器的 `rewriteForGate` 同一份），**不再只看端口** —— 熔断/关闭期间这里也必须
+ *    一起放行，否则"页面上已经好了、图还是不显示"会以另一种形式回来。
+ *    回环走明文 HTTP，iOS 侧 Info.plist 已开 `NSAllowsLocalNetworking`，ATS 不拦截。
  * 2. **getchu 域名特化**（仅 `getchu = true`）：`/brandnew/` 路径补 UA/Referer/Cookie，
  *    与 jvm 拦截器逐字一致。
  *
@@ -22,15 +24,14 @@ import lovehan1me.core.constant.DESKTOP_USER_AGENT
  */
 val HanimeImageHeaders = createClientPlugin("HanimeImageHeaders") {
     onRequest { request, _ ->
-        // ECH 改写只动三要素（scheme/host/port），path/query 原样保留——
+        // 改写只动三要素（scheme/host/port），path/query 原样保留——
         // 与 EchGatePolicy.rewrite 的变换逐字等价（它就是这么拼的），故无需解析重建。
-        val rewritten = EchGatePolicy.rewrite(request.url.toString(), EchGate.port)
-        if (rewritten != null) {
-            request.url.protocol = URLProtocol.HTTP
-            request.url.host = EchGatePolicy.GATE_HOST
-            request.url.port = EchGate.port
-            request.headers.append(EchGatePolicy.TARGET_HEADER, rewritten.targetHost)
-        }
+        val rewritten = runCatching { EgressPlanner.gateRewriteFor(request.url.toString()) }
+            .getOrNull() ?: return@onRequest
+        request.url.protocol = URLProtocol.HTTP
+        request.url.host = EchGatePolicy.GATE_HOST
+        request.url.port = rewritten.port
+        request.headers.append(EchGatePolicy.TARGET_HEADER, rewritten.targetHost)
     }
 }
 

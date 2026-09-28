@@ -1,11 +1,29 @@
 package lovehan1me.app.web
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.runBlocking
+import lovehan1me.core.domain.model.AppSettings
+import lovehan1me.core.domain.model.ProxyType
+import lovehan1me.core.domain.model.SettingsStore
+import lovehan1me.core.platform.currentEpochMillis
+import lovehan1me.data.SettingsRepository
+import lovehan1me.data.network.EchGate
+import lovehan1me.data.network.egress.GateHealthHolder
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
+
+private class CdpProxyTestStore : SettingsStore {
+    private val state = MutableStateFlow(AppSettings())
+    override val settings: StateFlow<AppSettings> = state
+    override suspend fun update(transform: (AppSettings) -> AppSettings) {
+        state.value = transform(state.value)
+    }
+}
 
 /**
  * 阶段一⑩ CDP 验证器的纯逻辑单测（不碰真实浏览器/网络）。
@@ -236,5 +254,64 @@ class CloudflareCdpTest {
         val body = """{"description":"","devtoolsFrontendUrl":"/devtools/inspector.html","id":"X","title":"","type":"page","url":"about:blank","webSocketDebuggerUrl":"ws://127.0.0.1:9/ABC"}"""
         assertEquals("ws://127.0.0.1:9/ABC", CloudflareCdp.extractTargetUrl(body))
         assertNull(CloudflareCdp.extractTargetUrl("{}"))
+    }
+
+    // ── 验证窗的出口（本轮修复：网关不通时必须能退到代理） ──
+
+    @Test
+    fun `网关可用时验证窗走网关`() {
+        runCatching { SettingsRepository.install(CdpProxyTestStore()) }
+        runBlocking {
+            SettingsRepository.update { it.copy(useEchGate = true, proxyType = ProxyType.Direct) }
+        }
+        GateHealthHolder.reset()
+        EchGate.port = 18080
+        try {
+            assertEquals(
+                "--proxy-server=http://127.0.0.1:18080",
+                CloudflareCdp.proxyFlag(),
+                "验证窗必须与 App 同出口，否则 cf_clearance 绑的是另一个 IP，表现是「验证过了还要验证」",
+            )
+        } finally {
+            EchGate.port = -1
+            // 把改动过的全局还回去：这条用例把 proxyType 设成了 Direct，留着会影响
+            // 后续任何"读默认档"的用例（刚在 EchGateInterceptorTest 上吃过一次这个亏）。
+            runBlocking {
+                SettingsRepository.update { it.copy(proxyType = ProxyType.System) }
+            }
+        }
+    }
+
+    @Test
+    fun `网关熔断时验证窗回落到用户代理`() {
+        runCatching { SettingsRepository.install(CdpProxyTestStore()) }
+        runBlocking {
+            SettingsRepository.update {
+                it.copy(
+                    useEchGate = true,
+                    proxyType = ProxyType.Http,
+                    proxyIp = "203.0.113.7",
+                    proxyPort = 7890,
+                )
+            }
+        }
+        EchGate.port = 18080
+        // 阻断类失败一次即熔断（时间必须用"现在"，否则会被当成冷却已过 = 半开）。
+        GateHealthHolder.recordFailure(currentEpochMillis(), blocking = true)
+        try {
+            assertEquals(
+                "--proxy-server=http://203.0.113.7:7890",
+                CloudflareCdp.proxyFlag(),
+                "网关不通时若仍把验证窗押在网关上，用户连「做验证」这条自救通道都没了",
+            )
+        } finally {
+            EchGate.port = -1
+            GateHealthHolder.reset()
+            runBlocking {
+                SettingsRepository.update {
+                    it.copy(proxyType = ProxyType.System, proxyIp = "", proxyPort = -1)
+                }
+            }
+        }
     }
 }
