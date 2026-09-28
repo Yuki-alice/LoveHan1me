@@ -65,6 +65,7 @@ import lovehan1me.data.network.HanimeDns
 import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.data.network.HanimeNetwork
 import lovehan1me.data.network.ServiceCreator
+import lovehan1me.data.network.egress.GateHealthHolder
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.site.SiteSwitcher
 import lovehan1me.ui.component.ConfirmDialog
@@ -366,6 +367,9 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             coroutineScope.launch {
                 SettingsRepository.update { it.copy(useEchGate = value) }
                 // 网关是外部进程，开关就是它的生死。拦截器常驻且自己看端口，无需重建客户端。
+                // 用户主动开关 = 重新给一次机会：把熔断健康度归零，否则刚被熔断过的网关
+                // 会在冷却期内"开了也不管事"，看起来像开关失灵。
+                GateHealthHolder.reset()
                 if (value) EchGateProcess.start() else EchGateProcess.stop()
             }
         },

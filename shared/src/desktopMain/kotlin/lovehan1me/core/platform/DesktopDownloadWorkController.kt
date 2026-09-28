@@ -12,6 +12,7 @@ import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import lovehan1me.data.network.HanimeDns
 import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.data.network.interceptor.EchGateInterceptor
+import lovehan1me.data.network.interceptor.RetryInterceptor
 import lovehan1me.core.domain.model.HanimeVideo
 import lovehan1me.core.domain.state.DownloadState
 import kotlinx.coroutines.CoroutineScope
@@ -333,6 +334,7 @@ object DesktopDownloadWorkController : DownloadWorkController {
         OkHttpClient.Builder()
             .connectTimeout(java.time.Duration.ofSeconds(15))
             .readTimeout(java.time.Duration.ofSeconds(30))
+            .addInterceptor(RetryInterceptor())
             .dns(HanimeDns())
             .proxySelector(HanimeProxySelector())
             .addInterceptor(EchGateInterceptor())

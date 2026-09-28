@@ -7,11 +7,7 @@ import coil3.ImageLoader
 import coil3.compose.LocalPlatformContext
 import coil3.network.okhttp.OkHttpNetworkFetcherFactory
 import lovehan1me.core.util.StartupTrace
-import lovehan1me.data.network.HanimeDns
-import lovehan1me.data.network.HanimeProxySelector
-import lovehan1me.data.network.interceptor.EchGateInterceptor
-import okhttp3.OkHttpClient
-import java.util.concurrent.TimeUnit
+import lovehan1me.data.network.createCdnFetchClient
 
 // P6d-2：jvmMain 真实现。构造照抄 getchu 版（OkHttp + HanimeDns + 代理选择器），
 // 只是去掉 getchu 域名特化头（通用加载器）；同时覆盖 Android 和桌面。
@@ -25,12 +21,9 @@ actual fun rememberHanimeImageLoader(): ImageLoader {
         if (isInspectionMode) {
             ImageLoader.Builder(context).build()
         } else {
-            val imageClient = OkHttpClient.Builder()
-                .connectTimeout(15, TimeUnit.SECONDS)
-                .dns(HanimeDns())
-                .proxySelector(HanimeProxySelector())
-                .addInterceptor(EchGateInterceptor())
-                .build()
+            // 出口与浏览/下载同一条：URL 在 CDN 上（`vdownload.hembed.com/image/…`），
+            // 同样会被 SNI 阻断。配置收在 createCdnFetchClient，见 CdnFetchClientTest。
+            val imageClient = createCdnFetchClient()
             ImageLoader.Builder(context)
                 .components {
                     add(OkHttpNetworkFetcherFactory(callFactory = { imageClient }))

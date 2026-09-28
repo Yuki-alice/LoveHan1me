@@ -21,6 +21,7 @@ import lovehan1me.core.domain.model.ThemeMode
 import lovehan1me.core.domain.model.VideoAspectMode
 import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
 import lovehan1me.core.domain.model.normalizeLongPressSpeed
+import lovehan1me.data.network.egress.platformSystemProxyUsable
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -147,7 +148,9 @@ object DataStoreManager : SettingsStore {
         useCustomMirrorSite = bool("use_custom_mirror_site", defaults.useCustomMirrorSite), customMirrorSite = string("custom_mirror_site", defaults.customMirrorSite),
         appendCustomMirrorPath = bool("append_custom_mirror_path", defaults.appendCustomMirrorPath), useBuiltInHosts = bool("use_built_in_hosts", defaults.useBuiltInHosts),
         autoBuiltInHosts = bool("auto_built_in_hosts", defaults.autoBuiltInHosts),
-        useEchGate = bool("use_ech_gate", defaults.useEchGate),
+        // 条件默认开：仅当用户没有可用代理时才默认开网关。
+        // 键已存在时 bool() 直接返回盘上的值，本默认值不参与 —— 老用户的选择不会被悄悄改掉。
+        useEchGate = bool("use_ech_gate", defaults.useEchGate && !hasConfiguredProxy()),
         customHostsData = string("custom_hosts_data", defaults.customHostsData), useDoH = bool("use_doh", defaults.useDoH), dohPreset = string("doh_preset", defaults.dohPreset),
         dohCustomUrl = string("doh_custom_url", defaults.dohCustomUrl), dohBootstrapIps = string("doh_bootstrap_ips", defaults.dohBootstrapIps), dohTimeoutSeconds = int("doh_timeout_seconds", defaults.dohTimeoutSeconds),
         proxyType = ProxyType.fromId(int("proxy_type", defaults.proxyType.id)), proxyIp = string("proxy_ip", defaults.proxyIp), proxyPort = int("proxy_port", defaults.proxyPort),
@@ -258,6 +261,27 @@ object DataStoreManager : SettingsStore {
         entries.associate { (host, cookie) -> host.lowercase() to cookie }
 
     private fun Preferences.bool(name: String, default: Boolean) = runCatching { this[booleanPreferencesKey(name)] }.getOrNull() ?: default
+
+    /**
+     * 首次运行（`use_ech_gate` 键缺失）时，网关默认值的从属条件：**用户没有可用代理**。
+     *
+     * 由来：设置项自称「免代理直连」，即网关是代理的**替代品**；而代理档默认是
+     * `System`，两者叠在一起等于"默认状态下网关把系统代理整个绕开"。网关被阻断时，
+     * 原本能用的代理路径就没了 —— 见 [lovehan1me.data.network.egress.GateHealth]。
+     *
+     * `System` 档在公共层判不出来，交给平台（[lovehan1me.data.network.egress.platformSystemProxyUsable]）；
+     * 解析不出来即视为"没有可用代理"，与运行期 [lovehan1me.data.network.egress.currentProxyState] 同一口径。
+     */
+    private fun Preferences.hasConfiguredProxy(): Boolean {
+        val type = ProxyType.fromId(int("proxy_type", defaults.proxyType.id))
+        val configured = string("proxy_ip", defaults.proxyIp).isNotBlank() &&
+            int("proxy_port", defaults.proxyPort) in 1..65535
+        return when (type) {
+            ProxyType.Http, ProxyType.Socks -> configured
+            ProxyType.System -> platformSystemProxyUsable()
+            ProxyType.Direct -> false
+        }
+    }
     private fun Preferences.int(name: String, default: Int) = intOrNull(name) ?: default
     private fun Preferences.intOrNull(name: String) = runCatching { this[intPreferencesKey(name)] }.getOrNull() ?: runCatching { this[stringPreferencesKey(name)]?.toIntOrNull() }.getOrNull()
     private fun Preferences.intInRange(name: String, default: Int, range: IntRange) = intOrNull(name)?.takeIf { it in range } ?: default

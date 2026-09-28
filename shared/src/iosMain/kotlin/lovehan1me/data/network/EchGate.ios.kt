@@ -3,7 +3,7 @@ package lovehan1me.data.network
 import io.ktor.client.HttpClientConfig
 import io.ktor.http.Url
 import lovehan1me.core.util.LogUtil
-import lovehan1me.data.SettingsRepository
+import lovehan1me.data.network.egress.currentEgressState
 
 /**
  * iOS 侧的 ECH 网关接入（Darwin 引擎走 Ktor 插件，见 [EchGateClientPlugin]）。
@@ -18,11 +18,14 @@ import lovehan1me.data.SettingsRepository
  */
 internal fun HttpClientConfig<*>.installEchGate() {
     install(EchGateClientPlugin) {
-        // Swift 侧自启网关（无设置不启动的概念），是否改写以后端设置为准：
-        // 用户关掉开关时回 -1，插件零改动，等价于网关不存在。
+        // Swift 侧自启网关（无设置不启动的概念），是否改写由 planner 裁决：
+        // 用户关掉、进程没跑、或熔断中一律回 -1，插件零改动，等价于网关不存在 ——
+        // 与 jvm 侧 EchGateInterceptor 读的是同一份判定与同一个熔断器。
         portProvider = {
-            runCatching { if (SettingsRepository.useEchGate) EchGate.port else -1 }
-                .getOrDefault(-1)
+            runCatching {
+                val gate = currentEgressState().gate
+                if (gate.enabled && gate.running && !gate.circuitOpen) gate.port else -1
+            }.getOrDefault(-1)
         }
         cookieHeaderProvider = ::echCookieHeader
         logger = { LogUtil.d("EchGate", it) }

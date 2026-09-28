@@ -8,6 +8,8 @@ import io.ktor.http.HttpMethod
 import io.ktor.http.HttpStatusCode
 import io.ktor.http.URLProtocol
 import io.ktor.http.Url
+import lovehan1me.core.platform.currentEpochMillis
+import lovehan1me.data.network.egress.GateHealthHolder
 
 /**
  * Ktor 侧的 ECH 网关插件（Darwin/iOS 用；JVM 走 OkHttp 拦截器，不装这个）。
@@ -80,6 +82,9 @@ private suspend fun Send.Sender.applyRewrite(
         proceed(request)
     } catch (e: Exception) {
         // 网关异常（进程挂了/端口未监听）→ 原样重试一次，现有机制兜底。
+        // 同时记一次失败喂给熔断器：iOS 没有"退到代理"这一档，熔断是它唯一的
+        // "别再反复撞墙"的手段（`platformSystemProxyUsable` 在 iOS 恒 false）。
+        GateHealthHolder.recordFailure(currentEpochMillis(), blocking = false)
         pluginConfig.logger?.invoke("EchGate: 网关异常回退直连 ${original} (${e.message})")
         restoreOriginal(request, original)
         return proceed(request)
@@ -99,10 +104,21 @@ private suspend fun Send.Sender.applyRewrite(
         val retriedOk = retried.response.status != HttpStatusCode.BadGateway ||
             runCatching { retried.response.bodyAsText() }.getOrNull()
                 ?.startsWith(GATEWAY_ERROR_PREFIX) != true
-        if (retriedOk) return retried
+        if (retriedOk) {
+            GateHealthHolder.recordSuccess()
+            return retried
+        }
         pluginConfig.logger?.invoke("EchGate: 网关重试仍失败，回退直连 $original")
+        GateHealthHolder.recordFailure(currentEpochMillis(), blocking = false)
         restoreOriginal(request, original)
         return proceed(request)
+    }
+    // 走到这里只剩两种情况：非幂等方法的网关错误页（POST 不重发，见上面的注释），
+    // 或一切正常。前者同样要记失败，否则"POST 一直撞 502"永远攒不到熔断。
+    if (gateCall.response.status == HttpStatusCode.BadGateway) {
+        GateHealthHolder.recordFailure(currentEpochMillis(), blocking = false)
+    } else {
+        GateHealthHolder.recordSuccess()
     }
     return gateCall
 }

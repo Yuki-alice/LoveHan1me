@@ -4,11 +4,9 @@ import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import lovehan1me.data.network.HanimeDns
-import okhttp3.OkHttpClient
+import lovehan1me.data.network.createCdnFetchClient
 import okhttp3.Request
 import java.io.ByteArrayOutputStream
-import java.util.concurrent.TimeUnit
 
 /**
  * 下载视频封面并编码为 PNG 字节（下载完成后写入下载目录，供应用内离线观看用）。
@@ -27,6 +25,12 @@ import java.util.concurrent.TimeUnit
  *
  * ⚠️ 保留 `HanimeDns`：站点域名在本机常被 DNS 污染，走系统解析拿不到图。
  *
+ * ⚠️ **它必须与浏览、下载同一条出口**：封面 URL 与视频直链同在 CDN 上
+ * （`vdownload.hembed.com/image/…`），同样被 SNI 阻断。此前这里只配了 DNS，
+ * 代理与 ECH 网关都没接 —— 开着网关或手填代理时，下载任务的封面会走裸直连
+ * 而拿不到（视频本体没事，因为下载客户端接齐了）。同 `ServiceCreator` 下载链的
+ * 一句话：开着网关/代理时"能看不能下"就是哪条链没跟过来。
+ *
  * G1-1A：原 `internal`（仅 :app 可见）。下沉后调用方 `HanimeDownloadWorker` 暂留 :app，
  * 故放开为 public；G1-1B worker 一起下沉后可再收回。
  */
@@ -34,10 +38,7 @@ object CoverImageFetcher {
     private const val TAG = "CoverImageFetcher"
     private const val CONNECT_TIMEOUT_SECONDS = 5L
 
-    private val okHttpClient = OkHttpClient.Builder()
-        .connectTimeout(CONNECT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
-        .dns(HanimeDns())
-        .build()
+    private val okHttpClient = createCdnFetchClient(connectTimeoutSeconds = CONNECT_TIMEOUT_SECONDS)
 
     /**
      * 下载并转 PNG。

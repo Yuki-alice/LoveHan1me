@@ -43,11 +43,20 @@ object HanimeNetwork {
     private val _subscriptionService
         get() = HanimeSubscriptionService(createHanimeHttpClient())
 
+    /**
+     * 重建底层传输与全部 service。
+     *
+     * ⚠️ 这里的赋值**必须覆盖上面声明的每一个 `var`**。service 的 Ktor 客户端在构造期
+     * 经 `engine { preconfigured = <底层 client> }` 抓了一份引用，漏掉哪一个，它就会
+     * 一直用重建前的底层客户端（连接池 / 超时 / 缓存 / 系统代理委托全部冻结）。
+     * 曾经漏过 `subscriptionService`，见 `HanimeNetworkRebuildTest`。
+     */
     fun rebuildNetwork() {
         rebuildHttpClients()
         hanimeService = _hanimeService
         getchuService = _getchuService
         commentService = _commentService
         myListService = _myListService
+        subscriptionService = _subscriptionService
     }
 }
