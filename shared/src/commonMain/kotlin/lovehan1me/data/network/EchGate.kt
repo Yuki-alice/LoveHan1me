@@ -3,7 +3,62 @@ package lovehan1me.data.network
 import kotlin.concurrent.Volatile
 
 /**
- * 本地 ECH 网关（`echgate`）的运行状态。
+ * 本地 ECH 网关（`echgate`）的**生命周期状态**。纯状态机：转换都是纯函数，
+ * 不带时钟也不碰全局，于是"主动停不会被记成失败"这类规则能离线断言。
+ *
+ * 六个状态覆盖进程外网关的全部可观察处境；此前它们由三个互不相干的变量
+ * （`port`、`starting`、`lastError`）拼出来，于是"用户主动关"与"进程意外死亡"
+ * 在类型上无法区分，设置页只能把两者都报成失败。
+ */
+sealed interface EchGateStatus {
+
+    /** 从未启动过（含"当前平台无产物"之外的初始态）。 */
+    data object Idle : EchGateStatus
+
+    /** 已 spawn、还没打印就绪行。请求此时不等它，直接走兜底。 */
+    data object Starting : EchGateStatus
+
+    /** 正在监听 [port]。 */
+    data class Running(override val port: Int) : EchGateStatus
+
+    /** 用户主动停掉（关开关 / 应用退出）。 */
+    data object Stopped : EchGateStatus
+
+    /** 启动或监听失败，[reason] 是给用户看的原因。 */
+    data class Failed(val reason: String) : EchGateStatus
+
+    /** 进程意外退出。 */
+    data object Exited : EchGateStatus
+
+    /**
+     * 进程输出结束（stdout EOF）时的落点。
+     *
+     * @param ownedByCurrentMonitor 输出结束的这个进程是否**仍归本监视器管**。
+     *   主动 [EchGateProcess.stop] 会先清掉进程引用并把状态落成 [Stopped]，
+     *   于是这里拿到的 `owned` 为 false —— 预期内的停止不会变成 [Exited]，
+     *   设置页也就不再报"网关失败：网关进程已退出"。
+     */
+    fun onProcessOutputEnded(ownedByCurrentMonitor: Boolean = true): EchGateStatus = when {
+        !ownedByCurrentMonitor -> this
+        this is Stopped -> this
+        else -> Exited
+    }
+
+    /** 监听端口；不在运行都是 -1（改写层据此零改动放行）。 */
+    val port: Int get() = (this as? Running)?.port ?: -1
+
+    val starting: Boolean get() = this is Starting
+
+    /** 给设置页看的一句话原因；null = 没有可报的失败。 */
+    val lastError: String? get() = when (this) {
+        is Failed -> reason
+        Exited -> "网关进程已退出"
+        else -> null
+    }
+}
+
+/**
+ * 本地 ECH 网关（`echgate`）的**运行状态**，也是这条进程外边界上状态的唯一真相源。
  *
  * 网关是一个**独立进程/运行时**，监听 `127.0.0.1:<port>`，把站点域名的流量用 ECH
  * （Encrypted Client Hello）加密 ClientHello 送出去。
@@ -17,7 +72,8 @@ import kotlin.concurrent.Volatile
  * - 桌面：`EchGateProcess` 拉起各 OS 的 Go 二进制（`echgate/build.sh` 产物）；
  * - Android：长期形态是 gomobile 进程内起服（`echgate/gate` 包已就绪），
  *   播放器/下载/图片的改写 plumbing 已全部按 `port > 0` 生效；
- * - iOS：同上，Ktor 插件 + AVPlayer 改写已就绪，运行时待接入。
+ * - iOS：同上，Ktor 插件 + AVPlayer 改写已就绪，运行时待接入
+ *   （Swift 侧经 [EchGateStarter] 回填）。
  *
  * 没启动时 [port] 为 -1，所有改写层自动放行直连，
  * **行为与接入前完全一致**——这是刻意的设计，网关挂了不该连累正常请求。
@@ -26,13 +82,34 @@ import kotlin.concurrent.Volatile
 object EchGate {
 
     /**
-     * 网关监听端口；`-1` = 未运行。
-     *
-     * 由各平台的进程管理者写入。读写都发生在网络线程/启动流程上，
-     * 用 `@Volatile` 保证跨线程可见即可，不需要锁。
+     * 当前状态。由各平台的进程管理者经 [publish] 写入。
+     * 读写都发生在网络线程/启动流程上，`@Volatile` 保证跨线程可见即可。
      */
     @Volatile
-    var port: Int = -1
+    var status: EchGateStatus = EchGateStatus.Idle
+        private set
+
+    /**
+     * 状态变更后的平台通知钩子。commonMain 里没有跨平台的 wait/notify，
+     * 于是把"叫醒等待者"这件事交给平台侧：jvm 接到 [EchGateProcess] 的就绪信号上，
+     * 没有运行时的平台不设。空实现只是退回轮询，不影响正确性。
+     */
+    internal var onStatusChanged: (() -> Unit)? = null
+
+    /** 状态唯一的变更入口：改完再通知等待者，顺序不能反。 */
+    fun publish(newStatus: EchGateStatus) {
+        status = newStatus
+        onStatusChanged?.invoke()
+    }
+
+    /** 网关监听端口；`-1` = 未运行。 */
+    val port: Int get() = status.port
+
+    /** 网关已 spawn 但还没就绪。 */
+    val starting: Boolean get() = status.starting
+
+    /** 最近一次失败原因；null = 未失败过或已成功。 */
+    val lastError: String? get() = status.lastError
 }
 
 /**

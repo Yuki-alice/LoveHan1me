@@ -130,7 +130,7 @@ class EchGateLiveTest {
                 proc.inputStream.bufferedReader().useLines { lines ->
                     lines.forEach { line ->
                         println("LIVE gate: $line")
-                        if (line.startsWith("LISTENING")) readyLatch.countDown()
+                        if (EchGateContract.isReadyLine(line)) readyLatch.countDown()
                     }
                 }
             }
@@ -141,12 +141,12 @@ class EchGateLiveTest {
         // 熔断健康度是进程全局的：别的用例（如 EchGateInterceptorTest 里那些"连续失败"的）
         // 可能已经把它打开，而冷却期是 5 分钟 —— 不归零的话本类会整场跳过网关。
         GateHealthHolder.reset()
-        EchGate.port = port
+        EchGate.publish(EchGateStatus.Running(port))
         return proc to port
     }
 
     private fun stopGate(proc: Process) {
-        EchGate.port = -1
+        EchGate.publish(EchGateStatus.Idle)
         runCatching { proc.destroy() }
         runCatching { proc.waitFor(3, TimeUnit.SECONDS) }
         if (proc.isAlive) runCatching { proc.destroyForcibly() }
@@ -161,7 +161,7 @@ class EchGateLiveTest {
     @Test
     fun `不经网关直连站点必然失败`() {
         installStore()
-        EchGate.port = -1
+        EchGate.publish(EchGateStatus.Idle)
 
         val client = OkHttpClient.Builder()
             // 见 clientWithGate：必须绕过可能被其它 live 用例全局置上的系统代理。

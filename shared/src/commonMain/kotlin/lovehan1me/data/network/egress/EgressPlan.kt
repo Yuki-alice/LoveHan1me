@@ -17,6 +17,39 @@ data class EgressRequest(
 )
 
 /**
+ * 一个候选出口。**planner 给出的顺序就是尝试顺序**，执行器不再自己编排回退。
+ *
+ * 这是"新增出口不用改执行器"的载体：加一种出站方式 = 加一个子类 + 在 planner 里排进
+ * [EgressPlan.attempts]，五个执行器（OkHttp 链 / Ktor 插件 / 图片插件 / 播放器 / 下载）
+ * 一行都不用动。此前回退顺序写死在 `EchGateInterceptor` 的三段 if 里，Ktor 侧再抄一遍，
+ * 图片插件干脆没抄 —— "页面能开、图全没了"就是这么来的。
+ */
+sealed interface EgressAttempt {
+
+    /**
+     * 经本地 ECH 网关（反向代理改写道）。
+     *
+     * @param onProbation 试用期：后面还排着 [Yield]，故网关只有一次机会，失败即让位。
+     *   没有让位对象时为 false —— 那时后面没有更好的路，让位只是白跑一趟。
+     */
+    data class Gate(val rewrite: EchGatePolicy.Rewrite, val onProbation: Boolean) : EgressAttempt
+
+    /**
+     * 让位：走传输层自己的出口（用户/系统代理或直连），**不做任何改写**。
+     *
+     * 与 [Passthrough] 走的是同一条路，区别只在记账：它排在网关之后，成功即构成
+     * 对网关的指控（见 [gateBlameAfterYield]）。
+     */
+    data object Yield : EgressAttempt
+
+    /**
+     * 原样放行：网关从未接管（用户关掉 / 熔断中 / 进程没跑 / 这条 URL 不该进网关）。
+     * 执行器据此直接把请求交给传输层，并回传 [EgressPlan.skipped] 作为日志原因。
+     */
+    data object Passthrough : EgressAttempt
+}
+
+/**
  * 代理状态。planner 只关心"**有没有可用的代理**"，不关心它是手填的还是系统解析出来的 ——
  * 后者决定了网关是否有"试错余地"（见 [EgressPlan.gateOnProbation]）。
  */
@@ -89,21 +122,59 @@ enum class GateSkipReason {
 }
 
 /**
- * 出口计划。
+ * 出口计划。**执行器只消费 [attempts]，不做任何判断。**
  *
- * @property gate 网关改写结果（[EchGatePolicy.Rewrite] 原样沿用）；null = 本次不经网关。
- * @property gateSkipped 没用网关的原因；走网关时为 null。
- * @property gateOnProbation 网关处于**试用期**：存在可用代理时，它仍先试，
- *   但只有一次机会 —— 一旦失败就让位给代理，并把这次失败计入熔断。
- *   没有可用代理时不存在"让位"这回事，故为 false。
+ * 三个派生属性（[gate] / [gateOnProbation] / [gateSkipped]）是给旧调用点与日志用的
+ * 便捷读法，全部由 [attempts] 推导 —— 于是"走网关"这件事仍然只有一个来源，
+ * 不存在第二份可以与之分叉的字段。
+ *
+ * @property attempts 有序候选出口，planner 排好序，执行器按序尝试。
+ * @property skipped 网关没被排进候选的原因；走网关时为 null。
+ * @property proxyUsable 后面有没有可用代理。与网关是否被跳过无关：它是"用户手里
+ *   有没有一条能用的路"这个事实，熔断时同样成立。
  */
 data class EgressPlan(
-    val gate: EchGatePolicy.Rewrite?,
-    val gateSkipped: GateSkipReason?,
-    val gateOnProbation: Boolean,
+    val attempts: List<EgressAttempt>,
+    val skipped: GateSkipReason?,
+    val proxyUsable: Boolean,
 ) {
-    val usesGate: Boolean get() = gate != null
+    val usesGate: Boolean get() = attempts.firstOrNull() is EgressAttempt.Gate
+
+    /** 首个候选是网关时的改写结果；不经过网关时为 null。 */
+    val gate: EchGatePolicy.Rewrite? get() = (attempts.firstOrNull() as? EgressAttempt.Gate)?.rewrite
+
+    /**
+     * 网关处于**试用期**：存在可用代理时它仍先试，但只有一次机会 —— 失败即让位。
+     *
+     * 网关不在候选里时恒为 false：那时没有 Gate 可试用，返回 true 是撒谎。
+     * "后面有没有退路"这个事实看 [proxyUsable]。
+     */
+    val gateOnProbation: Boolean get() = (attempts.firstOrNull() as? EgressAttempt.Gate)?.onProbation == true
+
+    /** [skipped] 的原名（日志与设置页沿用旧叫法）。 */
+    val gateSkipped: GateSkipReason? get() = skipped
 }
+
+/**
+ * 让位路径拿到结果后，该怎么给网关记账（纯函数，可离线断言）。
+ *
+ * - 让位路径与网关**同一个码** ⇒ 封的是用户/站点，不是网关的出口 ⇒ **网关无责，不记账**
+ *   （否则用户会因为"站点就是不让看"而被熔断掉一条本来能用的路）；
+ * - 让位路径拿到了不同的结果 ⇒ 网关的出口被封 ⇒ 记一次**阻断类**失败，
+ *   [lovehan1me.data.network.egress.GateHealth] 一次即熔断，不再反复打扰。
+ *
+ * @return true = 网关有责，记一次阻断类失败；false = 网关无责，不记账。
+ */
+fun gateBlameAfterYield(yieldCode: Int, gateCode: Int): Boolean = yieldCode != gateCode
+
+/**
+ * 网关返回这个码表示"连上了，但出口被封"。
+ *
+ * 这类响应看起来像站点问题（`you have been blocked` / `Just a moment`），而用户手里
+ * 可能有一条**能用的代理** —— 所以判为被封时不该再试网关，而该让位（[EgressAttempt.Yield]）。
+ * 此前这一段缺失，正是"原本系统代理可以访问、却访问不了"的根因。
+ */
+fun isGateBlockedCode(code: Int): Boolean = code == 403
 
 /** 判定"经代理路径重试后拿到什么算网关无责"时用的口令：只对幂等方法做重试。 */
 val EgressRequest.isIdempotent: Boolean get() = method == "GET" || method == "HEAD"

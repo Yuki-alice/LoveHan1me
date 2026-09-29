@@ -14,7 +14,7 @@ import java.net.Proxy
 import java.net.URI
 import kotlin.test.Test
 import kotlin.test.assertEquals
-import kotlin.test.assertNotSame
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 /**
@@ -139,15 +139,22 @@ class DownloadClientEgressTest {
     }
 
     @Test
-    fun `改完代理设置后下载客户端跟着重建`() {
+    fun `改完代理设置即刻影响下载客户端（客户端不重建）`() {
         ensureStoreInstalled()
-        val before = ServiceCreator.downloadClient
-        ServiceCreator.rebuildOkHttpClient()
-        assertNotSame(
-            before,
-            ServiceCreator.downloadClient,
-            "重建漏了下载客户端，改完代理要等下次冷启动才影响下载",
-        )
+        val client = ServiceCreator.downloadClient
+        withProxy(ProxyType.Http, "203.0.113.7", 7890) {
+            assertSame(
+                client,
+                ServiceCreator.downloadClient,
+                "下载客户端是稳定单例，不应因改设置而重建",
+            )
+            val proxies = client.proxySelector.select(URI("https://hanime1.me/"))
+            assertEquals(
+                Proxy.Type.HTTP,
+                proxies.first().type(),
+                "改了代理却仍走旧出口 —— 选择器没有每请求读实时配置",
+            )
+        }
     }
 }
 

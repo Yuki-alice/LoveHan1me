@@ -1,18 +1,16 @@
 package lovehan1me.core.platform
 
 import lovehan1me.core.util.decodeFromStringByBase64
+import lovehan1me.data.network.createThirdPartyClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.util.concurrent.TimeUnit
 
-private val updateClient by lazy {
-    OkHttpClient.Builder()
-        .connectTimeout(15, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
-        .build()
-}
+/**
+ * 第三方站点档：带 DNS 覆盖与用户代理，不经 ECH 网关（理由见 `createThirdPartyClient`）。
+ * 此前是裸 client，配了代理的用户更新检查仍走直连。
+ */
+private val updateClient by lazy { createThirdPartyClient() }
 
 // P6d-4F：原 :app AppUpdateChecker.requestUpdateJson 照搬
 actual suspend fun performUpdateJsonRequest(): String? = withContext(Dispatchers.IO) {

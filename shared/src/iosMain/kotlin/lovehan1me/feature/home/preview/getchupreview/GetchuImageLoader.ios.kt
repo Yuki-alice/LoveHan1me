@@ -9,7 +9,7 @@ import coil3.network.ktor3.KtorNetworkFetcherFactory
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.darwin.Darwin
 import lovehan1me.data.network.GetchuBrandHeaders
-import lovehan1me.data.network.HanimeImageHeaders
+import lovehan1me.data.network.installEchGate
 
 // iOS 真实现（Gate4-平台能力补齐）：Darwin 引擎 + getchu 域名特化头
 //（UA/Referer/Cookie，与 jvm OkHttp 拦截器逐字一致）+ ECH 改写。
@@ -23,7 +23,7 @@ actual fun rememberGetchuImageLoader(): ImageLoader {
             ImageLoader.Builder(context).build()
         } else {
             val client = HttpClient(Darwin) {
-                install(HanimeImageHeaders)
+                installEchGate(withCookies = false)
                 install(GetchuBrandHeaders)
             }
             ImageLoader.Builder(context)

@@ -15,12 +15,14 @@ import io.ktor.http.encodeURLPathPart
  * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/09/19 019 17:44
  *
- * P3：Retrofit interface → Ktor 实现，方法/参数名与 @Field/@Query 键名保持原样。
+ * Retrofit interface → Ktor 实现，方法/参数名与 @Field/@Query 键名保持原样。
  */
 class HanimeCommentService(
     private val client: HttpClient,
-    private val baseUrl: String = HANIME_BASE_URL,
 ) {
+
+    // 站点地址每次请求实时解析：不能在构造期快照，否则切站必须重建整个 service。
+    private val baseUrl: String get() = HANIME_BASE_URL
 
     suspend fun getComments(
         type: String, // 類似 "video", "preview"

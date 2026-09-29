@@ -8,12 +8,14 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.http.Parameters
 
 /**
- * P3：Retrofit interface → Ktor 实现。
+ * Retrofit interface → Ktor 实现。
  */
 class HanimeSubscriptionService(
     private val client: HttpClient,
-    private val baseUrl: String = HANIME_BASE_URL,
 ) {
+
+    // 站点地址每次请求实时解析：不能在构造期快照，否则切站必须重建整个 service。
+    private val baseUrl: String get() = HANIME_BASE_URL
 
     suspend fun subscribeArtist(
         csrfToken: String?,

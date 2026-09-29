@@ -59,6 +59,19 @@ class HanimeProxySelector : ProxySelector() {
         const val TYPE_HTTP = HProxyTypes.TYPE_HTTP
         const val TYPE_SOCKS = HProxyTypes.TYPE_SOCKS
 
+        /**
+         * 全进程共用一份。
+         *
+         * 它有两个不适合反复构造的理由：
+         * - `alternative` 在构造时抓 JVM 默认选择器；每处各 new 一个，就会各抓一次，
+         *   而 `resolveMediaProxyUrl` 是**每次加载视频**都 new 一个；
+         * - 委托链的解链（[MAX_UNWRAP_DEPTH]）随之反复发生。
+         *
+         * 惰性：`init` 会读设置，共享实例若随类加载立刻构造，会把"设置仓未就绪"
+         * 变成 `ExceptionInInitializerError`，而那时还没有任何请求需要代理。
+         */
+        val SHARED: HanimeProxySelector by lazy { HanimeProxySelector() }
+
         /** 解链保护：全局默认正常情况下最多嵌一层 Hanime 实例。 */
         private const val MAX_UNWRAP_DEPTH = 8
 
@@ -143,7 +156,9 @@ class HanimeProxySelector : ProxySelector() {
     }
 
     private fun updateProxy() {
-        val type = SettingsRepository.proxyType
+        // 与 select() 同一读法：设置仓未就绪（极早的构造 / 单测）时按 System 处理，
+        // 不能让"还没准备好"变成构造失败。共享实例是惰性的，但仍可能早于 DataStore。
+        val type = runCatching { SettingsRepository.proxyType }.getOrDefault(TYPE_SYSTEM)
         boundType = type
         delegation = when (type) {
             TYPE_DIRECT -> NullProxySelector

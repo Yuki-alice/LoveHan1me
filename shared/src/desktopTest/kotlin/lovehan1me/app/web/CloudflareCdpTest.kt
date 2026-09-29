@@ -9,6 +9,7 @@ import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.EchGate
+import lovehan1me.data.network.EchGateStatus
 import lovehan1me.data.network.egress.GateHealthHolder
 import java.io.File
 import kotlin.test.Test
@@ -265,7 +266,7 @@ class CloudflareCdpTest {
             SettingsRepository.update { it.copy(useEchGate = true, proxyType = ProxyType.Direct) }
         }
         GateHealthHolder.reset()
-        EchGate.port = 18080
+        EchGate.publish(EchGateStatus.Running(18080))
         try {
             assertEquals(
                 "--proxy-server=http://127.0.0.1:18080",
@@ -273,7 +274,7 @@ class CloudflareCdpTest {
                 "验证窗必须与 App 同出口，否则 cf_clearance 绑的是另一个 IP，表现是「验证过了还要验证」",
             )
         } finally {
-            EchGate.port = -1
+            EchGate.publish(EchGateStatus.Idle)
             // 把改动过的全局还回去：这条用例把 proxyType 设成了 Direct，留着会影响
             // 后续任何"读默认档"的用例（刚在 EchGateInterceptorTest 上吃过一次这个亏）。
             runBlocking {
@@ -295,7 +296,7 @@ class CloudflareCdpTest {
                 )
             }
         }
-        EchGate.port = 18080
+        EchGate.publish(EchGateStatus.Running(18080))
         // 阻断类失败一次即熔断（时间必须用"现在"，否则会被当成冷却已过 = 半开）。
         GateHealthHolder.recordFailure(currentEpochMillis(), blocking = true)
         try {
@@ -305,7 +306,7 @@ class CloudflareCdpTest {
                 "网关不通时若仍把验证窗押在网关上，用户连「做验证」这条自救通道都没了",
             )
         } finally {
-            EchGate.port = -1
+            EchGate.publish(EchGateStatus.Idle)
             GateHealthHolder.reset()
             runBlocking {
                 SettingsRepository.update {

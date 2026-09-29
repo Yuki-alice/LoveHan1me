@@ -63,7 +63,6 @@ import lovehan1me.data.network.EchGateProcess
 import lovehan1me.data.network.DohConfig
 import lovehan1me.data.network.HanimeDns
 import lovehan1me.data.network.HanimeProxySelector
-import lovehan1me.data.network.HanimeNetwork
 import lovehan1me.data.network.ServiceCreator
 import lovehan1me.data.network.egress.GateHealthHolder
 import lovehan1me.core.domain.state.WebsiteState
@@ -156,9 +155,9 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
         val port = EchGate.port
         when {
             port > 0 -> gateRunningTemplate.replace("%1\$d", port.toString())
-            EchGateProcess.starting -> gateStartingText
-            EchGateProcess.lastError != null ->
-                gateFailedTemplate.replace("%1\$s", EchGateProcess.lastError.orEmpty())
+            EchGate.starting -> gateStartingText
+            EchGate.lastError != null ->
+                gateFailedTemplate.replace("%1\$s", EchGate.lastError.orEmpty())
 
             else -> gateStoppedText
         }
@@ -381,7 +380,6 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             }
             coroutineScope.launch {
                 SettingsRepository.update { it.copy(customHostsData = data) }
-                if (SettingsRepository.useBuiltInHosts) HanimeNetwork.rebuildNetwork()
             }
         },
         customHostsData = SettingsRepository.customHostsData,
@@ -399,7 +397,6 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             coroutineScope.launch {
                 SettingsRepository.update { it.copy(useDoH = enabled, dohPreset = preset, dohCustomUrl = url, dohBootstrapIps = bootstrapIps, dohTimeoutSeconds = timeoutSeconds.coerceIn(1, 60)) }
                 currentHost = SettingsRepository.baseUrl
-                HanimeNetwork.rebuildNetwork()
             }
         },
         onOpenDelayTest = {
@@ -438,7 +435,6 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             coroutineScope.launch {
                 SettingsRepository.update { it.copy(proxyType = lovehan1me.core.domain.model.ProxyType.fromId(type), proxyIp = ip, proxyPort = port) }
                 HanimeProxySelector.rebuildNetwork()
-                HanimeNetwork.rebuildNetwork()
             }
         },
         embedded = embedded,
@@ -549,7 +545,6 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
                     }
                 }
                 showDohConflictConfirm = false
-                HanimeNetwork.rebuildNetwork()
             }
         },
         onDismiss = { showDohConflictConfirm = false },

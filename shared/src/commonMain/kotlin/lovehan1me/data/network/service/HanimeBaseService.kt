@@ -15,14 +15,15 @@ import io.ktor.http.encodeURLPathPart
  * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/06/08 008 22:10
  *
- * P3：Retrofit interface → Ktor 实现（包名/方法名/参数名不变，
- * 返回类型 Response<ResponseBody> → HttpResponse）。baseUrl 默认取
- * HANIME_BASE_URL（与旧 Retrofit 在 create 时快照一致：本实例随 HanimeNetwork.rebuildNetwork 重建）。
+ * Retrofit interface → Ktor 实现（包名/方法名/参数名不变，
+ * 返回类型 Response<ResponseBody> → HttpResponse）。
  */
 class HanimeBaseService(
     private val client: HttpClient,
-    private val baseUrl: String = HANIME_BASE_URL,
 ) {
+
+    // 站点地址每次请求实时解析：不能在构造期快照，否则切站必须重建整个 service。
+    private val baseUrl: String get() = HANIME_BASE_URL
 
     suspend fun getHomePage(url: String): HttpResponse = client.get(url)
 

@@ -1,13 +1,11 @@
 package lovehan1me.data.network
 
-import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.interceptor.EchGateInterceptor
 import lovehan1me.data.network.interceptor.GetchuInterceptor
 import lovehan1me.data.network.interceptor.RetryInterceptor
 import lovehan1me.data.network.interceptor.SpeedLimitInterceptor
 import lovehan1me.data.network.interceptor.UrlLoggingInterceptor
 import lovehan1me.data.network.interceptor.UserAgentInterceptor
-import lovehan1me.core.util.unsafeLazy
 import okhttp3.Cache
 import okhttp3.CookieJar
 import okhttp3.OkHttpClient
@@ -34,11 +32,9 @@ object ServiceCreator {
         maxSize = 10 * 1024 * 1024
     )
 
-    private val downloadSpeedLimitInterceptor by unsafeLazy {
-        SpeedLimitInterceptor(maxSpeed = SettingsRepository.downloadSpeedLimit)
-    }
+    private val downloadSpeedLimitInterceptor = SpeedLimitInterceptor()
 
-    private val dns = HanimeDns()
+    private val dns = HanimeDns.SHARED
 
     /**
      * 网关未运行时它自己放行直连，所以常驻拦截器列表是安全的
@@ -55,28 +51,15 @@ object ServiceCreator {
     private val retryInterceptor = RetryInterceptor()
 
     /**
-     * OkHttpClient
+     * 三个客户端只依赖不随设置变化的参数（超时 / 协议 / 缓存目录）。出口判定
+     * （DNS、代理、网关）、UA、Cookie、限速全部在拦截器里每请求读取实时设置，
+     * 所以它们是**稳定单例**：改任何网络设置都不需要重建。
      */
-    var hClient: OkHttpClient = buildHClient()
-        private set
+    val hClient: OkHttpClient = buildHClient()
 
-    var downloadClient: OkHttpClient = buildDownloadClient()
-        private set
+    val downloadClient: OkHttpClient = buildDownloadClient()
 
-    var getchuClient: OkHttpClient = buildGetchuClient()
-        private set
-
-    /**
-     * Rebuild OkHttpClient
-     *
-     * 三个客户端一起重建：下载客户端漏在外的话，用户在设置页改完代理，
-     * 页面能刷新了、图片能加载了，**下载仍拿旧代理**跑到下次冷启动才生效。
-     */
-    fun rebuildOkHttpClient() {
-        hClient = buildHClient()
-        downloadClient = buildDownloadClient()
-        getchuClient = buildGetchuClient()
-    }
+    val getchuClient: OkHttpClient = buildGetchuClient()
 
     private fun buildGetchuClient(): OkHttpClient {
         return OkHttpClient.Builder()
@@ -87,7 +70,7 @@ object ServiceCreator {
             // getchu 同样可能被 SNI 阻断：网关未运行时放行零开销，运行时走普通 TLS 策略。
             .addInterceptor(echGateInterceptor)
             .cookieJar(CookieJar.NO_COOKIES)
-            .proxySelector(HanimeProxySelector())
+            .proxySelector(HanimeProxySelector.SHARED)
             .dns(dns)
             .build()
     }
@@ -103,7 +86,7 @@ object ServiceCreator {
             // 失败时 EchGateInterceptor 自己回退直连，不会把下载卡死在网关上。
             .addInterceptor(echGateInterceptor)
             // 与浏览同一出口：站点直连被重置时，"能看不能下"就是代理没跟过来
-            .proxySelector(HanimeProxySelector())
+            .proxySelector(HanimeProxySelector.SHARED)
             .dns(dns)
             .build()
     }
@@ -127,7 +110,7 @@ object ServiceCreator {
             .addInterceptor(echGateInterceptor)
             .cache(cache)
             .cookieJar(HCookieJar())
-            .proxySelector(HanimeProxySelector())
+            .proxySelector(HanimeProxySelector.SHARED)
             .dns(dns)
         createCloudflareInterceptor()?.let { builder.addInterceptor(it) }
         return builder.build()

@@ -10,6 +10,16 @@ import javax.net.ssl.SSLException
 import kotlin.random.Random
 
 /**
+ * 重试预算的截止时刻，随请求下传给内层拦截器。
+ *
+ * 为什么要把预算传下去：本拦截器挂在最外层，只在 **attempt 之间**检查预算；而内层
+ * `EchGateInterceptor` 单次 attempt 里能跑三次往返（网关 → 网关重试 → 让位给代理），
+ * 每次都可能等满 15s 连接超时 —— 叠加起来是分钟级的转圈，外层的 8s 预算根本管不到。
+ * 传同一个截止时刻下去，内层每次往返前自查，才真的有上界。
+ */
+data class RetryDeadline(val deadlineNanos: Long)
+
+/**
  * 传输层重试：只对幂等方法、只对连接类异常。
  *
  * ## 为什么需要
@@ -47,10 +57,13 @@ class RetryInterceptor(
         if (request.method != "GET" && request.method != "HEAD") return chain.proceed(request)
 
         val startedAtNs = System.nanoTime()
+        val budgeted = request.newBuilder()
+            .tag(RetryDeadline::class.java, RetryDeadline(startedAtNs + maxRetryBudgetMs * 1_000_000L))
+            .build()
         var attempt = 1
         while (true) {
             try {
-                return chain.proceed(request)
+                return chain.proceed(budgeted)
             } catch (e: IOException) {
                 val elapsedMs = (System.nanoTime() - startedAtNs) / 1_000_000
                 if (attempt >= maxAttempts ||

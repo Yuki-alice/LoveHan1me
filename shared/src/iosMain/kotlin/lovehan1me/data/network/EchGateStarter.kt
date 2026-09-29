@@ -13,11 +13,11 @@ object EchGateStarter {
 
     /** 网关就绪，写入实际监听端口。 */
     fun setPort(port: Int) {
-        EchGate.port = port
+        EchGate.publish(EchGateStatus.Running(port))
     }
 
     /** 网关停止，恢复未运行态。 */
     fun setStopped() {
-        EchGate.port = -1
+        EchGate.publish(EchGateStatus.Stopped)
     }
 }

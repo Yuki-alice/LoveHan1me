@@ -3,16 +3,15 @@ package lovehan1me.app.navigation.main
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
 import lovehan1me.data.SettingsRepository
-import lovehan1me.data.network.HanimeNetwork
 import lovehan1me.feature.login.ManualInputCookiesScreen
 import kotlinx.coroutines.launch
 
 /**
- * M2：自 `:app` `AuthRouteScreens.kt` 下沉（同名，`:app` 侧删除）。
+ * 手动粘贴 cookie 登录：写入凭据后回调成功。
  *
- * 唯一差异：`login(cookie)`（jvmMain `HanimeAccount.kt`，iOS 不可见）改内联
- * `SettingsRepository.update`（两者语义逐行一致）+ `HanimeNetwork.rebuildNetwork()`。
- * 后者在 JVM 重建 OkHttp 传输层 + 各 service，iOS 侧 no-op 后重建 service。
+ * `login(cookie)`（jvmMain `HanimeAccount.kt`，iOS 不可见）改为内联
+ * `SettingsRepository.update`（两者语义一致）。cookie 由 HCookieJar 每请求读取，
+ * 不需要重建网络。
  */
 @Composable
 fun ManualCookiesRouteScreen(
@@ -27,7 +26,6 @@ fun ManualCookiesRouteScreen(
                 SettingsRepository.update {
                     it.copy(isAlreadyLogin = true, loginCookie = cookie)
                 }
-                HanimeNetwork.rebuildNetwork()
                 onLoginSucceeded()
             }
         },

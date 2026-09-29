@@ -105,13 +105,42 @@ class EgressPlannerTest {
     }
 
     @Test
-    fun `跳过原因不影响试用期判定`() {
-        // 熔断期间如果同时有代理，"让位"的对象是存在的；试用期标记照旧表达这个事实。
+    fun `跳过时没有网关候选但仍看得出后面有没有退路`() {
+        // 熔断期间如果同时有代理，"让位"的对象是存在的 —— 这个事实由 proxyUsable 表达，
+        // 而不是 gateOnProbation：候选里没有 Gate，就无从谈"试用"。
         val plan = EgressPlanner.plan(
             browseRequest,
             state(gate = readyGate.copy(circuitOpen = true), proxy = ProxyState.Explicit("p", 1, false)),
         )
-        assertTrue(plan.gateOnProbation)
+        assertEquals(listOf(EgressAttempt.Passthrough), plan.attempts)
+        assertFalse(plan.gateOnProbation, "没有 Gate 可试用，报试用期就是撒谎")
+        assertTrue(plan.proxyUsable, "熔断不代表用户手里没有能用的代理")
+    }
+
+    // ── 增量三：有序候选 ──
+
+    @Test
+    fun `无代理时网关是唯一候选`() {
+        val plan = EgressPlanner.plan(browseRequest, state())
+        assertEquals(1, plan.attempts.size, "后面没有更好的路，排让位只是白跑一趟")
+        assertTrue(plan.attempts.single() is EgressAttempt.Gate)
+    }
+
+    @Test
+    fun `有代理时网关后面排着让位`() {
+        val plan = EgressPlanner.plan(
+            browseRequest,
+            state(proxy = ProxyState.Explicit("203.0.113.7", 7890, socks = false)),
+        )
+        assertEquals(2, plan.attempts.size)
+        assertTrue(plan.attempts[0] is EgressAttempt.Gate, "仍先试网关，保住免梯直连")
+        assertEquals(EgressAttempt.Yield, plan.attempts[1], "失败即让位，保住配了代理就必须能用")
+    }
+
+    @Test
+    fun `让位记账只在让位路径真的更好时才指控网关`() {
+        assertFalse(gateBlameAfterYield(403, 403), "让位路径同样被封 ⇒ 封的是用户，网关无责")
+        assertTrue(gateBlameAfterYield(200, 403), "让位路径通了 ⇒ 网关出口被封，一次即熔断")
     }
 
     // ── 增量二：隧道通道与播放器出口 ──

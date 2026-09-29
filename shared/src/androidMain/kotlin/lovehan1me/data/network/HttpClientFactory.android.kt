@@ -16,7 +16,3 @@ actual fun createGetchuHttpClient(): HttpClient = HttpClient(OkHttp) {
 }
 
 actual fun createPlainHttpClient(): HttpClient = HttpClient(OkHttp)
-
-internal actual fun rebuildHttpClients() {
-    ServiceCreator.rebuildOkHttpClient()
-}

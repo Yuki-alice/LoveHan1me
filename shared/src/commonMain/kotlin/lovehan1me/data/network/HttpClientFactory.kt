@@ -21,9 +21,3 @@ expect fun createGetchuHttpClient(): HttpClient
  * 代理选择器。三端各自用裸引擎构造。
  */
 expect fun createPlainHttpClient(): HttpClient
-
-/**
- * 重建底层传输层：JVM 上对应 ServiceCreator.rebuildOkHttpClient()（旧 HanimeNetwork.rebuildNetwork
- * 第一步的语义）；iOS 无 OkHttp 层，no-op。internal，仅 HanimeNetwork 使用。
- */
-internal expect fun rebuildHttpClients()

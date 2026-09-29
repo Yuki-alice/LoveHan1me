@@ -29,7 +29,7 @@ import kotlin.test.assertTrue
  * 网关拦截器改写/回退回归（纯内存，不碰真实网络）。
  *
  * [RecordingChain] 按目标扮两个角色：回环地址扮网关（断言改写与头），
- * 其它扮源站。`EchGate.port` 是进程全局，用完即还原。
+ * 其它扮源站。`EchGate.status` 是进程全局，用完即还原。
  */
 class EchGateInterceptorTest {
 
@@ -84,7 +84,7 @@ class EchGateInterceptorTest {
     @Test
     fun `网关关闭直接放行`() {
         install()
-        EchGate.port = -1
+        EchGate.publish(EchGateStatus.Idle)
         try {
             val chain = RecordingChain(
                 Request.Builder().url("https://hanime1.me/").build(),
@@ -95,14 +95,14 @@ class EchGateInterceptorTest {
             assertEquals(1, chain.seen.size)
             assertEquals("hanime1.me", chain.seen.first().url.host)
         } finally {
-            EchGate.port = -1
+            EchGate.publish(EchGateStatus.Idle)
         }
     }
 
     @Test
     fun `改写携带目标与Host`() {
         install()
-        EchGate.port = 18080
+        EchGate.publish(EchGateStatus.Running(18080))
         try {
             var gateTarget: String? = null
             var gateHost: String? = null
@@ -123,7 +123,7 @@ class EchGateInterceptorTest {
             assertEquals("hanime1.me", gateTarget)
             assertEquals("hanime1.me", gateHost)
         } finally {
-            EchGate.port = -1
+            EchGate.publish(EchGateStatus.Idle)
         }
     }
 
@@ -133,7 +133,7 @@ class EchGateInterceptorTest {
         runBlocking {
             SettingsRepository.update { it.copy(loginCookie = "session=abc") }
         }
-        EchGate.port = 18080
+        EchGate.publish(EchGateStatus.Running(18080))
         try {
             var cookie: String? = null
             val chain = RecordingChain(
@@ -145,7 +145,31 @@ class EchGateInterceptorTest {
             EchGateInterceptor().intercept(chain)
             assertTrue(cookie?.contains("session=abc") == true, "Cookie 应按原域名注入，实际=$cookie")
         } finally {
-            EchGate.port = -1
+            EchGate.publish(EchGateStatus.Idle)
+            runBlocking { SettingsRepository.update { it.copy(loginCookie = "") } }
+        }
+    }
+
+    @Test
+    fun `图片链不把站点登录态发给图床`() {
+        install()
+        runBlocking {
+            SettingsRepository.update { it.copy(loginCookie = "session=abc") }
+        }
+        EchGate.publish(EchGateStatus.Running(18080))
+        try {
+            var cookie: String? = null
+            val chain = RecordingChain(
+                // 图床是第三方：会话凭据发过去没有用途，只有泄漏风险。
+                Request.Builder().url("https://vdownload.hembed.com/image/a.jpg").build(),
+            ) { req ->
+                cookie = req.header("Cookie")
+                textResponse(req, 200, "IMG")
+            }
+            EchGateInterceptor(attachSiteCookies = false).intercept(chain)
+            assertNull(cookie, "图片链必须关掉站点 Cookie 注入，实际=$cookie")
+        } finally {
+            EchGate.publish(EchGateStatus.Idle)
             runBlocking { SettingsRepository.update { it.copy(loginCookie = "") } }
         }
     }
@@ -153,7 +177,7 @@ class EchGateInterceptorTest {
     @Test
     fun `网关502先重试网关成功则不用回退`() {
         install()
-        EchGate.port = 18080
+        EchGate.publish(EchGateStatus.Running(18080))
         try {
             var gateHits = 0
             val chain = RecordingChain(
@@ -174,14 +198,14 @@ class EchGateInterceptorTest {
             assertEquals(2, gateHits)
             assertEquals(2, chain.seen.size)
         } finally {
-            EchGate.port = -1
+            EchGate.publish(EchGateStatus.Idle)
         }
     }
 
     @Test
     fun `网关502两次才回退直连`() {
         install()
-        EchGate.port = 18080
+        EchGate.publish(EchGateStatus.Running(18080))
         try {
             val chain = RecordingChain(
                 Request.Builder().url("https://hanime1.me/").build(),
@@ -196,14 +220,14 @@ class EchGateInterceptorTest {
             assertEquals("hanime1.me", chain.seen.last().url.host)
             assertNull(chain.seen.last().header(EchGatePolicy.TARGET_HEADER))
         } finally {
-            EchGate.port = -1
+            EchGate.publish(EchGateStatus.Idle)
         }
     }
 
     @Test
     fun `源站502不回退`() {
         install()
-        EchGate.port = 18080
+        EchGate.publish(EchGateStatus.Running(18080))
         try {
             val chain = RecordingChain(
                 Request.Builder().url("https://hanime1.me/").build(),
@@ -215,14 +239,14 @@ class EchGateInterceptorTest {
             assertEquals(502, resp.code)
             assertEquals(1, chain.seen.size)
         } finally {
-            EchGate.port = -1
+            EchGate.publish(EchGateStatus.Idle)
         }
     }
 
     @Test
     fun `网关异常回退直连`() {
         install()
-        EchGate.port = 18080
+        EchGate.publish(EchGateStatus.Running(18080))
         try {
             val chain = RecordingChain(
                 Request.Builder().url("https://hanime1.me/").build(),
@@ -234,7 +258,7 @@ class EchGateInterceptorTest {
             assertEquals("ORIGIN", resp.body.string())
             assertEquals(2, chain.seen.size)
         } finally {
-            EchGate.port = -1
+            EchGate.publish(EchGateStatus.Idle)
         }
     }
 
@@ -259,7 +283,7 @@ class EchGateInterceptorTest {
 
     @Test
     fun `网关403且处于试用期时经代理重试`() = withHttpProxy {
-        EchGate.port = 18080
+        EchGate.publish(EchGateStatus.Running(18080))
         try {
             var gateHits = 0
             val chain = RecordingChain(
@@ -280,13 +304,13 @@ class EchGateInterceptorTest {
             assertEquals(2, chain.seen.size)
             assertEquals("hanime1.me", chain.seen.last().url.host)
         } finally {
-            EchGate.port = -1
+            EchGate.publish(EchGateStatus.Idle)
         }
     }
 
     @Test
     fun `代理路径可用时把网关判为出口被封并熔断`() = withHttpProxy {
-        EchGate.port = 18080
+        EchGate.publish(EchGateStatus.Running(18080))
         try {
             val chain = RecordingChain(
                 Request.Builder().url("https://hanime1.me/").build(),
@@ -298,7 +322,7 @@ class EchGateInterceptorTest {
             // 代理能通、网关不能 ⇒ 网关出口被封，阻断类失败一次即熔断。
             assertTrue(GateHealthHolder.current.opened, "代理路径可用却仍留着网关，下个请求还要再撞一遍")
         } finally {
-            EchGate.port = -1
+            EchGate.publish(EchGateStatus.Idle)
         }
     }
 
@@ -309,7 +333,7 @@ class EchGateInterceptorTest {
         // 系统代理设置 —— 留着默认档，这条用例在配了系统代理的机器上会按设计真的去重试一次，
         // 变成"本机有代理就失败"的伪 flake。
         runBlocking { SettingsRepository.update { it.copy(proxyType = ProxyType.Direct) } }
-        EchGate.port = 18080
+        EchGate.publish(EchGateStatus.Running(18080))
         try {
             val chain = RecordingChain(
                 Request.Builder().url("https://hanime1.me/").build(),
@@ -320,14 +344,14 @@ class EchGateInterceptorTest {
             assertEquals(1, chain.seen.size, "没有代理就不该白重试一次")
             assertFalse(GateHealthHolder.current.opened, "没试过代理路径，判不了网关的责")
         } finally {
-            EchGate.port = -1
+            EchGate.publish(EchGateStatus.Idle)
             runBlocking { SettingsRepository.update { it.copy(proxyType = ProxyType.System) } }
         }
     }
 
     @Test
     fun `代理路径同样403时不算网关的锅`() = withHttpProxy {
-        EchGate.port = 18080
+        EchGate.publish(EchGateStatus.Running(18080))
         try {
             val chain = RecordingChain(
                 Request.Builder().url("https://hanime1.me/").build(),
@@ -340,7 +364,7 @@ class EchGateInterceptorTest {
                 "两边都 403 ⇒ 不是网关的锅，误熔断会让网关在整个冷却期里形同虚设",
             )
         } finally {
-            EchGate.port = -1
+            EchGate.publish(EchGateStatus.Idle)
         }
     }
 }

@@ -9,7 +9,9 @@ import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.OkHttpClient
 import java.net.InetAddress
 import java.net.UnknownHostException
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import kotlin.concurrent.thread
 
 /**
  * @project LoveHan1me
@@ -31,6 +33,76 @@ class HanimeDns : Dns {
     private var cachedDohDns: Dns? = null
 
     companion object {
+
+        /**
+         * 全进程共用一份。
+         *
+         * DoH client 与自定义 IP 的解析结果都缓存在**实例字段**上，每处各 new 一个
+         * 等于每处各建一个 DoH client、各存一份解析缓存。ServiceCreator / CDN 抓图 /
+         * 下载 / 网关启动各有一处，此前是 5 份互不相干的缓存。
+         */
+        val SHARED: HanimeDns = HanimeDns()
+
+        /** DoH 连续失败到此数后整档摘掉 [DOH_COOLDOWN_MS]。 */
+        private const val DOH_FAILURE_THRESHOLD = 3
+
+        /** DoH 冷却时长。 */
+        private const val DOH_COOLDOWN_MS = 30_000L
+
+        /** 并行发起的系统解析最多等这么久（DoH 也失败时，别让这次解析挂住）。 */
+        private const val SYSTEM_RACE_TIMEOUT_MS = 5_000L
+
+        /**
+         * 系统与 DoH 的竞速执行者（进程级：两个 client 同时解析不该各起一套线程）。
+         *
+         * 只用来把"系统解析"提前发起，不是为了改成"谁先回用谁"——见 [lookup] 的说明。
+         */
+        private val racePool = Executors.newCachedThreadPool { runnable ->
+            thread(start = false, isDaemon = true, name = "dns-race") { runnable.run() }
+        }
+
+        /**
+         * DoH 的负缓存（进程级）。
+         *
+         * 为什么需要：DoH 端点不可达时，每一档解析都要等满超时才降级系统解析，
+         * 一个首屏会碰上若干个新域名，串行等待直接把首屏拖成十几秒。
+         * 连续失败 [DOH_FAILURE_THRESHOLD] 次就整档摘掉 [DOH_COOLDOWN_MS]，
+         * 期间请求零延迟走系统解析（正确性不变：那条路本来就是兜底）。
+         *
+         * 冷却按 URL 记：用户换了 DoH 端点，新端点立刻不受旧冷却影响。
+         * 计数用 `@Volatile` 而非原子类——它是"够不够糟糕"的启发式，
+         * 并发下少记一次不影响结论，不值得为它加锁。
+         */
+        @Volatile
+        private var dohFailures = 0
+
+        @Volatile
+        private var dohCoolingUrl = ""
+
+        @Volatile
+        private var dohCooldownUntilMs = 0L
+
+        private fun dohCooling(dohUrl: String, nowMs: Long): Boolean =
+            dohCoolingUrl == dohUrl && nowMs < dohCooldownUntilMs
+
+        private fun noteDohFailure(dohUrl: String, hostname: String, cause: Throwable) {
+            val failures = dohFailures + 1
+            dohFailures = failures
+            if (failures >= DOH_FAILURE_THRESHOLD) {
+                dohCoolingUrl = dohUrl
+                dohCooldownUntilMs = System.currentTimeMillis() + DOH_COOLDOWN_MS
+                LogUtil.w(
+                    "DNS",
+                    "DoH 连续失败 $failures 次，${DOH_COOLDOWN_MS}ms 内不再排这一档：$hostname（${cause.message}）",
+                )
+            } else {
+                LogUtil.w("DNS", "DoH 失败，降级系统解析 $hostname: ${cause.message}")
+            }
+        }
+
+        private fun noteDohSuccess() {
+            dohFailures = 0
+        }
 
         private val cloudFlareIps = listOf(
             "172.64.229.154", "162.159.0.1", "108.162.192.1", "172.64.33.1", "104.19.0.1",
@@ -110,14 +182,28 @@ class HanimeDns : Dns {
         }
 
         val dohUrl = DohConfig.resolveUrl()
-        if (!dohUrl.isNullOrBlank()) {
+        val now = System.currentTimeMillis()
+        var systemFuture: java.util.concurrent.Future<List<InetAddress>>? = null
+        if (!dohUrl.isNullOrBlank() && !dohCooling(dohUrl, now)) {
+            // 系统与 DoH 并行发起。
+            //
+            // 刻意**不是** happy-eyeballs 那种"谁先回用谁"：系统解析快但可能被污染，
+            // DoH 慢但可信，采纳顺序必须仍是 DoH 优先。并行只省掉
+            // "DoH 失败后再去查系统"那一段串行等待 —— 首屏碰上若干新域名时，
+            // 这段等待会按域名数叠加。
+            systemFuture = runCatching {
+                racePool.submit<List<InetAddress>> { Dns.SYSTEM.lookup(hostname) }
+            }.getOrNull()
+
             val viaDoH = runCatching { lookupByDoH(dohUrl, hostname) }
-                .onFailure { LogUtil.w("DNS", "DoH 失败，降级系统解析 $hostname: ${it.message}") }
+                .onFailure { noteDohFailure(dohUrl, hostname, it) }
+                .onSuccess { noteDohSuccess() }
                 .getOrNull()?.takeIf { it.isNotEmpty() }
             if (viaDoH != null) return viaDoH
         }
 
-        val system = runCatching { Dns.SYSTEM.lookup(hostname) }
+        val system = systemFuture?.let { runCatching { it.get(SYSTEM_RACE_TIMEOUT_MS, TimeUnit.MILLISECONDS) } }
+            ?: runCatching { Dns.SYSTEM.lookup(hostname) }
         val viaSystem = system.getOrNull()?.takeIf { it.isNotEmpty() }
         if (viaSystem != null) return viaSystem
 

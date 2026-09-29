@@ -6,7 +6,9 @@ import java.net.InetSocketAddress
 import java.net.Socket
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlin.concurrent.thread
 
 /**
@@ -28,13 +30,28 @@ import kotlin.concurrent.thread
  *
  * ## 调用时机
  * 调用方（[HanimeDns]）跑在 OkHttp 的**网络线程**上，不是主线程，所以这里可以阻塞；
- * 探测是并发的，最坏耗时约 [PROBE_TIMEOUT_MS]，只在缓存过期后的第一次解析付出。
+ * 但阻塞只发生在**手上没有可用值**时（首次 / 候选表刚变过）。TTL 到期走
+ * stale-while-revalidate：交旧值、后台刷新，调用方不付探测时间。
  */
 object CdnIpProbe {
 
     private const val PROBE_TIMEOUT_MS = 1200
     private const val CACHE_TTL_MS = 10 * 60 * 1000L
     private const val PROBE_PORT = 443
+
+    /**
+     * 探测任务的执行者。
+     *
+     * 缓存线程池（daemon，空闲自动回收）而不是每次 `thread { }`：候选通常 5–8 个，
+     * 而 `usable()` 由 OkHttp 的网络线程调用，每次现起 N 条线程的开销是实打实付在
+     * 当次解析上的。
+     */
+    private val probePool = Executors.newCachedThreadPool { runnable ->
+        thread(start = false, isDaemon = true, name = "cdn-probe") { runnable.run() }
+    }
+
+    /** 后台刷新是否已在路上。过期瞬间会有一批并发解析，只该提交一次刷新。 */
+    private val refreshInFlight = AtomicBoolean(false)
 
     @Volatile
     private var cachedKey: String = ""
@@ -57,14 +74,38 @@ object CdnIpProbe {
 
         val key = candidates.joinToString(",")
         val now = System.currentTimeMillis()
-        if (key == cachedKey && cachedIps.isNotEmpty() && now - cachedAtMs < CACHE_TTL_MS) {
-            return cachedIps
+        val snapshot = cachedIps
+        if (key == cachedKey && snapshot.isNotEmpty()) {
+            if (now - cachedAtMs < CACHE_TTL_MS) return snapshot
+            // stale-while-revalidate：旧值照交，刷新放后台。
+            //
+            // 探测最坏 2.2s（`PROBE_TIMEOUT_MS` + 兜底），而本函数跑在 OkHttp 的**网络线程**上。
+            // 若 TTL 到期时同步等，命中过期那一屏的所有解析会一起卡满探测时间 ——
+            // 用户看到的是"滑到某一屏突然卡一下"。旧值即便有一两个失效，
+            // 拨号期按序 failover 也能兜住，比整屏停住划算得多。
+            refreshInBackground(key, candidates)
+            return snapshot
         }
+        // 首次（或候选表刚变过）：手上没有可用值，只能等这一次。
+        return probe(key, candidates)
+    }
 
+    private fun refreshInBackground(key: String, candidates: List<String>) {
+        if (!refreshInFlight.compareAndSet(false, true)) return
+        probePool.execute {
+            try {
+                probe(key, candidates)
+            } finally {
+                refreshInFlight.set(false)
+            }
+        }
+    }
+
+    private fun probe(key: String, candidates: List<String>): List<String> {
         val latencies = ConcurrentHashMap<String, Int>()
         val latch = CountDownLatch(candidates.size)
         for (ip in candidates) {
-            thread(start = true, isDaemon = true, name = "cdn-probe-$ip") {
+            probePool.execute {
                 try {
                     val start = System.currentTimeMillis()
                     Socket().use { socket ->
@@ -78,14 +119,14 @@ object CdnIpProbe {
                 }
             }
         }
-        // 每个探测线程自带超时；这里的上限只是兜底，防某个线程卡在地址解析上。
+        // 每个探测任务自带超时；这里的上限只是兜底，防某个任务卡在地址解析上。
         latch.await(PROBE_TIMEOUT_MS + 1000L, TimeUnit.MILLISECONDS)
 
         val sorted = latencies.entries.sortedBy { it.value }.map { it.key }
         if (sorted.isNotEmpty()) {
             cachedKey = key
             cachedIps = sorted
-            cachedAtMs = now
+            cachedAtMs = System.currentTimeMillis()
             LogUtil.i("DNS", "CDN 探测可用 ${sorted.size}/${candidates.size}：$sorted")
         } else {
             LogUtil.w("DNS", "CDN 探测全部失败（${candidates.size} 个），本次回退系统解析")

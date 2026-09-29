@@ -21,10 +21,6 @@ actual fun createPlainHttpClient(): HttpClient = HttpClient(Darwin) {
     }
 }
 
-internal actual fun rebuildHttpClients() {
-    // iOS 无 ServiceCreator/OkHttp 层，重建即重建上面的 Darwin client，无需额外动作
-}
-
 private fun createDarwinHttpClient(): HttpClient = HttpClient(Darwin) {
     // ECH 网关插件必须装在 HttpCookies 之前：改写先发生，storage 随后对回环短路。
     installEchGate()

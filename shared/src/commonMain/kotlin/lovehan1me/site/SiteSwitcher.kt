@@ -10,7 +10,6 @@ import lovehan1me.data.SettingsRepository
 import lovehan1me.data.clearMemoryCookies
 import lovehan1me.data.clearWebCookies
 import lovehan1me.data.network.CsrfTokenProvider
-import lovehan1me.data.network.HanimeNetwork
 import lovehan1me.data.network.ensureEchGateway
 import lovehan1me.feature.video.PreviewCommentPrefetcher
 
@@ -37,9 +36,10 @@ import lovehan1me.feature.video.PreviewCommentPrefetcher
  *
  * ### 执行顺序不能换
  *
- * 1. **先落配置** —— service 的 `baseUrl` 是构造期快照（见 [HanimeNetwork.rebuildNetwork]），
- *    必须在 `update{}` **之后**重建，否则新 service 仍读到旧 URL；
- * 2. **再重建网络传输与 service** —— 代理（`rebuildSystemProxy`）+ 五个 service；
+ * 1. **先落配置** —— 站点地址由 service 每次请求实时解析，必须等 `update{}` 落定之后
+ *    发起的新请求才会打到新站；
+ * 2. **再刷新代理系统属性** —— `rebuildSystemProxy`（JVM 系统属性，让 WebView /
+ *    HttpURLConnection 与 OkHttp 走同一出口）；
  * 3. **再清进程级站点凭据（登录态除外）** —— 内存 cookie、WebView cookie、CSRF token；
  * 4. **再清进程级缓存** —— 那些不以站点为键、跨站会串台的 object；
  * 5. **最后递增 [generation]** —— UI 侧据此重建 composition 与 ViewModelStore。
@@ -115,11 +115,11 @@ object SiteSwitcher {
             )
         }
 
-        // 2) 重建网络：代理选择器 + 全部 service（此处才真正把新 baseUrl 装进去）
+        // 2) 刷新代理系统属性（JVM 系统属性，供 WebView/HttpURLConnection 走同一出口）
         //    + 确保 ECH 网关在运行（开着开关但进程死了，借切换复活；
         //    探测缓存的失效在 jvmMain rebuildSystemProxy 内，见该函数注释）。
+        //    站点地址由 service 每请求实时解析，切换不需要重建任何实例。
         rebuildSystemProxy()
-        HanimeNetwork.rebuildNetwork()
         ensureEchGateway()
 
         // 3) 清进程级站点凭据，但**保留登录态**。

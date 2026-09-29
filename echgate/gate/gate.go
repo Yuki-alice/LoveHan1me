@@ -134,9 +134,24 @@ func Start(cfg Config) (*Server, error) {
 		log.Printf("echgate: ECH 配置就绪（来源=%s，%d 字节）", echSrc, len(ech))
 	}
 
+	// 连接池必须显式放大：默认值 MaxIdleConnsPerHost=2 意味着首页几十个并发请求
+	// 里只有 2 条上游连接能复用，其余每次都要重新 TCP + ECH 握手（单次最坏 5s）。
+	// 复用要成立还要求 IdleConnTimeout 长过一次浏览的间隔，30s 太短——
+	// 用户看完一屏再滑，连接已经回收，下一屏又回到冷启动。
+	//
+	// ForceAttemptHTTP2 保持 false：出站 Transport 只会 HTTP/1.1（见 dialOne 里
+	// 关于 NextProtos 的说明），协商出 h2 会拿到 "malformed HTTP response"。
 	proxy := &httputil.ReverseProxy{
-		Director:     director,
-		Transport:    &http.Transport{DialTLSContext: dialUpstream, IdleConnTimeout: 30 * time.Second},
+		Director: director,
+		Transport: &http.Transport{
+			DialTLSContext:        dialUpstream,
+			MaxIdleConns:          512,
+			MaxIdleConnsPerHost:   64,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+			ForceAttemptHTTP2:     false,
+		},
 		ErrorHandler: onUpstreamError,
 	}
 

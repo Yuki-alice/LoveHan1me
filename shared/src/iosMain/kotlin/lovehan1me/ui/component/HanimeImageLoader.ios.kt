@@ -8,7 +8,7 @@ import coil3.compose.LocalPlatformContext
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.darwin.Darwin
-import lovehan1me.data.network.HanimeImageHeaders
+import lovehan1me.data.network.installEchGate
 
 // iOS 真实现（Gate4-平台能力补齐）：Darwin 引擎 + 通用图片管线（ECH 改写，见帮助函数）。
 // 预览模式走默认构造（与 jvm 侧同分支）。
@@ -20,7 +20,7 @@ actual fun rememberHanimeImageLoader(): ImageLoader {
         if (isInspectionMode) {
             ImageLoader.Builder(context).build()
         } else {
-            val client = HttpClient(Darwin) { install(HanimeImageHeaders) }
+            val client = HttpClient(Darwin) { installEchGate(withCookies = false) }
             ImageLoader.Builder(context)
                 .components { add(KtorNetworkFetcherFactory(httpClient = client)) }
                 .build()

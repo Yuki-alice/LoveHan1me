@@ -311,13 +311,17 @@ object DesktopDownloadWorkController : DownloadWorkController {
         } catch (e: kotlinx.coroutines.CancellationException) {
             // 暂停/删除：pauseTask 已把状态落库，这里只保证不误标失败
             dao.find(entity.videoCode, entity.quality)?.let {
-                if (it.state == DownloadState.Downloading) dao.update(it.copy(state = DownloadState.Paused))
+                if (it.state == DownloadState.Downloading) {
+                    dao.update(it.copy(state = DownloadState.Paused, downloadedLength = downloaded))
+                }
             }
             throw e
         } catch (e: Exception) {
             LogUtil.e(TAG, "download failed: ${entity.title}", e)
+            // 带上已下字节：续传靠 downloadedLength 定位，只落 1s 前的进度等于白下最后一段。
+            // 文件以 "rwd" 打开，每次 write 已同步落盘，故这里的 downloaded 是真实字节数。
             dao.find(entity.videoCode, entity.quality)?.let {
-                dao.update(it.copy(state = DownloadState.Failed))
+                dao.update(it.copy(state = DownloadState.Failed, downloadedLength = downloaded))
             }
         } finally {
             jobs.remove(taskKey(entity0))
@@ -335,8 +339,8 @@ object DesktopDownloadWorkController : DownloadWorkController {
             .connectTimeout(java.time.Duration.ofSeconds(15))
             .readTimeout(java.time.Duration.ofSeconds(30))
             .addInterceptor(RetryInterceptor())
-            .dns(HanimeDns())
-            .proxySelector(HanimeProxySelector())
+            .dns(HanimeDns.SHARED)
+            .proxySelector(HanimeProxySelector.SHARED)
             .addInterceptor(EchGateInterceptor())
             .build()
     }

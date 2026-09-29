@@ -30,7 +30,7 @@ import java.net.URI
  */
 internal fun resolveMediaProxyUrl(): String? {
     val uri = runCatching { URI("https://hanime1.me/") }.getOrNull() ?: return null
-    val selected = runCatching { HanimeProxySelector().select(uri) }
+    val selected = runCatching { HanimeProxySelector.SHARED.select(uri) }
         .recoverCatching { ProxySelector.getDefault()?.select(uri) ?: emptyList() }
         .getOrNull()
     val proxy = selected?.firstOrNull() ?: return null

@@ -10,7 +10,6 @@ import lovehan1me.core.platform.downloadWorkController
 import okio.buffer
 import lovehan1me.core.platform.openBackupSink
 import lovehan1me.core.platform.rebuildSystemProxy
-import lovehan1me.data.network.HanimeNetwork
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.dao.CheckInRecordDatabase
 import lovehan1me.data.database.dao.DownloadDatabase
@@ -141,7 +140,6 @@ object BackupManager {
             DataStoreManager.restoreBackup(settings.mapValues { (_, value) -> value.rawValue })
             applyAppLanguage(SettingsRepository.current.appLanguage)
             rebuildSystemProxy()
-            HanimeNetwork.rebuildNetwork()
             downloadWorkController().updateDownloadLimit(SettingsRepository.current.downloadCountLimit)
         }
     }

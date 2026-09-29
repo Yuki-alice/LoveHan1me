@@ -226,6 +226,8 @@ kotlin {
         val desktopTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                // service 的站点地址是"每请求实时解析"这一契约要能被断言：用假引擎抓请求 URL。
+                implementation(libs.ktor.client.mock)
                 // Skia 原生库：decodeAvatarSource 走 skia Image，JVM 测试里
                 // 没有 desktopApp 注入的 skiko-awt-runtime 就会
                 // ExceptionInInitializerError（本地库未加载）。

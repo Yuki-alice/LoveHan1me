@@ -13,21 +13,16 @@ import lovehan1me.data.network.egress.currentEgressState
  * 改写后 storage 对回环 host 短路（见 [BridgeCookiesStorage.get]），
  * 同一条 Cookie 不会发两遍。
  *
- * 网关运行时待接入：`portProvider` 读 [EchGate.port]，为 -1 时零改动，
- * 开着开关也无害——现有机制即兜底。
+ * 是否改写由 [lovehan1me.data.network.egress.EgressPlanner] 裁决（插件内部读
+ * [currentEgressState]）：用户关掉、进程没跑、或熔断中一律不放行，
+ * 与 jvm 侧 EchGateInterceptor 是同一份判定与同一个熔断器。
+ *
+ * 网关运行时待接入：[EchGate.port] 为 -1 时零改动，开着开关也无害——现有机制即兜底。
  */
-internal fun HttpClientConfig<*>.installEchGate() {
+internal fun HttpClientConfig<*>.installEchGate(withCookies: Boolean = true) {
     install(EchGateClientPlugin) {
-        // Swift 侧自启网关（无设置不启动的概念），是否改写由 planner 裁决：
-        // 用户关掉、进程没跑、或熔断中一律回 -1，插件零改动，等价于网关不存在 ——
-        // 与 jvm 侧 EchGateInterceptor 读的是同一份判定与同一个熔断器。
-        portProvider = {
-            runCatching {
-                val gate = currentEgressState().gate
-                if (gate.enabled && gate.running && !gate.circuitOpen) gate.port else -1
-            }.getOrDefault(-1)
-        }
-        cookieHeaderProvider = ::echCookieHeader
+        // 图片链传 false：图床不需要登录态，把 hanime1_session 发过去只是平白泄漏凭据。
+        if (withCookies) cookieHeaderProvider = ::echCookieHeader
         logger = { LogUtil.d("EchGate", it) }
     }
 }

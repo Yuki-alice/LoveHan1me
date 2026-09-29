@@ -70,8 +70,8 @@ class EchGateProcessTest {
  * 网关就绪等待回归（冷启动竞态的根治）。
  *
  * 只等"拉起中"：开关没开 / 从未启动时零延迟返回 false，请求立即走兜底；
- * 拉起中则等到就绪或超时。`EchGate.port` 与 `starting` 是进程全局，
- * 用完即还原，不污染同 JVM 的其它用例。
+ * 拉起中则等到就绪或超时。`EchGate.status` 是进程全局，用完即还原，
+ * 不污染同 JVM 的其它用例。
  */
 class EchGateAwaitTest {
 
@@ -91,15 +91,14 @@ class EchGateAwaitTest {
     }
 
     private fun resetGlobals() {
-        EchGate.port = -1
-        EchGateProcess.starting = false
+        EchGate.publish(EchGateStatus.Idle)
         runBlocking { SettingsRepository.update { it.copy(useEchGate = false) } }
     }
 
     @Test
     fun `已就绪立即返回true`() {
         install(false)
-        EchGate.port = 12345
+        EchGate.publish(EchGateStatus.Running(12345))
         try {
             assertTrue(EchGateProcess.awaitReadyIfStarting(500))
         } finally {
@@ -110,8 +109,7 @@ class EchGateAwaitTest {
     @Test
     fun `从未拉起不等直接返回false`() {
         install(true)
-        EchGate.port = -1
-        EchGateProcess.starting = false
+        EchGate.publish(EchGateStatus.Idle)
         try {
             val start = System.currentTimeMillis()
             assertFalse(EchGateProcess.awaitReadyIfStarting(2_000))
@@ -127,8 +125,7 @@ class EchGateAwaitTest {
     @Test
     fun `开关没开即使starting也不等`() {
         install(false)
-        EchGate.port = -1
-        EchGateProcess.starting = true
+        EchGate.publish(EchGateStatus.Starting)
         try {
             assertFalse(EchGateProcess.awaitReadyIfStarting(2_000))
         } finally {
@@ -139,13 +136,11 @@ class EchGateAwaitTest {
     @Test
     fun `拉起中等待就绪`() {
         install(true)
-        EchGate.port = -1
-        EchGateProcess.starting = true
+        EchGate.publish(EchGateStatus.Starting)
         try {
             thread(start = true, isDaemon = true) {
                 Thread.sleep(300)
-                EchGate.port = 12345
-                EchGateProcess.starting = false
+                EchGate.publish(EchGateStatus.Running(12345))
             }
             assertTrue(EchGateProcess.awaitReadyIfStarting(3_000))
         } finally {
@@ -156,10 +151,27 @@ class EchGateAwaitTest {
     @Test
     fun `拉起中超時返回false`() {
         install(true)
-        EchGate.port = -1
-        EchGateProcess.starting = true
+        EchGate.publish(EchGateStatus.Starting)
         try {
             assertFalse(EchGateProcess.awaitReadyIfStarting(400))
+        } finally {
+            resetGlobals()
+        }
+    }
+
+    @Test
+    fun `等待结束后闸门释放`() {
+        install(true)
+        EchGate.publish(EchGateStatus.Starting)
+        try {
+            assertFalse(EchGateProcess.awaitReadyIfStarting(200), "第一次等待超時")
+            // 闸门若不释放，第二次调用会被直接挡掉、零延迟返回，于是"网关起得慢一点"
+            // 的场景里再也没人等它 —— 首屏那批请求之后进来的请求会永远走兜底。
+            thread(start = true, isDaemon = true) {
+                Thread.sleep(150)
+                EchGate.publish(EchGateStatus.Running(12345))
+            }
+            assertTrue(EchGateProcess.awaitReadyIfStarting(3_000), "闸门没释放，没人再等网关")
         } finally {
             resetGlobals()
         }

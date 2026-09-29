@@ -11,52 +11,20 @@ import lovehan1me.data.network.service.HanimeSubscriptionService
  * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/06/08 008 22:35
  *
- * P3：自 :app 下沉 commonMain。原 `ServiceCreator.create<T>(baseUrl)`（Retrofit）改为
- * Ktor expect 工厂 createXxxHttpClient() + 服务类构造（baseUrl 默认取常量，构造时快照，
- * 与旧 Retrofit create 时语义一致）。rebuildNetwork 保留：先重建底层传输
- * （JVM=ServiceCreator.rebuildOkHttpClient，iOS=no-op），再重建各 service 实例。
+ * 五个站点 service 的持有者，全部是**稳定单例**。
+ *
+ * 站点地址由各 service 每次请求从 `HANIME_BASE_URL`（其本身是读设置的 getter）实时解析；
+ * 传输层（Ktor 客户端及其下的 OkHttp / Darwin 引擎）也与站点、设置无关 —— 所以无论是
+ * 切换站点还是改任何网络设置，都不需要重建实例。
  */
 object HanimeNetwork {
-    var hanimeService = _hanimeService
-        private set
-    var getchuService = _getchuService
-        private set
-    var commentService = _commentService
-        private set
-    var myListService = _myListService
-        private set
-    var subscriptionService = _subscriptionService
-        private set
 
-    private val _hanimeService
-        get() = HanimeBaseService(createHanimeHttpClient())
+    private val hanimeHttpClient = createHanimeHttpClient()
+    private val getchuHttpClient = createGetchuHttpClient()
 
-    private val _getchuService
-        get() = GetchuService(createGetchuHttpClient())
-
-    private val _commentService
-        get() = HanimeCommentService(createHanimeHttpClient())
-
-    private val _myListService
-        get() = HanimeMyListService(createHanimeHttpClient())
-
-    private val _subscriptionService
-        get() = HanimeSubscriptionService(createHanimeHttpClient())
-
-    /**
-     * 重建底层传输与全部 service。
-     *
-     * ⚠️ 这里的赋值**必须覆盖上面声明的每一个 `var`**。service 的 Ktor 客户端在构造期
-     * 经 `engine { preconfigured = <底层 client> }` 抓了一份引用，漏掉哪一个，它就会
-     * 一直用重建前的底层客户端（连接池 / 超时 / 缓存 / 系统代理委托全部冻结）。
-     * 曾经漏过 `subscriptionService`，见 `HanimeNetworkRebuildTest`。
-     */
-    fun rebuildNetwork() {
-        rebuildHttpClients()
-        hanimeService = _hanimeService
-        getchuService = _getchuService
-        commentService = _commentService
-        myListService = _myListService
-        subscriptionService = _subscriptionService
-    }
+    val hanimeService = HanimeBaseService(hanimeHttpClient)
+    val getchuService = GetchuService(getchuHttpClient)
+    val commentService = HanimeCommentService(hanimeHttpClient)
+    val myListService = HanimeMyListService(hanimeHttpClient)
+    val subscriptionService = HanimeSubscriptionService(hanimeHttpClient)
 }

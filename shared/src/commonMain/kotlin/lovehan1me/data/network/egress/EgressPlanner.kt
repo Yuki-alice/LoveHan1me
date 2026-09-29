@@ -19,6 +19,11 @@ import lovehan1me.data.network.HProxyTypes
  * ## 网关为什么会被"跳过"
  * 它从"必经的一层"降为"候选出口之一"。以下任意一条成立就不接管，且**原因可查**：
  * 用户关掉、熔断中、进程没跑、非 https、回环/IP 字面量、URL 解析不了。
+ *
+ * ## 产出的是**有序候选**，不是一个决定
+ * [EgressPlan.attempts] 按优先级排好（网关 → 让位给代理 → 原样放行），执行器按序尝试。
+ * 于是"失败后下一步走哪"也归这里管 —— 此前这段回退顺序写死在 `EchGateInterceptor`
+ * 的三段 if 里，Ktor 侧再抄一遍，图片插件没抄，于是三处行为各不相同。
  */
 object EgressPlanner {
 
@@ -37,7 +42,16 @@ object EgressPlanner {
         val rewrite = EchGatePolicy.rewrite(request.url, state.gate.port)
             ?: return skipped(skipReasonFor(request.url), probation)
 
-        return EgressPlan(gate = rewrite, gateSkipped = null, gateOnProbation = probation)
+        return EgressPlan(
+            attempts = buildList {
+                add(EgressAttempt.Gate(rewrite, probation))
+                // 有可用代理 ⇒ 网关只有一次机会：失败即让位给代理，保住
+                // "配了代理就必须能用"这条底线。没有代理时不排让位 —— 后面没有更好的路。
+                if (probation) add(EgressAttempt.Yield)
+            },
+            skipped = null,
+            proxyUsable = probation,
+        )
     }
 
     /**
@@ -63,8 +77,13 @@ object EgressPlanner {
     fun mediaProxyUrl(userProxyUrl: String?, state: EgressState = currentEgressState()): String? =
         userProxyUrl ?: state.gate.connectTunnelUrl()
 
-    private fun skipped(reason: GateSkipReason, probation: Boolean) =
-        EgressPlan(gate = null, gateSkipped = reason, gateOnProbation = probation)
+    /** 网关不接管：候选里只剩原样放行，原因回传给日志与设置页。 */
+    private fun skipped(reason: GateSkipReason, proxyUsable: Boolean) =
+        EgressPlan(
+            attempts = listOf(EgressAttempt.Passthrough),
+            skipped = reason,
+            proxyUsable = proxyUsable,
+        )
 
     /**
      * 把 [EchGatePolicy] 的"放行"翻译成可读的原因。
