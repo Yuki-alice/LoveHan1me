@@ -42,8 +42,10 @@ import org.openani.mediamp.source.UriMediaData
  * 后端快照无条件覆盖 —— 开流失败写的 Error 会在下一帧被抹掉，UI 永远转圈。
  * 现在"开流意图"是 [loadStatus]，属于派生入参，抹不掉。
  *
- * 线程契约（mediamp 规定）：play/pause/seekTo/stopPlayback 必须在主线程，
- * setMediaData/close 任意线程——这里统一经 [commandScope] 规范化。
+ * 线程契约（mediamp 规定）：play/pause/seekTo/stopPlayback 与 PlaybackSpeed.set 必须在
+ * 主线程，setMediaData/close 任意线程——这里统一经 [commandScope] 规范化。
+ * ⚠️ [openMedia] 跑在 [scope]（Default）上：子类覆盖它时不要直接调 `mediampPlayer.play()`，
+ * 那会撞上 mediamp 的 checkMainThread。
  *
  * 渲染面：mediamp 自家 Surface 直接持有后端 impl，[attachSurface]/[detachSurface]
  * 为 no-op（旧 VideoSurface 链路仅 mpv-android 保留使用）。
@@ -82,6 +84,13 @@ abstract class MediampPlaybackEngineBase : PlaybackEngine {
     /** 释放后不再接受命令/不再发布状态（与旧引擎同语义）。 */
     private var released = false
 
+    /**
+     * 已下发的第几次开流。连点两档时两个开流协程并存，后端的"顶掉旧开流"只管它自己的
+     * 状态机；本类的 [loadStatus] 是单格字段，旧请求的失败会盖掉新请求的 Opening，
+     * 把 UI 永久钉在错误卡上（新流其实正在正常播）。写失败前先比对它。
+     */
+    private var loadGeneration = 0
+
     /** 子类构造完 [mediampPlayer] 后调用一次。 */
     protected fun startObserving() {
         scope.launch {
@@ -105,6 +114,7 @@ abstract class MediampPlaybackEngineBase : PlaybackEngine {
 
     final override fun load(request: PlaybackRequest) {
         if (released) return
+        val generation = ++loadGeneration
         loadStatus = PlaybackLoadStatus.Opening(request.isQualitySwitch)
         // 立刻发布一次：后端可能要过一会才翻到 Opening，UI 得先进入"准备中"。
         publish()
@@ -114,13 +124,14 @@ abstract class MediampPlaybackEngineBase : PlaybackEngine {
             } catch (e: CancellationException) {
                 throw e
             } catch (e: Exception) {
-                // 被更新的 load 顶掉（MediaLoadCancellationException）时状态机
-                // 已在 Opening 新媒体——只有真 Error 才落到 UI。
+                // 更新的 load 已经接管：这次失败属于旧意图，写成 Error 会盖掉新流。
+                if (generation != loadGeneration) return@launch
+                // 后端自己翻了 Error：真因在它那里，重发一次让派生函数取它给的文案。
                 if (mediampPlayer.state.value.mediaStatus is MediaStatus.Error) {
                     publish()
                 } else {
                     // 同步抛（未及状态机翻 Error）此前永留 Preparing 转圈。
-                    // 不是顶掉就是真失败，记进 loadStatus 由派生函数落成 Error。
+                    // 记进 loadStatus 由派生函数落成 Error，UI 才有错误卡可重试。
                     LogUtil.e(TAG, "openMedia failed", e)
                     loadStatus = PlaybackLoadStatus.Failed(e.message ?: e.toString())
                     publish()
@@ -142,19 +153,32 @@ abstract class MediampPlaybackEngineBase : PlaybackEngine {
                 uri = request.uri,
                 headers = request.headers,
             ),
-            playWhenReady = request.playWhenReady,
+            playWhenReady = playWhenReadyFor(request),
             startPositionMillis = startPositionFor(request),
         )
     }
 
-    /** 开流起始位：切画质从当前播放位置续，新片用请求的起始位（0 或续播位）。 */
+    /**
+     * 开流起始位：切画质从当前播放位置续，新片用请求的起始位（0 或续播位）。
+     *
+     * 用播放器即时位置而非上次发布值（最大 250ms+ 延迟，切档系统性偏小）。
+     */
     protected fun startPositionFor(request: PlaybackRequest): Long =
-        // 用播放器即时位置而非上次发布值（最大 250ms+ 延迟，切档系统性偏小）。
         if (request.isQualitySwitch) {
             mediampPlayer.currentPositionMillis.value.coerceAtLeast(0L)
         } else {
             request.startPositionMs
         }
+
+    /**
+     * 开流是否立即播：切画质沿用播放器当前的**播放意图**，新片用请求值。
+     *
+     * 调用方传来的请求带的是它那一刻看到的快照，而 mediamp 的 `isPlaying` 是
+     * `Ready && playWhenReady && !isBuffering` —— 缓冲期间它为 false。拿它切档，
+     * 正在放的片子会在网络抖一下的时候（正是用户想降清晰度的时刻）切成暂停。
+     */
+    protected fun playWhenReadyFor(request: PlaybackRequest): Boolean =
+        if (request.isQualitySwitch) mediampPlayer.state.value.playWhenReady else request.playWhenReady
 
     /** 每次 open 前的钩子（如 Android 预置空超分表：setVideoEffects 须先于 prepare）。
      *

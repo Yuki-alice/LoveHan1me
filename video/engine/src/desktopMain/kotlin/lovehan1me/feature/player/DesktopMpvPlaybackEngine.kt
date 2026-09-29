@@ -119,14 +119,14 @@ class DesktopMpvPlaybackEngine(
                 // 让它盖不回已经生效的超分档。
                 refreshEnhancementProperties(handle)
             }
+            // 不要再补一次 play()：mpv 在 `loadfile` 之前就把 `pause=!playWhenReady`
+            // 落到原生，而本协程不在 main dispatcher 上，补的那一次只会被
+            // mediamp 的 checkMainThread 拒成播放错误。
             player.setMediaData(
                 data = UriMediaData(mediaUri, mediaHeaders),
-                playWhenReady = request.playWhenReady,
+                playWhenReady = playWhenReadyFor(request),
                 startPositionMillis = startPositionFor(request),
             )
-            if (request.playWhenReady) {
-                player.play()
-            }
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
