@@ -104,6 +104,7 @@ import lovehan1me.core.util.AppToast
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.core.util.rememberShareText
 import lovehan1me.ui.transition.coverSharedElementKey
+import lovehan1me.ui.theme.SubjectThemeOverride
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -187,6 +188,11 @@ fun VideoRouteHostScreen(
     val hostUiState by viewModel.videoHostUiStateFlow.collectAsStateWithLifecycle()
     val videoState by viewModel.hanimeVideoStateFlow.collectAsStateWithLifecycle()
     val video = viewModel.hanimeVideoFlow.collectAsStateWithLifecycle().value
+    // 详情页「从封面取色」的输入：优先取加载态里的影片，其次回落当前影片。
+    val subjectCoverUrl = when (val state = videoState) {
+        is VideoLoadingState.Success -> state.info.coverUrl
+        else -> video?.coverUrl
+    }
 
     LaunchedEffect(playbackController) {
         playbackController.setPlaybackSpeed(SettingsRepository.playerSpeed)
@@ -752,59 +758,65 @@ fun VideoRouteHostScreen(
     // Animeko 宽屏右栏（wideRail=true：弹幕占位条 + 标题收藏钮）共用，改只改这里。
     @Composable
     fun HostVideoTabs(wideRail: Boolean) {
-        VideoRouteContent(
-            videoCode = route.videoCode,
-            videoState = videoState,
-            videoViewModel = viewModel,
-            commentViewModel = commentViewModel,
-            fromDownload = viewModel.fromDownload,
-            pendingDownloadPrompt = pendingDownloadPrompt,
-            onPendingDownloadPromptChange = { pendingDownloadPrompt = it },
-            onRetry = { viewModel.getHanimeVideo(route.videoCode, route.localUri) },
-            onOpenVideo = { item -> onNavigateToVideo(item.videoCode) },
-            onOpenArtist = actions::openArtist,
-            onOpenSitePlaylist = onOpenSitePlaylist,
-            onNavigateToSearch = actions::openTagSearch,
-            onToggleSubscribe = actions::toggleArtistSubscription,
-            onToggleFavorite = actions::toggleFavorite,
-            onRequestManageMyList = { action ->
-                if (SettingsRepository.isAlreadyLogin ||
-                    SettingsRepository.localListNoticeDismissed
-                ) {
-                    action()
-                } else {
-                    pendingLocalListAction = action
-                }
-            },
-            onRateVideo = actions::rateVideo,
-            onManageMyList = actions::updateMyListSelection,
-            onQuickCheckIn = actions::quickCheckIn,
-            onPrepareDownload = { quality, item ->
-                checkedQuality = quality
-                item?.let(actions::startDownloadFlow)
-            },
-            onConfirmDownloadPrompt = { item, autoCreateGroup ->
-                item?.let {
-                    actions.confirmPendingDownload(
-                        it,
-                        pendingDownloadPrompt,
-                        autoCreateGroup,
-                    )
-                }
-            },
-            onRequestOpenOfficialDownloadPage = actions::openOfficialDownloadPage,
-            onOpenWebPage = actions::openVideoWebPage,
-            onOpenOriginalComic = actions::openOriginalComic,
-            onOpenShare = shareText,
-            onCopyText = {
-                copyTextToClipboard(it)
-                scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
-            },
-            onIntroductionLinkClick = actions::openIntroductionLink,
-            stringLongPressShare = stringLongPressShare,
-            pageHost = pageHost,
-            wideRail = wideRail,
-        )
+        // 页面级换肤：开关打开且取到封面主色时，这一屏的配色由封面生成；否则原样渲染。
+        SubjectThemeOverride(
+            coverUrl = subjectCoverUrl,
+            enabled = SettingsRepository.current.dynamicSubjectTheme,
+        ) {
+            VideoRouteContent(
+                videoCode = route.videoCode,
+                videoState = videoState,
+                videoViewModel = viewModel,
+                commentViewModel = commentViewModel,
+                fromDownload = viewModel.fromDownload,
+                pendingDownloadPrompt = pendingDownloadPrompt,
+                onPendingDownloadPromptChange = { pendingDownloadPrompt = it },
+                onRetry = { viewModel.getHanimeVideo(route.videoCode, route.localUri) },
+                onOpenVideo = { item -> onNavigateToVideo(item.videoCode) },
+                onOpenArtist = actions::openArtist,
+                onOpenSitePlaylist = onOpenSitePlaylist,
+                onNavigateToSearch = actions::openTagSearch,
+                onToggleSubscribe = actions::toggleArtistSubscription,
+                onToggleFavorite = actions::toggleFavorite,
+                onRequestManageMyList = { action ->
+                    if (SettingsRepository.isAlreadyLogin ||
+                        SettingsRepository.localListNoticeDismissed
+                    ) {
+                        action()
+                    } else {
+                        pendingLocalListAction = action
+                    }
+                },
+                onRateVideo = actions::rateVideo,
+                onManageMyList = actions::updateMyListSelection,
+                onQuickCheckIn = actions::quickCheckIn,
+                onPrepareDownload = { quality, item ->
+                    checkedQuality = quality
+                    item?.let(actions::startDownloadFlow)
+                },
+                onConfirmDownloadPrompt = { item, autoCreateGroup ->
+                    item?.let {
+                        actions.confirmPendingDownload(
+                            it,
+                            pendingDownloadPrompt,
+                            autoCreateGroup,
+                        )
+                    }
+                },
+                onRequestOpenOfficialDownloadPage = actions::openOfficialDownloadPage,
+                onOpenWebPage = actions::openVideoWebPage,
+                onOpenOriginalComic = actions::openOriginalComic,
+                onOpenShare = shareText,
+                onCopyText = {
+                    copyTextToClipboard(it)
+                    scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
+                },
+                onIntroductionLinkClick = actions::openIntroductionLink,
+                stringLongPressShare = stringLongPressShare,
+                pageHost = pageHost,
+                wideRail = wideRail,
+            )
+        }
     }
 
     // ── 弹幕（评论主源 + 弹弹增强层）─────────────────────────────────

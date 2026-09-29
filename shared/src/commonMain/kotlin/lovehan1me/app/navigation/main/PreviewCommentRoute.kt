@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
@@ -31,7 +32,6 @@ import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.feature.video.ChildCommentScreen
 import lovehan1me.feature.video.CommentMessage
 import lovehan1me.feature.video.CommentScreen
-import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.feature.video.CommentViewModel
 import lovehan1me.feature.video.PreviewCommentPrefetcher
 import lovehan1me.app.sharedViewModel
@@ -132,7 +132,9 @@ fun PreviewCommentRouteScreen(
                 viewModel.clearVideoReplyList()
             },
             sheetState = childSheetState,
-            containerColor = HanimeDefaults.Colors.pageSurface,
+            // 浮层自带 M3 sheet 底色，不跟页面底色走（页面底是 surfaceContainerLowest 纯白，
+            // 套用会让 sheet 与身后内容同色、浮不起来）。
+            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         ) {
             LaunchedEffect(currentCommentId) {
                 viewModel.getCommentReply(currentCommentId)

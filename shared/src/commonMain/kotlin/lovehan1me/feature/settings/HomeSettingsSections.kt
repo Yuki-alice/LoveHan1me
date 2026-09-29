@@ -17,13 +17,14 @@ import lovehan1me.core.platform.settingsPlatformCapabilities
 import lovehan1me.Res
 import lovehan1me.amoled_mode
 import lovehan1me.amoled_mode_summary
+import lovehan1me.dynamic_subject_theme
+import lovehan1me.dynamic_subject_theme_summary
 import lovehan1me.ic_dark_mode
 import lovehan1me.theme_board
 import lovehan1me.video_language
 import lovehan1me.contrast_level
 import lovehan1me.contrast_level_summary
 import lovehan1me.contrast_level_standard
-import lovehan1me.contrast_level_medium
 import lovehan1me.contrast_level_high
 import lovehan1me.nav_bar_style
 import lovehan1me.nav_bar_style_summary
@@ -79,7 +80,6 @@ import lovehan1me.fun_loading_hints_summary
 import lovehan1me.fun_loading_hints
 import lovehan1me.forum_summary
 import lovehan1me.forum
-import lovehan1me.follow_system
 import lovehan1me.enable_check_in_feature_summary
 import lovehan1me.enable_check_in_feature
 import lovehan1me.display_density
@@ -211,6 +211,7 @@ internal fun previewHomeSettingsState() = HomeSettingsUiState(
     collapseDownloadedGroup = false,
     themeId = "sakura",
     amoled = false,
+    dynamicSubjectTheme = false,
     hapticFeedbackEnabled = false,
     funLoadingHints = true,
     secureMode = false,
@@ -385,15 +386,23 @@ internal fun AnimatedLazyListScope.appearanceSection(
                 iconRes = Res.drawable.ic_dark_mode,
                 onCheckedChange = actions.amoledChange,
             )
-            // 审计 P2：动态对比度（默认档 = 原写死的 0.0，老用户视觉不变）
+            // 详情页从封面取色的动态主题，默认关。
+            SettingSwitchItem(
+                title = stringResource(Res.string.dynamic_subject_theme),
+                summary = stringResource(Res.string.dynamic_subject_theme_summary),
+                checked = state.dynamicSubjectTheme,
+                iconRes = Res.drawable.ic_palette,
+                onCheckedChange = actions.dynamicSubjectThemeChange,
+            )
+            // 审计 P2：高对比度（默认档 = 原写死的 0.0，老用户视觉不变）
             SettingNavigationItem(
                 title = stringResource(Res.string.contrast_level),
                 summary = stringResource(Res.string.contrast_level_summary),
                 valueText = stringResource(
-                    when (state.contrastLevel) {
-                        CONTRAST_LEVEL_MEDIUM -> Res.string.contrast_level_medium
-                        CONTRAST_LEVEL_HIGH -> Res.string.contrast_level_high
-                        else -> Res.string.contrast_level_standard
+                    if (state.contrastLevel == CONTRAST_LEVEL_HIGH) {
+                        Res.string.contrast_level_high
+                    } else {
+                        Res.string.contrast_level_standard
                     }
                 ),
                 iconRes = Res.drawable.ic_palette,

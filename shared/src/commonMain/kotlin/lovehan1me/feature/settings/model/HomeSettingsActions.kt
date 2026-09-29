@@ -26,9 +26,11 @@ class HomeSettingsActions(
     val themeIdChange: (String) -> Unit,
     /** AMOLED 纯黑开关。 */
     val amoledChange: (Boolean) -> Unit,
+    /** 详情页封面取色动态主题开关。 */
+    val dynamicSubjectThemeChange: (Boolean) -> Unit,
     val hapticFeedbackChange: (Boolean) -> Unit,
     val funLoadingHintsChange: (Boolean) -> Unit,
-    /** 动态对比度档位（standard / medium / high）。 */
+    /** 高对比度档位（standard / high）。 */
     val contrastLevelChange: (String) -> Unit,
     val allowPipModeChange: (Boolean) -> Unit,
     val allowResumePlaybackChange: (Boolean) -> Unit,

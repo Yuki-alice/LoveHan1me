@@ -207,6 +207,7 @@ object SettingsRepository : SettingsStore {
     suspend fun setThemeMode(value: ThemeMode) = update { it.copy(themeMode = value) }
     suspend fun setThemeId(value: String) = update { it.copy(themeId = value) }
     suspend fun setAmoled(value: Boolean) = update { it.copy(amoled = value) }
+    suspend fun setDynamicSubjectTheme(value: Boolean) = update { it.copy(dynamicSubjectTheme = value) }
     suspend fun setContrastLevel(value: ContrastLevel) = update { it.copy(contrastLevel = value) }
     suspend fun setHapticFeedback(value: Boolean) = update { it.copy(hapticFeedbackEnabled = value) }
     suspend fun setCheckInEnabled(value: Boolean) = update { it.copy(checkInEnabled = value) }

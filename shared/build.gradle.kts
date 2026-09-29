@@ -63,6 +63,8 @@ kotlin {
             implementation(libs.cmp.runtime)
             implementation(libs.cmp.foundation)
             implementation(libs.cmp.material3)
+            // 真三端现场色算（对齐 animeko）：KMP 原生，commonMain 直接算，三端零差异。
+            implementation(libs.materialkolor)
             implementation(libs.compose.material.icons.extended)
             implementation(libs.cmp.ui)
 
@@ -151,9 +153,6 @@ kotlin {
             // 暂未引入——当前预览在 Android Studio 里看。
             implementation(libs.compose.ui.ui.tooling)
 
-            // P6d-1-C：动态取色（Kyant0 m3color，无 KMP 坐标，仅 androidMain；坐标从 :app 照搬）
-            implementation(libs.kyant.m3color)
-
             // G1-1A：SafFileManager 下沉 androidMain——DocumentFile
             implementation(libs.androidx.documentfile)
             // G1-1A：Networks.kt 下沉 androidMain——ListenableFuture.await（WorkManager 链路）
@@ -175,10 +174,6 @@ kotlin {
                 // desktopMain 已有同款 implementation + runtimeOnly，经
                 // `api(project(":video:engine"))` 传递到本模块的 desktopRuntimeClasspath。
                 // 本模块源码零 `org.openani.mediamp` 引用，重复声明只会多一条解析路径。
-                // 主题重做 P2：m3color 提为 api——桌面的预生成工具（desktopApp 的
-                // GenThemeBoards，走 HAN1ME_GEN_BOARDS=1 触发）直接用它跑色算；
-                // 运行时只有 Android 跟随系统槽还需要它。
-                api(libs.kyant.m3color)
             }
         }
 
@@ -228,6 +223,9 @@ kotlin {
                 implementation(kotlin("test"))
                 // service 的站点地址是"每请求实时解析"这一契约要能被断言：用假引擎抓请求 URL。
                 implementation(libs.ktor.client.mock)
+                // 指针输入类回归（下拉刷新的触摸/鼠标门控）必须真发指针事件；
+                // ImageComposeScene 只能验渲染。无头，不需要真实窗口。
+                implementation(libs.cmp.ui.test)
                 // Skia 原生库：decodeAvatarSource 走 skia Image，JVM 测试里
                 // 没有 desktopApp 注入的 skiko-awt-runtime 就会
                 // ExceptionInInitializerError（本地库未加载）。

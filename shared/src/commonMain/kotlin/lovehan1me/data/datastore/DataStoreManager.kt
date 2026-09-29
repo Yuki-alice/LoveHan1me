@@ -122,6 +122,7 @@ object DataStoreManager : SettingsStore {
         themeMode = ThemeMode.fromValue(string("use_dark_mode", defaults.themeMode.value)),
         themeId = string("app_theme_id", defaults.themeId),
         amoled = bool("amoled_black", defaults.amoled),
+        dynamicSubjectTheme = bool("dynamic_subject_theme", defaults.dynamicSubjectTheme),
         contrastLevel = ContrastLevel.fromValue(string("app_contrast_level", defaults.contrastLevel.value)),
         allowPipMode = bool("allow_pip_mode", defaults.allowPipMode),
         secureMode = bool("secure_mode", defaults.secureMode),
@@ -195,7 +196,7 @@ object DataStoreManager : SettingsStore {
     }
 
     private fun AppSettings.toMap(): Map<String, Any> = buildMap {
-        put("app_language", appLanguage.preferenceValue); put("use_dark_mode", themeMode.value); put("app_theme_id", themeId); put("amoled_black", amoled); put("app_contrast_level", contrastLevel.value)
+        put("app_language", appLanguage.preferenceValue); put("use_dark_mode", themeMode.value); put("app_theme_id", themeId); put("amoled_black", amoled); put("dynamic_subject_theme", dynamicSubjectTheme); put("app_contrast_level", contrastLevel.value)
         put("allow_pip_mode", allowPipMode); put("secure_mode", secureMode); put("disable_comments", disableComments); put("haptic_feedback_enabled", hapticFeedbackEnabled); put("nav_bar_style", navBarStyle.value)
         put("usage_notice_accepted_v2", usageNoticeAccepted); put("already_login", isAlreadyLogin); put("local_list_notice_dismissed", localListNoticeDismissed); put("saved_user_id", savedUserId); put("cookie", loginCookie); put(KEY_CF_COOKIES, encodeCfCookies(cfCookies)); put("desktop_browser_user_agent", desktopBrowserUserAgent)
         put("domain_name", domainName); put("selectedBaseUrl", selectedBaseUrl); put("use_custom_mirror_site", useCustomMirrorSite); put("custom_mirror_site", customMirrorSite); put("append_custom_mirror_path", appendCustomMirrorPath); put("use_built_in_hosts", useBuiltInHosts); put("auto_built_in_hosts", autoBuiltInHosts); put("use_ech_gate", useEchGate); put("custom_hosts_data", customHostsData); put("use_doh", useDoH); put("doh_preset", dohPreset); put("doh_custom_url", dohCustomUrl); put("doh_bootstrap_ips", dohBootstrapIps); put("doh_timeout_seconds", dohTimeoutSeconds); put("proxy_type", proxyType.id); put("proxy_ip", proxyIp); put("proxy_port", proxyPort)

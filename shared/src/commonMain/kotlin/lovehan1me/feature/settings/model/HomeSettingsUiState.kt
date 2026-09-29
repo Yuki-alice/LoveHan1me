@@ -19,10 +19,12 @@ data class HomeSettingsUiState(
     val navBarStyle: String,
     val disableComments: Boolean,
     val collapseDownloadedGroup: Boolean,
-    /** 命名主题槽位 id（见 ThemeBoard：sakura/take/sou/yuzu/midnight/nord/mono/system）。 */
+    /** 命名主题槽位 id（见 ThemeBoard：sakura/honmei/kaki/yuzu/take/sou/fuji/kasumi/midnight/nord/mono/system）。 */
     val themeId: String,
     /** AMOLED 纯黑（深色正交叠加）。 */
     val amoled: Boolean,
+    /** 详情页从封面取色的动态主题。 */
+    val dynamicSubjectTheme: Boolean,
     val hapticFeedbackEnabled: Boolean,
     val funLoadingHints: Boolean,
     val secureMode: Boolean,

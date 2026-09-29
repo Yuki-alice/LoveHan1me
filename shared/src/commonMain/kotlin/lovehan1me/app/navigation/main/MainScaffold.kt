@@ -137,14 +137,14 @@ fun MainScaffold(
     val windowWidthSizeClass = rememberWindowWidthSizeClass()
 
     if (windowWidthSizeClass >= WindowWidthSizeClass.Medium) {
-        // M3E 内容 sheet：窗底走 surfaceContainerLow，Rail 透明坐底，
-        // 内容区是 surface 圆角（`Corners.contentSheet`，左上 28dp）大卡片 ——
-        // 分界靠"底色差 + 圆角"，不再靠一条细分隔线（细线在同系底色下约等于没有）。
+        // M3E 内容 sheet：窗底走导航容器色（surfaceContainer，T94），Rail 透明坐底，
+        // 内容区是页面底色（surfaceContainerLowest，T100）圆角（`Corners.contentSheet`，
+        // 起始侧上下 28dp）大卡片 —— 分界靠"底色差 + 圆角"（差 6 个 tone），不再靠一条细分隔线。
         // 设置页宽屏双栏复用同一套（见 `SettingsRouteHost`），保证两处边界一致。
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .background(MaterialTheme.colorScheme.surfaceContainerLow),
+                .background(HanimeDefaults.Bars.navigationContainerColor),
         ) {
             MainNavigationRail(
                 selectedTab = selectedTab,
@@ -159,7 +159,7 @@ fun MainScaffold(
                     .weight(1f)
                     .fillMaxHeight()
                     .clip(HanimeDefaults.Corners.contentSheet)
-                    .background(MaterialTheme.colorScheme.surface),
+                    .background(HanimeDefaults.Colors.pageSurface),
             ) {
                 page()
             }
@@ -353,7 +353,7 @@ private fun MainNavigationRail(
 
     WideNavigationRail(
         state = state,
-        // 坐底透明：窗底 surfaceContainerLow 直接透过来，与内容 sheet 的 surface 拉开。
+        // 坐底透明：窗底的导航容器色直接透过来，与内容 sheet 的页面底色拉开 6 个 tone。
         colors = WideNavigationRailDefaults.colors(containerColor = Color.Transparent),
     ) {
         // ⚠️ `WideNavigationRail` 的 content 槽**不是** `ColumnScope`（实测

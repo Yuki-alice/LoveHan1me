@@ -15,7 +15,6 @@ import lovehan1me.Res
 import lovehan1me.video_language
 import lovehan1me.contrast_level
 import lovehan1me.contrast_level_standard
-import lovehan1me.contrast_level_medium
 import lovehan1me.contrast_level_high
 import lovehan1me.nav_bar_style
 import lovehan1me.nav_bar_style_standard
@@ -186,8 +185,7 @@ enum class HomeSettingsPage {
 /** 与 `NavBarStyle.Floating.value` 对齐。 */
 internal const val NAV_BAR_STYLE_FLOATING = "floating"
 
-/** 与 `ContrastLevel.Medium/High.value` 对齐（标签本身在 UI 层用 stringResource 算）。 */
-internal const val CONTRAST_LEVEL_MEDIUM = "medium"
+/** 与 `ContrastLevel.High.value` 对齐（标签本身在 UI 层用 stringResource 算）。 */
 internal const val CONTRAST_LEVEL_HIGH = "high"
 
 internal enum class HomeSettingsChoiceDialog {
@@ -286,7 +284,6 @@ fun HomeSettingsScreen(
         title = stringResource(Res.string.contrast_level),
         options = listOf(
             stringResource(Res.string.contrast_level_standard) to "standard",
-            stringResource(Res.string.contrast_level_medium) to "medium",
             stringResource(Res.string.contrast_level_high) to "high",
         ),
         selectedValue = state.contrastLevel,

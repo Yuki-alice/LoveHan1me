@@ -42,7 +42,8 @@ exoplayer = "1.10.1"
 desugarJdkLibs = "2.1.5"
 composeBom = "2026.06.01"
 compose-material3 = "1.5.0-alpha25"
-m3color = "2026.1"
+# 真三端现场色算（对齐 animeko）：KMP 原生，5.0.1 支持 Kotlin 2.4 + Material 3 Expressive(SPEC_2025)
+materialkolor = "5.0.1"
 
 # ---- Kotlin Multiplatform / Compose Multiplatform ----
 # 版本对齐约束：CMP 与 Kotlin 强绑定，Kotlin 2.4.10 <-> CMP 1.12.0
@@ -107,7 +108,7 @@ androidx-activity-compose = { group = "androidx.activity", name = "activity-comp
 compose-material3 = { group = "androidx.compose.material3", name = "material3",version.ref = "compose-material3" }
 compose-ui-ui-tooling-preview = { group = "androidx.compose.ui", name = "ui-tooling-preview" }
 compose-ui-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
-kyant-m3color = { group = "com.github.Kyant0", name = "m3color", version.ref = "m3color" }
+materialkolor = { module = "com.materialkolor:material-kolor", version.ref = "materialkolor" }
 # Parse
 serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
@@ -159,6 +160,10 @@ cmp-material3 = { module = "org.jetbrains.compose.material3:material3", version.
 # 也不许"顺手升级"到不存在的版本。
 compose-material-icons-extended = { module = "org.jetbrains.compose.material:material-icons-extended", version = "1.7.3" }
 cmp-ui = { module = "org.jetbrains.compose.ui:ui", version.ref = "composeMultiplatform" }
+# 无头 Compose UI 测试（runComposeUiTest + performMouseInput/performTouchInput）。
+# 只为桌面源集声明：本仓的输入类回归（下拉刷新的指针类型门控）必须真发指针事件才验得出来，
+# 靠 ImageComposeScene 只能验渲染，验不了"这次拖动有没有被当成下拉"。
+cmp-ui-test = { module = "org.jetbrains.compose.ui:ui-test", version.ref = "composeMultiplatform" }
 # @Preview 注解：CMP 平台必须用 JetBrains 坐标——androidx 的 ui-tooling-preview 只有
 # Android 变体，放 commonMain 会报 KMP Dependencies Resolution Failure（desktop/iOS 解析不到）
 cmp-ui-tooling-preview = { module = "org.jetbrains.compose.ui:ui-tooling-preview", version.ref = "composeMultiplatform" }

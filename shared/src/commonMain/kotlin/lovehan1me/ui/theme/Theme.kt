@@ -36,7 +36,7 @@ fun HanimeTheme(
     )
 }
 
-// P6d-1：从 :app 下沉（包名不变）。色算三件套见 DynamicSchemeProvider；
+// 色算三件套现走 materialkolor（commonMain 现场算，见 ThemeBoards）；
 // 槽位配方见 ThemeBoards（8 槽 = 7 命名 + 1 跟随系统）。
 @Composable
 fun HanimeTheme(
@@ -50,19 +50,21 @@ fun HanimeTheme(
         "always_off" -> false
         else -> systemDarkTheme
     }
-    // 命名槽位入口（P1 现场算；P2 同签名查预生成表）。
+    // 命名槽位现场色算（materialkolor，真三端）。
     var colorScheme = boardColorScheme(
         board = ThemeBoard.fromId(settings.themeId),
         isDark = resolvedDarkTheme,
-        // 审计 P2：动态对比度接设置（默认档 = 0.0，即原先写死的值）。
+        // 高对比度接设置（默认档 = 0.0，即原先写死的值）。
         contrastLevel = settings.contrastLevel.spec,
     )
     // AMOLED 是与深浅正交的独立开关，只在深色下叠加（Mihon 模式）。
     if (settings.amoled && resolvedDarkTheme) colorScheme = colorScheme.amoled()
+    // 切槽位 / 深浅 / 对比度 / AMOLED 时平滑过渡（不再硬切）。
+    val animatedColorScheme = animateColorScheme(colorScheme)
     ConfigureSystemBars(
         colorScheme = colorScheme,
         isDark = resolvedDarkTheme,
     )
 
-    HanimeTheme(colorScheme = colorScheme, content = content)
+    HanimeTheme(colorScheme = animatedColorScheme, content = content)
 }

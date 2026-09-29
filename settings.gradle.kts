@@ -30,9 +30,12 @@ dependencyResolutionManagement {
         // 同类问题：所有 com.github.* 组都来自 JitPack，镜像（aliyun/腾讯云）代理它们时
         // 元数据能拿到、jar 常缺 → `:app:assembleDebug` 的 transform 环节直接失败。
         // 整组强制回 JitPack 源，保证元数据与产物出自同一仓库。
+        // ⚠️ 例外：ajalt/* 实际发布在 Maven Central（非 JitPack），materialkolor 5.0.1 的
+        // iOS 产物依赖 com.github.ajalt:colormath（jitpack 坐标在 jitpack 上 404），故从
+        // 本独占规则中排除，让其落到下方中央仓库解析（配合 build.gradle.kts 的 replacedBy）。
         exclusiveContent {
             forRepository { maven { url = uri("https://jitpack.io/") } }
-            filter { includeGroupByRegex("com\\.github\\..*") }
+            filter { includeGroupByRegex("com\\.github\\.(?!ajalt).+") }
         }
         // 同类问题（③）：coil3 的 KMP 产物在阿里云镜像下"元数据拿得到、klib 取不到"。
         // 阿里云先命中 coil3 的 .module → 亲和性把它钉死在 aliyun → 请求

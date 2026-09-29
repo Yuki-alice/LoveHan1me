@@ -414,8 +414,6 @@
     <string name="dynamic_color_title">動態配色</string>
     <string name="dynamic_color_summary">開啟後跟隨系統主題色，僅支援 Android 12 以上版本</string>
     <string name="follow_system">跟隨系統</string>
-    <string name="always_off">總是關閉</string>
-    <string name="always_on">總是開啟</string>
     <string name="category_instant_noodle">泡麵番</string>
     <string name="category_motion_anime">動態動畫</string>
     <string name="category_3d_animation">3D 作品</string>
@@ -646,11 +644,10 @@
     <string name="dark_mode_picker_summary">選擇應用程式如何跟隨淺色與深色外觀</string>
     <string name="palette_style">調色盤樣式</string>
     <string name="palette_style_summary">選擇 Material 顏色如何根據強調色產生</string>
-    <string name="contrast_level">動態對比度</string>
-    <string name="contrast_level_summary">調整由強調色產生的顏色的對比度</string>
+    <string name="contrast_level">對比度</string>
+    <string name="contrast_level_summary">提升次要文字與控制項的對比度，適合低視力或強光環境</string>
     <string name="contrast_level_standard">標準</string>
-    <string name="contrast_level_medium">中等</string>
-    <string name="contrast_level_high">高</string>
+    <string name="contrast_level_high">高對比度</string>
     <string name="temporarily_unavailable">暫時無法使用</string>
     <string name="information">資訊</string>
     <string name="version">版本號</string>

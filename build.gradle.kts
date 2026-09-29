@@ -13,6 +13,19 @@ plugins {
     id("com.mikepenz.aboutlibraries.plugin") version "15.0.4" apply false
 }
 
+// materialkolor 5.0.1 的 iOS 产物把 ajalt/colormath 声明成了 jitpack 坐标
+// (com.github.ajalt:colormath)，该坐标在 jitpack 上不存在；其在 Maven Central 的
+// 真实坐标为 com.github.ajalt.colormath:colormath。重定向以修复 iOS 依赖解析。
+subprojects {
+    dependencies {
+        modules {
+            module("com.github.ajalt:colormath") {
+                replacedBy("com.github.ajalt.colormath:colormath")
+            }
+        }
+    }
+}
+
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

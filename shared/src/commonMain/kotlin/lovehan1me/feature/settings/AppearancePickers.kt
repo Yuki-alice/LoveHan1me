@@ -3,9 +3,9 @@
 package lovehan1me.feature.settings
 
 import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.foundation.Image
+import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -23,15 +24,17 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.GenericShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.lazy.LazyRow
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.ButtonShapes
 import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -40,18 +43,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.drawWithContent
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.BlendMode
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.CompositingStrategy
-import androidx.compose.ui.graphics.drawscope.ContentDrawScope
-import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
 import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
@@ -61,15 +55,12 @@ import lovehan1me.theme_board
 import lovehan1me.theme_board_summary
 import lovehan1me.amoled_mode
 import lovehan1me.amoled_mode_summary
-import lovehan1me.follow_system
+import lovehan1me.theme_mode_light
+import lovehan1me.theme_mode_dark
+import lovehan1me.theme_mode_auto
 import lovehan1me.dark_theme
 import lovehan1me.dark_mode_picker_summary
-import lovehan1me.always_on
-import lovehan1me.always_off
-import lovehan1me.ic_lightbulb
 import lovehan1me.ic_check
-import lovehan1me.ic_light_mode
-import lovehan1me.ic_dark_mode
 import lovehan1me.ui.component.immediateClickable
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.ThemeBoard
@@ -127,24 +118,22 @@ fun DarkModePicker(
     contrastLevel: String,
 ) {
     val systemDark = isSystemInDarkTheme()
+    // 顺序与文案：浅色 / 深色 / 自动 —— 两个明确档在前，唯一的「跟随外部」档放末尾。
     val options = listOf(
         DarkModeOption(
-            value = "follow_system",
-            title = stringResource(Res.string.follow_system),
-            iconRes = Res.drawable.ic_lightbulb,
-            dark = systemDark,
-        ),
-        DarkModeOption(
             value = "always_off",
-            title = stringResource(Res.string.always_off),
-            iconRes = Res.drawable.ic_light_mode,
+            title = stringResource(Res.string.theme_mode_light),
             dark = false,
         ),
         DarkModeOption(
             value = "always_on",
-            title = stringResource(Res.string.always_on),
-            iconRes = Res.drawable.ic_dark_mode,
+            title = stringResource(Res.string.theme_mode_dark),
             dark = true,
+        ),
+        DarkModeOption(
+            value = "follow_system",
+            title = stringResource(Res.string.theme_mode_auto),
+            dark = systemDark,
         ),
     )
     PickerContainer(
@@ -152,7 +141,7 @@ fun DarkModePicker(
         description = stringResource(Res.string.dark_mode_picker_summary),
         modifier = modifier,
     ) {
-        items(options, key = DarkModeOption::value) { option ->
+        options.forEach { option ->
             DarkModeItem(
                 option = option,
                 selected = selectedValue == option.value,
@@ -169,7 +158,7 @@ private fun PickerContainer(
     title: String,
     description: String,
     modifier: Modifier = Modifier,
-    content: androidx.compose.foundation.lazy.LazyListScope.() -> Unit,
+    content: @Composable RowScope.() -> Unit,
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
@@ -180,28 +169,17 @@ private fun PickerContainer(
             modifier = Modifier.padding(vertical = 16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
-            Column(
-                modifier = Modifier.padding(horizontal = HanimeDefaults.Spacing.itemHorizontal),
-                verticalArrangement = Arrangement.spacedBy(2.dp),
-            ) {
-                Text(title, style = MaterialTheme.typography.titleMedium)
-                Text(
-                    description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-            }
-            LazyRow(
+            PickerHeader(title = title, description = description)
+            // 三档排一行，窄窗口下整行可滚。
+            // 刻意**不做渐隐边提示**：三个档位在常见宽度下完整可见，常驻渐隐会把
+            // 「其实没被裁切」的卡片也压暗一截，比没有提示更误导。
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .graphicsLayer { compositingStrategy = CompositingStrategy.Offscreen }
-                    .drawWithContent {
-                        drawContent()
-                        drawFadedEdge(16.dp, leftEdge = true)
-                        drawFadedEdge(16.dp, leftEdge = false)
-                    },
-                contentPadding = androidx.compose.foundation.layout.PaddingValues(horizontal = 12.dp),
-                horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    .horizontalScroll(rememberScrollState())
+                    .selectableGroup()
+                    .padding(horizontal = 12.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
                 content = content,
             )
         }
@@ -227,7 +205,7 @@ private fun PickerGridContainer(
         ) {
             PickerHeader(title = title, description = description)
             // 自适应网格：鼠标点选为主，彻底不需要横滑（桌面/Windows 鼠标无横向滚轮）。
-            // 条目固定 8 个，用 FlowRow 自然换行即可，不引入嵌套滚动。
+            // 条目数 = ThemeBoard 槽位数，用 FlowRow 自然换行即可，不引入嵌套滚动。
             FlowRow(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -267,31 +245,36 @@ private fun DarkModeItem(
     boardId: String,
     contrastLevel: String,
 ) {
-    val borderWidth by animateDpAsState(
-        targetValue = if (selected) 3.dp else (-1).dp,
-        animationSpec = MaterialTheme.motionScheme.fastEffectsSpec(),
-        label = "dark-mode-border",
-    )
+    val interactionSource = remember { MutableInteractionSource() }
     val board = remember(boardId) { ThemeBoard.fromId(boardId) }
     val contrastSpec = remember(contrastLevel) {
         lovehan1me.core.domain.model.ContrastLevel.fromValue(contrastLevel).spec
     }
-    // Animeko 式手机框预览：跟随系统 = 对角混搭（左上浅 + 右下深），
-    // 常开/常关 = 整机深/浅。颜色全部取当前槽位的落地色板。
+    // 手机框预览：自动 = 对角混搭（左上浅 + 右下深），深/浅 = 整机同调。
+    // 颜色全部取当前槽位的落地色板。
     // 注意：boardColorScheme 本身是 @Composable，不能塞进 remember{}，
     // 直接在组合里算（ThemeBoardPicker 同例，开销可接受）。
     val lightScheme = boardColorScheme(board = board, isDark = false, contrastLevel = contrastSpec)
     val darkScheme = boardColorScheme(board = board, isDark = true, contrastLevel = contrastSpec)
-    PickerOption(onClick = onClick) {
+    Column(
+        modifier = Modifier
+            .width(96.dp)
+            // 先裁形再挂 clickable：水波纹才被限制在圆角内。
+            .clip(HanimeDefaults.buttonShape)
+            .selectable(
+                selected = selected,
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                role = Role.RadioButton,
+                onClick = onClick,
+            )
+            .padding(vertical = 4.dp),
+        horizontalAlignment = Alignment.Start,
+    ) {
         Box(
             modifier = Modifier
                 .size(width = 96.dp, height = 140.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .border(
-                    width = borderWidth,
-                    color = MaterialTheme.colorScheme.primary,
-                    shape = RoundedCornerShape(12.dp),
-                ),
+                .clip(RoundedCornerShape(12.dp)),
         ) {
             when (option.value) {
                 "follow_system" -> {
@@ -310,15 +293,29 @@ private fun DarkModeItem(
                 )
             }
         }
-        Text(
-            text = option.title,
-            style = MaterialTheme.typography.bodyMedium,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
-        )
+        // 选中态由 RadioButton 表达（不再给卡片描边）：圆点在左、文字在右，
+        // 与 M3 单选组的读法一致；整块面板（含圆点与文字）都可点。
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                modifier = Modifier.size(48.dp),
+                contentAlignment = Alignment.Center,
+            ) {
+                RadioButton(
+                    selected = selected,
+                    interactionSource = interactionSource,
+                    onClick = null,
+                )
+            }
+            Text(
+                text = option.title,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
     }
 }
 
-/** 对角切（左上三角）：跟随系统项的浅色半区。 */
+/** 对角切（左上三角）：自动项的浅色半区。 */
 private val TopLeftDiagonalShape = GenericShape { size, _ ->
     moveTo(0f, 0f)
     lineTo(size.width, 0f)
@@ -327,7 +324,7 @@ private val TopLeftDiagonalShape = GenericShape { size, _ ->
 }
 
 /**
- * 迷你手机框（Animeko ThemePreviewPanel 同构缩小）：三色条 + 三横线 + 底栏，
+ * 迷你手机框：三色条 + 三横线 + 底栏，
  * 只表达配色气质，不追求像素级复刻 App 界面。
  */
 @Composable
@@ -442,7 +439,7 @@ private fun BoardBadgeItem(
     )
     PickerOption(onClick = onClick) {
         Box(contentAlignment = Alignment.Center) {
-            // 三瓣圆：无 Canvas，用裁剪 + 色块叠出来（Animeko/Kazumi 同法）。
+            // 三瓣圆：无 Canvas，用裁剪 + 色块叠出来。
             Column(
                 modifier = Modifier
                     .size(72.dp)
@@ -534,23 +531,5 @@ private fun PickerOption(
 private data class DarkModeOption(
     val value: String,
     val title: String,
-    val iconRes: DrawableResource,
     val dark: Boolean,
 )
-
-private fun ContentDrawScope.drawFadedEdge(
-    edgeWidth: androidx.compose.ui.unit.Dp,
-    leftEdge: Boolean
-) {
-    val edgeWidthPx = edgeWidth.toPx()
-    drawRect(
-        topLeft = Offset(if (leftEdge) 0f else size.width - edgeWidthPx, 0f),
-        size = Size(edgeWidthPx, size.height),
-        brush = Brush.horizontalGradient(
-            colors = listOf(Color.Transparent, Color.Black),
-            startX = if (leftEdge) 0f else size.width,
-            endX = if (leftEdge) edgeWidthPx else size.width - edgeWidthPx,
-        ),
-        blendMode = BlendMode.DstIn,
-    )
-}

@@ -151,7 +151,9 @@ fun PlaylistBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
         dragHandle = null,
-        containerColor = HanimeDefaults.Colors.pageSurface,
+        // 浮层自带 M3 sheet 底色，不跟页面底色走 —— 页面底是 surfaceContainerLowest（纯白），
+        // 直接套用会让 sheet 与身后内容同色，浮不起来。
+        containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
     ) {
         if (playlist.isEmpty() && playlistState is PageLoadingState.Loading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {

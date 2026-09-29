@@ -38,8 +38,9 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import lovehan1me.Res
-import lovehan1me.always_off
-import lovehan1me.always_on
+import lovehan1me.theme_mode_light
+import lovehan1me.theme_mode_dark
+import lovehan1me.theme_mode_auto
 import lovehan1me.back
 import lovehan1me.core.domain.model.AppLanguage
 import lovehan1me.core.domain.model.ThemeMode
@@ -366,10 +367,11 @@ private fun SettingsStep() {
                 style = MaterialTheme.typography.titleSmall,
                 color = MaterialTheme.colorScheme.primary,
             )
+            // 文案与顺序跟设置页保持一致：浅色 / 深色 / 自动。
             val themeOptions = listOf(
-                ThemeMode.System to stringResource(Res.string.follow_system),
-                ThemeMode.Light to stringResource(Res.string.always_off),
-                ThemeMode.Dark to stringResource(Res.string.always_on),
+                ThemeMode.Light to stringResource(Res.string.theme_mode_light),
+                ThemeMode.Dark to stringResource(Res.string.theme_mode_dark),
+                ThemeMode.System to stringResource(Res.string.theme_mode_auto),
             )
             themeOptions.forEach { (value, label) ->
                 OptionRow(

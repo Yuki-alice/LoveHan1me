@@ -31,13 +31,14 @@ enum class ThemeMode(val value: String) {
     }
 }
 
-enum class PaletteStyle(val id: Int) {
-    TonalSpot(1), Neutral(2), Vibrant(3), Expressive(4), Rainbow(5), FruitSalad(6),
-    Fidelity(7), Content(8);
-
-    companion object {
-        fun fromId(id: Int): PaletteStyle = entries.firstOrNull { it.id == id } ?: TonalSpot
-    }
+/**
+ * 喂给 materialkolor 的调色板风格。**只保留主题槽位实际用到的值**——
+ * 曾经照着 `PaletteStyle` 抄了 8 个（Expressive/Rainbow/FruitSalad/Fidelity 等），
+ * 但没有任何槽位使用它们，留着只会让人以为"用户能选风格"。
+ * 新增风格时必须同时有槽位使用它，否则不加。
+ */
+enum class PaletteStyle {
+    TonalSpot, Neutral, Monochrome, Vibrant, Content;
 }
 
 // PlayerKernel / VideoAspectMode / PictureAdjust 已搬入 :video:contract（本包 PlaybackModels.kt 只留别名）
@@ -79,15 +80,21 @@ enum class NavBarStyle(val value: String) {
 }
 
 /**
- * 动态对比度档位。
+ * 高对比度（无障碍档）。
  *
- * [spec] 直接喂给 m3color 的 scheme 构造（HCT 对比度偏移，合法范围 -1.0 ~ 1.0）。
- * 三档取值照 M3 规范：standard = 0.0、medium = 0.5、high = 1.0。
- * 没有提供「降低对比度」（负值）—— 那会让可读性下降，不属于设置项该鼓励的方向。
+ * [spec] 直接喂给 materialkolor 的 dynamicColorScheme（HCT 对比度偏移，合法范围 -1.0 ~ 1.0）。
+ * 两档取值照 M3 规范：standard = 0.0、high = 1.0。
+ *
+ * **为什么只有两档**：此前的 medium = 0.5 实测是负收益 —— 浅色下它把
+ * `onPrimaryContainer` / `primaryContainer` 的对比率从标准档的 7.2 **降到** 5.2
+ * （樱/藤/苍三种子一致），名义上"提高对比度"却降低了关键配对。standard 档的正文对比率
+ * 本已 16.4（WCAG AAA 只要 7.0），所以这个开关的价值不在正文，而在次要文字
+ * （`onSurfaceVariant`：8.9 → 20.0）与控件边界，属于无障碍取向，不是外观装饰。
+ *
+ * 不提供「降低对比度」（负值）：那会让可读性下降，不属于设置项该鼓励的方向。
  */
 enum class ContrastLevel(val value: String, val spec: Double) {
     Standard("standard", 0.0),
-    Medium("medium", 0.5),
     High("high", 1.0);
 
     companion object {
@@ -100,18 +107,24 @@ data class AppSettings(
     val appLanguage: AppLanguage = AppLanguage.SYSTEM,
     val themeMode: ThemeMode = ThemeMode.Light,
     /**
-     * 命名主题槽位 id（见 `ThemeBoard`：sakura/take/sou/yuzu/midnight/nord/mono/system）。
-     * 旧的 `useDynamicColor/themeAccent/paletteStyle` 三件套已删除，无用户、无迁移。
+     * 命名主题槽位 id（见 `ThemeBoard`：sakura/honmei/kaki/yuzu/take/sou/fuji/kasumi/
+     * midnight/nord/mono/system）。旧的 `useDynamicColor/themeAccent/paletteStyle` 三件套已删除。
      */
     val themeId: String = "sakura",
     /** AMOLED 纯黑：与深浅正交的独立开关，只在深色下叠加（Mihon 模式）。 */
     val amoled: Boolean = false,
     /**
-     * 动态对比度（审计 P2 接通）。
+     * 详情页动态主题：从影片封面图取主色现场生成一套配色，只作用在该详情页。
      *
-     * 此前 `Theme.kt` 把它写死成 0.0 —— M3 Expressive 的「动态对比度」支柱等于没接，
-     * 8 种调色板的自由度被砍掉一半。**默认档即原行为（0.0）**，所以老用户升级后
-     * 视觉零变化，只有主动去设置里调才会变。
+     * 默认 **false**：这是"页面级临时换肤"，会让详情页与当前命名槽位的视觉脱钩，
+     * 属于要用户主动选的偏好，不能默认改变老用户观感。
+     */
+    val dynamicSubjectTheme: Boolean = false,
+    /**
+     * 高对比度（审计 P2 接通）。
+     *
+     * 此前 `Theme.kt` 把它写死成 0.0 —— M3 Expressive 的「动态对比度」支柱等于没接。
+     * **默认档即原行为（0.0）**，所以老用户升级后视觉零变化，只有主动去设置里开才会变。
      */
     val contrastLevel: ContrastLevel = ContrastLevel.Standard,
     val allowPipMode: Boolean = true,
@@ -186,7 +199,7 @@ data class AppSettings(
     val collapseDownloadedGroup: Boolean = false,
     val playerKernel: PlayerKernel = PlayerKernel.ExoPlayer,
     val playerSpeed: Float = 1f,
-    /** 长按速播倍率（对齐 animeko 默认 3x；设置里可改）。 */
+    /** 长按速播倍率（默认 3x；设置里可改）。 */
     val longPressSpeedTime: Float = 3f,
     val videoLanguage: String = "zhs",
     val videoQuality: String = "1080P",
@@ -282,8 +295,8 @@ data class AppSettings(
     /**
      * 按类型显示：滚动 / 顶部 / 底部。
      *
-     * 默认底部关闭 —— 与 Kazumi、animeko 一致：底部常驻字幕最挡剧情，
-     * 且本项目的评论投影全是滚动，关底部不影响主源。
+     * 默认底部关闭：底部常驻字幕最挡剧情，且本项目的评论投影全是滚动，
+     * 关底部不影响主源。
      */
     val danmakuShowScroll: Boolean = true,
     val danmakuShowTop: Boolean = true,

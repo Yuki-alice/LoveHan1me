@@ -92,17 +92,20 @@ object HanimeDefaults {
             @Composable get() = MaterialTheme.shapes.largeIncreased
 
         /**
-         * 内容 sheet 的顶角形状（左上 28dp，值等于 `shapes.extraLarge`）。
+         * 内容 sheet 的形状：**起始侧上下两角 28dp**（值等于 `shapes.extraLarge`），
+         * 末端两角为直角。
          *
-         * 宽屏下「左侧 chrome / 右侧内容」的分界**只靠这一个圆角 + 底色差**，
+         * 宽屏下「左侧 chrome / 右侧内容」的分界**只靠这个圆角 + 底色差**，
          * 不再画细分隔线 —— 同系底色下 1px 细线约等于没有（见 `MainScaffold`
          * 宽屏分支的注释）。首页宽屏与设置双栏共用本 token，避免两处
          * 各写一个 28dp 各自漂移。
          *
-         * 只圆**左上**：sheet 贴窗口右半边，另外三角落在屏幕边缘，圆角无意义。
+         * 只圆**起始侧**：sheet 贴窗口右半边，末端两角落在屏幕边缘，圆角无意义；
+         * 起始侧两角才是贴着 chrome 的可见边缘，必须都圆 —— 只圆左上会让 sheet
+         * 的左下与 chrome 之间留出一个直角缺口（同一块 sheet 一半圆一半方）。
          */
         val contentSheet: CornerBasedShape
-            get() = RoundedCornerShape(topStart = 28.dp)
+            get() = RoundedCornerShape(topStart = 28.dp, bottomStart = 28.dp)
 
         /**
          * 胶囊/圆形 —— 走 percent=50 而非写死大数值（999dp/100 等）。
@@ -134,22 +137,49 @@ object HanimeDefaults {
 
     object Colors {
         /**
-         * 页面底色 —— 唯一值（`surface`）。M3 里 `background` 已是它的废弃别名，
-         * 此前另有 9 处直写 `background`，现统一收敛到此 token。
+         * 页面 / 内容区底色 —— `surfaceContainerLowest`（浅色 T100 即纯白，深色 T4）。
+         *
+         * 与导航容器（[Bars.navigationContainerColor]，`surfaceContainer`，T94）相差 6 个 tone，
+         * chrome 与内容的分界靠这个差值成立。此前取 `surface`（T98）只差 4 个 tone，
+         * 分界几乎看不见，chrome 与内容糊在一起。
+         *
+         * M3 里 `background` 是 `surface` 的废弃别名；本 token 仍是全项目页面底色的唯一出口。
          */
         val pageSurface: Color
-            @Composable get() = MaterialTheme.colorScheme.surface
+            @Composable get() = MaterialTheme.colorScheme.surfaceContainerLowest
 
         /**
-         * 卡片填充 —— `surfaceContainerHigh`。原先的 `surfaceBright` 在浅色下与页底
-         * 同色（对比度 1.000），卡片靠描边撑存在感；High 档浅/深分离度 1.165/1.234。
+         * 卡片填充 —— `surfaceContainerHigh`（浅色 T92）。原先的 `surfaceBright` 在浅色下
+         * 与页底同色（对比度 1.000），卡片靠描边撑存在感；High 档浅/深分离度 1.165/1.234。
          */
         val card: Color
             @Composable get() = MaterialTheme.colorScheme.surfaceContainerHigh
 
+        /** 首页视频卡填充 —— `surfaceContainerLow`（比 [card] 浅一档，密集列表里更透气）。 */
         val homeVideoCard: Color
             @Composable get() = MaterialTheme.colorScheme.surfaceContainerLow
+    }
 
+    /**
+     * 导航 chrome 的语义色。
+     *
+     * **只保留真正有调用方的角色。** 上一版这里另有 `pageContentBackgroundColor`（与
+     * [Colors.pageSurface] 取值重复）和 `topAppBarColors()`（与 `HanimeTopAppBar` 自带的
+     * 实现冲突：前者 `scrolledContainerColor` 取 `surfaceContainer`、后者取
+     * `surfaceContainerHigh`），两者都零调用 —— 留着会让后来人以为"改这里能生效"，
+     * 实际改的是死值。
+     */
+    object Bars {
+        /**
+         * 导航容器色：宽屏 Rail 的底、设置双栏左栏的底。
+         *
+         * `surfaceContainer`（浅色 T94）。移动端底栏不显式传色，走 M3 `NavigationBar`
+         * 默认值，恰好也是 `surfaceContainer` —— **同一个导航角色在两种窗口宽度下必须是
+         * 同一个色**。此前宽屏分支硬编码 `surfaceContainerLow`（T96），比紧凑底栏浅一档，
+         * 同一角色随窗口宽度变色。
+         */
+        val navigationContainerColor: Color
+            @Composable get() = MaterialTheme.colorScheme.surfaceContainer
     }
 
     val buttonShape: CornerBasedShape

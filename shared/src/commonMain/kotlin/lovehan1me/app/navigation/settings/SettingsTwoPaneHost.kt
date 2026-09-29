@@ -229,9 +229,9 @@ private fun TwoPaneRow(
     Row(
         modifier = Modifier
             .fillMaxSize()
-            // M3E 内容 sheet 的窗底：与 MainScaffold 宽屏分支同规。
+            // M3E 内容 sheet 的窗底：与 MainScaffold 宽屏分支同规（导航容器色，T94）。
             // 左栏因此**不需要自己的底色**，透明即可（再铺一层会深一号、把层次压平）。
-            .background(MaterialTheme.colorScheme.surfaceContainerLow),
+            .background(HanimeDefaults.Bars.navigationContainerColor),
     ) {
         SettingsCategoryPane(
             title = stringResource(Res.string.settings),
@@ -359,7 +359,7 @@ private fun SettingsCategoryPane(
 }
 
 /**
- * 右栏：M3E 内容 sheet —— `surface` 底 + 左上 28dp 圆角（与首页宽屏同规）。
+ * 右栏：M3E 内容 sheet —— 页面底色 + 起始侧上下 28dp 圆角（与首页宽屏同规）。
  *
  * 标题栏与内容**放在同一条限宽列里**：标题若挂在栏宽上、内容居中，窗口一宽
  * 两者就各走各的（标题贴栏左、内容浮中间）。同列之后标题恒与内容左缘对齐。
@@ -375,7 +375,7 @@ private fun SettingsDetailPane(
         modifier = modifier
             .fillMaxHeight()
             .clip(HanimeDefaults.Corners.contentSheet)
-            .background(MaterialTheme.colorScheme.surface),
+            .background(HanimeDefaults.Colors.pageSurface),
         contentAlignment = Alignment.TopCenter,
     ) {
         Column(
@@ -402,8 +402,8 @@ private fun SettingsDetailPane(
 /**
  * 栏内标题栏配色：透明容器 + 常规标题色。
  *
- * 透明是必要的 —— 左栏坐在窗底 `surfaceContainerLow` 上、右栏坐在 sheet 的 `surface`
- * 上，标题栏若自带 `pageSurface` 底色，会在左栏留下一块颜色不同的横带
+ * 透明是必要的 —— 左栏坐在窗底的导航容器色（T94）上、右栏坐在内容 sheet 的页面底色
+ * （T100）上，标题栏若自带 `pageSurface` 底色，会在左栏留下一块颜色不同的横带
  * （与首页 Rail「透明坐底」同一处理）。
  */
 @Composable

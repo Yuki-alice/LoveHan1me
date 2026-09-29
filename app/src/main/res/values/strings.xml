@@ -422,8 +422,6 @@ Recommendations are as follows:\n
     <string name="dynamic_color_summary">Follow system theme colors after enabling, only supported on Android 12+</string>
     <string name="dynamic_color_title">Dynamic Coloring</string>
     <string name="follow_system">Follow System</string>
-    <string name="always_off">Always Off</string>
-    <string name="always_on">Always On</string>
     <string name="category_instant_noodle">Instant Noodle Anime</string>
     <string name="category_motion_anime">Motion Anime</string>
     <string name="category_3d_animation">3D Animation</string>
@@ -675,11 +673,10 @@ Recommendations are as follows:\n
     <string name="dark_mode_picker_summary">Choose how the app follows light and dark appearance</string>
     <string name="palette_style">Palette style</string>
     <string name="palette_style_summary">Choose how Material colors are generated from the accent color</string>
-    <string name="contrast_level">Dynamic contrast</string>
-    <string name="contrast_level_summary">Adjust the contrast of colors generated from the accent color</string>
+    <string name="contrast_level">Contrast</string>
+    <string name="contrast_level_summary">Raise contrast for secondary text and controls — for low vision or bright light</string>
     <string name="contrast_level_standard">Standard</string>
-    <string name="contrast_level_medium">Medium</string>
-    <string name="contrast_level_high">High</string>
+    <string name="contrast_level_high">High contrast</string>
     <string name="temporarily_unavailable">Temporarily unavailable</string>
     <string name="information">Information</string>
     <string name="version">Version</string>

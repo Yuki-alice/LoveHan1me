@@ -262,6 +262,9 @@ fun HomeSettingsRouteScreen(
             amoledChange = { enabled ->
                 coroutineScope.launch { SettingsRepository.setAmoled(enabled) }
             },
+            dynamicSubjectThemeChange = { enabled ->
+                coroutineScope.launch { SettingsRepository.setDynamicSubjectTheme(enabled) }
+            },
             hapticFeedbackChange = { enabled ->
                 coroutineScope.launch { SettingsRepository.setHapticFeedback(enabled) }
             },
@@ -531,6 +534,7 @@ private fun buildHomeSettingsUiState(
         collapseDownloadedGroup = SettingsRepository.collapseDownloadedGroup,
         themeId = SettingsRepository.current.themeId,
         amoled = SettingsRepository.current.amoled,
+        dynamicSubjectTheme = SettingsRepository.current.dynamicSubjectTheme,
         hapticFeedbackEnabled = SettingsRepository.hapticFeedbackEnabled,
         funLoadingHints = SettingsRepository.funLoadingHints,
         secureMode = SettingsRepository.secureMode,
