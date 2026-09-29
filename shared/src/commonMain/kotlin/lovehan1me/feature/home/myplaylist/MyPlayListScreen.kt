@@ -41,7 +41,7 @@ import lovehan1me.create_new_playlist
 import lovehan1me.h_chan_sad
 import lovehan1me.ic_add
 import lovehan1me.core.domain.state.WebsiteState
-import lovehan1me.ui.component.PullRefreshOverlay
+import lovehan1me.ui.component.HanimePullRefreshBox
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.feature.library.PlaylistController
@@ -159,14 +159,13 @@ fun PlaylistScreen(
             )
         }
 
-        Box(
+        HanimePullRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { handleEvent(PlaylistEvent.OnRefresh) },
+            state = refreshState,
             modifier = Modifier
                 .padding(innerPadding)
-                .fillMaxSize()
-                .pullToRefresh(
-                    state = refreshState,
-                    isRefreshing = isRefreshing,
-                    onRefresh = { handleEvent(PlaylistEvent.OnRefresh) })
+                .fillMaxSize(),
         ) {
             when (state) {
                 is WebsiteState.Loading -> {
@@ -194,8 +193,6 @@ fun PlaylistScreen(
                     PlaylistContent(uiState = uiState, onEvent = handleEvent, rawState = state)
                 }
             }
-
-            PullRefreshOverlay(state = refreshState, isRefreshing = isRefreshing)
 
             if (uiState.showSheet && !temporarilyHideSheetForNavigation) {
                 PlaylistBottomSheet(

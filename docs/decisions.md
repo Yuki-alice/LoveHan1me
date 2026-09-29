@@ -168,3 +168,34 @@
   **失效条件**：若宽屏改为让 sheet 与窗口底边/侧边留出外边距（浮动卡片式），
   则四个角都落在可见边缘，应改用全角（`shapes.extraLarge`）。
   **重认日期**：2027-03-29。
+
+- **下拉刷新只认触摸；桌面端的刷新改由快捷键（F5 / Ctrl+R / Cmd+R）承担。门控按「最近一次
+  实际用到的指针类型」判定，不按平台。**
+  动机：桌面没有下拉手势，而 M3 的下拉刷新判定只看滚动来源、不看指针类型 —— 鼠标滚轮在
+  列表顶部继续上推（过卷）会被当成"下拉"，指示器被整块拉出且因滚轮没有抬手/fling 而**挂在
+  屏幕上不回弹**。按平台门控会让触屏笔记本/平板一起失效，故按指针类型。
+  依据（重跑命令、环境、输入可达性表见 `docs/evidence/2026-09-29-下拉刷新指针类型门控.md`）：
+  - 库层无指针类型检查：`PullToRefreshModifierNode.onPostScroll` 只比较 `NestedScrollSource.UserInput`，
+    而桌面滚轮的唯一路径 `MouseWheelScrollingLogic` 派发的正是 `UserInput`（两者均经 javap 核实）；
+  - 门控在 `shared/src/commonMain/kotlin/lovehan1me/ui/component/HanimePullRefreshBox.kt:122`
+    的 `TouchOnlyConnection.onPostScroll`：非 `UserInput`、或最近指针非 `Touch`、或位移非正方向，
+    一律不消费；挂载序见同文件 `:93`（门控必须挂在 M3 的**内层**，反了则位移先被 M3 吃掉）；
+  - 端到端两轮对照（同一取证文档第三节，可重跑）：过卷输入下门控**关** `distanceFraction = 2.0`、
+    门控**开** `0.0`；触摸下拉两轮都触发 `onRefresh` 1 次；
+  - 指针类型在全 App 范围被观察：`shared/src/commonMain/kotlin/lovehan1me/app/App.kt:147` 建
+    `ActiveInputSourceState`，`:150` `LocalActiveInputSource provides` 它，`:159` 在内容**之上**挂
+    `trackActiveInputSource` —— 此前该 CompositionLocal 从未被 provides，照抄门控会把触摸一起挡掉；
+  - 快捷键入口挂在**窗口**级而非组合内：`desktopApp/src/main/kotlin/lovehan1me/desktop/Main.kt:178`
+    的 `Window(onKeyEvent = ...)` 经 `:180` 的 `isPageRefreshShortcut` 判定后于 `:182` 调
+    `refreshHub.refresh()`（焦点可能落在搜索框里，组合内监听不到）；判定函数见
+    `shared/src/commonMain/kotlin/lovehan1me/ui/refresh/PageRefreshHub.kt:59`；
+  - 派发用**栈**而非单值：`PageRefreshHub.kt:18` 只认最后登记的页面，转场期间栈顶页面退出后
+    自动回落到仍在屏上的下一张；
+  - 7 个可刷新页面统一改用 `HanimePullRefreshBox`（旧的自绘 `ui/component/PullRefreshOverlay.kt` 已删除），
+    指示器观感归一。
+  已核（2026-09-29）：`:shared:desktopTest` 371 用例 0 失败（含新增 7 条回归）；
+  三端编译（Android / 桌面 / iOS Arm64 + Simulator）+ 四模块 `desktopTest` / `testAndroidHostTest`
+  全 BUILD SUCCESSFUL。
+  **失效条件**：Compose 改变滚轮/拖动的嵌套滚动派发方式（例如让鼠标拖动也走 `UserInput`）时，
+  上面第一、二条依据要重测；若 M3 官方改为按指针类型门控，`TouchOnlyConnection` 可整体撤下。
+  **重认日期**：2027-03-29。

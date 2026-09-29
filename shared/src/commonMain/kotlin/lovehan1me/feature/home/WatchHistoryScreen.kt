@@ -41,8 +41,6 @@ import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -106,6 +104,7 @@ import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.component.CardContainerSurface
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.component.FilledIconButton
+import lovehan1me.ui.component.HanimePullRefreshBox
 import lovehan1me.ui.component.LoadMoreFooter
 import lovehan1me.ui.component.PageContent
 import lovehan1me.ui.component.VideoCardItem
@@ -428,20 +427,12 @@ private fun OnlineWatchHistoryScreen(
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
-        PullToRefreshBox(
+        HanimePullRefreshBox(
             isRefreshing = refreshing,
-            state = refreshState,
             onRefresh = { onRefresh(sort) },
+            state = refreshState,
             modifier = Modifier.fillMaxSize(),
-            indicator = {
-                PullToRefreshDefaults.LoadingIndicator(
-                    state = refreshState,
-                    isRefreshing = refreshing,
-                    modifier = Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(top = 64.dp),
-                )
-            }
+            indicatorTopPadding = 64.dp,
         ) {
             PageContent(
                 isLoading = state is PageLoadingState.Loading && items.isEmpty(),

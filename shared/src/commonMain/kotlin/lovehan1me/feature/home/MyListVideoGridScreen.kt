@@ -11,8 +11,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -47,6 +45,7 @@ import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.core.domain.state.PageLoadingState
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.component.ConfirmDialog
+import lovehan1me.ui.component.HanimePullRefreshBox
 import lovehan1me.ui.component.PageContent
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.ui.component.content.EmptyContent
@@ -192,23 +191,16 @@ fun VideoGridScreen(
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->
-        PullToRefreshBox(
+        HanimePullRefreshBox(
             isRefreshing = refreshing,
-            state = refreshingState,
             onRefresh = {
                 pendingRefresh = true
                 onRefresh()
             },
+            state = refreshingState,
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues),
-            indicator = {
-                PullToRefreshDefaults.LoadingIndicator(
-                    state = refreshingState,
-                    isRefreshing = refreshing,
-                    modifier = Modifier.align(Alignment.TopCenter),
-                )
-            }
         ) {
             PageContent(
                 isLoading = false,

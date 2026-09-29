@@ -29,8 +29,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -71,6 +69,7 @@ import lovehan1me.core.domain.model.VideoComments
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.component.CommentReplyBar
 import lovehan1me.ui.component.CommentReportDialog
+import lovehan1me.ui.component.HanimePullRefreshBox
 import lovehan1me.ui.component.PageContent
 import lovehan1me.ui.component.VideoCommentCard
 import lovehan1me.ui.component.content.EmptyContent
@@ -252,18 +251,11 @@ fun CommentScreen(
                         end = paddingValues.calculateEndPadding(layoutDirection),
                     )
             ) {
-                PullToRefreshBox(
+                HanimePullRefreshBox(
                     isRefreshing = state is WebsiteState.Loading && !isPreviewCommentPrefetched,
                     onRefresh = onRefresh,
                     state = refreshingState,
                     modifier = Modifier.fillMaxSize(),
-                    indicator = {
-                        PullToRefreshDefaults.LoadingIndicator(
-                            state = refreshingState,
-                            isRefreshing = state is WebsiteState.Loading && !isPreviewCommentPrefetched,
-                            modifier = Modifier.align(Alignment.TopCenter),
-                        )
-                    }
                 ) {
                     val loadError = state is WebsiteState.Error && sortedComments.isEmpty()
                     PageContent(

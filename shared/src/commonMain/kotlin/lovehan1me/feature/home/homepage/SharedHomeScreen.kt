@@ -16,7 +16,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import lovehan1me.ui.theme.HanimeDefaults
-import androidx.compose.material3.pulltorefresh.pullToRefresh
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -37,7 +36,7 @@ import lovehan1me.core.domain.state.PageState
 import lovehan1me.core.domain.state.dataOrNull
 import lovehan1me.simulated_update_description
 import lovehan1me.ui.component.PageContent
-import lovehan1me.ui.component.PullRefreshOverlay
+import lovehan1me.ui.component.HanimePullRefreshBox
 import lovehan1me.ui.component.isFirstPageEmpty
 import lovehan1me.ui.component.isFirstPageError
 import lovehan1me.ui.component.isFirstPageLoading
@@ -139,60 +138,56 @@ fun SharedHomeScreen(
                 }
             }
         } else {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .pullToRefresh(
-                        state = refreshState,
-                        isRefreshing = isCurrentlyRefreshing,
-                        enabled = showSimulatedUpdate || updateState !is AppUpdateState.Checking,
-                        onRefresh = { viewModel.getHomePage(isRefresh = true) },
-                    )
-            ) {
-            PageContent(
-                isLoading = (!showSimulatedUpdate && updateState is AppUpdateState.Checking) ||
-                    pageState.isFirstPageLoading,
-                isError = pageState.isFirstPageError,
-                isEmpty = pageState.isFirstPageError || pageState.isFirstPageEmpty,
-                errorMessage = (pageState as? PageState.Error)?.throwable
-                    ?.toNetworkErrorMessageRes()
-                    ?.let { stringResource(it) }
-                    ?: "",
-                onRetry = { viewModel.getHomePage(isRefresh = false) },
-                loadingMessage = if (!showSimulatedUpdate && updateState is AppUpdateState.Checking) {
-                    stringResource(Res.string.checking_for_updates)
-                } else {
-                    loadingHint
-                },
+            HanimePullRefreshBox(
+                isRefreshing = isCurrentlyRefreshing,
+                onRefresh = { viewModel.getHomePage(isRefresh = true) },
+                enabled = showSimulatedUpdate || updateState !is AppUpdateState.Checking,
+                state = refreshState,
                 modifier = Modifier.fillMaxSize(),
+                // 顶栏浮在本容器之上而不是它的子节点，zIndex 管不到；指示器只能整体让到
+                // 顶栏下面，否则从窗口顶部落下时整段时间都被顶栏盖住。
+                indicatorTopPadding = contentTopPadding,
             ) {
-                val homeData = pageState.dataOrNull
-                if (homeData != null) {
-                    // transitionSpec 的 lambda **不是** @Composable 上下文，
-                    // 所以 contentFade()（内部要读 MaterialTheme.motionScheme）必须在外面先算好。
-                    val contentTransition = contentFade()
-                    AnimatedContent(
-                        targetState = homeData,
-                        transitionSpec = { contentTransition },
-                        label = "HomeContentAnimation",
-                    ) { data ->
-                        HomePageContent(
-                            data = data,
-                            updateInfo = availableUpdate,
-                            updateAnnouncement = updateAnnouncement,
-                            isAVSite = isAVSite,
-                            onEvent = onEvent,
-                            onCloseAnnouncement = viewModel::dismissAnnouncements,
-                            contentTopPadding = contentTopPadding,
-                            listState = homeListState,
-                        )
+                PageContent(
+                    isLoading = (!showSimulatedUpdate && updateState is AppUpdateState.Checking) ||
+                        pageState.isFirstPageLoading,
+                    isError = pageState.isFirstPageError,
+                    isEmpty = pageState.isFirstPageError || pageState.isFirstPageEmpty,
+                    errorMessage = (pageState as? PageState.Error)?.throwable
+                        ?.toNetworkErrorMessageRes()
+                        ?.let { stringResource(it) }
+                        ?: "",
+                    onRetry = { viewModel.getHomePage(isRefresh = false) },
+                    loadingMessage = if (!showSimulatedUpdate && updateState is AppUpdateState.Checking) {
+                        stringResource(Res.string.checking_for_updates)
+                    } else {
+                        loadingHint
+                    },
+                    modifier = Modifier.fillMaxSize(),
+                ) {
+                    val homeData = pageState.dataOrNull
+                    if (homeData != null) {
+                        // transitionSpec 的 lambda **不是** @Composable 上下文，
+                        // 所以 contentFade()（内部要读 MaterialTheme.motionScheme）必须在外面先算好。
+                        val contentTransition = contentFade()
+                        AnimatedContent(
+                            targetState = homeData,
+                            transitionSpec = { contentTransition },
+                            label = "HomeContentAnimation",
+                        ) { data ->
+                            HomePageContent(
+                                data = data,
+                                updateInfo = availableUpdate,
+                                updateAnnouncement = updateAnnouncement,
+                                isAVSite = isAVSite,
+                                onEvent = onEvent,
+                                onCloseAnnouncement = viewModel::dismissAnnouncements,
+                                contentTopPadding = contentTopPadding,
+                                listState = homeListState,
+                            )
+                        }
                     }
                 }
-            }
-            PullRefreshOverlay(
-                state = refreshState,
-                isRefreshing = isCurrentlyRefreshing,
-            )
             }
         }
         // P4：顶栏换成「搜索框 · 新番列表 · 账号头像」三件套。

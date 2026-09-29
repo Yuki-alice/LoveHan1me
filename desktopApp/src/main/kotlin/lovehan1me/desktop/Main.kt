@@ -21,12 +21,19 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.type
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import lovehan1me.app.App
+import lovehan1me.ui.refresh.PageRefreshHub
+import lovehan1me.ui.refresh.isPageRefreshShortcut
 import lovehan1me.app.crash.installCrashHandler
 import lovehan1me.app.navigation.main.PlatformScreens
 import lovehan1me.app.web.CloudflareVerificationWindow
@@ -97,8 +104,6 @@ fun main() {
     DesktopMpvPlaybackEngine.preloadAsync()
     // 下载引擎端到端冒烟（HAN1ME_SMOKE=download，跑完即退）
     if (runSmokeIfRequested()) return
-    // 主题预生成（HAN1ME_GEN_BOARDS=1，跑完即退，输出进 shared/.../ui/theme/）
-    if (runGenBoardsIfRequested()) return
 
     application {
         StartupTrace.mark("application")
@@ -161,10 +166,21 @@ fun main() {
             placement = savedGeometry.placement,
         )
 
+        // 「刷新当前页面」：桌面端没有下拉手势（下拉刷新被 HanimePullRefreshBox 按指针类型
+        // 挡掉了鼠标），刷新改由 F5 / Ctrl+R / Cmd+R 承担。
+        // 监听只能挂在窗口上 —— 挂在组合内部要靠焦点，焦点一旦落进搜索框就再也收不到按键。
+        val refreshHub = remember { PageRefreshHub() }
+
         Window(
             onCloseRequest = ::exitApplication,
             title = "LoveHan1me",
             state = windowState,
+            onKeyEvent = { event ->
+                event.type == KeyEventType.KeyDown &&
+                    isPageRefreshShortcut(event.key, event.isCtrlPressed, event.isMetaPressed) &&
+                    // 当前页没有登记刷新动作时返回 false，不消费按键
+                    refreshHub.refresh()
+            },
         ) {
             // 窗口真正销毁时落盘（用 onDispose 而非 onCloseRequest：后者将来可能被
             // "最小化到托盘"之类的逻辑提前拦截，导致几何永远存不下来）。
@@ -200,6 +216,8 @@ fun main() {
                         onExit = ::exitApplication,
                         autoNavigateVideoCode = autoVideoCode,
                         autoNavigateExitAfterMs = 150_000L,
+                        // 与窗口级按键回调共用同一个实例，F5/Cmd+R 才能派发到当前页
+                        pageRefresh = refreshHub,
                         // M5-2：注入桌面窗口宿主，播放器全屏走 AWT setFullScreenWindow
                         platformScreens = PlatformScreens(
                             videoPageHost = remember { DesktopVideoPageHost() },

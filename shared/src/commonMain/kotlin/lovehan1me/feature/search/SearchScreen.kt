@@ -12,8 +12,6 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -115,6 +113,7 @@ import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.core.domain.model.HanimeInfo.Companion.NORMAL
 import lovehan1me.core.domain.model.SearchOption
 import lovehan1me.ui.component.FilledIconButton
+import lovehan1me.ui.component.HanimePullRefreshBox
 import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.component.VideoCardItem
 import lovehan1me.ui.component.content.EmptyContent
@@ -416,7 +415,7 @@ fun SearchScreen(
             }
         }
 
-        PullToRefreshBox(
+        HanimePullRefreshBox(
             isRefreshing = isRefreshing,
             onRefresh = {
                 isRefreshing = true
@@ -426,14 +425,6 @@ fun SearchScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .nestedScroll(criteriaNestedScrollConnection),
-            indicator = {
-                PullToRefreshDefaults.LoadingIndicator(
-                    state = refreshState,
-                    isRefreshing = isRefreshing,
-                    modifier = Modifier.align(Alignment.TopCenter),
-                    containerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
-                )
-            },
         ) {
             if (hasSearched) {
                 // 已触发搜索，显示结果

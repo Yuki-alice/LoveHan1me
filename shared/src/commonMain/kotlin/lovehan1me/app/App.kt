@@ -35,6 +35,11 @@ import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.feature.home.homepage.HomePageViewModel
 import lovehan1me.site.SiteSwitcher
 import lovehan1me.ui.theme.HanimeTheme
+import lovehan1me.ui.refresh.LocalPageRefreshHub
+import lovehan1me.ui.refresh.PageRefreshHub
+import lovehan1me.video.player.ui.support.ActiveInputSourceState
+import lovehan1me.video.player.ui.support.LocalActiveInputSource
+import lovehan1me.video.player.ui.support.trackActiveInputSource
 import lovehan1me.app.sharedViewModel
 import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.delay
@@ -85,6 +90,11 @@ fun App(
     autoNavigateVideoCode: String? = null,
     /** 探针配套：进视频页后多久退出应用（毫秒），仅 [autoNavigateVideoCode] 非空时生效。 */
     autoNavigateExitAfterMs: Long = 150_000L,
+    /**
+     * 「刷新当前页面」的中转站。桌面入口要在**组合之外**（窗口级按键回调）派发刷新，
+     * 没法读 CompositionLocal，所以由它自己建实例再传进来；其余端用默认值即可。
+     */
+    pageRefresh: PageRefreshHub = remember { PageRefreshHub() },
 ) {
     HanimeTheme {
         // M5-3：上次崩溃残留的报告优先展示（桌面/iOS 崩溃后进程已退出，
@@ -131,9 +141,26 @@ fun App(
         val generation by SiteSwitcher.generation.collectAsStateWithLifecycle()
         val storeOwner = remember(generation) { AppViewModelStore.alignTo(generation) }
 
-        CompositionLocalProvider(LocalViewModelStoreOwner provides storeOwner) {
-            key(generation) {
-                AppContent(onExit, platformScreens, autoNavigateVideoCode, autoNavigateExitAfterMs)
+        // 指针类型必须在**整个 App** 范围内被观察：下拉刷新靠它区分"鼠标滚轮过卷"与
+        // "手指下拉"。此前只有播放器内部挂了观察，离开播放页后这份状态就停在最后一次的值上，
+        // 用它做门控等于按"上次进播放器时用了什么"来决定首页能不能下拉。
+        val activeInputSource = remember { ActiveInputSourceState() }
+
+        CompositionLocalProvider(
+            LocalActiveInputSource provides activeInputSource,
+            LocalPageRefreshHub provides pageRefresh,
+            LocalViewModelStoreOwner provides storeOwner,
+        ) {
+            // 观察点放在内容**之上**：父节点在 Initial 阶段先拿到指针事件。
+            // trackActiveInputSource 只读不消费，不改变任何手势的判定结果。
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .trackActiveInputSource(activeInputSource),
+            ) {
+                key(generation) {
+                    AppContent(onExit, platformScreens, autoNavigateVideoCode, autoNavigateExitAfterMs)
+                }
             }
         }
     }

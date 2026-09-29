@@ -41,7 +41,7 @@ import lovehan1me.core.domain.model.SubscriptionVideosItem
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.component.ChoiceDialog
 import lovehan1me.ui.component.IconButton
-import lovehan1me.ui.component.PullRefreshOverlay
+import lovehan1me.ui.component.HanimePullRefreshBox
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.feature.home.subscription.SubscriptionContent
@@ -169,15 +169,13 @@ fun SubscriptionScreen(
         },
         scrollBehavior = scrollBehavior,
     ) { innerPadding ->
-        Box(
+        HanimePullRefreshBox(
+            isRefreshing = isRefreshing,
+            onRefresh = { handleEvent(SubscriptionEvent.OnRefresh) },
+            state = refreshState,
             modifier = Modifier
                 .padding(innerPadding)
-                .fillMaxSize()
-                .pullToRefresh(
-                    state = refreshState,
-                    isRefreshing = isRefreshing,
-                    onRefresh = { handleEvent(SubscriptionEvent.OnRefresh) }
-                )
+                .fillMaxSize(),
         ) {
             when (state) {
                 is WebsiteState.Loading -> {
@@ -220,11 +218,6 @@ fun SubscriptionScreen(
                     )
                 }
             }
-
-            PullRefreshOverlay(
-                state = refreshState,
-                isRefreshing = isRefreshing,
-            )
         }
     }
 }
