@@ -61,6 +61,20 @@ object ServiceCreator {
 
     val getchuClient: OkHttpClient = buildGetchuClient()
 
+    /**
+     * 摘掉旧网络上的空闲连接（网络变化时由 `platformOnNetworkChanged` 调用）。
+     *
+     * `evictAll()` 按 OkHttp 语义只摘空闲连接（`allocationCount == 0`），进行中的请求
+     * 与下载不受影响——`NetworkChangeReactionsTest` 把这条假设固定住，防升级语义漂移。
+     */
+    fun evictConnectionPools() {
+        hClient.connectionPool.evictAll()
+        getchuClient.connectionPool.evictAll()
+        downloadClient.connectionPool.evictAll()
+        // CDN 链（封面 / 图片）的池是另一组派生实例，见 CdnFetchClient。
+        evictCdnConnectionPools()
+    }
+
     private fun buildGetchuClient(): OkHttpClient {
         return OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)

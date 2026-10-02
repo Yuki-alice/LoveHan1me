@@ -104,6 +104,16 @@ class HanimeDns : Dns {
             dohFailures = 0
         }
 
+        /**
+         * 网络变化后清 DoH 冷却（由 `platformOnNetworkChanged` 调用）：
+         * 旧网络上的失败结论不作数，给 DoH 一次干净的机会。
+         */
+        fun clearDohCooldown() {
+            dohFailures = 0
+            dohCoolingUrl = ""
+            dohCooldownUntilMs = 0L
+        }
+
         private val cloudFlareIps = listOf(
             "172.64.229.154", "162.159.0.1", "108.162.192.1", "172.64.33.1", "104.19.0.1",
             "2606:4700:3035::ac43:bb8d", "2606:4700:3030::6815:746", "2606:4700:3030::6815:714"

@@ -56,6 +56,11 @@ internal fun createThirdPartyClient(connectTimeoutSeconds: Long = 15L): OkHttpCl
 
 private val CDN_CLIENTS = ConcurrentHashMap<Long, OkHttpClient>()
 
+/** 网络变化时摘掉 CDN 链的空闲连接（见 `ServiceCreator.evictConnectionPools`）。 */
+internal fun evictCdnConnectionPools() {
+    CDN_CLIENTS.values.forEach { it.connectionPool.evictAll() }
+}
+
 private fun buildCdnFetchClient(connectTimeoutSeconds: Long): OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(connectTimeoutSeconds, TimeUnit.SECONDS)
     // 重试放最外层：要重跑整条链（含网关改写），不是只重放最内层的网络调用。

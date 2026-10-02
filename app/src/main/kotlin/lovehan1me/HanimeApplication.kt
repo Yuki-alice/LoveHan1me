@@ -3,6 +3,8 @@ package lovehan1me
 import android.app.Activity
 import android.app.Application
 import android.content.Context
+import android.net.ConnectivityManager
+import android.net.Network
 import android.os.Bundle
 import androidx.core.app.NotificationChannelCompat
 import androidx.core.app.NotificationManagerCompat
@@ -16,6 +18,7 @@ import lovehan1me.core.platform.setDownloadWorkControllerProvider
 import lovehan1me.core.platform.setVideoCacheStoreProvider
 import lovehan1me.data.network.CloudflareVerificationCoordinator
 import lovehan1me.data.network.HanimeProxySelector
+import lovehan1me.data.network.egress.onNetworkChanged
 import lovehan1me.ui.activity.MainActivity
 import lovehan1me.app.crash.CrashHandler
 import lovehan1me.core.util.AppLanguageManager
@@ -69,6 +72,8 @@ class HanimeApplication : Application(), Application.ActivityLifecycleCallbacks 
         registerActivityLifecycleCallbacks(this)
         ProxySelector.setDefault(HanimeProxySelector())
         HanimeProxySelector.rebuildNetwork()
+        // 网络变化复位：切网后熔断器 / 探测缓存 / 空闲连接 / DoH 冷却不再按旧网络延续。
+        registerNetworkChangeCallback()
         // M2：CF 验证的协调器与验证页都已下沉 shared/androidMain，:app 只交出
         // 「哪个 Activity 承载验证页」这一点壳信息（决策 #9 划给壳的 Activity 能力）。
         CloudflareVerificationCoordinator.verificationActivityClass = MainActivity::class.java
@@ -89,6 +94,25 @@ class HanimeApplication : Application(), Application.ActivityLifecycleCallbacks 
             NotificationManagerCompat.IMPORTANCE_LOW
         ).setName("Hanime Download").build()
         nm.createNotificationChannel(hanimeDownloadChannel)
+    }
+
+    /**
+     * 网络变化复位（切网 / 飞行模式恢复）：熔断器、CDN 探测缓存、OkHttp 空闲连接、
+     * DoH 冷却一并归零 —— 旧网络上的结论不该继续影响新网络（见 `onNetworkChanged`）。
+     *
+     * 只认 `onAvailable`：`onLost`（纯离线）没有新的出口现实可谈；
+     * `onCapabilitiesChanged` 触发频繁且与出口无关。回调在 binder 线程，
+     * 复位是幂等的轻量操作，直接执行即可。
+     */
+    private fun registerNetworkChangeCallback() {
+        val cm = getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager ?: return
+        runCatching {
+            cm.registerDefaultNetworkCallback(object : ConnectivityManager.NetworkCallback() {
+                override fun onAvailable(network: Network) {
+                    onNetworkChanged()
+                }
+            })
+        }.onFailure { LogUtil.w(TAG, "网络变化监听注册失败：${it.message}") }
     }
 
     override fun onActivityCreated(activity: Activity, savedInstanceState: Bundle?) = Unit
