@@ -137,6 +137,10 @@ kotlin {
             // P6a：LanguageHelper android actual 用 AppCompatDelegate.getApplicationLocales
             implementation(libs.appcompat)
 
+            // 验证窗（CF 人机验证）的出站对齐：ProxyController 覆盖 WebView 代理，
+            // 与桌面把 Chrome 指到网关 CONNECT 隧道是同一条路（见 GateWebViewProxy）。
+            implementation(libs.webkit)
+
             // P5-1：播放器引擎归位 androidMain（坐标从 :app 照搬）
             implementation(libs.media3.exoplayer)
             implementation(libs.media3.exoplayer.hls)

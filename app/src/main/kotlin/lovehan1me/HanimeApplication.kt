@@ -17,8 +17,10 @@ import lovehan1me.core.platform.AndroidVideoCacheStore
 import lovehan1me.core.platform.setDownloadWorkControllerProvider
 import lovehan1me.core.platform.setVideoCacheStoreProvider
 import lovehan1me.data.network.CloudflareVerificationCoordinator
+import lovehan1me.data.network.EchGateRuntime
 import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.data.network.egress.onNetworkChanged
+import lovehan1me.echgate.AndroidEchGateStarter
 import lovehan1me.ui.activity.MainActivity
 import lovehan1me.app.crash.CrashHandler
 import lovehan1me.core.util.AppLanguageManager
@@ -67,6 +69,19 @@ class HanimeApplication : Application(), Application.ActivityLifecycleCallbacks 
         setDownloadWorkControllerProvider { AndroidDownloadWorkController }
         SettingsRepository.install(DataStoreManager)
         StartupTrace.mark("settings")
+        // 本地 ECH 网关（免梯直连）：装配 Android 的进程内运行时（gomobile 产物
+        // `app/libs/Echgate.aar`），再按开关在**后台线程**起服，不阻塞冷启动
+        // （起服本身由门面扔到守护线程，首次 DoH 取 ECH 公钥配置约 1–3s，
+        // 之后走 cacheDir 的磁盘缓存即秒级）。
+        // 位置刻意靠前：首页图片在界面首帧后立刻开始加载，网关越早就绪越不容易漏掉。
+        // 装入门面后消费方（拦截器 / 设置页 / 站点切换）只认 `EchGate.port`，
+        // 起不来就直连降级——网关是加速项，不该让启动失败。
+        EchGateRuntime.install(AndroidEchGateStarter(cacheDir))
+        if (SettingsRepository.useEchGate) {
+            runCatching { EchGateRuntime.start() }
+                .onFailure { LogUtil.w(TAG, "ECH 网关启动失败：${it.message}") }
+        }
+        StartupTrace.mark("ech-gate")
         AppLanguageManager.applyStoredLanguage(this)
         StartupTrace.mark("language")
         registerActivityLifecycleCallbacks(this)

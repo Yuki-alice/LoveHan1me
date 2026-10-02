@@ -128,6 +128,16 @@ dependencies {
     // KMP 共享模块：P1 起，无平台耦合的 model / state / exception 已下沉到 :shared
     implementation(project(":shared"))
 
+    // 本地 ECH 网关运行时（gomobile 产物，由 `echgate/build-android.sh` 生成）：
+    // 进程内起服，与 iOS 共用同一份 `gate.Start`。二进制随仓库走，
+    // 使用端不需要 Go/NDK 工具链；改网关源码后必须重跑该脚本并一并提交。
+    //
+    // 只在这里（application 模块）声明：AGP 不允许 library 模块依赖本地 .aar，
+    // 所以引用 `gate.*` 的起服器也落在 :app（见 echgate/AndroidEchGateStarter.kt）。
+    // AAR 自带的 proguard.txt 会作为 consumer rules 自动并入，无需在
+    // proguard-rules.pro 里再补 keep（核对方式见 docs/evidence/）。
+    implementation(files("libs/Echgate.aar"))
+
     // P6d-1：R.drawable→Res.drawable 适配需 CMP resources（painterResource/DrawableResource/Res）
     implementation(compose.components.resources)
 

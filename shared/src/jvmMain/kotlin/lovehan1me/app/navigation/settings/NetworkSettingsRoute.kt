@@ -59,7 +59,7 @@ import lovehan1me.cancel
 import lovehan1me.attention
 import lovehan1me.site.hanime1.Parser
 import lovehan1me.data.network.CdnIpProbe
-import lovehan1me.data.network.EchGateProcess
+import lovehan1me.data.network.EchGateRuntime
 import lovehan1me.data.network.DohConfig
 import lovehan1me.data.network.HanimeDns
 import lovehan1me.data.network.HanimeProxySelector
@@ -365,11 +365,12 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
         onUseEchGateChange = { value ->
             coroutineScope.launch {
                 SettingsRepository.update { it.copy(useEchGate = value) }
-                // 网关是外部进程，开关就是它的生死。拦截器常驻且自己看端口，无需重建客户端。
+                // 网关是进程外/进程内运行时，开关就是它的生死。拦截器常驻且自己看端口，
+                // 无需重建客户端；这里只经门面转达，不碰任何具体运行时实现。
                 // 用户主动开关 = 重新给一次机会：把熔断健康度归零，否则刚被熔断过的网关
                 // 会在冷却期内"开了也不管事"，看起来像开关失灵。
                 GateHealthHolder.reset()
-                if (value) EchGateProcess.start() else EchGateProcess.stop()
+                if (value) EchGateRuntime.start() else EchGateRuntime.stop()
             }
         },
         onSaveCustomHosts = { data ->

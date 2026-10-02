@@ -5,7 +5,7 @@ import ComposeApp
 /// iOS 本地 ECH 网关的拉起（gomobile 进程内起服）。
 ///
 /// 与桌面的 exe 进程模型对应：监听 127.0.0.1 随机端口，实际端口回填给
-/// Kotlin（`EchGateStarter.setPort`），Kotlin 侧 Ktor 插件据此改写。
+/// Kotlin（`EchGatePortReporter.setPort`），Kotlin 侧 Ktor 插件据此改写。
 /// 是否真正改写以后端 `useEchGate` 设置为准——这里无条件起服，
 /// 无流量时网关空转，用户关掉开关即零改动（见 `installEchGate` 门控）。
 enum EchGateBootstrap {
@@ -45,7 +45,7 @@ enum EchGateBootstrap {
                 return
             }
             server = srv
-            EchGateStarter.shared.setPort(port: Int32(port))
+            EchGatePortReporter.shared.setPort(port: Int32(port))
             NSLog("[EchGate] running on 127.0.0.1:\(port)")
         }
     }

@@ -34,7 +34,7 @@ sealed interface EchGateStatus {
      * 进程输出结束（stdout EOF）时的落点。
      *
      * @param ownedByCurrentMonitor 输出结束的这个进程是否**仍归本监视器管**。
-     *   主动 [EchGateProcess.stop] 会先清掉进程引用并把状态落成 [Stopped]，
+     *   主动停止（门面的 stop）会先把状态落成 [Stopped]、再回收运行时并清掉引用，
      *   于是这里拿到的 `owned` 为 false —— 预期内的停止不会变成 [Exited]，
      *   设置页也就不再报"网关失败：网关进程已退出"。
      */
@@ -69,12 +69,14 @@ sealed interface EchGateStatus {
  * ⇒ 不是证书问题。ECH 把真 SNI 塞进加密信封，外层只暴露 Cloudflare 的公共名。
  *
  * ## 平台运行时
- * - 桌面：`EchGateProcess` 拉起各 OS 的 Go 二进制（`echgate/build.sh` 产物）；
- * - Android：长期形态是 gomobile 进程内起服（`echgate/gate` 包已就绪），
- *   播放器/下载/图片的改写 plumbing 已全部按 `port > 0` 生效；
- * - iOS：同上，Ktor 插件 + AVPlayer 改写已就绪，运行时待接入
- *   （Swift 侧经 [EchGateStarter] 回填）。
+ * - 桌面：jvm 侧的 `DesktopEchGateStarter` 拉起各 OS 的 Go 二进制
+ *   （`echgate/build.sh` 产物）；
+ * - Android：`AndroidEchGateStarter`（`:app` 壳）驱动 gomobile 产物
+ *   （`echgate/build-android.sh` → `app/libs/Echgate.aar`）进程内起服，
+ *   与 iOS 共用同一份 `gate.Start`；
+ * - iOS：同上，Swift 壳（`EchGateBootstrap.swift`）起服后经 [EchGatePortReporter] 回填端口。
  *
+ * 三端的消费方（拦截器、设置页、站点切换）只依赖门面，不引用任何具体运行时实现。
  * 没启动时 [port] 为 -1，所有改写层自动放行直连，
  * **行为与接入前完全一致**——这是刻意的设计，网关挂了不该连累正常请求。
  * 此时现有机制（代理选择器 / 内置 hosts / DoH）即兜底。
@@ -91,8 +93,8 @@ object EchGate {
 
     /**
      * 状态变更后的平台通知钩子。commonMain 里没有跨平台的 wait/notify，
-     * 于是把"叫醒等待者"这件事交给平台侧：jvm 接到 [EchGateProcess] 的就绪信号上，
-     * 没有运行时的平台不设。空实现只是退回轮询，不影响正确性。
+     * 于是把"叫醒等待者"这件事交给平台侧：jvm 侧由门面（`EchGateRuntime`）接到
+     * 就绪信号上，没有运行时的平台不设。空实现只是退回轮询，不影响正确性。
      */
     internal var onStatusChanged: (() -> Unit)? = null
 
@@ -115,8 +117,8 @@ object EchGate {
 /**
  * 按设置确保网关在运行（热切换/备份恢复后调用）。
  *
- * - JVM：`useEchGate` 开着就 `EchGateProcess.start()`（已在运行则 no-op；
- *   进程意外死亡后借此复活）；
+ * - JVM：`useEchGate` 开着就经门面 `EchGateRuntime.start()`（已在运行则 no-op；
+ *   运行时意外死亡后借此复活）；
  * - iOS：无运行时，no-op。
  */
 expect fun ensureEchGateway()

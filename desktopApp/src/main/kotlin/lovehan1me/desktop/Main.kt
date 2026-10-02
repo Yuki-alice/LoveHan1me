@@ -43,7 +43,8 @@ import lovehan1me.core.util.LogUtil
 import lovehan1me.core.util.StartupTrace
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.datastore.DataStoreManager
-import lovehan1me.data.network.EchGateProcess
+import lovehan1me.data.network.DesktopEchGateStarter
+import lovehan1me.data.network.EchGateRuntime
 import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.data.network.createHanimeHttpClient
 import lovehan1me.feature.player.DesktopMpvPlaybackEngine
@@ -309,8 +310,15 @@ private suspend fun initializeDesktop() {
     //
     // 位置刻意靠前：首页图片在界面首帧后立刻开始加载，网关越早就绪越不容易漏掉。
     // 就绪时间主要取决于 ECH 公钥配置——首次启动要等一次 DoH，之后走 --cache-dir 的磁盘缓存。
+    // 装配桌面侧的网关运行时（独立 exe 子进程），再按开关拉起。门面的骨架
+    // （就绪等待/自愈/状态落点）与 Android 共用一份，两边只在 Starter 处分叉。
+    // 它内部自己判平台与产物是否齐备，失败只记日志——网关是加速项，不该让启动失败。
+    //
+    // 位置刻意靠前：首页图片在界面首帧后立刻开始加载，网关越早就绪越不容易漏掉。
+    // 就绪时间主要取决于 ECH 公钥配置——首次启动要等一次 DoH，之后走 --cache-dir 的磁盘缓存。
+    EchGateRuntime.install(DesktopEchGateStarter)
     if (SettingsRepository.useEchGate) {
-        runCatching { EchGateProcess.start() }
+        runCatching { EchGateRuntime.start() }
             .onFailure { LogUtil.w("Desktop", "main: ECH 网关启动失败：${it.message}") }
     }
     StartupTrace.mark("ech-gate")

@@ -28,13 +28,13 @@ import kotlin.test.assertTrue
  *
  * 对照组不可省：只跑正例，无法排除"本机其实没被阻断"。
  *
- * 网关进程由测试自己拉起（不用 `EchGateProcess`——那要求 exe 在测试 classpath 里，
+ * 网关进程由测试自己拉起（不用门面里的桌面运行时——那要求 exe 在测试 classpath 里，
  * 而它实际躺在 `desktopApp` 的 resources 中）。
  */
 class EchGateLiveTest {
 
     /**
-     * 本机可执行的网关产物：按 OS/架构选名（与 [EchGateProcess.artifactNameFor]
+     * 本机可执行的网关产物：按 OS/架构选名（与 [DesktopEchGateStarter.artifactNameFor]
      * 同一映射），在桌面资源目录与源码目录里找。
      *
      * 仓库里的二进制可能没有可执行位（git 不总是保留）：找到后尝试补上，
@@ -43,7 +43,7 @@ class EchGateLiveTest {
      * 而不是拿起来试（此前 Mac 上直接 exec Windows 版，EACCES 挂全类）。
      */
     private fun findExe(): File? {
-        val resource = EchGateProcess.artifactNameFor(
+        val resource = DesktopEchGateStarter.artifactNameFor(
             System.getProperty("os.name", ""),
             System.getProperty("os.arch", ""),
         )?.resource?.trimStart('/') ?: return null
@@ -103,7 +103,7 @@ class EchGateLiveTest {
     /**
      * 拉起网关并等它就绪，返回进程与端口。调用方负责关掉。
      *
-     * 输出流由后台线程为进程整个生命周期排空（生产 EchGateProcess 同模式）：
+     * 输出流由后台线程为进程整个生命周期排空（生产 DesktopEchGateStarter 同模式）：
      * 找到 LISTENING 就关管道会让网关下次打日志时 SIGPIPE 死亡，
      * 请求侧看到的就是 `unexpected end of stream`。
      *

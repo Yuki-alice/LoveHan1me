@@ -5,7 +5,7 @@ import lovehan1me.core.util.LogUtil
 import lovehan1me.data.network.EchGate
 import lovehan1me.data.network.EchGateContract
 import lovehan1me.data.network.EchGatePolicy
-import lovehan1me.data.network.EchGateProcess
+import lovehan1me.data.network.EchGateRuntime
 import lovehan1me.data.network.HCookieJar
 import lovehan1me.data.network.egress.EgressAttempt
 import lovehan1me.data.network.egress.EgressPlanner
@@ -65,7 +65,7 @@ class EchGateInterceptor(
 
         // 冷启动竞态：网关被要求启动但 LISTENING 未到时，首页请求会抢跑直连撞 RST，
         // 表现为"封面首刷失败、再滑回来又好"。拉起中有界等待，图片与列表统一处理。
-        EchGateProcess.awaitReadyIfStarting()
+        EchGateRuntime.awaitReadyIfStarting()
 
         val intent = EgressRequest(request.url.toString(), request.method)
         val plan = EgressPlanner.plan(intent, currentEgressState(now))

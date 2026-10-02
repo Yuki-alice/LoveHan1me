@@ -44,7 +44,7 @@ class EchGateInterceptorTest {
     private fun install() {
         runCatching { SettingsRepository.install(GateTestStore(AppSettings())) }
         // 前置条件一律**显式建立**，不要依赖"别的用例没改过"——两处都是进程全局状态：
-        //  - useEchGate 现在参与判定（EgressPlanner），而 EchGateProcessTest.resetGlobals()
+        //  - useEchGate 现在参与判定（EgressPlanner），而 EchGateRuntimeTest.resetGlobals()
         //    会把它写成 false 且不还原，于是本类在它之后跑时网关会被整体跳过；
         //  - 熔断健康度同理，且冷却期是 5 分钟。
         runBlocking { SettingsRepository.update { it.copy(useEchGate = true) } }

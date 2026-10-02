@@ -29,6 +29,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.net.toUri
@@ -109,6 +110,7 @@ fun CloudflareRouteScreen(
         },
     )
 
+    val context = LocalContext.current
     DisposableEffect(host) {
         onDispose {
             webViewState.value?.run {
@@ -116,6 +118,9 @@ fun CloudflareRouteScreen(
                 destroy()
             }
             webViewState.value = null
+            // 出口覆盖是**进程级**的（会顶掉系统代理）：验证页走了就卸掉，
+            // 别让进程里其它 WebView 继承一个已经没有人负责的出口。
+            GateWebViewProxy.clear(context.mainExecutor)
             // 兜底：用户在验证过程中直接返回/导航走了，也要结清等待者
             if (!finalizedState.value) {
                 CloudflareVerificationCoordinator.complete(host, succeeded = false)
@@ -233,7 +238,14 @@ private fun createCloudflareWebView(
                 }
             }
         }
-        loadUrl(url)
+        // 出站对齐：把验证窗指到 App 此刻的出口（网关候选 ⇒ CONNECT 隧道，
+        // 否则用户手填代理），覆盖生效后再加载 —— cf_clearance 绑出口 IP，
+        // 两边出口不一致就会"验了还要验"。判据与拦截器 / 播放器同一份快照，
+        // 见 GateWebViewProxy；无需覆盖 / WebView 不支持时原样加载，即接入前行为。
+        val awaitingOverride = GateWebViewProxy.install(context.mainExecutor) {
+            cloudflareWebView.loadUrl(url)
+        }
+        if (!awaitingOverride) loadUrl(url)
     }
 }
 

@@ -17,6 +17,9 @@ okio = "3.18.1"
 # Dependencies
 coreKtx = "1.19.0"
 appcompat = "1.7.1"
+# 验证窗（CF 人机验证）的 WebView 出站覆盖：ProxyController 自 1.1.0 起，
+# 只吃 toml 里这一个坐标，别在模块里另写版本号。
+webkit = "1.17.1"
 coroutinesAndroid = "1.11.0"
 activity = "1.13.0"
 fragment = "1.8.9"
@@ -84,6 +87,7 @@ coil-compose = { module = "io.coil-kt.coil3:coil-compose", version.ref = "coilCo
 coil-network-okhttp = { module = "io.coil-kt.coil3:coil-network-okhttp", version.ref = "coilCompose" }
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+webkit = { group = "androidx.webkit", name = "webkit", version.ref = "webkit" }
 coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "coroutinesAndroid" }
 coroutines-swing = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-swing", version.ref = "coroutinesAndroid" }
 # Jetpack
