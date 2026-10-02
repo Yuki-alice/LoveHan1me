@@ -123,8 +123,13 @@ V7 的静态检查项达标 —— 风险表里"不达标先评估升级 Go/gomo
   2. 单测：`./gradlew :video:contract:desktopTest :video:engine:desktopTest :video:ui:desktopTest :shared:desktopTest :video:contract:testAndroidHostTest :video:engine:testAndroidHostTest :video:ui:testAndroidHostTest :shared:testAndroidHostTest --console=plain`
   3. iOS：`./gradlew :app:assembleDebug :video:engine:compileKotlinIosArm64 :video:engine:compileKotlinIosSimulatorArm64 :video:ui:compileKotlinIosArm64 :video:ui:compileKotlinIosSimulatorArm64 :video:surface:compileKotlinIosArm64 :video:surface:compileKotlinIosSimulatorArm64 :shared:compileKotlinIosArm64 :shared:compileKotlinIosSimulatorArm64 --console=plain` → **BUILD SUCCESSFUL in 2m13s**
 - 观测（用例数由 `build/test-results/**/*.xml` 汇总，不靠控制台推断）：
-  - `desktopTest` 4 模块：**421 用例，0 失败，0 错误，0 跳过**
-  - `testAndroidHostTest` 4 模块：**257 用例，0 失败，0 错误，0 跳过**
+  - `desktopTest`：**421 用例，0 失败，0 错误，0 跳过**
+  - `testAndroidHostTest`：**257 用例，0 失败，0 错误，0 跳过**
+  - ⚠️ **口径更正**：以上两行原文写作"4 模块"，实际只覆盖 `:shared` ——
+    统计 glob `*/build/test-results/...` 漏掉了嵌套的 `video:contract/engine/ui`，
+    并把非 Gradle 模块目录 `player/` 的残留报告（1 / 36 用例）算了进来。
+    四模块合计的正确数字见最新一轮（`desktopTest` 576、`testAndroidHostTest` 346，
+    见 `docs/evidence/2026-10-02-16KB模拟器冒烟.md` 与竞态修复取证的全量验证一节）。
   - 编译（Android + Desktop）与 iOS 两架构编译：全部 BUILD SUCCESSFUL
   - `python tools/check_doc_citations.py`：0 error
 - 失效条件：单测基线随代码演进失效，须以最近一次实跑为准；本节的用例数

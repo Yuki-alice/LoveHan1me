@@ -48,3 +48,15 @@
   `app/libs/`。改网关源码后必须重跑 `echgate/build-android.sh` 并把两者一起提交。
   失效条件＝改为按坐标发布到 maven 仓（sources jar 应改用 sources classifier），
   或不再入库二进制。重认日期 2027-04-02。
+
+- **明文的唯一豁免是回环**：`app/src/main/AndroidManifest.xml`（`android:networkSecurityConfig`）
+  引用 `app/src/main/res/xml/network_security_config.xml`，只对 `127.0.0.1` / `localhost`
+  开 `cleartextTrafficPermitted`，base-config 保持平台默认（禁止明文）。
+  为什么非豁免不可：本地 ECH 网关的改写通道就是 `http://127.0.0.1:<port>`，而 localhost 的
+  **隐式**明文豁免要到 Android 17（API 37）才引入；API 29–36 上不显式配置，所有改写请求会被
+  OkHttp 拦成 `CLEARTEXT communication to 127.0.0.1 not permitted by network security policy`
+  并回退直连 —— 在 SNI 阻断网络下等于功能全废（2026-10-02 模拟器实测）。
+  刻意**不用** `android:usesCleartextTraffic="true"`：那是全局放开明文，把整机的降级空间
+  一起打开，而这里只需要回环。
+  失效条件＝minSdk 抬到 37（届时隐式豁免已生效，这份配置可删），或网关改写通道改为 https。
+  重认日期 2027-04-02。

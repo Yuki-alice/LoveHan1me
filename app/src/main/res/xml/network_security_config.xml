@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  回环明文豁免：本地 ECH 网关的改写通道是 http://127.0.0.1:<port>。
+
+  targetSdk 28+ 的应用默认禁止明文流量，而 localhost 的**隐式豁免要到
+  Android 17（API 37）**才引入（官方"网络安全配置"文档：From Android 17,
+  if no configuration has been defined for localhost, an implicit configuration
+  is included, which allows cleartext traffic）。在那之前，所有经网关改写的
+  请求都会被 OkHttp 以 "CLEARTEXT communication to 127.0.0.1 not permitted
+  by network security policy" 拦下并回退直连 —— 在 SNI 阻断网络下表现为
+  "页面打不开、直连被 RST"（2026-10-02 模拟器冒烟实测）。
+
+  只豁免回环：base-config 保持平台默认（禁止明文），其余域不受影响。
+  该豁免同时覆盖 OkHttp（浏览/图片/下载）与 HttpURLConnection（播放器）等
+  所有进程内出站 —— 它们的判据都是这份配置。
+-->
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="false">127.0.0.1</domain>
+        <domain includeSubdomains="false">localhost</domain>
+    </domain-config>
+</network-security-config>

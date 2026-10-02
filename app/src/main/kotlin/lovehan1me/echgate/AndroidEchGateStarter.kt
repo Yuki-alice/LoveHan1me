@@ -8,6 +8,7 @@ import lovehan1me.data.network.EchGate
 import lovehan1me.data.network.EchGateRuntime
 import lovehan1me.data.network.EchGateStarter
 import lovehan1me.data.network.EchGateStatus
+import lovehan1me.data.network.echGateSeedIps
 import java.io.File
 
 /**
@@ -23,8 +24,10 @@ import java.io.File
  * 于是引用 `gate.Gate` 的代码只能在应用壳里。这与 iOS 把起服放在壳工程
  * （`EchGateBootstrap.swift`）是同一种分工：**壳负责起服，只有 [EchGate] 与门面对外**。
  *
- * ## 参数与 iOS 对表
- * 监听回环随机端口；ip-list 留空（网关按域 DoH 自取）；cf-hosts 取自 common 常量
+ * ## 参数与 iOS 对表（ip-list 除外）
+ * 监听回环随机端口；**ip-list 传探测过的 CF 种子**（`echGateSeedIps()`，与桌面
+ * 同口径）——国内 DoH 对被阻断域名会返回假 IP（模拟器实测 hanime1.me →
+ * Facebook 段、拨号超时），不传种子网关就会撞在上面；cf-hosts 取自 common 常量
  * （不再制造第三份站点表拷贝）；DoH 端点 / ECH 域 / 启动超时与 iOS 同值。
  */
 internal class AndroidEchGateStarter(
@@ -46,8 +49,9 @@ internal class AndroidEchGateStarter(
         val started = runCatching {
             Gate.startFlat(
                 "127.0.0.1:0",
-                // ip-list：网关按域 DoH 自取（多 CF 分区 robustness，见 gate 注释）。
-                "",
+                // ip-list：探测过能建连的 CF 种子（与桌面同口径）——网关自己经 DoH
+                // 解析会拿到被污染的假 IP（模拟器实测），种子只多不少地并入。
+                echGateSeedIps().joinToString(","),
                 // 只有这些域名才配用 CF IP + ECH；其余域名由网关自己按 CNAME / 普通 TLS 走。
                 HanimeConstants.HANIME_HOSTNAME.joinToString(","),
                 DOH_URL,

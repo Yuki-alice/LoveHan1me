@@ -68,17 +68,9 @@ object DesktopEchGateStarter : EchGateStarter {
             }
             .getOrNull() ?: return false
 
-        // 上游 IP 复用自动档探测出来的结果：网关自己解析会撞上被污染的系统 DNS。
-        // 取**全站并集**而非仅首站：IP 封锁常只封一批边缘 IP，姊妹站的真实边缘
-        // IP 可能恰好可达（javchu.com 实测）。网关侧探测还会并入各域 DoH 结果，
-        // 这里只是种子，越多越好。
-        val ips = HanimeConstants.HANIME_HOSTNAME.flatMap { host ->
-            runCatching { HanimeDns.SHARED.preferredIps(host) }.getOrNull().orEmpty()
-        }.distinct().ifEmpty {
-            HanimeConstants.HANIME_HOSTNAME.flatMap { host ->
-                runCatching { HanimeDns.SHARED.getCDNList(host) }.getOrNull().orEmpty()
-            }.distinct()
-        }
+        // 上游 IP 种子（与 Android 起服器共用一个入口，见 echGateSeedIps）：
+        // 网关自己解析会撞上被污染的 DoH；这里给"探测过能建连"的内置 IP 打底。
+        val ips = echGateSeedIps()
 
         val proc = runCatching {
             ProcessBuilder(
