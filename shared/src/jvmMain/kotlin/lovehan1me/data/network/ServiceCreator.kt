@@ -10,6 +10,7 @@ import okhttp3.Cache
 import okhttp3.CookieJar
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
+import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.TimeUnit
 
 /**
@@ -62,6 +63,22 @@ object ServiceCreator {
     val getchuClient: OkHttpClient = buildGetchuClient()
 
     /**
+     * 换网时需要摘池的**额外**客户端（登记制）。
+     *
+     * 为什么要有它：此前这份清单一字排开写死在 [evictConnectionPools] 里
+     * （hClient / getchuClient / downloadClient + CDN 链），于是"新增一个自建 client"
+     * 与"记得回来加一行"之间只靠人记 —— 桌面下载控制器那组独立池就这么漏了一整轮。
+     * 改成登记制后：**谁建池谁登记**，复位入口不必认识任何一个具体客户端。
+     *
+     * 只给 `:shared` 内部与 desktopMain 用（androidMain/desktopMain 都能看见 jvmMain 的 internal）。
+     */
+    private val extraPoolEvictors = CopyOnWriteArrayList<() -> Unit>()
+
+    internal fun registerConnectionPoolEvictor(evict: () -> Unit) {
+        extraPoolEvictors += evict
+    }
+
+    /**
      * 摘掉旧网络上的空闲连接（网络变化时由 `platformOnNetworkChanged` 调用）。
      *
      * `evictAll()` 按 OkHttp 语义只摘空闲连接（`allocationCount == 0`），进行中的请求
@@ -71,6 +88,9 @@ object ServiceCreator {
         hClient.connectionPool.evictAll()
         getchuClient.connectionPool.evictAll()
         downloadClient.connectionPool.evictAll()
+        // 登记过的自建客户端（见 registerConnectionPoolEvictor）。单个登记项抛异常不该
+        // 连累其余复位动作：这里是"尽力清干净"，不是事务。
+        extraPoolEvictors.forEach { runCatching { it() } }
         // CDN 链（封面 / 图片）的池是另一组派生实例，见 CdnFetchClient。
         evictCdnConnectionPools()
     }

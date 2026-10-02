@@ -67,6 +67,20 @@ class NetworkChangeReactionsTest {
     }
 
     @Test
+    fun `登记过的额外连接池也会被摘`() {
+        ensureStoreInstalled()
+        // 形态取自桌面下载控制器：它自建了一组池，不在 ServiceCreator 的三条链里，
+        // 靠登记进入复位清单。这条用例钉的是"登记制真的被遍历"，
+        // 而不是"清单里恰好又写对了一个名字"。
+        var evicted = 0
+        ServiceCreator.registerConnectionPoolEvictor { evicted++ }
+
+        onNetworkChanged()
+
+        assertTrue(evicted >= 1, "登记过的池没被摘 —— 复位清单又退回人肉维护了")
+    }
+
+    @Test
     fun `切网后摘掉空闲连接`() {
         ensureStoreInstalled()
         val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0)

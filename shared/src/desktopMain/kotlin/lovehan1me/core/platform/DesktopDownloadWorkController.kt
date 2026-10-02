@@ -11,6 +11,7 @@ import lovehan1me.data.database.entity.download.DownloadGroupEntity
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import lovehan1me.data.network.HanimeDns
 import lovehan1me.data.network.HanimeProxySelector
+import lovehan1me.data.network.ServiceCreator
 import lovehan1me.data.network.interceptor.EchGateInterceptor
 import lovehan1me.data.network.interceptor.RetryInterceptor
 import lovehan1me.core.domain.model.HanimeVideo
@@ -334,7 +335,11 @@ object DesktopDownloadWorkController : DownloadWorkController {
      * （视频直链同样被 SNI 阻断；网关失败时拦截器自己回退直连）。
      * 此前这里是裸 client——开着网关/代理时"能看不能下"的桌面版。
      */
-    private val httpClient: OkHttpClient by lazy {
+    /**
+     * 惰性持有（而不是直接 `by lazy { … }`）：[ServiceCreator.registerConnectionPoolEvictor]
+     * 需要在换网时**判断它建过没有** —— 没建过就不该为了复位把它建出来。
+     */
+    private val httpClientLazy = lazy {
         OkHttpClient.Builder()
             .connectTimeout(java.time.Duration.ofSeconds(15))
             .readTimeout(java.time.Duration.ofSeconds(30))
@@ -343,6 +348,17 @@ object DesktopDownloadWorkController : DownloadWorkController {
             .proxySelector(HanimeProxySelector.SHARED)
             .addInterceptor(EchGateInterceptor())
             .build()
+    }
+
+    private val httpClient: OkHttpClient by httpClientLazy
+
+    init {
+        // 本客户端是**独立的一组连接池**（不在 ServiceCreator 的三条链里），
+        // 此前不在换网复位清单中 —— 桌面一旦接上网络变化检测，切网后首批下载就会先撞
+        // 旧网络的空闲连接。谁建池谁登记，见 registerConnectionPoolEvictor。
+        ServiceCreator.registerConnectionPoolEvictor {
+            if (httpClientLazy.isInitialized()) httpClientLazy.value.connectionPool.evictAll()
+        }
     }
 }
 

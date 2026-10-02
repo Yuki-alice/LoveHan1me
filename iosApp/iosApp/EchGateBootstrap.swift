@@ -26,7 +26,10 @@ enum EchGateBootstrap {
             var err: NSError?
             guard let srv = GateStartFlat(
                 "127.0.0.1:0",
-                "", // ip-list：网关按域 DoH 自取（多 CF 分区 robustness，见 gate 注释）
+                // ip-list：静态 CF 边缘 IP 种子（Kotlin 侧 HanimeConstants.CF_FALLBACK_IPS）。
+                // 不能留空 —— 网关自己 DoH 解析会被污染（实测拿到 Facebook 段假 IP、拨号超时），
+                // 而 iOS 没有 HanimeDns 那套解析链可在 Kotlin 侧兜底。网关会逐 IP 拨号挑能连的。
+                EchGatePortReporter.shared.fallbackSeedCsv(),
                 cfHosts,
                 "https://dns.alidns.com/resolve",
                 "cloudflare-ech.com",

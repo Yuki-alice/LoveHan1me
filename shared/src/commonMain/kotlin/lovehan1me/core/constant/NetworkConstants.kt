@@ -38,6 +38,25 @@ object HanimeConstants {
      * 直比 [lovehan1me.data.SettingsRepository.baseUrl] 会被自定义镜像覆盖。
      */
     val AV_URL = HANIME_URL[3]
+
+    /**
+     * Cloudflare 边缘 IP **静态兜底表**（IPv4 + IPv6）。
+     *
+     * 两个消费方共用这一份，别再各存一份：
+     * - jvm 的 [lovehan1me.data.network.HanimeDns]：解析链条的最后一档，
+     *   以及 autoBuiltInHosts 档的探测源；
+     * - iOS 壳起服网关时的 `ip-list` 种子（`EchGatePortReporter.fallbackSeedCsv`）——
+     *   iOS 走 Darwin 引擎、没有 HanimeDns，不传种子的话网关只能自己 DoH 解析，
+     *   而国内 DoH 对被阻断域名会返回不可达的假 IP（2026-10-02 Android 实测：
+     *   hanime1.me → Facebook 段、拨号超时）。
+     *
+     * 网关侧还会对种子逐 IP 拨号挑能连的（`gate.probeCandidates`），
+     * 所以这里给"全表"是安全的：不可达的项只会被跳过。
+     */
+    val CF_FALLBACK_IPS = arrayOf(
+        "172.64.229.154", "162.159.0.1", "108.162.192.1", "172.64.33.1", "104.19.0.1",
+        "2606:4700:3035::ac43:bb8d", "2606:4700:3030::6815:746", "2606:4700:3030::6815:714",
+    )
 }
 
 val HANIME_LOGIN_URL: String

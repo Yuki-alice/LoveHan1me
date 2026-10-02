@@ -60,3 +60,20 @@
   一起打开，而这里只需要回环。
   失效条件＝minSdk 抬到 37（届时隐式豁免已生效，这份配置可删），或网关改写通道改为 https。
   重认日期 2027-04-02。
+
+- **静态 CF 兜底 IP 表只有一份，放在 commonMain**（`HanimeConstants.CF_FALLBACK_IPS`）。
+  两个消费方读它：jvm 的 `HanimeDns` 解析链最后一档（以及 autoBuiltInHosts 档的探测源）、
+  三端起服网关时的 `ip-list` 种子（iOS 经 `EchGatePortReporter.fallbackSeedCsv()`）。
+  为什么必须共用一份：iOS 走 Darwin 引擎、Kotlin 侧没有 `HanimeDns` 那套解析链，
+  唯一能给网关的种子就是这张静态表；此前 iOS 传空 ⇒ 网关自己经 DoH 解析被污染
+  （实测 hanime1.me → Facebook 段、拨号 15s 超时）。网关会对种子逐 IP 拨号挑能连的，
+  所以给全表安全；**ip-list 一律不得传空**（Android 侧的 `echGateSeedIps()` 是"探测∪该表"）。
+  失效条件＝网关对种子逐 IP 探测的行为被移除，或三端各自引入独立解析链（届时"共用一份表"
+  的前提不再成立）；表内容变更后 iOS 报文随之变化，需复验。重认日期 2027-04-02。
+
+- **换网要摘的连接池采用登记制**（`ServiceCreator.registerConnectionPoolEvictor`）：谁建池谁登记，
+  复位入口不认识任何具体客户端。此前清单一字排开写死（hClient / getchuClient / downloadClient /
+  CDN 链），桌面下载控制器那组独立池就漏了一整轮 —— 差集是这类清单的必然结局。
+  新增自建 OkHttp 客户端时**必须登记**（守卫测试只能证"遍历生效"，证不了"每个都登记了"）。
+  失效条件＝复位入口改为按类型/注解自动发现（届时登记表可删）；或引入统一的 client 工厂
+  使所有客户端都出自同一处（那就不需要登记）。重认日期 2027-04-02。

@@ -1,6 +1,7 @@
 package lovehan1me.data.network
 
 import lovehan1me.core.util.LogUtil
+import lovehan1me.core.constant.HanimeConstants
 import lovehan1me.core.constant.HanimeConstants.HANIME_HOSTNAME
 import lovehan1me.data.SettingsRepository
 import okhttp3.Dns
@@ -114,10 +115,11 @@ class HanimeDns : Dns {
             dohCooldownUntilMs = 0L
         }
 
-        private val cloudFlareIps = listOf(
-            "172.64.229.154", "162.159.0.1", "108.162.192.1", "172.64.33.1", "104.19.0.1",
-            "2606:4700:3035::ac43:bb8d", "2606:4700:3030::6815:746", "2606:4700:3030::6815:714"
-        )
+        /**
+         * 内置兜底 IP 表。本体已上移 commonMain（[lovehan1me.core.constant.HanimeConstants.CF_FALLBACK_IPS]）
+         * ——iOS 壳起服网关时要拿同一张表当 `ip-list` 种子，留在这里就没法共用。
+         */
+        private val cloudFlareIps = HanimeConstants.CF_FALLBACK_IPS.toList()
 
         private val getchuIps = listOf("210.155.150.166", "210.155.150.145")
 
