@@ -113,7 +113,6 @@ import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.content.ErrorContent
 import lovehan1me.ui.component.lazy.LazyColumn
 import lovehan1me.ui.component.lazy.LazyVerticalGrid
-import lovehan1me.feature.preview.fakeHomePageVideos
 import lovehan1me.ui.component.rememberVideoGridColumns
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction

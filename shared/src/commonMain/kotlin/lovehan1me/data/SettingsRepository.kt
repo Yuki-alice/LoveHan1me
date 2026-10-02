@@ -25,6 +25,9 @@ import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 object SettingsRepository : SettingsStore {
+    /** 「已读公告」表的保留上限，见 [markAnnouncementsRead]。 */
+    private const val MAX_READ_ANNOUNCEMENT_KEYS = 200
+
     private lateinit var store: SettingsStore
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
@@ -136,6 +139,9 @@ object SettingsRepository : SettingsStore {
     val alwaysShowUpdateCard get() = current.alwaysShowUpdateCard
     val displayDensity get() = current.displayDensity
     val searchFilterPresets get() = current.searchFilterPresets
+    val cachedAnnouncementJson get() = current.cachedAnnouncementJson
+    /** 已读公告键；仓储据此把已读条目从待展示列表里剔掉。 */
+    val readAnnouncementKeys get() = current.readAnnouncementKeys
 
     suspend fun setLoginState(value: Boolean) = update { it.copy(isAlreadyLogin = value) }
     suspend fun dismissLocalListNotice() = update { it.copy(localListNoticeDismissed = true) }
@@ -219,6 +225,27 @@ object SettingsRepository : SettingsStore {
     suspend fun setHomeCategories(order: List<String>, hidden: Set<String>) = update { it.copy(homeCategoryOrder = order, hiddenHomeCategoryKeys = hidden) }
     suspend fun setCachedUpdateJson(value: String?) = update { it.copy(cachedUpdateJson = value) }
     suspend fun setIgnoredVersionCode(value: Int) = update { it.copy(ignoredVersionCode = value) }
+
+    /** 缓存远端公告 JSON 的最近一次成功响应。 */
+    suspend fun setCachedAnnouncementJson(value: String?) =
+        update { it.copy(cachedAnnouncementJson = value) }
+
+    /**
+     * 把 [keys] 标记为已读。
+     *
+     * 追加到表尾并保留最后 [MAX_READ_ANNOUNCEMENT_KEYS] 条：远端一旦出错不停下发新公告，
+     * 无上限的表会跟着长；而公告本身极低频，200 条足够覆盖到「用户早就不会再看到」的程度。
+     * 裁剪的是表头（最旧的那些），所以必须保持写入顺序，不能用 Set。
+     */
+    suspend fun markAnnouncementsRead(keys: Collection<String>) {
+        if (keys.isEmpty()) return
+        update { settings ->
+            val merged = (settings.readAnnouncementKeys + keys).distinct()
+            settings.copy(
+                readAnnouncementKeys = merged.takeLast(MAX_READ_ANNOUNCEMENT_KEYS),
+            )
+        }
+    }
     suspend fun setAlwaysShowUpdateCard(value: Boolean) = update { it.copy(alwaysShowUpdateCard = value) }
     suspend fun setDisplayDensity(value: DisplayDensity) = update { it.copy(displayDensity = value) }
     suspend fun setNavBarStyle(value: NavBarStyle) = update { it.copy(navBarStyle = value) }

@@ -887,4 +887,11 @@
     <string name="picture_contrast">對比度</string>
     <string name="picture_saturation">飽和度</string>
     <string name="picture_adjust_reset">重設</string>
+    <string name="comment_refresh_kept">重新整理失敗，已保留上次載入到的評論</string>
+    <string name="comment_all_shown">已顯示全部 %1$d 則評論 · 來自本站留言區</string>
+    <string name="refresh_comments">重新整理留言</string>
+    <string name="loading_comments">正在載入留言</string>
+    <string name="loading_replies">正在載入回覆</string>
+    <string name="replies_count">%1$d 則回覆</string>
+    <string name="collapse_replies">收起回覆</string>
 </resources>

@@ -3,6 +3,7 @@ package lovehan1me.feature.home.homepage
 import lovehan1me.core.util.LogUtil
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import lovehan1me.data.AnnouncementRepository
 import lovehan1me.data.SettingsRepository
 import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.Res
@@ -48,8 +49,24 @@ class HomePageViewModel: ViewModel() {
     private val _appUpdateState = MutableStateFlow<AppUpdateState>(AppUpdateState.Checking)
     val appUpdateState = _appUpdateState.asStateFlow()
 
+    /**
+     * 更新 JSON 里那条公告。
+     *
+     * **只作为 [AnnouncementRepository] 的 legacy 来源存在，不再直接上屏**：
+     * 直接渲染会让它和合并后的公告列表重复显示一次（它同时也在
+     * `announcement.json` 的候选集里）。上屏一律走 [announcements]。
+     */
     private val _updateAnnouncement = MutableStateFlow<Announcement?>(null)
     val updateAnnouncement = _updateAnnouncement.asStateFlow()
+
+    /**
+     * 该展示的公告（已去重、已剔过期、已剔已读、已排序）。
+     *
+     * 与首页内容分开成独立流：公告和首页来自**两个不同的远端**，
+     * 塞进 `HomeData` 会导致"刷新公告要跟着重新拉整个首页"。
+     */
+    private val _announcements = MutableStateFlow<List<Announcement>>(emptyList())
+    val announcements = _announcements.asStateFlow()
 
     private var homePageJob: Job? = null
     private var initializationJob: Job? = null
@@ -67,6 +84,8 @@ class HomePageViewModel: ViewModel() {
         initializationJob = viewModelScope.launch {
             val updateResult = AppUpdateChecker.checkForUpdate()
             _updateAnnouncement.value = updateResult.announcement
+            // 必须在拿到 updateResult.announcement **之后**再算：legacy 来源要参与合并。
+            refreshAnnouncements()
             val updateInfo = updateResult.updateInfo
             _appUpdateState.value = updateInfo
                 ?.let { AppUpdateState.Available(it) }
@@ -129,6 +148,9 @@ class HomePageViewModel: ViewModel() {
                         }
                         val homeData = HomeData(page = networkState.info)
                         _homePageFlow.value = PageState.Success(info = homeData, isRefreshing = false)
+                        // 只有用户主动刷新才重拉公告：初次进页时 initializeHomePage 已经拉过一次，
+                        // 在这里再拉一次就是同一次启动发两倍请求。
+                        if (isRefresh) refreshAnnouncements()
                     }
                     is WebsiteState.Loading -> { }
                 }
@@ -136,10 +158,23 @@ class HomePageViewModel: ViewModel() {
         }
     }
 
-    fun dismissAnnouncements(){
-        val current = _homePageFlow.value
-        if (current is PageState.Success) {
-            _homePageFlow.value = current.copy(info = current.info.copy(announcements = emptyList()))
+    /** 拉取并重算公告。失败时 [AnnouncementRepository] 内部降级到缓存，不会清空已有列表。 */
+    private suspend fun refreshAnnouncements() {
+        _announcements.value = AnnouncementRepository.load(_updateAnnouncement.value)
+    }
+
+    /**
+     * 把 [keys] 对应的公告标记为已读。
+     *
+     * 旧实现叫 `dismissAnnouncements`，语义是"清空内存里的列表" —— 于是杀进程重进又全回来，
+     * 而那条公告的卡片又是 `onClose = null`（压根关不掉）。现在落盘记已读，
+     * 且立刻用**缓存**重算（不发网络请求），保证点完就消失。
+     */
+    fun markAnnouncementsRead(keys: Collection<String>) {
+        if (keys.isEmpty()) return
+        viewModelScope.launch {
+            SettingsRepository.markAnnouncementsRead(keys)
+            _announcements.value = AnnouncementRepository.visibleFromCache(_updateAnnouncement.value)
         }
     }
 

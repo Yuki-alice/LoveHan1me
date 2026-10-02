@@ -35,10 +35,12 @@ import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import lovehan1me.ui.component.HanimeAsyncImage
+import lovehan1me.ui.component.LinkifiedText
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import lovehan1me.Res
@@ -51,12 +53,21 @@ import lovehan1me.ic_alert
 import lovehan1me.core.domain.model.Announcement
 import lovehan1me.ui.component.rememberHapticFeedback
 import lovehan1me.ui.component.ConfirmDialog
-import lovehan1me.feature.preview.fakeAnnouncements
 import lovehan1me.feature.home.homepage.saveImageToGallery
 import lovehan1me.core.platform.ioDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 
+/**
+ * 单条公告的详情弹窗。
+ *
+ * 正文里的裸链接由 [LinkifiedText] 渲染成可点链接 —— 该逻辑原先挂在
+ * `Announcement` 模型上的 `@Composable getFormatedContent()`，让领域模型反向依赖 Compose。
+ *
+ * [onDismiss] 在**任何一个按钮**上都会触发：两个按钮（negativeText / positiveText）
+ * 目前都只表示"我看过了"，没有第二种语义。真要有"去处理"这类动作，
+ * 得先给 `Announcement` 加"动作"字段，而不是让同一个回调承担两件事。
+ */
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun AnnouncementDialog(
@@ -96,12 +107,15 @@ fun AnnouncementDialog(
                     )
                     Spacer(Modifier.height(16.dp))
 
-                    Text(
-                        text = announcementData.title,
-                        style = MaterialTheme.typography.headlineSmall,
-                        color = MaterialTheme.colorScheme.onSurface,
-                    )
-                    Spacer(Modifier.height(8.dp))
+                    if (announcementData.title.isNotBlank()) {
+                        Text(
+                            text = announcementData.title,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Medium,
+                            color = MaterialTheme.colorScheme.onSurface,
+                        )
+                        Spacer(Modifier.height(8.dp))
+                    }
 
                     if (announcementData.timestamp > 0) {
                         Text(
@@ -112,8 +126,8 @@ fun AnnouncementDialog(
                         Spacer(Modifier.height(16.dp))
                     }
 
-                    Text(
-                        text = announcementData.getFormatedContent(),
+                    LinkifiedText(
+                        text = announcementData.content,
                         style = TextStyle(color = MaterialTheme.colorScheme.onSurfaceVariant),
                     )
 
@@ -154,7 +168,7 @@ fun AnnouncementDialog(
                     horizontalArrangement = Arrangement.End,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // P6a：Announcement 下沉 shared 后跨模块不可 smart cast，先绑局部
+                    // Announcement 下沉 shared 后跨模块不可 smart cast，先绑局部
                     val dialogNegative = announcementData.negativeText
                     val dialogPositive = announcementData.positiveText
                     if (!dialogNegative.isNullOrBlank()) {
@@ -201,7 +215,7 @@ fun AnnouncementDialog(
     }
 
     if (showSaveImageConfirm && !announcementData.imageUrl.isNullOrBlank()) {
-        // P6a：跨模块属性不可 smart cast，orEmpty 转非空
+        // 跨模块属性不可 smart cast，orEmpty 转非空
         val imageUrl = announcementData.imageUrl.orEmpty()
         ConfirmDialog(
             visible = true,
@@ -212,7 +226,6 @@ fun AnnouncementDialog(
             onConfirm = {
                 showSaveImageConfirm = false
                 scope.launch(ioDispatcher) {
-                    // P6d-2：saveImageToGallery 已下沉 shared（签名变无 context + Boolean 结果驱动 toast）
                     val ok = saveImageToGallery(imageUrl)
                     kotlinx.coroutines.withContext(Dispatchers.Main) {
                         if (ok) {

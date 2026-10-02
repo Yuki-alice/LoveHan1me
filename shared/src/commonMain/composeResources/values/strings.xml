@@ -921,4 +921,11 @@ Recommendations are as follows:\n
     <string name="picture_contrast">Contrast</string>
     <string name="picture_saturation">Saturation</string>
     <string name="picture_adjust_reset">Reset</string>
+    <string name="comment_refresh_kept">Refresh failed — keeping the comments already loaded</string>
+    <string name="comment_all_shown">All %1$d comments shown · from this site</string>
+    <string name="refresh_comments">Refresh comments</string>
+    <string name="loading_comments">Loading comments</string>
+    <string name="loading_replies">Loading replies</string>
+    <string name="replies_count">%1$d replies</string>
+    <string name="collapse_replies">Hide replies</string>
 </resources>

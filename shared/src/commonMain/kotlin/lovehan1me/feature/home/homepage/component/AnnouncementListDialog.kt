@@ -23,18 +23,27 @@ import lovehan1me.close
 import lovehan1me.announcement_list
 import lovehan1me.core.domain.model.Announcement
 import lovehan1me.ui.component.lazy.LazyColumn
-import lovehan1me.feature.preview.fakeAnnouncements
 
 /**
- * 显示完整公告列表弹窗。
+ * 多条公告的列表弹窗。
  *
- * @param announcements 可供选择的公告列表。
- * @param onDismiss 关闭弹窗时调用。
+ * 它在上游 Han1meViewer 与本次改造之前**全仓零调用点**（`announcement_list` 字符串
+ * 也只被它自己引用）—— 因为首页那条路径压根没有第二个公告能进来。
+ * 现在公告真的会是多条了，它才重新有了职责：首页卡片只放最靠前的一条，
+ * 其余的从这里进。
+ *
+ * 已读时机：**点开详情再关掉**才算已读（[onAnnouncementRead]），不是"出现在列表里"就算。
+ * 列表里滑过去没看的内容不该被静默吞掉。
+ *
+ * @param announcements 待展示的公告（调用方应已剔除已读条目）。
+ * @param onDismiss 关闭列表时调用。
+ * @param onAnnouncementRead 某条公告的详情被关闭时调用，调用方据此落盘已读并重算列表。
  */
 @Composable
 fun AnnouncementListDialog(
     announcements: List<Announcement>,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onAnnouncementRead: (Announcement) -> Unit = {},
 ) {
     var selectedAnnouncement by remember { mutableStateOf<Announcement?>(null) }
 
@@ -68,10 +77,18 @@ fun AnnouncementListDialog(
                                 .padding(12.dp)
                         ) {
                             Text(
-                                text = item.title,
+                                text = item.title.ifBlank { item.content },
                                 style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Medium
+                                fontWeight = FontWeight.Medium,
+                                maxLines = 1,
                             )
+                            if (item.timestamp > 0) {
+                                Text(
+                                    text = item.getFormattedDate(),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }
@@ -91,7 +108,10 @@ fun AnnouncementListDialog(
     selectedAnnouncement?.let { announcement ->
         AnnouncementDialog(
             announcementData = announcement,
-            onDismiss = { selectedAnnouncement = null }
+            onDismiss = {
+                selectedAnnouncement = null
+                onAnnouncementRead(announcement)
+            }
         )
     }
 }

@@ -10,17 +10,22 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import lovehan1me.ui.theme.HanimeDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -29,8 +34,11 @@ import lovehan1me.core.constant.HA1_GITHUB_URL
 import lovehan1me.site.SiteIdentity
 import lovehan1me.Res
 import lovehan1me.checking_for_updates
+import lovehan1me.i_understand
 import lovehan1me.data.AppUpdateState
 import lovehan1me.data.SettingsRepository
+import lovehan1me.core.domain.model.Announcement
+import lovehan1me.core.domain.model.AnnouncementSeverity
 import lovehan1me.core.domain.model.AppUpdateInfo
 import lovehan1me.core.domain.state.PageState
 import lovehan1me.core.domain.state.dataOrNull
@@ -66,6 +74,7 @@ fun SharedHomeScreen(
     val pageState by viewModel.homePageFlow.collectAsStateWithLifecycle()
     val updateState by viewModel.appUpdateState.collectAsStateWithLifecycle()
     val updateAnnouncement by viewModel.updateAnnouncement.collectAsStateWithLifecycle()
+    val announcements by viewModel.announcements.collectAsStateWithLifecycle()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
     val homeListState = rememberLazyListState()
     val refreshState = rememberPullToRefreshState()
@@ -100,12 +109,25 @@ fun SharedHomeScreen(
     }
     val forcedUpdate = availableUpdate?.takeIf { it.forceUpdate }
 
+    // 阻断级公告优先于强制更新：先把「站点现在怎么了」讲清楚，
+    // 用户确认之后再落到更新页，避免两条全屏页面反着跳。
+    val blockingAnnouncement = announcements.firstOrNull {
+        it.severity == AnnouncementSeverity.Blocking
+    }
+
     Box(
         modifier = modifier
             .fillMaxSize()
             .background(HanimeDefaults.Colors.pageSurface)
     ) {
-        if (forcedUpdate != null) {
+        if (blockingAnnouncement != null) {
+            BlockingAnnouncementPage(
+                announcement = blockingAnnouncement,
+                contentTopPadding = contentTopPadding,
+                onOpenDetail = { onEvent(HomeUiEvent.ShowAnnouncementDialog(it)) },
+                onAcknowledge = { viewModel.markAnnouncementsRead(listOf(it.stableKey)) },
+            )
+        } else if (forcedUpdate != null) {
             LazyColumn(
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(
@@ -119,7 +141,7 @@ fun SharedHomeScreen(
                 updateAnnouncement?.let { announcement ->
                     item(key = "forced_update_announcement") {
                         AnnouncementCard(
-                            announcements = listOf(announcement),
+                            announcement = announcement,
                             onAnnouncementClick = { selectedAnnouncement ->
                                 onEvent(HomeUiEvent.ShowAnnouncementDialog(selectedAnnouncement))
                             },
@@ -178,10 +200,12 @@ fun SharedHomeScreen(
                             HomePageContent(
                                 data = data,
                                 updateInfo = availableUpdate,
-                                updateAnnouncement = updateAnnouncement,
+                                announcements = announcements,
                                 isAVSite = isAVSite,
                                 onEvent = onEvent,
-                                onCloseAnnouncement = viewModel::dismissAnnouncements,
+                                onAnnouncementRead = {
+                                    viewModel.markAnnouncementsRead(listOf(it.stableKey))
+                                },
                                 contentTopPadding = contentTopPadding,
                                 listState = homeListState,
                             )
@@ -201,5 +225,53 @@ fun SharedHomeScreen(
             isLoggedIn = settings.isAlreadyLogin,
             modifier = Modifier.zIndex(1f),
         )
+    }
+}
+
+/**
+ * 阻断级公告的独占页。
+ *
+ * 为什么不是「首页上一条更醒目的卡片」：阻断级的语义就是**先于一切内容被看到**，
+ * 放进列表只会被直接滑过去。
+ *
+ * 为什么是「我已知晓」而不是「不可关闭」：远端写错一个 `severity` 就能把用户永久卡在这屏上，
+ * 那是把一次发布事故直接转嫁给用户。确认即记已读（[onAcknowledge]），
+ * 所以它**仍然强制被看到**，但永远留一条出路；已读之后再进来不会再弹，
+ * 而远端只要不撤下，未读用户依旧会先看到它。
+ */
+@Composable
+private fun BlockingAnnouncementPage(
+    announcement: Announcement,
+    contentTopPadding: Dp,
+    onOpenDetail: (Announcement) -> Unit,
+    onAcknowledge: (Announcement) -> Unit,
+) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(
+            top = contentTopPadding,
+            start = 12.dp,
+            end = 12.dp,
+            bottom = 12.dp,
+        ),
+        verticalArrangement = Arrangement.Center,
+    ) {
+        item(key = "blocking_announcement") {
+            AnnouncementCard(
+                announcement = announcement,
+                onAnnouncementClick = onOpenDetail,
+                onClose = null,
+            )
+        }
+        item(key = "blocking_announcement_ack") {
+            Button(
+                onClick = { onAcknowledge(announcement) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp),
+            ) {
+                Text(stringResource(Res.string.i_understand))
+            }
+        }
     }
 }

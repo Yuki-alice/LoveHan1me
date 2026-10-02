@@ -5,6 +5,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,9 +16,11 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExtendedFloatingActionButton
@@ -29,8 +32,9 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
@@ -38,14 +42,16 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.ui.text.style.TextAlign
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.input.TextFieldValue
@@ -59,22 +65,30 @@ import lovehan1me.sort_by_replies
 import lovehan1me.sort_by_oldest
 import lovehan1me.sort_by_newest
 import lovehan1me.login_first
-import lovehan1me.load_failed_retry
+import lovehan1me.comment_all_shown
+import lovehan1me.comment_refresh_kept
+import lovehan1me.loading_comments
+import lovehan1me.refresh_comments
+import lovehan1me.retry
+import lovehan1me.send_failed
+import lovehan1me.send_success
+import lovehan1me.sending_reply
 import lovehan1me.comment_too_short
 import lovehan1me.comment_not_found
 import lovehan1me.comment
+import lovehan1me.ic_refresh
 import lovehan1me.ic_reply
 import lovehan1me.core.domain.model.ReportReason
 import lovehan1me.core.domain.model.VideoComments
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.component.CommentReplyBar
 import lovehan1me.ui.component.CommentReportDialog
-import lovehan1me.ui.component.HanimePullRefreshBox
+import lovehan1me.ui.component.FilledTonalIconButton
 import lovehan1me.ui.component.PageContent
 import lovehan1me.ui.component.VideoCommentCard
 import lovehan1me.ui.component.content.EmptyContent
-import lovehan1me.ui.component.content.ErrorContent
 import lovehan1me.ui.component.lazy.LazyColumn
+import lovehan1me.ui.refresh.LocalPageRefreshHub
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.core.util.parseTimeStrToMinutes
 import lovehan1me.core.util.safeSortedBy
@@ -92,6 +106,10 @@ fun CommentScreen(
     commentsFlow: StateFlow<List<VideoComments.VideoComment>>,
     commentStateFlow: StateFlow<WebsiteState<VideoComments>>,
     reportMessageFlow: Flow<CommentMessage>,
+    postCommentStateFlow: Flow<WebsiteState<Unit>>,
+    postReplyStateFlow: Flow<WebsiteState<Unit>>,
+    replyThreadsFlow: StateFlow<Map<String, ReplyThread>>,
+    onLoadReplies: (String) -> Unit,
     currentSortType: StateFlow<CommentSortType>,
     reportReasons: List<ReportReason>,
     isPreviewCommentPrefetched: Boolean,
@@ -101,7 +119,6 @@ fun CommentScreen(
     onReport: (VideoComments.VideoComment, ReportReason) -> Unit,
     onThumbUp: (VideoComments.VideoComment) -> Unit,
     onThumbDown: (VideoComments.VideoComment) -> Unit,
-    onViewMoreReplies: (VideoComments.VideoComment) -> Unit,
     onSortChange: (CommentSortType) -> Unit,
     onComposeComment: (String) -> Unit,
     listContentPadding: PaddingValues = PaddingValues(horizontal = 8.dp, vertical = 8.dp),
@@ -111,6 +128,7 @@ fun CommentScreen(
 ) {
     val comments by commentsFlow.collectAsStateWithLifecycle()
     val state by commentStateFlow.collectAsStateWithLifecycle()
+    val replyThreads by replyThreadsFlow.collectAsStateWithLifecycle()
     val sortType by currentSortType.collectAsStateWithLifecycle()
     val haptic = rememberHapticFeedback()
     val containerSize = LocalWindowInfo.current.containerSize
@@ -125,7 +143,7 @@ fun CommentScreen(
     var selectedReasonIndex by remember { mutableIntStateOf(-1) }
     var latestReportMessage by remember { mutableStateOf<String?>(null) }
     val snackbarHostState = remember { SnackbarHostState() }
-    val refreshingState = rememberPullToRefreshState()
+    var expandedReplies by remember { mutableStateOf(emptySet<String>()) }
     val listState = rememberLazyListState(
         initialFirstVisibleItemIndex = initialFirstVisibleItemIndex,
         initialFirstVisibleItemScrollOffset = initialFirstVisibleItemScrollOffset,
@@ -133,6 +151,9 @@ fun CommentScreen(
     val scope = rememberCoroutineScope()
     val loginFirstText = stringResource(Res.string.login_first)
     val commentTooShortText = stringResource(Res.string.comment_too_short)
+    val sendSuccessText = stringResource(Res.string.send_success)
+    val sendFailedText = stringResource(Res.string.send_failed)
+    val sendingReplyText = stringResource(Res.string.sending_reply)
     LaunchedEffect(reportMessageFlow) {
         reportMessageFlow.collect {
             latestReportMessage = it.text
@@ -142,8 +163,45 @@ fun CommentScreen(
         }
     }
 
+    // 发评论/回覆的结果只在这个界面上报（原先归回覆弹层，弹层取消后没人管）。
+    // 列表重取留在调用方的路由里：界面只管反馈，数据由页面决定何时刷。
+    LaunchedEffect(postCommentStateFlow) {
+        postCommentStateFlow.collect { state ->
+            when (state) {
+                is WebsiteState.Success -> snackbarHostState.showSnackbar(sendSuccessText)
+                is WebsiteState.Error -> snackbarHostState.showSnackbar(sendFailedText)
+                WebsiteState.Loading -> Unit
+            }
+        }
+    }
+    LaunchedEffect(postReplyStateFlow) {
+        postReplyStateFlow.collect { state ->
+            when (state) {
+                is WebsiteState.Loading -> snackbarHostState.showSnackbar(sendingReplyText)
+                is WebsiteState.Success -> snackbarHostState.showSnackbar(sendSuccessText)
+                is WebsiteState.Error -> snackbarHostState.showSnackbar(sendFailedText)
+            }
+        }
+    }
+
+    // 本页面不吃下拉手势了，桌面端仍要能被 F5 / Cmd+R 刷新，所以自己登记到全局刷新入口。
+    val refreshHub = LocalPageRefreshHub.current
+    val latestOnRefresh by rememberUpdatedState(onRefresh)
+    DisposableEffect(refreshHub) {
+        val registration = refreshHub.register { latestOnRefresh() }
+        onDispose { refreshHub.unregister(registration) }
+    }
+
     val sortedComments = remember(comments, sortType) {
         sortComments(comments, sortType)
+    }
+    val toggleReplies: (String, Boolean) -> Unit = { threadId, expanded ->
+        if (expanded) {
+            expandedReplies = expandedReplies - threadId
+        } else {
+            expandedReplies = expandedReplies + threadId
+            onLoadReplies(threadId)
+        }
     }
     val showCommentFab by rememberCommentFabVisibility(listState)
 
@@ -155,8 +213,7 @@ fun CommentScreen(
         }
     }
 
-    // M2：BackHandler 是 Android-only；桌面无系统返回，回复框有关闭按钮。
-    // （原：返回键优先收起回复/评论框。）
+    // 收起回复框原本靠 Android 的 BackHandler；桌面/触屏没有那条路径，所以输入框自带关闭按钮。
 
     if (showSortSheet) {
         ModalBottomSheet(onDismissRequest = { showSortSheet = false }) {
@@ -251,109 +308,130 @@ fun CommentScreen(
                         end = paddingValues.calculateEndPadding(layoutDirection),
                     )
             ) {
-                HanimePullRefreshBox(
-                    isRefreshing = state is WebsiteState.Loading && !isPreviewCommentPrefetched,
-                    onRefresh = onRefresh,
-                    state = refreshingState,
-                    modifier = Modifier.fillMaxSize(),
+                val refreshing = state is WebsiteState.Loading && !isPreviewCommentPrefetched
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 4.dp, vertical = 2.dp),
+                    horizontalArrangement = Arrangement.spacedBy(
+                        8.dp,
+                        Alignment.End,
+                    ),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    val loadError = state is WebsiteState.Error && sortedComments.isEmpty()
-                    PageContent(
-                        isLoading = false,
-                        isError = loadError,
-                        isEmpty = sortedComments.isEmpty(),
-                        errorMessage = (state as? WebsiteState.Error)?.throwable?.message ?: "",
-                        onRetry = onRefresh,
-                        error = {
-                            ErrorContent(
-                                title = stringResource(Res.string.load_failed_retry),
-                                message = (state as WebsiteState.Error).throwable.message,
-                                onRetry = onRefresh,
-                                modifier = Modifier
-                                    .align(Alignment.Center)
-                                    .padding(16.dp),
-                            )
-                        },
-                        empty = {
-                            EmptyContent(
-                                hint = stringResource(Res.string.comment_not_found),
-                                subHint = latestReportMessage ?: ""
-                            )
-                        },
+                    if (sortedComments.size >= 3) {
+                        FilledTonalButton(onClick = { showSortSheet = true }) {
+                            Text(sortText(sortType))
+                        }
+                    }
+                    FilledTonalIconButton(
+                        onClick = onRefresh,
+                        enabled = !refreshing,
                     ) {
-                        LazyColumn(
-                            state = listState,
-                            modifier = Modifier.fillMaxSize(),
-                            contentPadding = listContentPadding,
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            if (sortedComments.size >= 3) {
-                                item {
-                                    Row(
-                                        modifier = Modifier
-                                            .fillMaxWidth()
-                                            .padding(horizontal = 4.dp, vertical = 2.dp),
-                                        horizontalArrangement = Arrangement.End,
-                                    ) {
-                                        FilledTonalButton(onClick = { showSortSheet = true }) {
-                                            Text(sortText(sortType))
-                                        }
-                                    }
-                                }
+                        // 刷新中把图标换成转圈：位置不动，动画本身即刷新状态。
+                        if (refreshing) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(20.dp),
+                                strokeWidth = 2.5.dp,
+                                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                            )
+                        } else {
+                            Icon(
+                                painter = painterResource(Res.drawable.ic_refresh),
+                                contentDescription = stringResource(Res.string.refresh_comments),
+                            )
+                        }
+                    }
+                }
+                PageContent(
+                    isLoading = refreshing,
+                    isError = state is WebsiteState.Error && sortedComments.isEmpty(),
+                    isEmpty = sortedComments.isEmpty(),
+                    loadingMessage = stringResource(Res.string.loading_comments),
+                    errorMessage = (state as? WebsiteState.Error)?.throwable?.message ?: "",
+                    onRetry = onRefresh,
+                    empty = {
+                        EmptyContent(
+                            hint = stringResource(Res.string.comment_not_found),
+                            subHint = latestReportMessage ?: ""
+                        )
+                    },
+                ) {
+                    LazyColumn(
+                        state = listState,
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = listContentPadding,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        // 刷新失败但列表还在：留一条横幅，而不是把错误悄悄吞掉。
+                        if (state is WebsiteState.Error && sortedComments.isNotEmpty()) {
+                            item(key = "refresh_failed") {
+                                RefreshFailedBanner(onRetry = onRefresh)
                             }
+                        }
 
-                            items(sortedComments, key = { it.stableKey }) { comment ->
-                                VideoCommentCard(
-                                    comment = comment,
-                                    onReply = {
-                                        if (!isAlreadyLogin) {
-                                            scope.launch {
-                                                snackbarHostState.showSnackbar(
-                                                    loginFirstText
-                                                )
-                                            }
-                                        } else {
-                                            replyingComment = comment
-                                        }
-                                    },
-                                    onThumbUp = {
-                                        if (!isAlreadyLogin) {
-                                            scope.launch {
-                                                snackbarHostState.showSnackbar(
-                                                    loginFirstText
-                                                )
-                                            }
-                                        } else {
-                                            onThumbUp(comment)
-                                        }
-                                    },
-                                    onThumbDown = {
-                                        if (!isAlreadyLogin) {
-                                            scope.launch {
-                                                snackbarHostState.showSnackbar(
-                                                    loginFirstText
-                                                )
-                                            }
-                                        } else {
-                                            onThumbDown(comment)
-                                        }
-                                    },
-                                    onReport = {
-                                        if (!isAlreadyLogin) {
-                                            scope.launch {
-                                                snackbarHostState.showSnackbar(
-                                                    loginFirstText
-                                                )
-                                            }
-                                        } else {
-                                            reportComment = comment
-                                        }
-                                    },
-                                    onViewMoreReplies = if (comment.hasMoreReplies) {
-                                        { onViewMoreReplies(comment) }
+                        items(sortedComments, key = { it.stableKey }) { comment ->
+                            val threadId = comment.replyTargetIdOrNull
+                            val expanded = threadId != null && threadId in expandedReplies
+                            VideoCommentCard(
+                                comment = comment,
+                                onReply = { target ->
+                                    if (!isAlreadyLogin) {
+                                        scope.launch { snackbarHostState.showSnackbar(loginFirstText) }
                                     } else {
-                                        null
-                                    },
+                                        replyingComment = target
+                                    }
+                                },
+                                onThumbUp = { target ->
+                                    if (!isAlreadyLogin) {
+                                        scope.launch { snackbarHostState.showSnackbar(loginFirstText) }
+                                    } else {
+                                        onThumbUp(target)
+                                    }
+                                },
+                                onThumbDown = { target ->
+                                    if (!isAlreadyLogin) {
+                                        scope.launch { snackbarHostState.showSnackbar(loginFirstText) }
+                                    } else {
+                                        onThumbDown(target)
+                                    }
+                                },
+                                onReport = { target ->
+                                    if (!isAlreadyLogin) {
+                                        scope.launch { snackbarHostState.showSnackbar(loginFirstText) }
+                                    } else {
+                                        reportComment = target
+                                    }
+                                },
+                                replies = threadId?.let { replyThreads[it] },
+                                repliesExpanded = expanded,
+                                onToggleReplies = if (threadId == null || !comment.hasMoreReplies) {
+                                    null
+                                } else {
+                                    { toggleReplies(threadId, expanded) }
+                                },
+                                onRetryReplies = if (threadId == null) {
+                                    null
+                                } else {
+                                    { onLoadReplies(threadId) }
+                                },
+                            )
+                        }
+
+                        // 站点一次给全量、没有翻页，所以"到此为止"是真的到底了。
+                        if (sortedComments.isNotEmpty()) {
+                            item(key = "comment_footer") {
+                                Text(
+                                    text = stringResource(
+                                        Res.string.comment_all_shown,
+                                        sortedComments.size,
+                                    ),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 12.dp),
                                 )
                             }
                         }
@@ -382,6 +460,10 @@ fun CommentScreen(
                             }
                         },
                         placeholder = stringResource(Res.string.comment),
+                        onClose = {
+                            replyingComment = null
+                            replyText = TextFieldValue("")
+                        },
                     )
                 } else {
                     CommentReplyBar(
@@ -398,6 +480,10 @@ fun CommentScreen(
                             }
                         },
                         placeholder = stringResource(Res.string.comment),
+                        onClose = {
+                            showCommentBar = false
+                            composeText = TextFieldValue("")
+                        },
                     )
                 }
             }
@@ -437,6 +523,29 @@ private fun sortText(type: CommentSortType): String = when (type) {
 }
 
 data class CommentMessage(val text: String)
+
+@Composable
+private fun RefreshFailedBanner(onRetry: () -> Unit) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(MaterialTheme.shapes.medium)
+            .background(MaterialTheme.colorScheme.errorContainer)
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
+        Text(
+            text = stringResource(Res.string.comment_refresh_kept),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onErrorContainer,
+            modifier = Modifier.weight(1f),
+        )
+        TextButton(onClick = onRetry) {
+            Text(stringResource(Res.string.retry))
+        }
+    }
+}
 
 @Composable
 private fun rememberCommentFabVisibility(listState: LazyListState): androidx.compose.runtime.State<Boolean> {

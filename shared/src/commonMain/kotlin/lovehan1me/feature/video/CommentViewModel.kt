@@ -30,6 +30,16 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
+ * 一条父评论下面展开出来的回覆。站点用 `loadReplies?id=` 单独给，所以按父评论 id 各自缓存，
+ * 收起时留着、再点开不重取。
+ */
+data class ReplyThread(
+    val loading: Boolean = false,
+    val error: Throwable? = null,
+    val items: List<VideoComments.VideoComment> = emptyList(),
+)
+
+/**
  * @project LoveHan1me
  * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/06/28 028 14:18
@@ -39,7 +49,6 @@ class CommentViewModel : ViewModel() {
     data class CommentUiState(
         val firstVisibleItemIndex: Int = 0,
         val firstVisibleItemScrollOffset: Int = 0,
-        val childCommentId: String? = null,
     )
 
     lateinit var code: String
@@ -57,15 +66,11 @@ class CommentViewModel : ViewModel() {
         MutableStateFlow<WebsiteState<VideoComments>>(WebsiteState.Loading)
     val videoCommentStateFlow = _videoCommentStateFlow.asStateFlow()
 
-    private val _videoReplyStateFlow =
-        MutableStateFlow<WebsiteState<VideoComments>>(WebsiteState.Loading)
-    val videoReplyStateFlow = _videoReplyStateFlow.asStateFlow()
+    private val _replyThreads = MutableStateFlow(emptyMap<String, ReplyThread>())
+    val replyThreads = _replyThreads.asStateFlow()
 
     private val _videoCommentFlow = MutableStateFlow(emptyList<VideoComments.VideoComment>())
     val videoCommentFlow = _videoCommentFlow.asStateFlow()
-
-    private val _videoReplyFlow = MutableStateFlow(emptyList<VideoComments.VideoComment>())
-    val videoReplyFlow = _videoReplyFlow.asStateFlow()
 
     private val _postCommentFlow =
         MutableSharedFlow<WebsiteState<Unit>>(replay = 0)
@@ -105,14 +110,14 @@ class CommentViewModel : ViewModel() {
         )
     }
 
-    fun setChildCommentId(code: String, childCommentId: String?) {
-        val current = commentUiStateMap[code] ?: CommentUiState()
-        commentUiStateMap[code] = current.copy(childCommentId = childCommentId)
+    fun clearCommentData(){
+        commentsLoadedFor = null
+        _videoCommentFlow.value = emptyList()
+        _replyThreads.value = emptyMap()
     }
 
-    fun clearCommentData(){
-        _videoCommentFlow.value = emptyList()
-    }
+    /** `_videoCommentFlow` 里那批评论属于哪个 id；换 id 要清空，同 id 刷新要留着。 */
+    private var commentsLoadedFor: String? = null
 
     /**
      * 有缓存就用缓存：同一部片子（`code` 一致）且上次成功时直接返回，
@@ -131,39 +136,68 @@ class CommentViewModel : ViewModel() {
 
     fun getComment(type: String, code: String) {
         viewModelScope.launch {
+            if (commentsLoadedFor != code) {
+                commentsLoadedFor = code
+                _videoCommentFlow.value = emptyList()
+                // 换了一部片子，上一部展开出来的回覆线程没有意义了。
+                _replyThreads.value = emptyMap()
+            }
             _videoCommentStateFlow.value = WebsiteState.Loading
             NetworkRepo.getComments(type, code).collect { state ->
+                // 已经切去看别的 id 了，迟到的响应就别再写进列表。
+                if (commentsLoadedFor != code) return@collect
                 _videoCommentStateFlow.value = state
-                _videoCommentFlow.update { prevList ->
-                    when (state) {
-                        is WebsiteState.Success -> state.info.videoComment
-                        is WebsiteState.Loading -> emptyList()
-                        else -> prevList
-                    }
+                // Loading 与 Error 都保持原列表：刷新失败时用户至少还能看到上一次的结果，
+                // 而不是被清空成"暂无评论"。
+                if (state is WebsiteState.Success) {
+                    _videoCommentFlow.value = state.info.videoComment
                 }
             }
         }
     }
 
-    fun updateComments(comments: List<VideoComments.VideoComment>) {
+    fun updateComments(code: String, comments: List<VideoComments.VideoComment>) {
+        commentsLoadedFor = code
         _videoCommentFlow.update { comments }
     }
 
-    fun getCommentReply(commentId: String) {
+    /**
+     * 拉某条父评论下面的回覆。已经拉到过就复用缓存（收起再点开不该重取），
+     * 发完回覆要看见新那条，所以留 [force]。
+     */
+    fun loadReplies(commentId: String, force: Boolean = false) {
+        if (!force && _replyThreads.value[commentId]?.items?.isNotEmpty() == true) return
         viewModelScope.launch {
-            // 每次获取评论回复时，都会重新加载
-            _videoReplyStateFlow.value = WebsiteState.Loading
+            _replyThreads.update { it + (commentId to threadOf(it, commentId).copy(loading = true, error = null)) }
             NetworkRepo.getCommentReply(commentId).collect { state ->
-                _videoReplyStateFlow.value = state
-                _videoReplyFlow.update { prevList ->
-                    when (state) {
-                        is WebsiteState.Success -> state.info.videoComment
-                        is WebsiteState.Loading -> emptyList()
-                        else -> prevList
+                when (state) {
+                    is WebsiteState.Success -> _replyThreads.update {
+                        it + (commentId to ReplyThread(items = state.info.videoComment))
                     }
+
+                    is WebsiteState.Error -> _replyThreads.update {
+                        it + (commentId to threadOf(it, commentId).copy(loading = false, error = state.throwable))
+                    }
+
+                    WebsiteState.Loading -> Unit
                 }
             }
         }
+    }
+
+    private fun threadOf(map: Map<String, ReplyThread>, commentId: String): ReplyThread =
+        map[commentId] ?: ReplyThread()
+
+    /**
+     * 刚发出去的那条回覆挂在哪个父评论下：直接命中线程 key（回覆的是父评论本身），
+     * 否则在各线程里找被回覆的那条子评论（回覆的是某条子评论）。
+     */
+    private fun threadOwning(replyTargetId: String): String? {
+        val threads = _replyThreads.value
+        if (threads.containsKey(replyTargetId)) return replyTargetId
+        return threads.entries.firstOrNull { (_, thread) ->
+            thread.items.any { it.replyTargetIdOrNull == replyTargetId }
+        }?.key
     }
 
     fun postComment(
@@ -184,7 +218,13 @@ class CommentViewModel : ViewModel() {
     ) {
         viewModelScope.launch {
             NetworkRepo.postCommentReply(csrfToken, replyCommentId, text)
-                .collect(_postReplyFlow::emit)
+                .collect { state ->
+                    if (state is WebsiteState.Success) {
+                        // 展开着的那层要立刻多出刚发的那条；没展开过就不用管。
+                        threadOwning(replyCommentId)?.let { loadReplies(it, force = true) }
+                    }
+                    _postReplyFlow.emit(state)
+                }
         }
     }
 
@@ -244,17 +284,21 @@ class CommentViewModel : ViewModel() {
 //                            }
                         }
 
-                        CommentPlace.CHILD_COMMENT -> _videoReplyFlow.update { prevList ->
-                            prevList.map { item ->
-                                if (item.reportableId == comment.reportableId){
-                                    item.handleCommentLike(argState.info)
-                                } else {
-                                    item
-                                }
-//                            prevList.toMutableList().apply {
-//                                this[commentPosition] =
-//                                    this[commentPosition].handleCommentLike(argState.info)
-//                            }
+                        CommentPlace.CHILD_COMMENT -> _replyThreads.update { threads ->
+                            val entry = threads.entries.firstOrNull { (_, thread) ->
+                                thread.items.any { isSameComment(it, comment) }
+                            }
+                            if (entry == null) threads else {
+                                val (parentId, thread) = entry
+                                threads + (parentId to thread.copy(
+                                    items = thread.items.map { item ->
+                                        if (isSameComment(item, comment)) {
+                                            item.handleCommentLike(argState.info)
+                                        } else {
+                                            item
+                                        }
+                                    }
+                                ))
                             }
                         }
                     }
@@ -262,6 +306,13 @@ class CommentViewModel : ViewModel() {
             }
         }
     }
+
+    /**
+     * 点赞点的是列表里那个实例，先按实例认；认不出再退到 `reportableId`。
+     * 只按 `reportableId` 比会在未登录（该字段为 null）时把所有条目都当成同一条。
+     */
+    private fun isSameComment(a: VideoComments.VideoComment, b: VideoComments.VideoComment): Boolean =
+        a === b || (a.reportableId != null && a.reportableId == b.reportableId)
 
     private fun VideoComments.VideoComment.handleCommentLike(
         args: VideoCommentArgs,
@@ -324,5 +375,4 @@ class CommentViewModel : ViewModel() {
             }
         }
     }
-    fun clearVideoReplyList() { _videoReplyFlow.value = emptyList() }
 }

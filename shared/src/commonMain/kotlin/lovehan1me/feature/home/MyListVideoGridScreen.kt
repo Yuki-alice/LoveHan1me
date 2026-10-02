@@ -50,7 +50,6 @@ import lovehan1me.ui.component.PageContent
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.content.ErrorContent
-import lovehan1me.feature.preview.fakeHomePageVideos
 import lovehan1me.feature.home.videogrid.VideoGridContent
 import lovehan1me.feature.home.videogrid.VideoGridUiState
 import lovehan1me.feature.home.videogrid.canLoadMore

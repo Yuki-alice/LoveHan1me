@@ -9,8 +9,11 @@ import okhttp3.Request
 /**
  * 第三方站点档：带 DNS 覆盖与用户代理，不经 ECH 网关（理由见 `createThirdPartyClient`）。
  * 此前是裸 client，配了代理的用户更新检查仍走直连。
+ *
+ * 更新 JSON 与公告 JSON 共用同一个 client：两者同在一个 COS 桶、同一套出口要求，
+ * 各建一个只会多一份连接池与线程池。
  */
-private val updateClient by lazy { createThirdPartyClient() }
+internal val remoteJsonClient by lazy { createThirdPartyClient() }
 
 // P6d-4F：原 :app AppUpdateChecker.requestUpdateJson 照搬
 actual suspend fun performUpdateJsonRequest(): String? = withContext(Dispatchers.IO) {
@@ -21,7 +24,7 @@ actual suspend fun performUpdateJsonRequest(): String? = withContext(Dispatchers
         .header("Referer", ENCODED_UPDATE_REFERER.decodeFromStringByBase64())
         .get()
         .build()
-    updateClient.newCall(request).execute().use { response ->
+    remoteJsonClient.newCall(request).execute().use { response ->
         check(response.isSuccessful) { "Update check failed with HTTP ${response.code}" }
         response.body.string()
     }

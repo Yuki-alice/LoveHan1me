@@ -1,5 +1,10 @@
 package lovehan1me.ui.component
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
 import androidx.compose.foundation.combinedClickable
@@ -14,6 +19,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import lovehan1me.ui.component.IconButton
@@ -26,6 +32,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -34,44 +41,41 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import lovehan1me.ui.component.HanimeAsyncImage
 import lovehan1me.Res
-import lovehan1me.view_more_replies
-import lovehan1me.report_reason_hint
-import lovehan1me.reply
+import lovehan1me.collapse_replies
 import lovehan1me.ic_thumb_up_off_alt
 import lovehan1me.ic_thumb_up_alt
 import lovehan1me.ic_thumb_down_off_alt
 import lovehan1me.ic_thumb_down_alt
 import lovehan1me.ic_report
 import lovehan1me.ic_reply
+import lovehan1me.ic_keyboard_arrow_down
+import lovehan1me.load_reply_failed
+import lovehan1me.loading_replies
+import lovehan1me.replies_count
+import lovehan1me.reply
+import lovehan1me.report_reason_hint
+import lovehan1me.retry
+import lovehan1me.view_more_replies
 import lovehan1me.core.domain.model.VideoComments
+import lovehan1me.feature.video.ReplyThread
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction
 import lovehan1me.core.util.DisplayTextLocalizer
 
-/**
- * 视频评论卡片组件。
- *
- * 展示单条评论，支持回复、点赞、点踩、举报等操作，
- * 可选的更多回复入口。
- *
- * @param modifier 修饰符
- * @param comment 评论数据
- * @param onReply 回复回调
- * @param onThumbUp 点赞回调
- * @param onThumbDown 点踩回调
- * @param onReport 举报回调
- * @param onViewMoreReplies 查看更多回复回调，为 null 时不显示入口
- */
 @OptIn(ExperimentalFoundationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
 fun VideoCommentCard(
     modifier: Modifier = Modifier,
     comment: VideoComments.VideoComment,
-    onReply: () -> Unit,
-    onThumbUp: () -> Unit,
-    onThumbDown: () -> Unit,
-    onReport: () -> Unit,
-    onViewMoreReplies: (() -> Unit)? = null,
+    onReply: (VideoComments.VideoComment) -> Unit,
+    onThumbUp: (VideoComments.VideoComment) -> Unit,
+    onThumbDown: (VideoComments.VideoComment) -> Unit,
+    onReport: (VideoComments.VideoComment) -> Unit,
+    compact: Boolean = false,
+    replies: ReplyThread? = null,
+    repliesExpanded: Boolean = false,
+    onToggleReplies: (() -> Unit)? = null,
+    onRetryReplies: (() -> Unit)? = null,
 ) {
     val interactionSource = remember { MutableInteractionSource() }
     val indication = LocalIndication.current
@@ -84,17 +88,19 @@ fun VideoCommentCard(
 
     CardContainerSurface(
         modifier = modifier.fillMaxWidth(),
-        shape = cardShape,
+        // 子评论是父卡里的一块，不再套一层卡片观感。
+        shape = if (compact) MaterialTheme.shapes.medium else cardShape,
+        color = if (compact) MaterialTheme.colorScheme.surfaceContainerHighest else null,
     ) {
         Column(
             modifier = Modifier
                 .combinedClickable(
                     interactionSource = interactionSource,
-                    indication = indication,
+                    indication = if (compact) null else indication,
                     onClick = {},
                     onLongClick = {},
                 )
-                .padding(12.dp),
+                .padding(horizontal = 12.dp, vertical = if (compact) 10.dp else 12.dp),
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -105,7 +111,7 @@ fun VideoCommentCard(
                     model = comment.avatar,
                     contentDescription = comment.username,
                     modifier = Modifier
-                        .size(40.dp)
+                        .size(if (compact) 32.dp else 40.dp)
                         .clip(CircleShape),
                     contentScale = ContentScale.Crop,
                 )
@@ -128,7 +134,7 @@ fun VideoCommentCard(
                     )
                 }
 
-                IconButton(onClick = onReport, modifier = Modifier.size(36.dp)) {
+                IconButton(onClick = { onReport(comment) }, modifier = Modifier.size(36.dp)) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_report),
                         contentDescription = stringResource(Res.string.report_reason_hint),
@@ -137,7 +143,7 @@ fun VideoCommentCard(
                 }
             }
             SelectionContainer {
-                Text(
+                LinkifiedText(
                     modifier = Modifier.padding(vertical = 8.dp),
                     text = comment.content,
                     style = MaterialTheme.typography.bodyMedium,
@@ -148,7 +154,7 @@ fun VideoCommentCard(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 TextButton(
-                    onClick = onThumbUp,
+                    onClick = { onThumbUp(comment) },
                     colors = ButtonDefaults.textButtonColors(),
                 ) {
                     Icon(
@@ -165,7 +171,7 @@ fun VideoCommentCard(
                 }
 
                 TextButton(
-                    onClick = onThumbDown,
+                    onClick = { onThumbDown(comment) },
                     colors = ButtonDefaults.textButtonColors(),
                 ) {
                     Icon(
@@ -181,7 +187,7 @@ fun VideoCommentCard(
                 }
 
                 TextButton(
-                    onClick = onReply,
+                    onClick = { onReply(comment) },
                 ) {
                     Icon(
                         painter = painterResource(Res.drawable.ic_reply),
@@ -191,12 +197,108 @@ fun VideoCommentCard(
                 }
             }
 
-            if (comment.hasMoreReplies && onViewMoreReplies != null) {
-                TextButton(
-                    onClick = onViewMoreReplies,
-                ) {
-                    Text(stringResource(Res.string.view_more_replies, comment.replyCount ?: 0))
+            val toggle = onToggleReplies
+            if (!compact && comment.hasMoreReplies && toggle != null) {
+                TextButton(onClick = toggle) {
+                    Text(
+                        text = if (repliesExpanded) {
+                            stringResource(Res.string.collapse_replies)
+                        } else {
+                            stringResource(
+                                Res.string.view_more_replies,
+                                comment.replyCount ?: 0,
+                            )
+                        },
+                    )
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_keyboard_arrow_down),
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(20.dp)
+                            .graphicsLayer {
+                                rotationZ = if (repliesExpanded) 180f else 0f
+                            },
+                    )
                 }
+
+                AnimatedVisibility(
+                    visible = repliesExpanded,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically(),
+                ) {
+                    ReplyThreadSection(
+                        replies = replies,
+                        // 重试只重取回覆，不走收起那条路（toggle 在展开态下是"收起"）。
+                        onRetry = onRetryReplies ?: toggle,
+                        onReply = onReply,
+                        onThumbUp = onThumbUp,
+                        onThumbDown = onThumbDown,
+                        onReport = onReport,
+                    )
+                }
+            }
+        }
+    }
+}
+
+/** 展开后挂在父卡内部的一层回覆：站点按 `loadReplies?id=` 现取，所以有加载中与失败重试两态。 */
+@Composable
+private fun ReplyThreadSection(
+    replies: ReplyThread?,
+    onRetry: () -> Unit,
+    onReply: (VideoComments.VideoComment) -> Unit,
+    onThumbUp: (VideoComments.VideoComment) -> Unit,
+    onThumbDown: (VideoComments.VideoComment) -> Unit,
+    onReport: (VideoComments.VideoComment) -> Unit,
+) {
+    when {
+        replies == null || (replies.loading && replies.items.isEmpty()) -> Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            modifier = Modifier.padding(vertical = 6.dp),
+        ) {
+            CircularProgressIndicator(
+                modifier = Modifier.size(16.dp),
+                strokeWidth = 2.dp,
+                color = MaterialTheme.colorScheme.primary,
+            )
+            Text(
+                text = stringResource(Res.string.loading_replies),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        }
+
+        replies.error != null && replies.items.isEmpty() -> Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp),
+        ) {
+            Text(
+                text = stringResource(Res.string.load_reply_failed),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.error,
+            )
+            TextButton(onClick = onRetry) {
+                Text(stringResource(Res.string.retry))
+            }
+        }
+
+        else -> Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Text(
+                text = stringResource(Res.string.replies_count, replies.items.size),
+                style = MaterialTheme.typography.labelLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+            replies.items.forEach { child ->
+                VideoCommentCard(
+                    comment = child,
+                    compact = true,
+                    onReply = onReply,
+                    onThumbUp = onThumbUp,
+                    onThumbDown = onThumbDown,
+                    onReport = onReport,
+                )
             }
         }
     }

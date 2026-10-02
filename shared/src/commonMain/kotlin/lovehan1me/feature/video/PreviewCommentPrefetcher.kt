@@ -2,7 +2,6 @@ package lovehan1me.feature.video
 
 import lovehan1me.core.util.LogUtil
 import androidx.annotation.IntDef
-import lovehan1me.core.domain.model.VideoComments
 
 /**
  * 连通预览页与预览评论页的评论预取器。
@@ -77,9 +76,5 @@ class PreviewCommentPrefetcher private constructor(
 
     fun fetch(type: String, code: String) {
         commentViewModel.getComment(type, code)
-    }
-
-    fun update(comments: List<VideoComments.VideoComment>) {
-        commentViewModel.updateComments(comments)
     }
 }

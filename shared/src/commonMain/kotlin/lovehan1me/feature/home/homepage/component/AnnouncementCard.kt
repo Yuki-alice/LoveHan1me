@@ -15,6 +15,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
@@ -23,25 +25,43 @@ import lovehan1me.Res
 import lovehan1me.close
 import lovehan1me.ic_close
 import lovehan1me.core.domain.model.Announcement
-import lovehan1me.feature.preview.fakeAnnouncements
+import lovehan1me.core.domain.model.AnnouncementSeverity
 
+/**
+ * 首页上的单条公告卡片。
+ *
+ * 参数从前是 `List<Announcement>`，实现里却只渲染 `first()` —— 类型承诺"多条"、
+ * 行为是"一条"，逼得三个调用方全写 `listOf(x)` 来绕开。现在一条就是一条：
+ * 多条公告的浏览交给 [AnnouncementListDialog]。
+ *
+ * 配色按 [AnnouncementSeverity] 分档：阻断级用 error 容器（与"能忽略"的公告区分开），
+ * 其余用 secondary 容器。级别解析时未知值会降级成 Normal（见 `AnnouncementSeverity.fromWire`），
+ * 所以这里 `when` 不需要 else 以外的兜底。
+ */
 @Composable
 fun AnnouncementCard(
-    announcements: List<Announcement>,
+    announcement: Announcement,
     onAnnouncementClick: (Announcement) -> Unit,
     onClose: (() -> Unit)?,
     modifier: Modifier = Modifier,
 ) {
-    if (announcements.isEmpty()) return
-
-    val item = announcements.first()
+    val isBlocking = announcement.severity == AnnouncementSeverity.Blocking
+    val container: Color
+    val onContainer: Color
+    if (isBlocking) {
+        container = MaterialTheme.colorScheme.errorContainer
+        onContainer = MaterialTheme.colorScheme.onErrorContainer
+    } else {
+        container = MaterialTheme.colorScheme.secondaryContainer
+        onContainer = MaterialTheme.colorScheme.onSecondaryContainer
+    }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
             .clip(MaterialTheme.shapes.medium)
-            .background(MaterialTheme.colorScheme.secondaryContainer)
-            .clickable { onAnnouncementClick(item) }
+            .background(container)
+            .clickable { onAnnouncementClick(announcement) }
     ) {
         Column(
             modifier = Modifier.padding(
@@ -51,12 +71,18 @@ fun AnnouncementCard(
                 bottom = 12.dp,
             )
         ) {
+            if (announcement.title.isNotBlank()) {
+                Text(
+                    text = announcement.title,
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Medium,
+                    color = onContainer,
+                )
+            }
             Text(
-                text = item.content,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontSize = 12.sp
-                ),
-                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                text = announcement.content,
+                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                color = onContainer,
             )
         }
 
@@ -71,7 +97,7 @@ fun AnnouncementCard(
                     painter = painterResource(Res.drawable.ic_close),
                     contentDescription = stringResource(Res.string.close),
                     modifier = Modifier.size(18.dp),
-                    tint = MaterialTheme.colorScheme.onSecondaryContainer,
+                    tint = onContainer,
                 )
             }
         }

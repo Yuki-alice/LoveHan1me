@@ -1,9 +1,5 @@
 package lovehan1me.feature.video
 
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetValue
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -20,10 +16,8 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.data.SettingsRepository
@@ -46,7 +40,6 @@ import lovehan1me.feature.video.CommentViewModel
 import lovehan1me.feature.video.VideoViewModel
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.asSharedFlow
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 
@@ -179,7 +172,6 @@ fun RenderVideoIntroductionContent(
     )
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RenderVideoCommentContent(
     videoCode: String,
@@ -191,15 +183,6 @@ fun RenderVideoCommentContent(
     val commentUiState = remember(videoCode) {
         viewModel.getCommentUiState(videoCode)
     }
-    var childCommentId by remember { mutableStateOf(commentUiState.childCommentId) }
-    val childSheetState = rememberBottomSheetState(
-        initialValue = SheetValue.Hidden,
-        enabledValues = setOf(
-            SheetValue.Hidden,
-            SheetValue.PartiallyExpanded,
-            SheetValue.Expanded,
-        ),
-    )
     val scope = rememberCoroutineScope()
 
     LaunchedEffect(videoCode) {
@@ -215,69 +198,21 @@ fun RenderVideoCommentContent(
         }
     }
 
-    childCommentId?.let { currentCommentId ->
-        ModalBottomSheet(
-            onDismissRequest = {
-                childCommentId = null
-                viewModel.setChildCommentId(videoCode, null)
-                viewModel.clearVideoReplyList()
-            },
-            sheetState = childSheetState,
-            containerColor = HanimeDefaults.Colors.pageSurface,
-        ) {
-            LaunchedEffect(currentCommentId) {
-                viewModel.getCommentReply(currentCommentId)
+    // 提示归 CommentScreen（它才是发起输入的地方）；这里只管"发完要重新拿数据"。
+    LaunchedEffect(videoCode) {
+        viewModel.postCommentFlow.collect { state ->
+            if (state is WebsiteState.Success) {
+                viewModel.getComment(VIDEO_COMMENT_PREFIX, videoCode)
             }
-            val childReportFlow = remember(viewModel.reportMessage) {
-                viewModel.reportMessage.map { message ->
-                    // P6c：VM Message 已携带文本
-                    CommentMessage(message.text)
-                }
+        }
+    }
+
+    LaunchedEffect(videoCode) {
+        viewModel.postReplyFlow.collect { state ->
+            if (state is WebsiteState.Success) {
+                // 被回覆的那个线程由 CommentViewModel 自己重取，这里只补父评论的回覆数。
+                viewModel.getComment(VIDEO_COMMENT_PREFIX, videoCode)
             }
-            ChildCommentScreen(
-                commentsFlow = viewModel.videoReplyFlow,
-                commentStateFlow = viewModel.videoReplyStateFlow,
-                reportMessageFlow = childReportFlow,
-                postReplyStateFlow = viewModel.postReplyFlow,
-                commentLikeStateFlow = viewModel.commentLikeFlow,
-                reportReasons = viewModel.reportReason,
-                isAlreadyLogin = isAlreadyLogin,
-                onRefresh = { viewModel.getCommentReply(currentCommentId) },
-                onReply = { _, text ->
-                    viewModel.postReply(currentCommentId, text)
-                },
-                onReport = { comment, reason ->
-                    viewModel.reportComment(
-                        reason.reasonKey ?: reason.value,
-                        viewModel.currentUserId,
-                        "${SettingsRepository.baseUrl}watch?v=${videoCode}",
-                        comment.reportableType,
-                        comment.reportableId,
-                    )
-                },
-                onThumbUp = { comment ->
-                    viewModel.likeChildComment(
-                        true,
-                        0,
-                        comment,
-                        likeCommentStatus = comment.post.likeCommentStatus,
-                    )
-                },
-                onThumbDown = { comment ->
-                    viewModel.likeChildComment(
-                        false,
-                        0,
-                        comment,
-                        unlikeCommentStatus = comment.post.unlikeCommentStatus,
-                    )
-                },
-                onCommentLikeSuccess = viewModel::handleCommentLike,
-                onReplyStateChange = { isReplying ->
-                    if (isReplying) {
-                        scope.launch { childSheetState.expand() }
-                    }
-                },
-            )
         }
     }
 
@@ -286,6 +221,10 @@ fun RenderVideoCommentContent(
         commentsFlow = viewModel.videoCommentFlow,
         commentStateFlow = viewModel.videoCommentStateFlow,
         reportMessageFlow = sharedReportFlow,
+        postCommentStateFlow = viewModel.postCommentFlow,
+        postReplyStateFlow = viewModel.postReplyFlow,
+        replyThreadsFlow = viewModel.replyThreads,
+        onLoadReplies = viewModel::loadReplies,
         currentSortType = viewModel.currentSortType,
         reportReasons = viewModel.reportReason,
         isPreviewCommentPrefetched = false,
@@ -346,17 +285,6 @@ fun RenderVideoCommentContent(
                     unlikeCommentStatus = comment.post.unlikeCommentStatus,
                 )
             }
-        },
-        onViewMoreReplies = { comment ->
-            val replyTargetId = comment.replyTargetIdOrNull
-            if (replyTargetId == null) {
-                scope.launch {
-                    reportMessages.emit(CommentMessage(getMessageText(CommentViewModel.Message(getString(Res.string.there_is_a_small_issue)))))
-                }
-                return@CommentScreen
-            }
-            childCommentId = replyTargetId
-            viewModel.setChildCommentId(videoCode, replyTargetId)
         },
         onSortChange = { viewModel.setSortType(it) },
         onComposeComment = {

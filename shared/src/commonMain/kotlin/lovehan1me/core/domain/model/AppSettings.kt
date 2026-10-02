@@ -191,6 +191,16 @@ data class AppSettings(
      */
     val desktopBrowserUserAgent: String = "",
     val cachedUpdateJson: String? = null,
+    /** 远端公告 JSON 的最近一次成功响应（拉取失败时降级用，见 `AnnouncementRepository`）。 */
+    val cachedAnnouncementJson: String? = null,
+    /**
+     * 已读公告的 `Announcement.stableKey` 列表。
+     *
+     * 用 List 而不是 Set，是因为需要按写入顺序裁剪最旧的几条
+     * （见 `SettingsRepository.markAnnouncementsRead`）；Set 没有「最旧」这个概念，
+     * 而远端一旦出错不停下发新公告，无上限的表会一直长。
+     */
+    val readAnnouncementKeys: List<String> = emptyList(),
     val ignoredVersionCode: Int = -1,
     val downloadCountLimit: Int = 2,
     val downloadSpeedLimitIndex: Int = 0,

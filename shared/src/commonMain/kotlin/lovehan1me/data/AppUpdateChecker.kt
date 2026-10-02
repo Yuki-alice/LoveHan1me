@@ -112,9 +112,21 @@ object AppUpdateChecker {
         val content = announcement.trim()
         if (!isShowAnnouncement || content.isBlank()) return null
         return Announcement(
+            id = LEGACY_ANNOUNCEMENT_ID,
             title = getString(Res.string.update_announcement_title),
             content = content,
             isActive = true,
         )
     }
 }
+
+/**
+ * update.json 里那条公告的固定 id。
+ *
+ * 这个字段在线上是**长期开启的站规/反诈提示**（实测 `isShowAnnouncement: true` 从不关闭）。
+ * 若不给固定 id，`Announcement.stableKey` 会退化成「标题+正文」摘要，于是运营改一个错别字
+ * 就等于发了一条全新公告 —— 已经点过「知道了」的用户又被弹一次。
+ * 固定 id 让「已读」跨文案微调存活。真要发新公告，正确做法是在
+ * `announcement.json` 里给显式 id，而不是复用这个字段。
+ */
+private const val LEGACY_ANNOUNCEMENT_ID = "legacy:update-json-announcement"

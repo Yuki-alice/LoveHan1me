@@ -48,8 +48,23 @@ expect fun isPipPermissionGranted(): Boolean
 /** 跳转系统 PiP 设置页（桌面/iOS no-op） */
 expect fun openPipPermissionSettings()
 
-/** 拉取远端更新 JSON（Android=OkHttp；桌面/iOS 返回 null 走本地缓存降级） */
+/**
+ * 拉取远端更新 JSON。
+ *
+ * jvmMain（**Android 与桌面共用**，见 `build-logic/han1me-kmp-library.gradle.kts` 的
+ * `group("jvm")`）= OkHttp，两端都能真联网；iOS 返回 null，只能吃本地缓存。
+ * 此前注释写成「桌面/iOS 返回 null」，与源集层级不符。
+ */
 expect suspend fun performUpdateJsonRequest(): String?
+
+/**
+ * 拉取远端公告 JSON（同 COS 桶的 `announcement.json`）。
+ *
+ * 与 [performUpdateJsonRequest] 同一套平台面：jvmMain=OkHttp，iOS=null。
+ * iOS 侧是**已知缺口**（本仓的第三方直连客户端 `createThirdPartyClient` 只有 jvm 实现），
+ * 其后果与更新公告一致：iOS 只能靠缓存，首次安装看不到公告。
+ */
+expect suspend fun performAnnouncementJsonRequest(): String?
 
 /** 账号登出（cookie/登录态清理；HomePageViewModel 会话过期等跨平台调用点） */
 expect suspend fun performAccountLogout()

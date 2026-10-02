@@ -4,20 +4,11 @@ import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.ModalBottomSheet
-import androidx.compose.material3.SheetValue
-import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
@@ -29,17 +20,14 @@ import lovehan1me.there_is_a_small_issue
 import lovehan1me.latest_hanime_comment
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.component.appbar.HanimeScaffold
-import lovehan1me.feature.video.ChildCommentScreen
 import lovehan1me.feature.video.CommentMessage
 import lovehan1me.feature.video.CommentScreen
 import lovehan1me.feature.video.CommentViewModel
 import lovehan1me.feature.video.PreviewCommentPrefetcher
 import lovehan1me.app.sharedViewModel
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PreviewCommentRouteScreen(
     route: PreviewCommentRoute,
@@ -51,15 +39,6 @@ fun PreviewCommentRouteScreen(
     val commentUiState = remember(route.dateCode) {
         viewModel.getCommentUiState(route.dateCode)
     }
-    var childCommentId by rememberSaveable { mutableStateOf(commentUiState.childCommentId) }
-    val childSheetState = rememberBottomSheetState(
-        initialValue = SheetValue.Hidden,
-        enabledValues = setOf(
-            SheetValue.Hidden,
-            SheetValue.PartiallyExpanded,
-            SheetValue.Expanded,
-        ),
-    )
     val scope = rememberCoroutineScope()
     val prefetchedComments = PreviewCommentPrefetcher.here(viewModel)
         .commentFlow
@@ -71,7 +50,7 @@ fun PreviewCommentRouteScreen(
     LaunchedEffect(route.dateCode, hasPrefetchedComments, prefetchedComments) {
         viewModel.code = route.dateCode
         if (hasPrefetchedComments) {
-            viewModel.updateComments(prefetchedComments)
+            viewModel.updateComments(route.dateCode, prefetchedComments)
         } else {
             viewModel.getComment(PREVIEW_COMMENT_PREFIX, route.dateCode)
         }
@@ -124,70 +103,6 @@ fun PreviewCommentRouteScreen(
         }
     }
 
-    childCommentId?.let { currentCommentId ->
-        ModalBottomSheet(
-            onDismissRequest = {
-                childCommentId = null
-                viewModel.setChildCommentId(route.dateCode, null)
-                viewModel.clearVideoReplyList()
-            },
-            sheetState = childSheetState,
-            // 浮层自带 M3 sheet 底色，不跟页面底色走（页面底是 surfaceContainerLowest 纯白，
-            // 套用会让 sheet 与身后内容同色、浮不起来）。
-            containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
-        ) {
-            LaunchedEffect(currentCommentId) {
-                viewModel.getCommentReply(currentCommentId)
-            }
-            val mappedReportFlow = remember(viewModel.reportMessage) {
-                viewModel.reportMessage.map { message ->
-                    // P6c：VM 的 Message 已携带文本
-                    CommentMessage(message.text)
-                }
-            }
-            ChildCommentScreen(
-                commentsFlow = viewModel.videoReplyFlow,
-                commentStateFlow = viewModel.videoReplyStateFlow,
-                reportMessageFlow = mappedReportFlow,
-                postReplyStateFlow = viewModel.postReplyFlow,
-                commentLikeStateFlow = viewModel.commentLikeFlow,
-                reportReasons = viewModel.reportReason,
-                isAlreadyLogin = SettingsRepository.isAlreadyLogin,
-                onRefresh = { viewModel.getCommentReply(currentCommentId) },
-                onReply = { _, text ->
-                    viewModel.postReply(currentCommentId, text)
-                },
-                onReport = { comment, reason ->
-                    viewModel.reportComment(
-                        reason.reasonKey ?: reason.value,
-                        viewModel.currentUserId,
-                        "${SettingsRepository.baseUrl}watch?v=${viewModel.code}",
-                        comment.reportableType,
-                        comment.reportableId,
-                    )
-                },
-                onThumbUp = { comment ->
-                    viewModel.likeChildComment(
-                        true, 0, comment,
-                        likeCommentStatus = comment.post.likeCommentStatus,
-                    )
-                },
-                onThumbDown = { comment ->
-                    viewModel.likeChildComment(
-                        false, 0, comment,
-                        unlikeCommentStatus = comment.post.unlikeCommentStatus,
-                    )
-                },
-                onCommentLikeSuccess = viewModel::handleCommentLike,
-                onReplyStateChange = { isReplying ->
-                    if (isReplying) {
-                        scope.launch { childSheetState.expand() }
-                    }
-                },
-            )
-        }
-    }
-
     HanimeScaffold(
         topBarWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
         title = stringResource(Res.string.latest_hanime_comment, route.date),
@@ -197,6 +112,10 @@ fun PreviewCommentRouteScreen(
             commentsFlow = comments,
             commentStateFlow = commentState,
             reportMessageFlow = reportMessages,
+            postCommentStateFlow = viewModel.postCommentFlow,
+            postReplyStateFlow = viewModel.postReplyFlow,
+            replyThreadsFlow = viewModel.replyThreads,
+            onLoadReplies = viewModel::loadReplies,
             currentSortType = viewModel.currentSortType,
             reportReasons = viewModel.reportReason,
             isPreviewCommentPrefetched = hasPrefetchedComments,
@@ -256,12 +175,6 @@ fun PreviewCommentRouteScreen(
                         comment,
                         unlikeCommentStatus = comment.post.unlikeCommentStatus
                     )
-                }
-            },
-            onViewMoreReplies = { comment ->
-                comment.replyTargetIdOrNull?.let {
-                    childCommentId = it
-                    viewModel.setChildCommentId(route.dateCode, it)
                 }
             },
             onSortChange = viewModel::setSortType,

@@ -38,22 +38,11 @@ import lovehan1me.cancel
 import lovehan1me.ic_remove_circle
 import lovehan1me.ic_check_circle
 import lovehan1me.ic_send
+import lovehan1me.close
+import lovehan1me.ic_close
 import lovehan1me.core.domain.model.ReportReason
 import lovehan1me.ui.component.HapticTextButton as TextButton
 
-
-/**
- * 评论输入对话框。
- *
- * 用于输入评论内容的弹窗，包含输入框和确认/取消按钮。
- *
- * @param text 输入框当前文本状态
- * @param onTextChange 文本变化回调
- * @param onSend 发送回调
- * @param placeholder 输入框 hint
- * @param modifier 修饰器
- *
- */
 
 @Composable
 fun CommentReplyBar(
@@ -62,6 +51,7 @@ fun CommentReplyBar(
     onSend: () -> Unit,
     placeholder: String,
     modifier: Modifier = Modifier,
+    onClose: (() -> Unit)? = null,
 ) {
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
@@ -89,6 +79,23 @@ fun CommentReplyBar(
                     .padding(horizontal = 4.dp, vertical = 4.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                // 桌面没有系统返回键，触屏也没有"点别处收起"，只能靠这个 X 退出输入态。
+                onClose?.let { close ->
+                    IconButton(
+                        onClick = {
+                            keyboardController?.hide()
+                            close()
+                        },
+                        modifier = Modifier.size(48.dp),
+                    ) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_close),
+                            contentDescription = stringResource(Res.string.close),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                }
                 OutlinedTextField(
                     value = text,
                     onValueChange = onTextChange,

@@ -54,7 +54,6 @@ import lovehan1me.core.domain.state.DownloadState
 import lovehan1me.ui.component.CardContainerSurface
 import lovehan1me.ui.component.FilledTonalIconButton
 import lovehan1me.ui.component.IconButton
-import lovehan1me.feature.preview.fakeHomePageVideos
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction
 import lovehan1me.core.util.formatFileSize
