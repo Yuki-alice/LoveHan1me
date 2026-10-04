@@ -2,22 +2,29 @@ package lovehan1me.core.util
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.ExperimentalComposeUiApi
 import androidx.compose.ui.platform.ClipEntry
+import kotlinx.coroutines.launch
 import lovehan1me.Res
 import lovehan1me.copy_to_clipboard
-import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
 
-// P6d-4：iOS 剪贴板暂降级 no-op（复制无效果，UI 有 toast 反馈）；真实现随 P7 平台能力收口
-actual fun createTextClipEntry(text: String): ClipEntry? = null
+// C3a：iOS 剪贴板真实现（common 工厂，底层走 UIPasteboard）。
+@OptIn(ExperimentalComposeUiApi::class)
+actual fun createTextClipEntry(text: String): ClipEntry? = ClipEntry.withPlainText(text)
 
-// M3：iOS 分享面板（UIActivityViewController）随 M-后续接入，当前降级为复制链接 + toast。
+// C3b：iOS 文本走系统分享面板（title 无处可放，签名保留兼容）。
+// iPad 无安全呈现路径（见 presentActivitySheet）：退到复制 + toast。
 @Composable
 actual fun rememberShareText(): (String, String?) -> Unit {
     val copyTextToClipboard = rememberCopyTextToClipboard()
     val scope = rememberCoroutineScope()
     return { content, _ ->
-        copyTextToClipboard(content)
-        scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
+        if (isPad()) {
+            copyTextToClipboard(content)
+            scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
+        } else {
+            scope.launch { presentActivitySheet(listOf(content)) }
+        }
     }
 }

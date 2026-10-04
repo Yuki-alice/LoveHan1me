@@ -6,10 +6,12 @@ import kotlinx.cinterop.usePinned
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
+import lovehan1me.core.util.presentActivitySheet
 import platform.Foundation.NSData
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
 import platform.Foundation.NSSearchPathForDirectoriesInDomains
+import platform.Foundation.NSURL
 import platform.Foundation.NSUserDomainMask
 import platform.Foundation.create
 import platform.Photos.PHAuthorizationStatusAuthorized
@@ -29,8 +31,9 @@ import kotlin.coroutines.resume
  * `LSSupportsOpeningDocumentsInPlace`**，Documents 下的产物会直接出现在「文件」App 里，
  * 是相簿之外的第二可见位置。
  *
- * 分享面板（`UIActivityViewController`）本项目**尚未接入**，故这里返回
- * [MediaExportOutcome.SavedOnly] 并提示位置。**这不是失败**，是当前平台能力的如实反映。
+ * 分享面板（`UIActivityViewController`，见 `presentActivitySheet`）：
+ * 完成即 [MediaExportOutcome.Shared]，取消/唤起失败落回 SavedOnly
+ * （文件已落盘，只差临门一脚，不算失败）。
  */
 @OptIn(ExperimentalForeignApi::class)
 actual suspend fun exportMediaAndShare(
@@ -57,12 +60,16 @@ actual suspend fun exportMediaAndShare(
         if (!writeBytesAtPath("$dir/$fileName", bytes)) {
             return MediaExportOutcome.Failed("写入文件失败")
         }
+        val fileUrl = NSURL.fileURLWithPath("$dir/$fileName")
         val documentsHint = "「文件」App → 我的 iPhone → LoveHan1me/$subDir"
         // Gate4-1：截图追加相簿落点。GIF 跳过（相簿只留首帧）。
-        if (mimeType != "image/gif" && saveImageToPhotoLibrary(bytes)) {
-            return MediaExportOutcome.SavedOnly("相簿（「文件」App 亦有一份）")
+        val photoSaved = mimeType != "image/gif" && saveImageToPhotoLibrary(bytes)
+        val location = if (photoSaved) "相簿（「文件」App 亦有一份）" else documentsHint
+        return if (presentActivitySheet(listOf(fileUrl))) {
+            MediaExportOutcome.Shared(location)
+        } else {
+            MediaExportOutcome.SavedOnly(location)
         }
-        MediaExportOutcome.SavedOnly(documentsHint)
     } catch (t: Throwable) {
         MediaExportOutcome.Failed(t.message ?: "导出失败")
     }
