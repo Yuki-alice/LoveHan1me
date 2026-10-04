@@ -7,10 +7,6 @@ actual fun createHanimeHttpClient(): HttpClient = HttpClient(OkHttp) {
     engine { preconfigured = ServiceCreator.hClient }
 }
 
-actual fun createDownloadHttpClient(): HttpClient = HttpClient(OkHttp) {
-    engine { preconfigured = ServiceCreator.downloadClient }
-}
-
 actual fun createGetchuHttpClient(): HttpClient = HttpClient(OkHttp) {
     engine { preconfigured = ServiceCreator.getchuClient }
 }

@@ -12,14 +12,10 @@ import lovehan1me.data.network.egress.EgressPurpose
  *
  * - 浏览/getchu（Api）：request 60s / connect 15s / socket 30s，对齐
  *   jvmMain `ServiceCreator.hClient` 的 call 60s / connect 15s / read 30s；
- * - 下载：不动（`createDownloadHttpClient` 在 commonMain 零调用点，且 iOS 下载走
- *   `IosDownloadWorkController` 自建 client；播放器走 AVPlayer 不经过 Ktor）。
- *   路径审计留到 Phase 4（播放器/下载联动）。
+ * - 下载走各端专路（Android WorkManager / 桌面与 iOS 自建 client），不在此列；
  * - 第三方干净 client：不动（本来就不该有预算，不同业务）。
  */
 actual fun createHanimeHttpClient(): HttpClient = createDarwinHttpClient(EgressPurpose.Api)
-
-actual fun createDownloadHttpClient(): HttpClient = createDarwinHttpClient(EgressPurpose.Download)
 
 actual fun createGetchuHttpClient(): HttpClient = createDarwinHttpClient(EgressPurpose.Api)
 

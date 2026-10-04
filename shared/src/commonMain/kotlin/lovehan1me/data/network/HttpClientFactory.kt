@@ -12,8 +12,6 @@ import io.ktor.client.HttpClient
  */
 expect fun createHanimeHttpClient(): HttpClient
 
-expect fun createDownloadHttpClient(): HttpClient
-
 expect fun createGetchuHttpClient(): HttpClient
 
 /**
