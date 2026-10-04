@@ -77,6 +77,19 @@ import lovehan1me.cancel
 import lovehan1me.network
 import lovehan1me.debug
 import lovehan1me.builtin_dns
+import lovehan1me.egress_tri_melted
+import lovehan1me.egress_tri_unstable
+import lovehan1me.egress_tri_no_route
+import lovehan1me.egress_force_mode
+import lovehan1me.egress_force_auto
+import lovehan1me.egress_force_gate
+import lovehan1me.egress_force_direct
+import lovehan1me.egress_force_proxy
+import lovehan1me.egress_force_direct_warning
+import lovehan1me.egress_diagnostics
+import lovehan1me.egress_diagnostics_empty
+import lovehan1me.egress_copy
+import lovehan1me.egress_close
 import lovehan1me.ic_delay
 import lovehan1me.ic_dns
 import lovehan1me.ic_domain
@@ -85,8 +98,10 @@ import lovehan1me.ic_hosts
 import lovehan1me.ic_router
 import lovehan1me.ic_vpn
 import lovehan1me.core.util.isDebugBuild
+import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.data.network.DohConfig
 import lovehan1me.data.network.HProxyTypes
+import lovehan1me.data.network.egress.ForceMode
 import lovehan1me.ui.component.ChoiceDialog
 import lovehan1me.ui.component.SettingNavigationItem
 import lovehan1me.ui.component.SettingSwitchItem
@@ -123,6 +138,12 @@ data class DohTestResultUi(
     val ips: List<String>,
     val delay: Int,
     val message: String,
+)
+
+/** 诊断事件行（Route 预排版，Screen 只展示）。 */
+data class EgressEventUi(
+    val title: String,
+    val detail: String,
 )
 
 enum class ProxyTypeOption(val value: Int) {
@@ -169,12 +190,25 @@ fun NetworkSettingsScreen(
     onDismissDohTest: () -> Unit,
     onApplyProxy: (Int, String, Int) -> Unit,
     embedded: Boolean = false,
+    forceMode: String = ForceMode.Auto.name,
+    onForceModeChange: (String) -> Unit = {},
+    egressEvents: List<EgressEventUi> = emptyList(),
+    egressExportText: String = "",
 ) {
     var showDomainDialog by rememberSaveable { mutableStateOf(false) }
     var showProxyDialog by rememberSaveable { mutableStateOf(false) }
     var showDohDialog by rememberSaveable { mutableStateOf(false) }
     var showCustomHostsDialog by rememberSaveable { mutableStateOf(false) }
     var showCustomMirrorSiteDialog by rememberSaveable { mutableStateOf(false) }
+    var showForceModeDialog by rememberSaveable { mutableStateOf(false) }
+    var showEgressDiagnostics by rememberSaveable { mutableStateOf(false) }
+    val copyText = rememberCopyTextToClipboard()
+    val forceModeName = when (forceMode) {
+        ForceMode.ForceGate.name -> stringResource(Res.string.egress_force_gate)
+        ForceMode.ForceDirect.name -> stringResource(Res.string.egress_force_direct)
+        ForceMode.ForceProxy.name -> stringResource(Res.string.egress_force_proxy)
+        else -> stringResource(Res.string.egress_force_auto)
+    }
 
     if (showDomainDialog) {
         NetworkChoiceDialog(
@@ -241,6 +275,32 @@ fun NetworkSettingsScreen(
                 onSaveCustomMirrorSite(enabled, url, appendPath)
             },
             onTest = onTestCustomMirrorSite,
+        )
+    }
+
+    if (showForceModeDialog) {
+        NetworkChoiceDialog(
+            title = stringResource(Res.string.egress_force_mode),
+            selectedValue = forceMode,
+            options = listOf(
+                ForceMode.Auto.name to stringResource(Res.string.egress_force_auto),
+                ForceMode.ForceGate.name to stringResource(Res.string.egress_force_gate),
+                ForceMode.ForceDirect.name to stringResource(Res.string.egress_force_direct),
+                ForceMode.ForceProxy.name to stringResource(Res.string.egress_force_proxy),
+            ),
+            onDismiss = { showForceModeDialog = false },
+            onSelect = {
+                showForceModeDialog = false
+                onForceModeChange(it)
+            },
+        )
+    }
+
+    if (showEgressDiagnostics) {
+        EgressDiagnosticsDialog(
+            events = egressEvents,
+            onCopy = { copyText(egressExportText) },
+            onDismiss = { showEgressDiagnostics = false },
         )
     }
 
@@ -311,6 +371,16 @@ fun NetworkSettingsScreen(
                     onCheckedChange = onUseEchGateChange,
                 )
                 SettingNavigationItem(
+                    title = stringResource(Res.string.egress_force_mode),
+                    summary = if (forceMode == ForceMode.ForceDirect.name) {
+                        "$forceModeName\n${stringResource(Res.string.egress_force_direct_warning)}"
+                    } else {
+                        forceModeName
+                    },
+                    iconRes = Res.drawable.ic_vpn,
+                    onClick = { showForceModeDialog = true },
+                )
+                SettingNavigationItem(
                     title = stringResource(Res.string.custom_hosts),
                     summary = if (customHostsData.isBlank()) stringResource(Res.string.custom_hosts_empty_summary) else customHostsData.take(60),
                     iconRes = Res.drawable.ic_edit_square,
@@ -341,6 +411,13 @@ fun NetworkSettingsScreen(
                         summary = stringResource(Res.string.test_doh_summary),
                         iconRes = Res.drawable.ic_router,
                         onClick = onOpenDohTest,
+                    )
+                    SettingNavigationItem(
+                        title = stringResource(Res.string.egress_diagnostics),
+                        summary = if (egressEvents.isEmpty()) stringResource(Res.string.egress_diagnostics_empty)
+                        else "${egressEvents.size}",
+                        iconRes = Res.drawable.ic_router,
+                        onClick = { showEgressDiagnostics = true },
                     )
                 }
             }
@@ -569,6 +646,54 @@ private fun DohTestDialog(
             }
         },
         dismissButton = {},
+    )
+}
+
+/**
+ * 出站诊断窗：近端事件流（与上报同源）。只展示、不决策；
+ * "复制"把同一份导出文本送进剪贴板，报障时粘出来即复现。
+ */
+@Composable
+private fun EgressDiagnosticsDialog(
+    events: List<EgressEventUi>,
+    onCopy: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.egress_diagnostics)) },
+        text = {
+            if (events.isEmpty()) {
+                Text(stringResource(Res.string.egress_diagnostics_empty))
+            } else {
+                LazyColumn(
+                    modifier = Modifier.heightIn(max = 320.dp),
+                    enableItemAnimation = false,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    items(events, key = { it.title + it.detail }) { item ->
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            Text(item.title, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                text = item.detail,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onCopy) {
+                Text(stringResource(Res.string.egress_copy))
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text(stringResource(Res.string.egress_close))
+            }
+        },
     )
 }
 
