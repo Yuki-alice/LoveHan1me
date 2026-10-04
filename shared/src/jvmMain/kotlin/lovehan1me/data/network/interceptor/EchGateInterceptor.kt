@@ -7,11 +7,22 @@ import lovehan1me.data.network.EchGateContract
 import lovehan1me.data.network.EchGatePolicy
 import lovehan1me.data.network.EchGateRuntime
 import lovehan1me.data.network.HCookieJar
-import lovehan1me.data.network.egress.EgressAttempt
-import lovehan1me.data.network.egress.EgressPlanner
+import lovehan1me.data.network.egress.AttemptOutcome
+import lovehan1me.data.network.egress.DomainClass
+import lovehan1me.data.network.egress.EgressBudgets
+import lovehan1me.data.network.egress.EgressPurpose
+import lovehan1me.data.network.egress.EgressReporter
 import lovehan1me.data.network.egress.EgressRequest
-import lovehan1me.data.network.egress.GateHealthHolder
+import lovehan1me.data.network.egress.EgressScheduler
+import lovehan1me.data.network.egress.GateSkipReason
+import lovehan1me.data.network.egress.NoRouteException
+import lovehan1me.data.network.egress.RouteId
+import lovehan1me.data.network.egress.RouteAttempt
+import lovehan1me.data.network.egress.RouteRegistry
+import lovehan1me.data.network.egress.ScheduledPlan
+import lovehan1me.data.network.egress.classifyDomain
 import lovehan1me.data.network.egress.currentEgressState
+import lovehan1me.data.network.egress.currentForceMode
 import lovehan1me.data.network.egress.gateBlameAfterYield
 import lovehan1me.data.network.egress.isGateBlockedCode
 import lovehan1me.data.network.egress.isIdempotent
@@ -22,92 +33,132 @@ import okhttp3.Response
 import java.io.IOException
 
 /**
- * 按 [EgressPlanner] 给出的**有序候选**依次尝试出口。
+ * 调度执行器（原网关拦截器，Phase 2 改写为通用执行器，类名保留以收敛改动面）。
  *
  * ## 本类不做任何出口判定
- * 判定（该不该用网关、失败了下一步走哪）全在 [EgressPlanner]；改写规则在
- * [EchGatePolicy]。本类只把 `EgressPlan.attempts` 走一遍 —— 与 Ktor 插件、图片插件、
- * 播放器共用同一份计划与同一套记账。
- * 此前"失败后下一步走哪"写死在下面三段 if 里，另外两处执行器各抄一份且抄得不一样。
+ * 判定（排哪几条路、什么顺序、每步多少预算）全在 [EgressScheduler]；改写规则在
+ * [EchGatePolicy]。本类只把 `ScheduledPlan.attempts` 走一遍 —— 与 Darwin 插件（Phase 3 切流）
+ * 共用同一份计划与同一套记账。
  *
- * ## 三个必须手动补的洞
- * 1. **Cookie**：改写后 OkHttp 的 CookieJar 按 `127.0.0.1` 匹配域名，登录态与
- *    `cf_clearance` 全部拿不到 ⇒ 这里按**原域名**取出来塞进 `Cookie` 头。
- * 2. **Set-Cookie**：响应按 `127.0.0.1` 存下来，原域名就再也取不到 ⇒ 用原 URL 重新解析存回去。
- * 3. **"连上了但被阻断"**：网关的出口被封时返回的是 403 而不是异常。这类响应看起来像
- *    站点问题（`you have been blocked` / `Just a moment`），而用户手里可能有一条**能用的代理**
- *    —— 这时让位给 [EgressAttempt.Yield]，由 [gateBlameAfterYield] 判定网关是否有责。
+ * ## 从旧实现原样保留的三个洞
+ * 1. **Cookie**：改写后按 `127.0.0.1` 匹配域名，登录态与 `cf_clearance` 拿不到 ⇒
+ *    按**原域名**取出来塞进 `Cookie` 头；
+ * 2. **Set-Cookie**：响应按 `127.0.0.1` 存下来，原域名就再也取不到 ⇒ 用原 URL 重新解析存回去；
+ * 3. **"连上了但被阻断"**：网关出口被封时返回 403 而不是异常。有后路（代理/直连）时让位，
+ *    由 [gateBlameAfterYield] 判定网关是否有责；**没后路时原样交出去** —— 那多半是 CF 挑战，
+ *    `NetworkRepo` 要靠它的 body 触发验证窗，吃掉它等于把验证链掐断。
  *
- * ## 网关的失败分两类，都不让它成为单点
- * - 网关抛 [IOException]（进程挂了 / 端口没监听）、或回自己的上游错误页（502 + `echgate:` 前缀）
- *   ⇒ 记一次普通失败，试下一个候选；
- * - 网关回 403（出口被封）⇒ 让位，不再反复撞它。
+ * ## 记账
+ * 每步结局上报 [EgressReporter]（按域健康 + 诊断事件）：网关出口被封只熔该域，
+ * getchu 挂不再连累 hanime。旧全局熔断器已随旧 planner 删除。
+ *
+ * ## 预算的执行边界（诚实说明）
+ * [attempt.budgetMs] 在 attempt 边界与重试门控处执行（502 重试前自查超支即停）；
+ * socket 级硬上限仍是各 client 的 connect/read/call 超时（Phase 2 已按用途补齐）。
+ * 在途 IO 不能被抢占 —— 这是 OkHttp 同步链的固有限制，不撒谎。
  */
 class EchGateInterceptor(
     /**
-     * 是否按原域名注入站点 Cookie。
+     * 是否按原域名注入站点 Cookie（见类 KDoc 第一个洞）。
      *
      * 图片/封面链必须传 false：`loadForRequest` 会把 `hanime1_session` 一类的登录态
-     * 一并取出，而那些图床（`vdownload.hembed.com` → CDN77）是**第三方**——
-     * 把会话凭据发过去没有任何用途，只有泄漏风险。
+     * 一并取出，而那些图床是**第三方**——把会话凭据发过去没有任何用途，只有泄漏风险。
      * 需要登录态的链（浏览 / 评论 / 我的列表 / 下载）保持默认 true。
      */
     private val attachSiteCookies: Boolean = true,
+    /**
+     * 本链的默认用途（决定预算档位）。各 client 按职责传入
+     * （浏览/ getchu = Api，下载 = Download，图片 = Image）；调用方可用
+     * `request.tag(EgressPurpose::class.java)` 覆盖单次请求。
+     */
+    private val defaultPurpose: EgressPurpose = EgressPurpose.Api,
 ) : Interceptor {
 
     override fun intercept(chain: Interceptor.Chain): Response {
         val request = chain.request()
-
-        // 熔断中：不接管、也不为它等待。等价于网关不存在，本次直接走原出口。
-        // （顺带省掉下面那笔 8s 就绪等待 —— 熔断期间每个请求都白等是纯亏。）
-        val now = currentEpochMillis()
-        if (GateHealthHolder.current.isOpen(now)) return chain.proceed(request)
+        val purpose = request.tag(EgressPurpose::class.java) ?: defaultPurpose
+        val url = request.url.toString()
+        val domain = classifyDomain(url, purpose)
 
         // 冷启动竞态：网关被要求启动但 LISTENING 未到时，首页请求会抢跑直连撞 RST，
         // 表现为"封面首刷失败、再滑回来又好"。拉起中有界等待，图片与列表统一处理。
+        // （位置不变，仍在计划前；计划内各步预算另计。）
         EchGateRuntime.awaitReadyIfStarting()
 
-        val intent = EgressRequest(request.url.toString(), request.method)
-        val plan = EgressPlanner.plan(intent, currentEgressState(now))
+        val now = currentEpochMillis()
+        val intent = EgressRequest(url, request.method, purpose, currentForceMode())
+        val plan = EgressScheduler.plan(intent, currentEgressState(), RouteRegistry.healthOf(domain), now)
+        if (plan.isEmpty) throw NoRouteException(domain, describeEmpty(plan))
         val jar = HCookieJar()
 
-        // 网关那次拿到的"出口被封"状态码；让位时要拿它跟让位结果比对。
+        // 网关那次拿到的"出口被封"状态码；有后路时拿它跟后路结果比对定责。
         var blockedCode = 0
+        var blockedBudgetMs = -1L
+        var gateBlamePending = false
 
-        for (attempt in plan.attempts) {
-            when (attempt) {
-                is EgressAttempt.Passthrough -> {
-                    plan.skipped?.let { LogUtil.d(TAG, "不经网关（$it）${request.url.host}") }
-                    return chain.proceed(request)
-                }
-
-                is EgressAttempt.Gate -> when (val step = tryGate(chain, request, attempt, jar, intent)) {
+        for ((index, attempt) in plan.attempts.withIndex()) {
+            // 只有身后还有非网关后路时，403 才按"出口被封"挂起比对；否则原样交出去
+            // （多半是 CF 挑战，NetworkRepo 要靠它触发验证窗）。
+            val hasLaterRoute = plan.attempts.drop(index + 1).any { it.route != RouteId.Gate }
+            when (attempt.route) {
+                RouteId.Gate -> when (val step = tryGate(chain, request, attempt, jar, intent, domain, hasLaterRoute)) {
                     is GateStep.Done -> return step.response
-                    is GateStep.Blocked -> blockedCode = step.code
+                    is GateStep.Blocked -> {
+                        blockedCode = step.code
+                        blockedBudgetMs = attempt.budgetMs
+                        gateBlamePending = true
+                    }
                     GateStep.Next -> Unit
                 }
 
-                EgressAttempt.Yield -> {
-                    LogUtil.w(TAG, "网关返回 $blockedCode，经代理路径重试一次 ${request.url.host}")
-                    val viaProxy = runCatching { chain.proceed(request) }.getOrNull()
-                    if (viaProxy == null) {
-                        // 让位路径直接抛了：按普通网关失败处理（非阻断，累计口径），
-                        // 循环走到头后由下面那句兜底再走一遍原路。
-                        GateHealthHolder.recordFailure(currentEpochMillis(), blocking = false)
-                        continue
+                RouteId.UserProxy, RouteId.SystemProxy, RouteId.Direct -> {
+                    val startNs = System.nanoTime()
+                    val via = try {
+                        chain.proceed(request)
+                    } catch (e: IOException) {
+                        // 调用方主动取消（Coil 滑走、关窗 teardown）不是路的问题：
+                        // 不喂熔断器，直接抛。否则取消风暴会把好端端的网关熔断，
+                        // 下一个请求诚实失败 —— 2026-10-04 桌面崩溃的完整链条。
+                        if (isCallCanceled(chain)) throw e
+                        // 让位路径直接抛了：本步记传输失败；挂起的网关指控按普通失败记
+                        // （非阻断口径），循环走到头后由兜底再走一遍原路。
+                        report(attempt.route, domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
+                        if (gateBlamePending) {
+                            gateBlamePending = false
+                            reportGate(domain, AttemptOutcome.TransportError, -1L, blockedBudgetMs)
+                        }
+                        throw e
                     }
-                    if (gateBlameAfterYield(viaProxy.code, blockedCode)) {
-                        GateHealthHolder.recordFailure(currentEpochMillis(), blocking = true)
-                        LogUtil.w(TAG, "代理路径可用（${viaProxy.code}），网关退出接管")
-                    } else {
-                        LogUtil.d(TAG, "代理路径同样 $blockedCode，网关无责 ${request.url.host}")
+                    val rttMs = (System.nanoTime() - startNs) / 1_000_000
+                    report(attempt.route, domain, AttemptOutcome.Success, rttMs, attempt.budgetMs)
+                    if (gateBlamePending) {
+                        gateBlamePending = false
+                        if (gateBlameAfterYield(via.code, blockedCode)) {
+                            reportGate(domain, AttemptOutcome.Blocked, -1L, blockedBudgetMs)
+                            LogUtil.w(TAG, "代理路径可用（${via.code}），网关退出接管")
+                        } else {
+                            LogUtil.d(TAG, "代理路径同样 $blockedCode，网关无责 ${request.url.host}")
+                        }
                     }
-                    return finishGateResponse(viaProxy, request.url, jar)
+                    return finishGateResponse(via, request.url, jar)
                 }
+
+                // HTTP 层没有隧道执行器（隧道是播放器/CF 验证窗的事）：计划里本不该出现，
+                // 出现则跳过，不把请求打断在这里。
+                RouteId.GateTunnel -> Unit
             }
         }
-        // 候选全部不可用：交给传输层自己再走一遍原路（DNS / 代理选择器该怎样就怎样）。
-        return chain.proceed(request)
+        if (gateBlamePending) {
+            // 防御分支：网关在末位、身后无后路时上游已直接 Done，正常到不了这里。
+            // 真到了说明判定与执行脱节，按阻断记并打日志，避免静默漏记。
+            LogUtil.w(TAG, "网关阻断后无后路可比对，按有责记账 ${request.url.host}")
+            reportGate(domain, AttemptOutcome.Blocked, -1L, blockedBudgetMs)
+        }
+        // 候选全部 Next（网关 502 两次 / 异常）：受限域上不再撞直连，诚实失败。
+        // 直连本就允许的计划（开关关闭 / 第三方）走不到这里 —— 它们的 Direct 步要么返回响应，
+        // 要么抛传输异常（由外层 Retry 按原语义处理）。NoRoute 不是 IOException，
+        // 外层 Retry 与 Ktor 都不会重跑它，直达 UI。
+        throw NoRouteException(domain, "候选出口全部不可用（${plan.domain}）")
     }
 
     /** 单个候选出口的结局。 */
@@ -115,7 +166,7 @@ class EchGateInterceptor(
         /** 拿到了可用的响应，本次请求结束。 */
         data class Done(val response: Response) : GateStep
 
-        /** 网关通了但出口被封（403），该让位 —— 不再重试网关。 */
+        /** 网关通了但出口被封（403），有后路时挂起比对定责。 */
         data class Blocked(val code: Int) : GateStep
 
         /** 这个出口不可用，试下一个候选。 */
@@ -125,17 +176,21 @@ class EchGateInterceptor(
     private fun tryGate(
         chain: Interceptor.Chain,
         request: okhttp3.Request,
-        attempt: EgressAttempt.Gate,
+        attempt: RouteAttempt,
         jar: HCookieJar,
         intent: EgressRequest,
+        domain: DomainClass,
+        hasLaterRoute: Boolean,
     ): GateStep {
         val originUrl = request.url
-        val gateUrl = runCatching { attempt.rewrite.url.toHttpUrl() }.getOrNull() ?: return GateStep.Next
+        val rewrite = attempt.rewrite ?: return GateStep.Next
+        val gateUrl = runCatching { rewrite.url.toHttpUrl() }.getOrNull() ?: return GateStep.Next
+        val startNs = System.nanoTime()
 
         val builder = request.newBuilder()
             .url(gateUrl)
-            .header(EchGatePolicy.TARGET_HEADER, attempt.rewrite.targetHost)
-            .header("Host", attempt.rewrite.targetHost)
+            .header(EchGatePolicy.TARGET_HEADER, rewrite.targetHost)
+            .header("Host", rewrite.targetHost)
 
         if (attachSiteCookies) {
             val cookies = runCatching { jar.loadForRequest(originUrl) }.getOrDefault(emptyList())
@@ -148,8 +203,10 @@ class EchGateInterceptor(
         val gateResponse = try {
             chain.proceed(builder.build())
         } catch (e: IOException) {
-            GateHealthHolder.recordFailure(currentEpochMillis(), blocking = false)
-            LogUtil.w(TAG, "网关异常，回退直连 ${originUrl.host} (${e.message})")
+            // 同上：取消不喂熔断。
+            if (isCallCanceled(chain)) throw e
+            reportGate(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
+            LogUtil.w(TAG, "网关异常，回退下一出口 ${originUrl.host} (${e.message})")
             return GateStep.Next
         }
 
@@ -158,14 +215,14 @@ class EchGateInterceptor(
             if (!intent.isIdempotent) {
                 // 非幂等方法既不能重试也不能让位（重发有双提交风险）：把网关这份原样交出去，
                 // 但记一次失败 —— 否则"POST 一直撞 502"永远攒不到熔断。
-                GateHealthHolder.recordFailure(currentEpochMillis(), blocking = false)
+                reportGate(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
                 return GateStep.Done(finishGateResponse(gateResponse, originUrl, jar))
             }
             gateResponse.close()
-            // 预算由外层 RetryInterceptor 下传：它只管 attempt 之间，管不到这里
-            // （单次 attempt 内最多三次往返 × 15s 连接超时 = 分钟级转圈）。
-            if (budgetExhausted(request)) {
-                GateHealthHolder.recordFailure(currentEpochMillis(), blocking = false)
+            // 两道预算门：外层 RetryInterceptor 下传的总预算，以及本步的单步预算。
+            // 单步预算在此处执行 —— 超支即停，不再重试网关。
+            if (budgetExhausted(request) || stepBudgetExhausted(startNs, attempt.budgetMs)) {
+                reportGate(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
                 LogUtil.w(TAG, "重试预算已耗尽，不再重试网关 ${originUrl.host}")
                 return GateStep.Next
             }
@@ -173,28 +230,63 @@ class EchGateInterceptor(
             val retried = try {
                 chain.proceed(builder.header(RETRY_HEADER, "1").build())
             } catch (e: IOException) {
-                GateHealthHolder.recordFailure(currentEpochMillis(), blocking = false)
-                LogUtil.w(TAG, "网关重试异常，回退直连 ${originUrl.host} (${e.message})")
+                if (isCallCanceled(chain)) throw e
+                reportGate(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
+                LogUtil.w(TAG, "网关重试异常，回退下一出口 ${originUrl.host} (${e.message})")
                 return GateStep.Next
             }
             if (isGatewayErrorPage(retried)) {
                 retried.close()
-                GateHealthHolder.recordFailure(currentEpochMillis(), blocking = false)
-                LogUtil.w(TAG, "网关重试仍失败，回退直连 ${originUrl.host}")
+                reportGate(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
+                LogUtil.w(TAG, "网关重试仍失败，回退下一出口 ${originUrl.host}")
                 return GateStep.Next
             }
-            GateHealthHolder.recordSuccess()
+            reportGate(domain, AttemptOutcome.Success, elapsedMs(startNs), attempt.budgetMs)
             return GateStep.Done(finishGateResponse(retried, originUrl, jar))
         }
 
-        // 连上了、但像是"出口被封"
-        if (attempt.onProbation && intent.isIdempotent && isGateBlockedCode(gateResponse.code)) {
+        // 连上了、但像是"出口被封"：有后路才挂起比对；没后路原样交出去
+        // （多半是 CF 挑战，body 必须到达 NetworkRepo）。
+        if (hasLaterRoute && intent.isIdempotent && isGateBlockedCode(gateResponse.code)) {
             gateResponse.close()
             return GateStep.Blocked(gateResponse.code)
         }
 
-        GateHealthHolder.recordSuccess()
+        reportGate(domain, AttemptOutcome.Success, elapsedMs(startNs), attempt.budgetMs)
         return GateStep.Done(finishGateResponse(gateResponse, originUrl, jar))
+    }
+
+    /** 调用方是否主动取消了本次呼叫（见 intercept 的取消注释）。 */
+    private fun isCallCanceled(chain: Interceptor.Chain): Boolean =
+        runCatching { chain.call().isCanceled() }.getOrDefault(false)
+
+    /** 本步上报：新注册表（按域）是唯一的记账处（旧全局熔断器已随旧 planner 删除）。 */
+    private fun reportGate(domain: DomainClass, outcome: AttemptOutcome, rttMs: Long, budgetMs: Long = -1L) {
+        report(RouteId.Gate, domain, outcome, rttMs, budgetMs)
+    }
+
+    private fun report(route: RouteId, domain: DomainClass, outcome: AttemptOutcome, rttMs: Long, budgetMs: Long = -1L) {
+        EgressReporter.report(domain, route, outcome, rttMs, budgetMs = budgetMs)
+    }
+
+    private fun elapsedMs(startNs: Long): Long = (System.nanoTime() - startNs) / 1_000_000
+
+    private fun stepBudgetExhausted(startNs: Long, budgetMs: Long): Boolean {
+        if (budgetMs == EgressBudgets.UNLIMITED) return false
+        return elapsedMs(startNs) >= budgetMs
+    }
+
+    /** 表空的原因人话（抛给上层前组装，见 [NoRouteException]）。 */
+    private fun describeEmpty(plan: ScheduledPlan): String {
+        val gatePart = when (plan.skipped) {
+            GateSkipReason.Disabled -> "网关已关闭"
+            GateSkipReason.NotRunning -> "网关未运行"
+            GateSkipReason.CircuitOpen -> "网关熔断中"
+            GateSkipReason.NotHttps, GateSkipReason.LoopbackOrLiteral, GateSkipReason.InvalidUrl ->
+                "该 URL 不适用网关"
+            null -> "网关不可用"
+        }
+        return "$gatePart，且未配置可用代理（${plan.domain}）"
     }
 
     /** 网关响应的收尾：Set-Cookie 按原域名存回（见类 KDoc 第二个洞）。 */

@@ -718,31 +718,26 @@ object NetworkRepo {
     internal suspend fun HttpResponse.throwRequestException(): Nothing {        // suspend 后可直接读 body（仍在 flowOn(IO) 上执行）
         val body = runCatching { bodyAsText() }.getOrNull()
         when (val code = status.value) {
-            403 -> if (!body.isNullOrBlank()) {
+            403 -> {
+                // CF 触发单点：header 路径（原 Android 拦截器认 `cf-mitigated: challenge`）
+                // 与 body 标记路径在此会合，同一总线、同一等待、同一续跑。顺序在 body 之前：
+                // 边缘直接拒时 body 可能为空，原先会掉进下面的"空 body 抛错"分支。
+                if (headers["cf-mitigated"] == "challenge") fireCfChallenge(call.request.url.toString(), code)
+                else if (!body.isNullOrBlank()) {
                 when {
                     "you have been blocked" in body ->
                         throw IPBlockedException(getString(Res.string.cloudflare_ip_block_warning))
 
                     "Just a moment" in body -> {
-                        // 三端统一 CF 恢复触发（桌面 CDP 窗 / iOS WKWebView 槽位至此可达；
-                        // Android 拦截器链路不受影响，见 CloudflareChallenges 文档）。
-                        val url = call.request.url.toString()
-                        // 先把这把死钥匙丢掉再开窗：命中挑战说明它已过期或出口 IP 变了，
-                        // 留着它既会让下面的诊断日志谎报"有凭据"，也会让下一次请求继续裸奔。
-                        runCatching {
-                            SettingsRepository.clearCloudFlareCookie(CloudflareChallenges.hostOf(url))
-                        }
-                        LogUtil.d("CF", "challenge: ${cfFailureFingerprint(url, code)}")
-                        runCatching {
-                            CloudflareChallenges.request(url)
-                        }
-                        throw CloudflareBlockedException(getString(Res.string.cloudflare_network_mismatch))
+                        // 三端统一 CF 恢复触发（桌面 CDP 窗 / iOS WKWebView 槽位至此可达）。
+                        fireCfChallenge(call.request.url.toString(), code)
                     }
 
                     else ->
                         throw HanimeNotFoundException(getString(Res.string.video_might_not_exist)) // 主要出現在影片界面，當你v數不大時會報403
                 }
             } else throw IllegalStateException("$code ${status.description}")
+            }
 
             500 -> throw HanimeNotFoundException(getString(Res.string.video_might_not_exist)) // 主要出現在影片界面，當你v數很大時會報500
 
@@ -754,6 +749,24 @@ object NetworkRepo {
 
             else -> throw IllegalStateException("$code ${status.description}")
         }
+    }
+
+    /**
+     * CF 挑战统一触发：header 路径与 body 标记路径共用。
+     *
+     * 先把这把死钥匙丢掉再开窗：命中挑战说明它已过期或出口 IP 变了，
+     * 留着它既会让下面的诊断日志谎报"有凭据"，也会让下一次请求继续裸奔。
+     * 调用方（`ioRequest`）负责等待验证结局并续跑一次，本函数只触发、不等。
+     */
+    private suspend fun fireCfChallenge(url: String, code: Int): Nothing {
+        runCatching {
+            SettingsRepository.clearCloudFlareCookie(CloudflareChallenges.hostOf(url))
+        }
+        LogUtil.d("CF", "challenge: ${cfFailureFingerprint(url, code)}")
+        runCatching {
+            CloudflareChallenges.request(url)
+        }
+        throw CloudflareBlockedException(getString(Res.string.cloudflare_network_mismatch))
     }
 
     /**

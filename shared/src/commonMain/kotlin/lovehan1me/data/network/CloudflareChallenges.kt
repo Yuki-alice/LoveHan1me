@@ -69,6 +69,14 @@ object CloudflareChallenges {
         .substringBefore(":")
         .lowercase()
 
+    /**
+     * 验证窗判定"过了"的唯一口径：必须见到精确的 [CF_CLEARANCE_NAME]。
+     *
+     * `cf_bm`（Bot Management 饼干）之类同前缀的不算 —— 拿它们当通过，
+     * 请求带着去撞挑战只会再吃一次 403，表现即"验证过了还是不行"。
+     */
+    fun hasClearance(names: Collection<String>): Boolean = CF_CLEARANCE_NAME in names
+
     fun request(url: String) {
         val host = hostOf(url)
         if (host.isBlank()) return

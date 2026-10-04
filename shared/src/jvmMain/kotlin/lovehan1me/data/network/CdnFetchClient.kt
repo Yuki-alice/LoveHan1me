@@ -1,5 +1,6 @@
 package lovehan1me.data.network
 
+import lovehan1me.data.network.egress.EgressPurpose
 import lovehan1me.data.network.interceptor.EchGateInterceptor
 import lovehan1me.data.network.interceptor.RetryInterceptor
 import okhttp3.Interceptor
@@ -63,10 +64,13 @@ internal fun evictCdnConnectionPools() {
 
 private fun buildCdnFetchClient(connectTimeoutSeconds: Long): OkHttpClient = OkHttpClient.Builder()
     .connectTimeout(connectTimeoutSeconds, TimeUnit.SECONDS)
+    // 图片是小二进制：读停滞 15s / 整呼叫 30s 还没完就是死了（与 Image 预算 30s 同口径）。
+    .readTimeout(15, TimeUnit.SECONDS)
+    .callTimeout(30, TimeUnit.SECONDS)
     // 重试放最外层：要重跑整条链（含网关改写），不是只重放最内层的网络调用。
     .addInterceptor(RetryInterceptor())
     .dns(HanimeDns.SHARED)
     .proxySelector(HanimeProxySelector.SHARED)
     // 不注入站点 Cookie：图床是第三方，登录态发过去只有泄漏风险，没有用途。
-    .addInterceptor(EchGateInterceptor(attachSiteCookies = false))
+    .addInterceptor(EchGateInterceptor(attachSiteCookies = false, defaultPurpose = EgressPurpose.Image))
     .build()

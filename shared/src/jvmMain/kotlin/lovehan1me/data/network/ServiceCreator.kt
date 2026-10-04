@@ -1,5 +1,6 @@
 package lovehan1me.data.network
 
+import lovehan1me.data.network.egress.EgressPurpose
 import lovehan1me.data.network.interceptor.EchGateInterceptor
 import lovehan1me.data.network.interceptor.GetchuInterceptor
 import lovehan1me.data.network.interceptor.RetryInterceptor
@@ -40,8 +41,13 @@ object ServiceCreator {
     /**
      * 网关未运行时它自己放行直连，所以常驻拦截器列表是安全的
      * （见 [EchGateInterceptor] 的说明）。
+     *
+     * 各链按职责配用途（决定调度预算档位，见 [EgressPurpose]）：浏览/getchu = Api，
+     * 下载 = Download。调用方可用 `request.tag(EgressPurpose::class.java)` 覆盖单次。
      */
-    private val echGateInterceptor = EchGateInterceptor()
+    private val apiGateInterceptor = EchGateInterceptor(defaultPurpose = EgressPurpose.Api)
+
+    private val downloadGateInterceptor = EchGateInterceptor(defaultPurpose = EgressPurpose.Download)
 
     /**
      * 传输层重试（幂等方法 + 连接类异常），见 [RetryInterceptor]。
@@ -98,11 +104,14 @@ object ServiceCreator {
     private fun buildGetchuClient(): OkHttpClient {
         return OkHttpClient.Builder()
             .connectTimeout(15, TimeUnit.SECONDS)
+            // 与 hClient 同档：getchu 全是 HTML 小响应，读停滞一样 fast-fail。
+            .readTimeout(30, TimeUnit.SECONDS)
+            .callTimeout(60, TimeUnit.SECONDS)
             .addInterceptor(retryInterceptor)
             .addInterceptor(UrlLoggingInterceptor())
             .addInterceptor(GetchuInterceptor())
             // getchu 同样可能被 SNI 阻断：网关未运行时放行零开销，运行时走普通 TLS 策略。
-            .addInterceptor(echGateInterceptor)
+            .addInterceptor(apiGateInterceptor)
             .cookieJar(CookieJar.NO_COOKIES)
             .proxySelector(HanimeProxySelector.SHARED)
             .dns(dns)
@@ -113,12 +122,14 @@ object ServiceCreator {
         return OkHttpClient.Builder()
             .connectTimeout(5, TimeUnit.SECONDS)
             .protocols(listOf(Protocol.HTTP_1_1))
+            // 刻意不加 read/call：长连接传文件不能掐（慢流会被误杀），与 Download 预算
+            // UNLIMITED 同语义；连接阶段由 connect 5s + Retry 总预算兜底。
             .addInterceptor(retryInterceptor)
             .addInterceptor(UserAgentInterceptor)
             .addInterceptor(downloadSpeedLimitInterceptor)
             // 视频直链同样被 SNI 阻断（CDN77 走网关 CNAME 策略）：下载必须与浏览同出口。
             // 失败时 EchGateInterceptor 自己回退直连，不会把下载卡死在网关上。
-            .addInterceptor(echGateInterceptor)
+            .addInterceptor(downloadGateInterceptor)
             // 与浏览同一出口：站点直连被重置时，"能看不能下"就是代理没跟过来
             .proxySelector(HanimeProxySelector.SHARED)
             .dns(dns)
@@ -141,7 +152,7 @@ object ServiceCreator {
             .addInterceptor(UserAgentInterceptor)
             .addInterceptor(UrlLoggingInterceptor())
             // 放在日志之后：日志记录的是改写前的真实 URL，排查时才有意义。
-            .addInterceptor(echGateInterceptor)
+            .addInterceptor(apiGateInterceptor)
             .cache(cache)
             .cookieJar(HCookieJar())
             .proxySelector(HanimeProxySelector.SHARED)

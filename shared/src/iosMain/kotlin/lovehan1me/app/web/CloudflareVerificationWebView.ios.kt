@@ -13,6 +13,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.UIKitView
 import lovehan1me.core.constant.USER_AGENT
+import lovehan1me.data.network.CloudflareChallenges
 import lovehan1me.data.network.IosCookieBridge
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -65,7 +66,7 @@ fun CloudflareVerificationWebView(
             delay(1_500)
             val extracted = extractCookies()
             IosCookieBridge.put(extracted)
-            val verified = IosCookieBridge.snapshot().keys.any { it.startsWith("cf_") }
+            val verified = CloudflareChallenges.hasClearance(IosCookieBridge.snapshot().keys)
             if (verified) {
                 // M7-2：验证产物落盘 DataStore，跨进程重启后由
                 // BridgeCookiesStorage 从持久化层恢复注入（对齐 jvm 端语义）。

@@ -3,17 +3,25 @@ package lovehan1me.data.network
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.darwin.Darwin
 import io.ktor.client.plugins.HttpRequestRetry
-import io.ktor.client.plugins.HttpRequestTimeoutException
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.cookies.HttpCookies
-import io.ktor.http.HttpMethod
-import kotlinx.io.IOException
+import lovehan1me.data.network.egress.EgressPurpose
 
-actual fun createHanimeHttpClient(): HttpClient = createDarwinHttpClient()
+/**
+ * iOS Darwin 工厂（Phase 3 超时对齐 JVM 档位）。
+ *
+ * - 浏览/getchu（Api）：request 60s / connect 15s / socket 30s，对齐
+ *   jvmMain `ServiceCreator.hClient` 的 call 60s / connect 15s / read 30s；
+ * - 下载：不动（`createDownloadHttpClient` 在 commonMain 零调用点，且 iOS 下载走
+ *   `IosDownloadWorkController` 自建 client；播放器走 AVPlayer 不经过 Ktor）。
+ *   路径审计留到 Phase 4（播放器/下载联动）。
+ * - 第三方干净 client：不动（本来就不该有预算，不同业务）。
+ */
+actual fun createHanimeHttpClient(): HttpClient = createDarwinHttpClient(EgressPurpose.Api)
 
-actual fun createDownloadHttpClient(): HttpClient = createDarwinHttpClient()
+actual fun createDownloadHttpClient(): HttpClient = createDarwinHttpClient(EgressPurpose.Download)
 
-actual fun createGetchuHttpClient(): HttpClient = createDarwinHttpClient()
+actual fun createGetchuHttpClient(): HttpClient = createDarwinHttpClient(EgressPurpose.Api)
 
 actual fun createPlainHttpClient(): HttpClient = HttpClient(Darwin) {
     install(HttpTimeout) {
@@ -21,15 +29,22 @@ actual fun createPlainHttpClient(): HttpClient = HttpClient(Darwin) {
     }
 }
 
-private fun createDarwinHttpClient(): HttpClient = HttpClient(Darwin) {
+private fun createDarwinHttpClient(purpose: EgressPurpose): HttpClient = HttpClient(Darwin) {
     // ECH 网关插件必须装在 HttpCookies 之前：改写先发生，storage 随后对回环短路。
-    installEchGate()
+    installEchGate(defaultPurpose = purpose)
     // M5-5：换 BridgeCookiesStorage——CF 验证产物经 IosCookieBridge 进入 HTTP 层
     install(HttpCookies) {
         storage = BridgeCookiesStorage()
     }
     install(HttpTimeout) {
-        requestTimeoutMillis = 15_000
+        // Api 档对齐 JVM；Download 不动（见文件 KDoc）。
+        if (purpose == EgressPurpose.Api) {
+            requestTimeoutMillis = 60_000
+            connectTimeoutMillis = 15_000
+            socketTimeoutMillis = 30_000
+        } else {
+            requestTimeoutMillis = 15_000
+        }
     }
     // 与 jvm 侧 RetryInterceptor 同语义：只重试幂等方法、只重试传输层异常。
     // 判据两端必须一致，否则同一台设备上"页面能开、视频打不开"这类分叉会换个形式回来。
@@ -38,8 +53,7 @@ private fun createDarwinHttpClient(): HttpClient = HttpClient(Darwin) {
         // 在这里再叠一层会让两套机制互相看不见。
         noRetry()
         retryOnExceptionIf(maxRetries = 2) { request, cause ->
-            val idempotent = request.method == HttpMethod.Get || request.method == HttpMethod.Head
-            idempotent && (cause is IOException || cause is HttpRequestTimeoutException)
+            shouldRetryDarwinFailure(request.method, cause)
         }
         constantDelay(300, 1_000, true)
     }

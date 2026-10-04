@@ -5,6 +5,14 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.yield
+import io.ktor.client.HttpClient
+import io.ktor.client.engine.mock.MockEngine
+import io.ktor.client.engine.mock.respond
+import io.ktor.client.request.get
+import io.ktor.client.statement.HttpResponse
+import io.ktor.http.HttpStatusCode
+import io.ktor.http.headersOf
+import lovehan1me.core.domain.exception.CloudflareBlockedException
 import lovehan1me.core.domain.model.AppSettings
 import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.core.domain.model.cfCookieFor
@@ -16,6 +24,7 @@ import okhttp3.Cookie
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
@@ -311,5 +320,51 @@ class ClearanceRequestTest {
 
         val values = HCookieJar.cookieMap[url.host].orEmpty().filter { it.name == "session" }.map { it.value }
         assertEquals(listOf("new"), values, "同名留两份会让请求随机带上新旧会话")
+    }
+}
+
+/**
+ * CF 触发单点回归（Phase 2）：header 路径（原 Android 拦截器）与 body 标记路径
+ * 在 `throwRequestException` 会合，同一总线、同一等待、同一续跑。
+ */
+class CfHeaderTriggerTest {
+
+    @Test
+    fun `cf-mitigated头403走统一触发`() {
+        runBlocking {
+            installStore()
+            val engine = MockEngine { request ->
+                respond(
+                    content = "",
+                    status = HttpStatusCode.Forbidden,
+                    headers = headersOf("cf-mitigated", "challenge"),
+                )
+            }
+            val response: HttpResponse = HttpClient(engine).get("https://cfhdr1.test/")
+            // 空 body：旧分支会掉进"空 body 抛错"，验证窗永远打不开。
+            val failure = assertFailsWith<CloudflareBlockedException> {
+                with(NetworkRepo) { response.throwRequestException() }
+            }
+            assertTrue(failure.message!!.isNotBlank())
+            assertEquals(
+                "cfhdr1.test",
+                CloudflareChallenges.requests.replayCache.last().host,
+                "触发了却没发总线，验证窗打不开等于白判",
+            )
+        }
+    }
+
+    @Test
+    fun `无挑战标记的空body403仍按原语义抛错`() {
+        runBlocking {
+            installStore()
+            val engine = MockEngine {
+                respond(content = "", status = HttpStatusCode.Forbidden)
+            }
+            val response: HttpResponse = HttpClient(engine).get("https://cfhdr2.test/")
+            assertFailsWith<IllegalStateException> {
+                with(NetworkRepo) { response.throwRequestException() }
+            }
+        }
     }
 }

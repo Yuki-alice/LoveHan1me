@@ -3,7 +3,7 @@ package lovehan1me.data.network
 import io.ktor.client.HttpClientConfig
 import io.ktor.http.Url
 import lovehan1me.core.util.LogUtil
-import lovehan1me.data.network.egress.currentEgressState
+import lovehan1me.data.network.egress.EgressPurpose
 
 /**
  * iOS 侧的 ECH 网关接入（Darwin 引擎走 Ktor 插件，见 [EchGateClientPlugin]）。
@@ -13,16 +13,20 @@ import lovehan1me.data.network.egress.currentEgressState
  * 改写后 storage 对回环 host 短路（见 [BridgeCookiesStorage.get]），
  * 同一条 Cookie 不会发两遍。
  *
- * 是否改写由 [lovehan1me.data.network.egress.EgressPlanner] 裁决（插件内部读
- * [currentEgressState]）：用户关掉、进程没跑、或熔断中一律不放行，
- * 与 jvm 侧 EchGateInterceptor 是同一份判定与同一个熔断器。
+ * 是否改写由调度器裁决（插件内部读快照）：用户关掉、进程没跑、或该域熔断一律不放行，
+ * 与 jvm 侧 EchGateInterceptor 是同一份计划与同一个注册表。
  *
- * 网关运行时待接入：[EchGate.port] 为 -1 时零改动，开着开关也无害——现有机制即兜底。
+ * 网关运行时由 Swift 壳起服、`EchGatePortReporter` 回填端口：[EchGate.port] 为 -1
+ * 时零改动，开着开关也无害——现有机制即兜底。
  */
-internal fun HttpClientConfig<*>.installEchGate(withCookies: Boolean = true) {
+internal fun HttpClientConfig<*>.installEchGate(
+    withCookies: Boolean = true,
+    defaultPurpose: EgressPurpose = EgressPurpose.Api,
+) {
     install(EchGateClientPlugin) {
         // 图片链传 false：图床不需要登录态，把 hanime1_session 发过去只是平白泄漏凭据。
         if (withCookies) cookieHeaderProvider = ::echCookieHeader
+        this.defaultPurpose = defaultPurpose
         logger = { LogUtil.d("EchGate", it) }
     }
 }
