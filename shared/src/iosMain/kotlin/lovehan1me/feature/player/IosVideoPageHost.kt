@@ -105,13 +105,14 @@ object IosVideoPageHost : VideoPageHost, PipModeReporter {
     }
 
     /**
-     * iOS 暂无全屏实现（AVPlayer 内嵌在 Compose 视图里，切换全屏要走
-     * `AVPlayerViewController` 或手动隐藏状态栏+旋转，尚未做）。
-     *
-     * ⚠️ 显式返回 false：此前落到接口默认的 true，导致调用方把 `isFullscreen` 置真、
-     * UI 切成全屏形态而画面纹丝不动 —— 那是"状态撒谎"。UI 现在会据此隐藏全屏入口。
+     * C1b：iOS 全屏已实现（手动路线：布局态复用 common `isFullscreen`，
+     * 系统栏/方向经 [IosFullscreenBridge] 交 Swift 壳，PiP 层不动）。
      */
-    override fun supportsFullscreen(): Boolean = false
+    override fun supportsFullscreen(): Boolean = true
+
+    override fun applyFullscreen(fullscreen: Boolean, forceLandscape: Boolean) {
+        IosFullscreenBridge.publish(fullscreen, forceLandscape)
+    }
 
     override fun shouldEnterPip(): Boolean {
         val player = IosPipPlayerHolder.avPlayer ?: return false
