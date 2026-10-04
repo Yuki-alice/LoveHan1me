@@ -10,7 +10,10 @@ import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.EchGate
 import lovehan1me.data.network.EchGateStatus
-import lovehan1me.data.network.egress.GateHealthHolder
+import lovehan1me.data.network.egress.AttemptOutcome
+import lovehan1me.data.network.egress.DomainClass
+import lovehan1me.data.network.egress.RouteId
+import lovehan1me.data.network.egress.RouteRegistry
 import java.io.File
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -265,7 +268,7 @@ class CloudflareCdpTest {
         runBlocking {
             SettingsRepository.update { it.copy(useEchGate = true, proxyType = ProxyType.Direct) }
         }
-        GateHealthHolder.reset()
+        RouteRegistry.reset()
         EchGate.publish(EchGateStatus.Running(18080))
         try {
             assertEquals(
@@ -297,8 +300,10 @@ class CloudflareCdpTest {
             }
         }
         EchGate.publish(EchGateStatus.Running(18080))
-        // 阻断类失败一次即熔断（时间必须用"现在"，否则会被当成冷却已过 = 半开）。
-        GateHealthHolder.recordFailure(currentEpochMillis(), blocking = true)
+        // 阻断类失败一次即熔断本域（时间必须用"现在"，否则会被当成冷却已过 = 半开）。
+        RouteRegistry.update(DomainClass.Hanime) {
+            it.onResult(RouteId.Gate, AttemptOutcome.Blocked, 100L, currentEpochMillis())
+        }
         try {
             assertEquals(
                 "--proxy-server=http://203.0.113.7:7890",
@@ -307,7 +312,7 @@ class CloudflareCdpTest {
             )
         } finally {
             EchGate.publish(EchGateStatus.Idle)
-            GateHealthHolder.reset()
+            RouteRegistry.reset()
             runBlocking {
                 SettingsRepository.update {
                     it.copy(proxyType = ProxyType.System, proxyIp = "", proxyPort = -1)

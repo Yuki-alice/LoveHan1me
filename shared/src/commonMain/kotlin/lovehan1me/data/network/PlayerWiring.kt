@@ -1,7 +1,14 @@
 package lovehan1me.data.network
 
 import lovehan1me.data.SettingsRepository
-import lovehan1me.data.network.egress.EgressPlanner
+import lovehan1me.data.network.egress.EgressPurpose
+import lovehan1me.data.network.egress.EgressRequest
+import lovehan1me.data.network.egress.EgressScheduler
+import lovehan1me.data.network.egress.RouteId
+import lovehan1me.data.network.egress.RouteRegistry
+import lovehan1me.data.network.egress.classifyDomain
+import lovehan1me.data.network.egress.currentEgressState
+import lovehan1me.data.network.egress.currentForceMode
 import lovehan1me.feature.player.PlayerMpvOptions
 import lovehan1me.feature.player.PlayerMpvOptionsProvider
 import lovehan1me.feature.player.PlayerNetworkConfig
@@ -35,11 +42,23 @@ val defaultPlayerMpvOptionsProvider: PlayerMpvOptionsProvider = ::defaultPlayerM
  * 网关改写（原 `mediaUrlForGate` / `applyEchGateForLoad` / `EchGateDataSource.open`
  * 三处收敛到此）：返回改写后 URL + 需附加的网关头；**不该用网关时返回 null**。
  *
- * 判定经 [EgressPlanner]：播放链路与 HTTP 链路共用同一份"该不该用网关"
- * （用户开着 / 进程在跑 / 未熔断 / 每条 URL 自己的条件）。此处只看端口的话，
- * 熔断期间媒体仍会被改写——那正是"页面上已经好了、视频还在撞网关"的形态。
+ * 判定经 [EgressScheduler]：播放链路与 HTTP 链路共用同一份计划（含该域熔断、
+ * 粘滞优选与强制模式）。此处只看端口的话，熔断期间媒体仍会被改写——那正是
+ * "页面上已经好了、视频还在撞网关"的形态。
+ *
+ * 引擎侧 precedence（见 mpv `openMedia` / Exo `EchGateDataSource.open`）：
+ * 改写优先、代理其次 —— 本函数非 null ⟺ 计划首位是 Gate，与
+ * 各端 `proxyUrlFor` 的"Gate 首位返回 null"互补，不存在两边同时有值。
  */
 internal fun gateRewrite(uri: String): Pair<String, Map<String, String>>? {
-    val rewrite = EgressPlanner.gateRewriteFor(uri) ?: return null
+    val domain = classifyDomain(uri, EgressPurpose.Video)
+    val plan = EgressScheduler.plan(
+        EgressRequest(uri, "GET", EgressPurpose.Video, currentForceMode()),
+        runCatching { currentEgressState() }.getOrNull() ?: return null,
+        RouteRegistry.healthOf(domain),
+    )
+    val rewrite = plan.attempts.firstOrNull()
+        ?.takeIf { it.route == RouteId.Gate }
+        ?.rewrite ?: return null
     return rewrite.url to mapOf(EchGatePolicy.TARGET_HEADER to rewrite.targetHost)
 }

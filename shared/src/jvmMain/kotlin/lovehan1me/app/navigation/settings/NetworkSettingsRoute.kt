@@ -47,6 +47,9 @@ import lovehan1me.ech_gate_status_failed
 import lovehan1me.ech_gate_status_running
 import lovehan1me.ech_gate_status_starting
 import lovehan1me.ech_gate_status_stopped
+import lovehan1me.egress_tri_melted
+import lovehan1me.egress_tri_unstable
+import lovehan1me.egress_tri_no_route
 import lovehan1me.network_timeout_text
 import lovehan1me.mpv_socks5_warning
 import lovehan1me.domain_change_tips
@@ -64,12 +67,19 @@ import lovehan1me.data.network.DohConfig
 import lovehan1me.data.network.HanimeDns
 import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.data.network.ServiceCreator
-import lovehan1me.data.network.egress.GateHealthHolder
+import lovehan1me.data.network.egress.RouteRegistry
+import lovehan1me.data.network.egress.DomainClass
+import lovehan1me.data.network.egress.RouteId
+import lovehan1me.data.network.egress.EgressEvents
+import lovehan1me.data.network.egress.buildEgressExport
+import lovehan1me.data.network.egress.currentProxyState
+import lovehan1me.data.network.egress.isUsable
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.site.SiteSwitcher
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.feature.settings.DelayResultUi
 import lovehan1me.feature.settings.DohTestResultUi
+import lovehan1me.feature.settings.EgressEventUi
 import lovehan1me.feature.settings.NetworkSettingsScreen
 import lovehan1me.feature.settings.NetworkSettingsUiState
 import lovehan1me.core.util.AppToast
@@ -151,9 +161,12 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
     val gateStartingText = stringResource(Res.string.ech_gate_status_starting)
     val gateStoppedText = stringResource(Res.string.ech_gate_status_stopped)
     val gateFailedTemplate = stringResource(Res.string.ech_gate_status_failed)
+    val triMeltedTemplate = stringResource(Res.string.egress_tri_melted)
+    val triUnstableTemplate = stringResource(Res.string.egress_tri_unstable)
+    val triNoRouteText = stringResource(Res.string.egress_tri_no_route)
     val echGateStatus = remember(gateStatusTick, settings) {
         val port = EchGate.port
-        when {
+        val base = when {
             port > 0 -> gateRunningTemplate.replace("%1\$d", port.toString())
             EchGate.starting -> gateStartingText
             EchGate.lastError != null ->
@@ -161,6 +174,46 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
 
             else -> gateStoppedText
         }
+        // 三态（与诊断同源）：熔断域 / 不稳定域 / 无可用出口。正常时不贴条。
+        val now = currentEpochMillis()
+        val tracked = DomainClass.entries.filter { it != DomainClass.ThirdParty }
+        val melted = tracked.filter { RouteRegistry.healthOf(it).isOpen(RouteId.Gate, now) }
+        val unstable = tracked.filter { domain ->
+            domain !in melted && RouteRegistry.healthOf(domain).routes.values.any { it.consecutiveFailures > 0 }
+        }
+        val extra = buildList {
+            if (melted.isNotEmpty()) {
+                add(triMeltedTemplate.replace("%1\$s", melted.joinToString { it.name }))
+            }
+            if (unstable.isNotEmpty()) {
+                val fails = unstable.maxOf { domain ->
+                    RouteRegistry.healthOf(domain).routes.values.maxOf { it.consecutiveFailures }
+                }
+                add(
+                    triUnstableTemplate
+                        .replace("%1\$s", unstable.joinToString { it.name })
+                        .replace("%2\$d", fails.toString()),
+                )
+            }
+            if (settings.useEchGate && port <= 0 && !currentProxyState().isUsable) {
+                add(triNoRouteText)
+            }
+        }
+        if (extra.isEmpty()) base else base + "\n" + extra.joinToString("\n")
+    }
+    // 诊断事件（2s tick 刷新，近 50 条）与导出文本同源。
+    val timeFormat = remember { java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US) }
+    val egressEvents = remember(gateStatusTick) {
+        EgressEvents.recent().takeLast(50).map { event ->
+            EgressEventUi(
+                title = "${event.domain} · ${event.route} · ${event.outcome}",
+                detail = "${timeFormat.format(java.util.Date(event.atMs))} · " +
+                    "rtt ${event.rttMs}ms · budget ${event.budgetMs}ms",
+            )
+        }
+    }
+    val egressExportText = remember(gateStatusTick) {
+        buildEgressExport(EgressEvents.recent().takeLast(50))
     }
     val uiState = remember(
         settings, unknownText, domainDefaultText, domainAlternativeText, directText,
@@ -367,9 +420,9 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
                 SettingsRepository.update { it.copy(useEchGate = value) }
                 // 网关是进程外/进程内运行时，开关就是它的生死。拦截器常驻且自己看端口，
                 // 无需重建客户端；这里只经门面转达，不碰任何具体运行时实现。
-                // 用户主动开关 = 重新给一次机会：把熔断健康度归零，否则刚被熔断过的网关
+                // 用户主动开关 = 重新给一次机会：把各域健康度归零，否则刚被熔断过的网关
                 // 会在冷却期内"开了也不管事"，看起来像开关失灵。
-                GateHealthHolder.reset()
+                RouteRegistry.reset()
                 if (value) EchGateRuntime.start() else EchGateRuntime.stop()
             }
         },
@@ -439,6 +492,16 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             }
         },
         embedded = embedded,
+        forceMode = SettingsRepository.egressForceMode.name,
+        onForceModeChange = { name ->
+            coroutineScope.launch {
+                SettingsRepository.update { it.copy(egressForceMode = name) }
+                // 强制项是调度器的最高指令：切完即清健康，让新规矩从干净状态开始。
+                RouteRegistry.reset()
+            }
+        },
+        egressEvents = egressEvents,
+        egressExportText = egressExportText,
     )
 
     ConfirmDialog(

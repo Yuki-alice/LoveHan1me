@@ -3,7 +3,7 @@ package lovehan1me.data.network
 import lovehan1me.core.domain.model.AppSettings
 import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.data.SettingsRepository
-import lovehan1me.data.network.egress.GateHealthHolder
+import lovehan1me.data.network.egress.RouteRegistry
 import lovehan1me.data.network.interceptor.EchGateInterceptor
 import lovehan1me.data.network.interceptor.UserAgentInterceptor
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -140,7 +140,7 @@ class EchGateLiveTest {
         // 排空线程随进程退出自然结束（daemon，不阻塞 JVM 退出）。
         // 熔断健康度是进程全局的：别的用例（如 EchGateInterceptorTest 里那些"连续失败"的）
         // 可能已经把它打开，而冷却期是 5 分钟 —— 不归零的话本类会整场跳过网关。
-        GateHealthHolder.reset()
+        RouteRegistry.reset()
         EchGate.publish(EchGateStatus.Running(port))
         return proc to port
     }

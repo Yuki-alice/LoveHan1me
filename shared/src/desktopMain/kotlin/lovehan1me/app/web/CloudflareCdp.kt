@@ -19,8 +19,10 @@ import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.CF_CLEARANCE_NAME
 import lovehan1me.data.network.CloudflareChallenges
 import lovehan1me.data.network.HanimeDns
-import lovehan1me.data.network.egress.connectTunnelUrl
-import lovehan1me.data.network.egress.currentEgressState
+import lovehan1me.data.network.egress.DomainClass
+import lovehan1me.data.network.egress.EgressScheduler
+import lovehan1me.data.network.egress.RouteRegistry
+import lovehan1me.data.network.egress.currentForceMode
 import java.io.File
 import java.net.ServerSocket
 import java.net.URI
@@ -336,10 +338,17 @@ object CloudflareCdp {
      */
     internal fun proxyFlag(): String? {
         // 网关可用时认证窗也指到它：认证窗必须与 App 同出口，详见上面的 KDoc。
-        // 判据经 EgressPlanner —— 熔断/关闭期间它会返回 null，于是下面回落到用户代理。
+        // 判据经调度器隧道口径 —— 该域熔断/关闭/强制直连期间它会返回 null，
+        // 于是下面回落到用户代理。
         // **这一步不能省**：网关不通时仍把验证窗押在网关上，等于连"做验证"这条
         // 唯一的自救通道一起堵死（用户既过不了验证、也没机会退到代理）。
-        runCatching { currentEgressState().gate.connectTunnelUrl() }
+        runCatching {
+            EgressScheduler.tunnelUrl(
+                DomainClass.Hanime,
+                health = RouteRegistry.healthOf(DomainClass.Hanime),
+                force = currentForceMode(),
+            )
+        }
             .getOrNull()
             ?.let { return "--proxy-server=$it" }
         // 防御：Settings 未就绪（单测/极早调用）时不带代理，不崩；

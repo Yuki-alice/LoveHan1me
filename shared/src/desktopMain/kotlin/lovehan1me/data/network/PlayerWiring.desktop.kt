@@ -1,6 +1,13 @@
 package lovehan1me.data.network
 
-import lovehan1me.data.network.egress.EgressPlanner
+import lovehan1me.data.network.egress.EgressPurpose
+import lovehan1me.data.network.egress.EgressRequest
+import lovehan1me.data.network.egress.EgressScheduler
+import lovehan1me.data.network.egress.RouteId
+import lovehan1me.data.network.egress.RouteRegistry
+import lovehan1me.data.network.egress.classifyDomain
+import lovehan1me.data.network.egress.currentEgressState
+import lovehan1me.data.network.egress.currentForceMode
 import lovehan1me.feature.player.PlayerNetworkConfig
 
 /**
@@ -25,19 +32,39 @@ actual fun defaultPlayerNetworkConfig(): PlayerNetworkConfig = object : PlayerNe
      *   若此刻仍按"网关在跑"跳过代理，就只剩裸直连 —— 2026-09-25 实测拿到的是
      *   `Connection to tcp://vdownload.hembed.com:443 failed: Connection refused`。
      *
-     * ## 取值顺序（由 [EgressPlanner.mediaProxyUrl] 裁决）
-     * 用户代理 → 网关 CONNECT 隧道 → null（直连）。
+     * ## 取值顺序（由调度计划的首位裁决，与改写互补）
+     * 改写优先（`rewriteForGate` 非 null ⟺ 计划首位是 Gate，本函数不被问到）；
+     * 到这里时首位只可能是：用户代理 → 解析出的 HTTP 代理（SOCKS 解析为 null，
+     * 见 `resolveMediaProxyUrl`，此时退到隧道）；系统代理 → 网关 CONNECT 隧道
+     * （mpv 用不了 JVM 系统代理，隧道至少绕开被污染的 DNS）；直连/空表 → null。
+     *
      * 隧道那一档给"没配代理"的场景留：它不做 ECH（客户端在隧道内自己 TLS），
      * 但会用 **DoH 解析出干净 IP 再逐 IP 拨号**，至少绕开被污染的 DNS ——
      * 2026-09-25 实测该通道完整拉下 4.3MB 视频。
      *
-     * 隧道与改写道**同源**：网关熔断/关闭时两者一起消失。此前隧道只判 `port > 0`，
+     * 隧道与改写道**同源**：网关熔断/关闭时两者一起消失（见
+     *   [EgressScheduler.tunnelUrl]）。此前隧道只判 `port > 0`，
      * 于是"改写道已退让、隧道还在劫持媒体"会把故障原样留着 —— 媒体没有回退，
      * 撞不通就是直接失败。
      */
     override fun proxyUrlFor(mediaUri: String): String? {
         if (mediaUri.isGateLoopback()) return null
-        return EgressPlanner.mediaProxyUrl(resolveMediaProxyUrl())
+        val domain = classifyDomain(mediaUri, EgressPurpose.Video)
+        val state = runCatching { currentEgressState() }.getOrNull()
+            ?: return resolveMediaProxyUrl()
+        val plan = EgressScheduler.plan(
+            EgressRequest(mediaUri, "GET", EgressPurpose.Video, currentForceMode()),
+            state,
+            RouteRegistry.healthOf(domain),
+        )
+        return when (plan.attempts.firstOrNull()?.route) {
+            // 改写道优先：引擎先问 rewrite，本函数只处理"没走改写"的分支；
+            // 真被问到说明调用方拿的是源站 URL，按直连语义返回 null。
+            RouteId.Gate, RouteId.Direct, RouteId.GateTunnel, null -> null
+            // SOCKS 解析为 null（ffmpeg 只认 HTTP 代理）：退到隧道，不断流。
+            RouteId.UserProxy -> resolveMediaProxyUrl() ?: EgressScheduler.tunnelUrl(domain)
+            RouteId.SystemProxy -> EgressScheduler.tunnelUrl(domain)
+        }
     }
 
     override fun rewriteForGate(uri: String): Pair<String, Map<String, String>>? =

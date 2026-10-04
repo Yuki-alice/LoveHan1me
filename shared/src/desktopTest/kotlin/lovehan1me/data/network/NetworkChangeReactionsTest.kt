@@ -5,8 +5,11 @@ import lovehan1me.core.domain.model.AppSettings
 import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.data.SettingsRepository
-import lovehan1me.data.network.egress.GateHealth
-import lovehan1me.data.network.egress.GateHealthHolder
+import lovehan1me.data.network.egress.AttemptOutcome
+import lovehan1me.data.network.egress.DomainClass
+import lovehan1me.data.network.egress.RouteHealth
+import lovehan1me.data.network.egress.RouteId
+import lovehan1me.data.network.egress.RouteRegistry
 import lovehan1me.data.network.egress.onNetworkChanged
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -46,22 +49,27 @@ class NetworkChangeReactionsTest {
 
     @AfterTest
     fun tearDown() {
-        // 健康度是进程全局的：留着打开态会把同一次运行里其它网关用例整场拖死。
-        GateHealthHolder.reset()
+        // 健康度是进程全局的：留着熔断态会把同一次运行里其它网关用例整场拖死。
+        RouteRegistry.reset()
     }
 
     @Test
     fun `切网后熔断的网关立刻重新参与`() {
         ensureStoreInstalled()
         val now = currentEpochMillis()
-        GateHealthHolder.recordFailure(now, blocking = true)
-        assertTrue(GateHealthHolder.current.isOpen(now), "前置条件：阻断类失败应一次即熔断")
+        RouteRegistry.update(DomainClass.Hanime) {
+            it.onResult(RouteId.Gate, AttemptOutcome.Blocked, 100L, now)
+        }
+        assertTrue(
+            RouteRegistry.healthOf(DomainClass.Hanime).isOpen(RouteId.Gate, now),
+            "前置条件：阻断类失败应一次即熔断",
+        )
 
         onNetworkChanged()
 
         assertEquals(
-            GateHealth.CLOSED,
-            GateHealthHolder.current,
+            RouteHealth(),
+            RouteRegistry.healthOf(DomainClass.Hanime),
             "切网后旧的熔断结论不该继续挡着网关（用户会以为'换了网还是打不开'）",
         )
     }

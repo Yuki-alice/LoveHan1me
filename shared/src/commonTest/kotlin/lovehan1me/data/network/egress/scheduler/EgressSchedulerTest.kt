@@ -28,7 +28,7 @@ import kotlin.test.assertTrue
 class EgressSchedulerTest {
 
     private val now = 1_700_000_000_000L
-    private val readyGate = GateState(enabled = true, port = 8080, circuitOpen = false)
+    private val readyGate = GateState(enabled = true, port = 8080)
     private val hanimeApi = EgressRequest("https://hanime1.me/search?q=abc")
 
     private fun state(
@@ -95,18 +95,6 @@ class EgressSchedulerTest {
             now,
         )
         assertEquals(listOf(RouteId.Gate, RouteId.UserProxy), plan.attempts.map { it.route })
-    }
-
-    @Test
-    fun `旧全局熔断输入被忽略`() {
-        val plan = EgressScheduler.plan(
-            hanimeApi,
-            state(gate = readyGate.copy(circuitOpen = true)),
-            RouteHealth(),
-            now,
-        )
-        assertEquals(listOf(RouteId.Gate), plan.attempts.map { it.route })
-        assertNull(plan.skipped, "熔断唯一来源是按域健康，旧全局输入不再生效")
     }
 
     @Test

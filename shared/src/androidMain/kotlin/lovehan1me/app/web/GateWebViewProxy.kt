@@ -4,9 +4,12 @@ import androidx.webkit.ProxyConfig
 import androidx.webkit.ProxyController
 import androidx.webkit.WebViewFeature
 import lovehan1me.core.util.LogUtil
+import lovehan1me.data.network.egress.DomainClass
+import lovehan1me.data.network.egress.EgressScheduler
 import lovehan1me.data.network.egress.ProxyState
-import lovehan1me.data.network.egress.connectTunnelUrl
+import lovehan1me.data.network.egress.RouteRegistry
 import lovehan1me.data.network.egress.currentEgressState
+import lovehan1me.data.network.egress.currentForceMode
 import java.util.concurrent.Executor
 
 /**
@@ -17,8 +20,8 @@ import java.util.concurrent.Executor
  * App 的 HTTP 层经拦截器改写后走"网关 / 用户代理"那条链，而 WebView 默认走**系统代理**
  * —— 两边出口不同，表现就是"**验证过了仍然要验证**"。
  *
- * 桌面端早已这么做（`CloudflareCdp.proxyFlag` 用同一个 `GateState.connectTunnelUrl()`
- * 拼 `--proxy-server=`）；本文件是它在 Android 上的等价物。
+ * 桌面端早已这么做（`CloudflareCdp.proxyFlag` 用同一个隧道口径）；
+ * 本文件是它在 Android 上的等价物。
  *
  * ## 为什么用 CONNECT 隧道而不是主力通道
  * WebView 没法逐请求塞 `X-Ech-Target` 头，主力通道（网关代为 TLS、能用 ECH）
@@ -36,8 +39,8 @@ internal object GateWebViewProxy {
     /**
      * 当前该给 WebView 挂什么出站，**按门面状态分两支**（与桌面 `CloudflareCdp.proxyFlag` 同口径）：
      *
-     * 1. 网关是可用候选（用户开着 + 在跑 + 未熔断）⇒ 指到它的 CONNECT 隧道，
-     *    并以 [ProxyConfig.Builder.addDirect] 兜底；
+     * 1. 调度器判网关是该域优选（用户开着 + 在跑 + 未熔断 + 非强制直连/代理）⇒
+     *    指到它的 CONNECT 隧道，并以 [ProxyConfig.Builder.addDirect] 兜底；
      * 2. 网关不在候选里 ⇒ 用**用户手填的代理**（Http / Socks），让验证窗与
      *    `HanimeProxySelector` 同出口；没配就是 null（不动 WebView，即系统代理语义）。
      *
@@ -57,7 +60,13 @@ internal object GateWebViewProxy {
      */
     internal fun overrideConfig(): ProxyConfig? {
         val state = runCatching { currentEgressState() }.getOrNull() ?: return null
-        state.gate.connectTunnelUrl()?.let { tunnel ->
+        // 隧道可用性走调度器（该域熔断即消失，与拦截器同口径；强制直连/代理时不劫持）。
+        EgressScheduler.tunnelUrl(
+            DomainClass.Hanime,
+            state,
+            RouteRegistry.healthOf(DomainClass.Hanime),
+            currentForceMode(),
+        )?.let { tunnel ->
             return ProxyConfig.Builder()
                 .addProxyRule(tunnel)
                 // 规则优先级递减：网关连不上时落到直连，别把"做验证"这条唯一的自救通道堵死。
