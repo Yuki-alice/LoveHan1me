@@ -453,11 +453,15 @@ fun VideoRouteHostScreen(
         }
     }
 
-    BindOrientationAutoFullscreen(
-        enabled = !isDualPane,
-        onLandscape = { enterFullscreen(forceLandscape = true) },
-        onPortrait = { exitFullscreen() },
-    )
+    // C4：无全屏能力的平台不绑定转屏（否则 onLandscape 会把 isFullscreen 置真，
+    // UI 切全屏形态而画面不动——与亮度假动作同一类"状态撒谎"；C1b 落地全屏后自动激活）。
+    if (platformHost.supportsFullscreen()) {
+        BindOrientationAutoFullscreen(
+            enabled = !isDualPane,
+            onLandscape = { enterFullscreen(forceLandscape = true) },
+            onPortrait = { exitFullscreen() },
+        )
+    }
 
     /**
      * 落一次观看进度（M5-3）。
