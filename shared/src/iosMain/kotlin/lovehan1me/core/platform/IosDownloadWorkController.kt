@@ -14,12 +14,15 @@ import lovehan1me.data.network.installEchGate
 import lovehan1me.core.domain.state.DownloadState
 import io.ktor.client.HttpClient
 import io.ktor.client.engine.darwin.Darwin
+import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.cookies.HttpCookies
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.url
 import io.ktor.client.statement.bodyAsChannel
+import lovehan1me.data.network.egress.EgressPurpose
+import lovehan1me.data.network.shouldRetryDarwinFailure
 import io.ktor.http.contentLength
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.readAvailable
@@ -462,16 +465,27 @@ object IosDownloadWorkController : DownloadWorkController {
     /**
      * 下载专用 Darwin 客户端（不对齐主网络栈的 15s 整请求超时——流式下载必然超限；
      * 超时语义对齐桌面 OkHttp：connect 15s / 读空闲 30s；Cookie 照抄主栈 Bridge）。
+     *
+     * 重试与主栈同谓词（幂等 GET + 传输异常才重试，诚实失败不重试）：
+     * 只覆盖建连/响应头阶段；body 中途断流落在调用方循环里，
+     * 按已落盘字节标失败、用户手动重试走 Range 续传（重试整个请求反而会重下）。
      */
     private val httpClient: HttpClient by lazy {
         HttpClient(Darwin) {
-            installEchGate()
+            installEchGate(defaultPurpose = EgressPurpose.Download)
             install(HttpCookies) {
                 storage = BridgeCookiesStorage()
             }
             install(HttpTimeout) {
                 connectTimeoutMillis = 15_000
                 socketTimeoutMillis = 30_000
+            }
+            install(HttpRequestRetry) {
+                noRetry()
+                retryOnExceptionIf(maxRetries = 2) { request, cause ->
+                    shouldRetryDarwinFailure(request.method, cause)
+                }
+                constantDelay(300, 1_000, true)
             }
         }
     }
