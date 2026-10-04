@@ -10,10 +10,12 @@ import lovehan1me.data.network.EchGatePolicy
  * 是纯函数，因此可离线断言。
  */
 
-/** 一次出站的意图。目前只用到 url 与 method；`purpose` 留给"按用途给不同预算"的后续增量。 */
+/** 一次出站的意图。`purpose` 决定预算档位（见 [EgressBudgets]），`force` 是手动逃生舱。 */
 data class EgressRequest(
     val url: String,
     val method: String = "GET",
+    val purpose: EgressPurpose = EgressPurpose.Api,
+    val force: ForceMode = ForceMode.Auto,
 )
 
 /**

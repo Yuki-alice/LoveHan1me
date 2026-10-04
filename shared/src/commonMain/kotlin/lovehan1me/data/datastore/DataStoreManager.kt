@@ -152,6 +152,7 @@ object DataStoreManager : SettingsStore {
         // 条件默认开：仅当用户没有可用代理时才默认开网关。
         // 键已存在时 bool() 直接返回盘上的值，本默认值不参与 —— 老用户的选择不会被悄悄改掉。
         useEchGate = bool("use_ech_gate", defaults.useEchGate && !hasConfiguredProxy()),
+        egressForceMode = string("egress_force_mode", defaults.egressForceMode),
         customHostsData = string("custom_hosts_data", defaults.customHostsData), useDoH = bool("use_doh", defaults.useDoH), dohPreset = string("doh_preset", defaults.dohPreset),
         dohCustomUrl = string("doh_custom_url", defaults.dohCustomUrl), dohBootstrapIps = string("doh_bootstrap_ips", defaults.dohBootstrapIps), dohTimeoutSeconds = int("doh_timeout_seconds", defaults.dohTimeoutSeconds),
         proxyType = ProxyType.fromId(int("proxy_type", defaults.proxyType.id)), proxyIp = string("proxy_ip", defaults.proxyIp), proxyPort = int("proxy_port", defaults.proxyPort),
@@ -201,7 +202,7 @@ object DataStoreManager : SettingsStore {
         put("app_language", appLanguage.preferenceValue); put("use_dark_mode", themeMode.value); put("app_theme_id", themeId); put("amoled_black", amoled); put("dynamic_subject_theme", dynamicSubjectTheme); put("app_contrast_level", contrastLevel.value)
         put("allow_pip_mode", allowPipMode); put("secure_mode", secureMode); put("disable_comments", disableComments); put("haptic_feedback_enabled", hapticFeedbackEnabled); put("nav_bar_style", navBarStyle.value)
         put("usage_notice_accepted_v2", usageNoticeAccepted); put("already_login", isAlreadyLogin); put("local_list_notice_dismissed", localListNoticeDismissed); put("saved_user_id", savedUserId); put("cookie", loginCookie); put(KEY_CF_COOKIES, encodeCfCookies(cfCookies)); put("desktop_browser_user_agent", desktopBrowserUserAgent)
-        put("domain_name", domainName); put("selectedBaseUrl", selectedBaseUrl); put("use_custom_mirror_site", useCustomMirrorSite); put("custom_mirror_site", customMirrorSite); put("append_custom_mirror_path", appendCustomMirrorPath); put("use_built_in_hosts", useBuiltInHosts); put("auto_built_in_hosts", autoBuiltInHosts); put("use_ech_gate", useEchGate); put("custom_hosts_data", customHostsData); put("use_doh", useDoH); put("doh_preset", dohPreset); put("doh_custom_url", dohCustomUrl); put("doh_bootstrap_ips", dohBootstrapIps); put("doh_timeout_seconds", dohTimeoutSeconds); put("proxy_type", proxyType.id); put("proxy_ip", proxyIp); put("proxy_port", proxyPort)
+        put("domain_name", domainName); put("selectedBaseUrl", selectedBaseUrl); put("use_custom_mirror_site", useCustomMirrorSite); put("custom_mirror_site", customMirrorSite); put("append_custom_mirror_path", appendCustomMirrorPath); put("use_built_in_hosts", useBuiltInHosts); put("auto_built_in_hosts", autoBuiltInHosts); put("use_ech_gate", useEchGate); put("egress_force_mode", egressForceMode); put("custom_hosts_data", customHostsData); put("use_doh", useDoH); put("doh_preset", dohPreset); put("doh_custom_url", dohCustomUrl); put("doh_bootstrap_ips", dohBootstrapIps); put("doh_timeout_seconds", dohTimeoutSeconds); put("proxy_type", proxyType.id); put("proxy_ip", proxyIp); put("proxy_port", proxyPort)
         cachedUpdateJson?.let { put("app_update_cached_json", it) }; put("app_update_ignored_version_code", ignoredVersionCode)
         cachedAnnouncementJson?.let { put("announcement_cached_json", it) }; put("announcement_read_keys", readAnnouncementKeys.joinToString(",")); put("download_count_limit", downloadCountLimit); put("download_speed_limit", downloadSpeedLimitIndex); put("use_private_storage", usePrivateStorage); safDownloadPath?.let { put("saf_download_path", it) }; put("collapse_downloaded_group", collapseDownloadedGroup)
         put("switch_player_kernel", playerKernel.value); put("player_speed", playerSpeed.toString()); put("long_press_speed_times", longPressSpeedTime.toString()); put("video_language", videoLanguage); put("default_video_quality", videoQuality); put("show_played_indicator", showPlayedIndicator); put("allow_resume_playback", allowResumePlayback); put("auto_play_on_enter", autoPlayOnEnter); put("auto_play_next", autoPlayNext)
@@ -271,7 +272,7 @@ object DataStoreManager : SettingsStore {
      *
      * 由来：设置项自称「免代理直连」，即网关是代理的**替代品**；而代理档默认是
      * `System`，两者叠在一起等于"默认状态下网关把系统代理整个绕开"。网关被阻断时，
-     * 原本能用的代理路径就没了 —— 见 [lovehan1me.data.network.egress.GateHealth]。
+     * 原本能用的代理路径就没了 —— 见 [lovehan1me.data.network.egress.RouteHealth]。
      *
      * `System` 档在公共层判不出来，交给平台（[lovehan1me.data.network.egress.platformSystemProxyUsable]）；
      * 解析不出来即视为"没有可用代理"，与运行期 [lovehan1me.data.network.egress.currentProxyState] 同一口径。

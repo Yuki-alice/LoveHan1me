@@ -173,6 +173,14 @@ data class AppSettings(
      * 用户手动关掉后予以尊重，不再自愈拉起。
      */
     val useEchGate: Boolean = true,
+    /**
+     * 手动强制选路（调度器逃生舱）。
+     *
+     * 存 `ForceMode` 的名（默认 `"Auto"`，见该枚举）：model 层不反向依赖 data.network，
+     * 映射收在 `SettingsRepository.egressForceMode`；未知值读回 Auto。
+     * Phase 4 设置页提供切换。
+     */
+    val egressForceMode: String = "Auto",
     val customHostsData: String = "",
     val useDoH: Boolean = false,
     val dohPreset: String = "alidns",

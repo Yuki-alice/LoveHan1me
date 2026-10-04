@@ -16,6 +16,7 @@ import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
 import lovehan1me.core.domain.model.cfCookieFor
 import lovehan1me.core.domain.model.cfCookieKeyFor
 import lovehan1me.data.network.CloudflareChallenges
+import lovehan1me.data.network.egress.ForceMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -98,6 +99,8 @@ object SettingsRepository : SettingsStore {
     val useBuiltInHosts get() = current.useBuiltInHosts
     val autoBuiltInHosts get() = current.autoBuiltInHosts
     val useEchGate get() = current.useEchGate
+    /** 手动强制选路（Phase 4 设置页写入；Auto = 调度器全权）。 */
+    val egressForceMode get() = ForceMode.fromName(current.egressForceMode)
     val customHostsData get() = current.customHostsData
     val useDoH get() = current.useDoH
     val dohPreset get() = current.dohPreset
