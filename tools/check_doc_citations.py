@@ -4,7 +4,7 @@
 检查三件事：
 1. 文档里出现的 `path/to/file.kt:123` 引用，文件必须存在、行号必须在范围内。
 2. docs/evidence/ 每条取证必须四件套齐全（取证日/重跑/环境/失效条件），过期只告警。
-3. docs/plan/ 同时只允许一份活计划；docs/decisions.md 每条应带失效条件。
+3. docs/decisions.md 每条应带失效条件。
 
 引用失效 / 结构违规 = 退出码 1；过期 = 只打印告警。
 
@@ -123,12 +123,8 @@ if os.path.isdir(ev_dir):
                 if aged > EVIDENCE_TTL_DAYS:
                     warnings.append("%s「%s」已过期 %d 天，建议重跑" % (rel, title, aged))
 
-# 3) 单活计划位
-plan_dir = os.path.join(ROOT, "docs", "plan")
-if os.path.isdir(plan_dir):
-    live = [n for n in sorted(os.listdir(plan_dir)) if n.endswith(".md") and not n.startswith("_")]
-    if len(live) > 1:
-        errors.append("docs/plan/ 有 %d 份文件，只允许一份活计划：%s" % (len(live), "、".join(live)))
+# 3) 已退役：docs/plan/ 曾只允许一份活计划（2026-10-04 起多线并行，限制移除）。
+#    plan 目录现状只做引用校验（见上），不再计数。
 
 # 4) decisions.md 每条带失效条件（一条 bullet 可以折行，按 bullet 整块判断）
 dec = os.path.join(ROOT, "docs", "decisions.md")
