@@ -18,7 +18,9 @@ import platform.AVKit.AVPictureInPictureControllerDelegateProtocol
 import platform.Foundation.NSError
 import platform.Foundation.NSNotificationCenter
 import platform.Foundation.NSOperationQueue
+import platform.UIKit.UIApplication
 import platform.UIKit.UIApplicationDidEnterBackgroundNotification
+import platform.UIKit.UIScreen
 import platform.darwin.NSObject
 
 /**
@@ -89,6 +91,20 @@ object IosVideoPageHost : VideoPageHost, PipModeReporter {
     override fun onPipModeChanged(isInPip: Boolean) {}
 
     /**
+     * C1a：亮度是真实现（`UIScreen.mainScreen.brightness` 读写），故声明支持。
+     *
+     * 调用方（手势 HUD）全在 Compose 主线程，与 Android 直接读写窗口同约束。
+     */
+    override fun supportsBrightness(): Boolean = true
+
+    override fun currentBrightness(): Float =
+        UIScreen.mainScreen.brightness.toFloat().coerceIn(0.01f, 1f)
+
+    override fun applyBrightness(value: Float) {
+        UIScreen.mainScreen.brightness = value.coerceIn(0.01f, 1f).toDouble()
+    }
+
+    /**
      * iOS 暂无全屏实现（AVPlayer 内嵌在 Compose 视图里，切换全屏要走
      * `AVPlayerViewController` 或手动隐藏状态栏+旋转，尚未做）。
      *
@@ -112,6 +128,8 @@ object IosVideoPageHost : VideoPageHost, PipModeReporter {
     }
 
     override fun onHostStarted() {
+        // C1a：播放页常亮（对标 Android FLAG_KEEP_SCREEN_ON；离开页面即恢复）。
+        UIApplication.sharedApplication.idleTimerDisabled = true
         val center = NSNotificationCenter.defaultCenter
         backgroundObserver = center.addObserverForName(
             UIApplicationDidEnterBackgroundNotification,
@@ -123,6 +141,7 @@ object IosVideoPageHost : VideoPageHost, PipModeReporter {
     }
 
     override fun onHostStopped() {
+        UIApplication.sharedApplication.idleTimerDisabled = false
         backgroundObserver?.let { NSNotificationCenter.defaultCenter.removeObserver(it) }
         backgroundObserver = null
         stopPip()
