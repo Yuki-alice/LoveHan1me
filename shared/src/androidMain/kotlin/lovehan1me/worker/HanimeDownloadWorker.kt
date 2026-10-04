@@ -397,6 +397,23 @@ class HanimeDownloadWorker(
                     response = ServiceCreator.downloadClient.newCall(request).await()
                     val canWrite = (requestNeedRange && response.code == 206) || (!requestNeedRange && response.isSuccessful)
                     if (!canWrite) {
+                        // 服务器无视 Range 回 200 全量：对齐桌面/iOS，截断重写而非报错
+                        // （否则每次重试都撞同一面墙，永久失败）。清掉本次响应后 continue，
+                        // 下一轮 downloadedLength 已归零，走全量下载分支。
+                        if (requestNeedRange && response.isSuccessful) {
+                            LogUtil.d(TAG, "server ignored Range, restart from 0")
+                            downloadedLength = 0
+                            if (raf != null) {
+                                raf.seek(0)
+                                raf.setLength(0)
+                            } else if (safChannel != null) {
+                                safChannel.position(0)
+                                safChannel.truncate(0)
+                            }
+                            response.closeQuietly()
+                            response = null
+                            continue
+                        }
                         val reason = response.toDownloadErrorMessage(requestNeedRange)
                         mainScope.launch {
                             AppToast.error(getString(Res.string.download_task_failed_s_reason_s, hanimeName, reason))
@@ -409,7 +426,6 @@ class HanimeDownloadWorker(
                     val responseBody = body
                     bodyStream = responseBody.byteStream()
                     var len: Int = bodyStream.read(buffer)
-
                     try {
                         while (len != -1) {
                             if (raf != null) {
