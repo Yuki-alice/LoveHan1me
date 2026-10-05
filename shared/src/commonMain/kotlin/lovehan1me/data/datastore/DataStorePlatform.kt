@@ -11,11 +11,5 @@ import kotlinx.coroutines.CoroutineScope
  */
 internal expect fun platformPreferenceMigrations(): List<DataMigration<Preferences>>
 
-/**
- * commonMain 里没有 `runBlocking`，也没有 `Dispatchers.IO`，
- * 初始化时的一次性阻塞读写交由各端提供。
- */
-internal expect fun <T> runBlockingIo(block: suspend CoroutineScope.() -> T): T
-
 /** commonMain 里没有 `synchronized`，初始化临界区交由各端提供。 */
 internal expect fun <T> withInitLock(block: () -> T): T

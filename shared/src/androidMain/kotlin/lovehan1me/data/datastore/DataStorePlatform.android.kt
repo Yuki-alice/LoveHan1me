@@ -4,9 +4,6 @@ import androidx.datastore.core.DataMigration
 import androidx.datastore.preferences.SharedPreferencesMigration
 import androidx.datastore.preferences.core.Preferences
 import lovehan1me.data.database.dao.Han1meDatabaseContext
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.runBlocking
 
 // Android：保留原有的两条 SharedPreferences 迁移（default preferences + packageName 命名的那份）
 internal actual fun platformPreferenceMigrations(): List<DataMigration<Preferences>> {
@@ -16,9 +13,6 @@ internal actual fun platformPreferenceMigrations(): List<DataMigration<Preferenc
         SharedPreferencesMigration(appContext, appContext.packageName),
     )
 }
-
-internal actual fun <T> runBlockingIo(block: suspend CoroutineScope.() -> T): T =
-    runBlocking(Dispatchers.IO, block)
 
 private val initLock = Any()
 

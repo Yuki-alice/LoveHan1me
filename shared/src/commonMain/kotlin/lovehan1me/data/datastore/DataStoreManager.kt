@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import lovehan1me.core.domain.model.AppLanguage
 import lovehan1me.core.domain.model.AppSettings
@@ -81,13 +82,17 @@ object DataStoreManager : SettingsStore {
                 migrations = platformPreferenceMigrations(),
                 produceFile = { dataStoreFilePath(FILE_NAME).toPath() },
             )
-            runBlockingIo {
-                val initial = dataStore.data.first().toAppSettings()
-                dataStore.edit { it.write(initial) }
-                mutableSettings.value = initial
-            }
+            // 先开门：对象就绪即允许读写，磁盘读 + 默认值回填全放后台。
+            // update() 在 edit 内读实时盘态（不是内存快照），故加载窗口内的写入
+            // 不会被回填覆盖；回填本身幂等（写回读到的同一份值）。调用方感知的
+            // settings 初值仍是 defaults，磁盘值到达后经 StateFlow 正常推送
+            // （data class 相等去重，无多余重组）。
             initialized = true
             scope.launch {
+                val initial = dataStore.data.first().toAppSettings()
+                // 首启/升级缺键回填：全量写盘放后台，首屏不等它。
+                runCatching { dataStore.edit { it.write(initial) } }
+                mutableSettings.value = initial
                 dataStore.data.map { it.toAppSettings() }.collect { mutableSettings.value = it }
             }
         }
@@ -157,6 +162,7 @@ object DataStoreManager : SettingsStore {
         dohCustomUrl = string("doh_custom_url", defaults.dohCustomUrl), dohBootstrapIps = string("doh_bootstrap_ips", defaults.dohBootstrapIps), dohTimeoutSeconds = int("doh_timeout_seconds", defaults.dohTimeoutSeconds),
         proxyType = ProxyType.fromId(int("proxy_type", defaults.proxyType.id)), proxyIp = string("proxy_ip", defaults.proxyIp), proxyPort = int("proxy_port", defaults.proxyPort),
         cachedUpdateJson = nullableString("app_update_cached_json"), ignoredVersionCode = int("app_update_ignored_version_code", defaults.ignoredVersionCode),
+        updateCheckedAtMs = long("update_checked_at_ms", defaults.updateCheckedAtMs),
         cachedAnnouncementJson = nullableString("announcement_cached_json"),
         readAnnouncementKeys = nullableString("announcement_read_keys")?.split(',')?.filter(String::isNotBlank).orEmpty(),
         downloadCountLimit = int("download_count_limit", defaults.downloadCountLimit), downloadSpeedLimitIndex = intInRange("download_speed_limit", defaults.downloadSpeedLimitIndex, DOWNLOAD_SPEED_BYTES.indices),
@@ -203,7 +209,7 @@ object DataStoreManager : SettingsStore {
         put("allow_pip_mode", allowPipMode); put("secure_mode", secureMode); put("disable_comments", disableComments); put("haptic_feedback_enabled", hapticFeedbackEnabled); put("nav_bar_style", navBarStyle.value)
         put("usage_notice_accepted_v2", usageNoticeAccepted); put("already_login", isAlreadyLogin); put("local_list_notice_dismissed", localListNoticeDismissed); put("saved_user_id", savedUserId); put("cookie", loginCookie); put(KEY_CF_COOKIES, encodeCfCookies(cfCookies)); put("desktop_browser_user_agent", desktopBrowserUserAgent)
         put("domain_name", domainName); put("selectedBaseUrl", selectedBaseUrl); put("use_custom_mirror_site", useCustomMirrorSite); put("custom_mirror_site", customMirrorSite); put("append_custom_mirror_path", appendCustomMirrorPath); put("use_built_in_hosts", useBuiltInHosts); put("auto_built_in_hosts", autoBuiltInHosts); put("use_ech_gate", useEchGate); put("egress_force_mode", egressForceMode); put("custom_hosts_data", customHostsData); put("use_doh", useDoH); put("doh_preset", dohPreset); put("doh_custom_url", dohCustomUrl); put("doh_bootstrap_ips", dohBootstrapIps); put("doh_timeout_seconds", dohTimeoutSeconds); put("proxy_type", proxyType.id); put("proxy_ip", proxyIp); put("proxy_port", proxyPort)
-        cachedUpdateJson?.let { put("app_update_cached_json", it) }; put("app_update_ignored_version_code", ignoredVersionCode)
+        cachedUpdateJson?.let { put("app_update_cached_json", it) }; put("app_update_ignored_version_code", ignoredVersionCode); put("update_checked_at_ms", updateCheckedAtMs)
         cachedAnnouncementJson?.let { put("announcement_cached_json", it) }; put("announcement_read_keys", readAnnouncementKeys.joinToString(",")); put("download_count_limit", downloadCountLimit); put("download_speed_limit", downloadSpeedLimitIndex); put("use_private_storage", usePrivateStorage); safDownloadPath?.let { put("saf_download_path", it) }; put("collapse_downloaded_group", collapseDownloadedGroup)
         put("switch_player_kernel", playerKernel.value); put("player_speed", playerSpeed.toString()); put("long_press_speed_times", longPressSpeedTime.toString()); put("video_language", videoLanguage); put("default_video_quality", videoQuality); put("show_played_indicator", showPlayedIndicator); put("allow_resume_playback", allowResumePlayback); put("auto_play_on_enter", autoPlayOnEnter); put("auto_play_next", autoPlayNext)
         put("video_aspect", videoAspect.value); put("super_resolution", superResolutionLevel); put("picture_brightness", pictureBrightness.toString()); put("picture_contrast", pictureContrast.toString()); put("picture_saturation", pictureSaturation.toString())
@@ -288,6 +294,8 @@ object DataStoreManager : SettingsStore {
         }
     }
     private fun Preferences.int(name: String, default: Int) = intOrNull(name) ?: default
+    private fun Preferences.long(name: String, default: Long) = longOrNull(name) ?: default
+    private fun Preferences.longOrNull(name: String) = runCatching { this[longPreferencesKey(name)] }.getOrNull() ?: runCatching { this[stringPreferencesKey(name)]?.toLongOrNull() }.getOrNull()
     private fun Preferences.intOrNull(name: String) = runCatching { this[intPreferencesKey(name)] }.getOrNull() ?: runCatching { this[stringPreferencesKey(name)]?.toIntOrNull() }.getOrNull()
     private fun Preferences.intInRange(name: String, default: Int, range: IntRange) = intOrNull(name)?.takeIf { it in range } ?: default
     private fun Preferences.string(name: String, default: String) = nullableString(name) ?: default
@@ -299,7 +307,7 @@ object DataStoreManager : SettingsStore {
         builtInAppId = defaults.danmakuAppId,
         builtInAppSecret = defaults.danmakuAppSecret,
     )
-    private fun MutablePreferences.putRaw(name: String, value: Any) { when (value) { is Boolean -> this[booleanPreferencesKey(name)] = value; is Int -> this[intPreferencesKey(name)] = value; is String -> this[stringPreferencesKey(name)] = value } }
+    private fun MutablePreferences.putRaw(name: String, value: Any) { when (value) { is Boolean -> this[booleanPreferencesKey(name)] = value; is Int -> this[intPreferencesKey(name)] = value; is Long -> this[longPreferencesKey(name)] = value; is String -> this[stringPreferencesKey(name)] = value } }
     /**
      * 备份导出/导入都跳过这些键。
      *

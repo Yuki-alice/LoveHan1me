@@ -228,6 +228,7 @@ object SettingsRepository : SettingsStore {
     suspend fun setHomeCategories(order: List<String>, hidden: Set<String>) = update { it.copy(homeCategoryOrder = order, hiddenHomeCategoryKeys = hidden) }
     suspend fun setCachedUpdateJson(value: String?) = update { it.copy(cachedUpdateJson = value) }
     suspend fun setIgnoredVersionCode(value: Int) = update { it.copy(ignoredVersionCode = value) }
+    suspend fun setUpdateCheckedAtMs(value: Long) = update { it.copy(updateCheckedAtMs = value) }
 
     /** 缓存远端公告 JSON 的最近一次成功响应。 */
     suspend fun setCachedAnnouncementJson(value: String?) =

@@ -199,6 +199,13 @@ data class AppSettings(
      */
     val desktopBrowserUserAgent: String = "",
     val cachedUpdateJson: String? = null,
+    /**
+     * 上次成功检查更新的毫秒时间（`currentEpochMillis`）。
+     *
+     * 更新 JSON 几乎不变，冷启动不必每次都打一次 1.5s+ 的远端请求：
+     * 见 `AppUpdateChecker.checkForUpdate` 的 TTL 门。0 = 从未检查过。
+     */
+    val updateCheckedAtMs: Long = 0L,
     /** 远端公告 JSON 的最近一次成功响应（拉取失败时降级用，见 `AnnouncementRepository`）。 */
     val cachedAnnouncementJson: String? = null,
     /**
