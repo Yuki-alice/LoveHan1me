@@ -119,6 +119,8 @@ object EchGate {
  *
  * - JVM：`useEchGate` 开着就经门面 `EchGateRuntime.start()`（已在运行则 no-op；
  *   运行时意外死亡后借此复活）；
- * - iOS：无运行时，no-op。
+ * - iOS：运行时由 Swift 壳（`EchGateBootstrap`）**无条件**起服、端口经
+ *   `EchGatePortReporter` 回填，Kotlin 侧没有"拉起"这回事，故这里是 no-op ——
+ *   不是"iOS 没有网关"。
  */
 expect fun ensureEchGateway()

@@ -15,13 +15,14 @@ import io.ktor.http.Url
  *
  * ## 排表规则（Auto 模式）
  * 1. 网关可用（开着、有端口、改写成立、该域未熔断）→ 首位（第三方域永不进网关）；
- * 2. 手填代理 → UserProxy，系统代理可解析 → SystemProxy；
- * 3. 直连只在两种情况下排：非受限域；或用户**关掉了网关**（回到旧语义 ——
- *    关开关等于声明"我的直连可用"，加速项缺席不该连累正常请求；海外用户活在这里）；
- *    网关开着但没跑起来时，受限域不排 Direct（决策第 5 条：已知撞 RST，不浪费时间）；
- * 4. 粘滞优选（未熔断）置顶，其余按成功率降序、EWMA 升序（ties 走默认表序，`sortedWith`
- *    稳定排序保证）；
- * 5. 表空 = 无可用出口：执行器抛 [NoRouteException]，**不转圈**。
+ * 2. 其余一律折叠为一条 [RouteId.Default]（"客户端当前出口"，代理/直连由设置决定）。
+ *    进入条件（三者取或）：有可用代理；非受限域（第三方）；用户**关掉了网关**
+ *    （回到旧语义 —— 关开关等于声明"我的直连可用"，加速项缺席不该连累正常请求；
+ *    海外用户活在这里）。网关开着但没跑起来时，受限域也不排 Default（决策第 5 条：
+ *    已知撞 RST，不浪费时间）；
+ * 3. 粘滞优选（未熔断）置顶，其余按成功率降序、EWMA 升序（ties 走默认表序，`sortedWith`
+ *    稳定排序保证）。折叠后只剩 Gate vs Default 两个真维度；
+ * 4. 表空 = 无可用出口：执行器抛 [NoRouteException]，**不转圈**。
  *
  * ## 关于熔断输入
  * 熔断唯一来源是按域健康（见 [RouteHealth]）；`GateState` 只剩存活语义，
@@ -51,11 +52,12 @@ object EgressScheduler {
         val table = buildList {
             // 第三方永不进网关（自有 client 本就不装拦截器，排进去也没人执行）。
             if (gateUsable && domain != DomainClass.ThirdParty) add(RouteId.Gate)
-            if (state.proxy is ProxyState.Explicit) add(RouteId.UserProxy)
-            if (state.proxy is ProxyState.SystemResolved) add(RouteId.SystemProxy)
-            // 直连的两种去处：非受限域照常用；受限域只在用户关掉网关时保留
-            // （旧语义，加速项缺席=直连）。网关开着但没跑起来 ⇒ 不排（诚实失败）。
-            if (!domain.isRestricted || !state.gate.enabled) add(RouteId.Direct)
+            // 阶段 0.1 折叠：UserProxy / SystemProxy / Direct 三者在执行层物理等价，
+            // 合一为 Default（真出口由 client 级代理选择器 / NSURLSession 决定）。
+            // 排它的三种情况取或：有可用代理；非受限域；用户关掉了网关。
+            if (state.proxy.isUsable || !domain.isRestricted || !state.gate.enabled) {
+                add(RouteId.Default)
+            }
         }.filter { !health.isOpen(it, nowMs) }
 
         val locked = health.preferred(nowMs)?.takeIf { it in table }
@@ -68,7 +70,7 @@ object EgressScheduler {
             attempts = ordered.map { route ->
                 RouteAttempt(
                     route = route,
-                    budgetMs = EgressBudgets.budgetFor(request.purpose, route),
+                    budgetMs = EgressBudgets.budgetFor(request.purpose),
                     rewrite = rewrite.takeIf { route == RouteId.Gate },
                 )
             },
@@ -80,6 +82,10 @@ object EgressScheduler {
     /**
      * 强制模式短路一切（含熔断）：ForceGate 只看"进程在不在"，ForceDirect 不看域限制，
      * ForceProxy 在无代理时表空（诚实失败）。条件不满足同样表空，不降级猜测。
+     *
+     * ForceDirect / ForceProxy 都排折叠后的 [RouteId.Default]：HTTP 执行层排不出
+     * "直连 vs 代理"的差别（出口由 client 级设置决定），"强制"的真值在
+     * `HanimeProxySelector`（JVM）与引擎（Darwin）里；播放层另行按 [ForceMode] 处理。
      */
     private fun forcedPlan(request: EgressRequest, state: EgressState, domain: DomainClass): ScheduledPlan {
         val rewrite = EchGatePolicy.rewrite(request.url, state.gate.port)
@@ -87,19 +93,15 @@ object EgressScheduler {
             ForceMode.ForceGate ->
                 if (state.gate.enabled && state.gate.running && rewrite != null) listOf(RouteId.Gate)
                 else emptyList()
-            ForceMode.ForceDirect -> listOf(RouteId.Direct)
-            ForceMode.ForceProxy -> when (state.proxy) {
-                is ProxyState.Explicit -> listOf(RouteId.UserProxy)
-                is ProxyState.SystemResolved -> listOf(RouteId.SystemProxy)
-                ProxyState.None -> emptyList()
-            }
+            ForceMode.ForceDirect -> listOf(RouteId.Default)
+            ForceMode.ForceProxy -> if (state.proxy.isUsable) listOf(RouteId.Default) else emptyList()
             ForceMode.Auto -> error("unreachable")
         }
         return ScheduledPlan(
             attempts = routes.map { route ->
                 RouteAttempt(
                     route = route,
-                    budgetMs = EgressBudgets.budgetFor(request.purpose, route),
+                    budgetMs = EgressBudgets.budgetFor(request.purpose),
                     rewrite = rewrite.takeIf { route == RouteId.Gate },
                 )
             },

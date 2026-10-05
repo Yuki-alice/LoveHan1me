@@ -4,6 +4,7 @@ import io.ktor.client.HttpClient
 import io.ktor.client.engine.mock.MockEngine
 import io.ktor.client.engine.mock.respond
 import io.ktor.client.request.get
+import io.ktor.client.request.post
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -12,16 +13,20 @@ import kotlinx.coroutines.runBlocking
 import lovehan1me.core.domain.model.AppSettings
 import lovehan1me.core.domain.model.ProxyType
 import lovehan1me.core.domain.model.SettingsStore
+import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.data.SettingsRepository
+import lovehan1me.data.network.egress.AttemptOutcome
 import lovehan1me.data.network.egress.DomainClass
 import lovehan1me.data.network.egress.EgressEvents
 import lovehan1me.data.network.egress.EgressPurpose
 import lovehan1me.data.network.egress.NoRouteException
 import lovehan1me.data.network.egress.RouteId
 import lovehan1me.data.network.egress.RouteRegistry
+import java.io.IOException
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -221,6 +226,82 @@ class EchGatePluginTest {
             }
             runBlocking { testClient.get("https://hanime1.me/").bodyAsText() }
             assertNull(gateCookie)
+        } finally {
+            EchGate.publish(EchGateStatus.Idle)
+        }
+    }
+
+    // ── 3.1 多步让位 × 3.2 路由折叠（与 OkHttp 侧同构：两端行为分叉时这里先红）──
+    // 折叠后计划至多两步 [Gate, Default]，唯一还能让位的形态是 Default 被粘滞锁定置顶。
+
+    /** 预置粘滞锁定：Default 连续 3 次成功 ⇒ 排表时它会置顶到 Gate 之前。 */
+    private fun lockDefaultFirst() {
+        repeat(3) {
+            RouteRegistry.update(DomainClass.Hanime) {
+                it.onResult(RouteId.Default, AttemptOutcome.Success, 50L, currentEpochMillis())
+            }
+        }
+    }
+
+    @Test
+    fun `默认出口锁定在首位时失败让位网关`() = withHttpProxy {
+        EchGate.publish(EchGateStatus.Running(18080))
+        try {
+            lockDefaultFirst()
+            var hits = 0
+            val testClient = HttpClient(MockEngine { request ->
+                hits++
+                if (request.url.host != EchGatePolicy.GATE_HOST) throw IOException("egress down")
+                respond("GATE", HttpStatusCode.OK)
+            }) {
+                install(EchGateClientPlugin) { cookieHeaderProvider = null }
+            }
+            val body = testClient.get("https://hanime1.me/").bodyAsText()
+            assertEquals("GATE", body)
+            assertEquals(2, hits, "Default 失败后必须让位 Gate，否则 [Default, Gate] 的 Gate 是死步")
+        } finally {
+            EchGate.publish(EchGateStatus.Idle)
+        }
+    }
+
+    @Test
+    fun `非幂等方法在默认出口失败时不让位`() = withHttpProxy {
+        EchGate.publish(EchGateStatus.Running(18080))
+        try {
+            lockDefaultFirst()
+            var hits = 0
+            val testClient = HttpClient(MockEngine { request ->
+                hits++
+                throw IOException("egress down")
+            }) {
+                install(EchGateClientPlugin) { cookieHeaderProvider = null }
+            }
+            // POST 换路重发有双提交风险：即便身后还有 Gate 也不让位。
+            val failure = assertFailsWith<IOException> { testClient.post("https://hanime1.me/api") }
+            assertFalse(failure is NoRouteException, "不让位就不该谎称 NoRoute，抛真实异常")
+            assertEquals(1, hits, "非幂等方法禁止让位")
+        } finally {
+            EchGate.publish(EchGateStatus.Idle)
+        }
+    }
+
+    @Test
+    fun `网关502两次后默认出口也失败时诚实失败`() = withHttpProxy {
+        EchGate.publish(EchGateStatus.Running(18080))
+        try {
+            var gateHits = 0
+            val testClient = HttpClient(MockEngine { request ->
+                if (request.url.host == EchGatePolicy.GATE_HOST) {
+                    gateHits++
+                    respond("boom", HttpStatusCode.BadGateway)
+                } else {
+                    throw IOException("egress refused")
+                }
+            }) {
+                install(EchGateClientPlugin) { cookieHeaderProvider = null }
+            }
+            assertFailsWith<NoRouteException> { testClient.get("https://hanime1.me/") }
+            assertEquals(2, gateHits, "网关两次后让位默认出口，默认出口也失败 ⇒ 诚实失败")
         } finally {
             EchGate.publish(EchGateStatus.Idle)
         }

@@ -31,7 +31,7 @@ class RouteHealthTest {
         val health = RouteHealth().onResult(RouteId.Gate, AttemptOutcome.Blocked, 100L, now)
         assertTrue(health.isOpen(RouteId.Gate, now))
         // 别家不受影响：按域独立的地基。
-        assertFalse(health.isOpen(RouteId.UserProxy, now))
+        assertFalse(health.isOpen(RouteId.Default, now))
     }
 
     @Test
@@ -80,7 +80,7 @@ class RouteHealthTest {
     fun `别家成功不抢锁`() {
         var health = RouteHealth()
         repeat(3) { health = health.onResult(RouteId.Gate, AttemptOutcome.Success, 100L, now) }
-        repeat(5) { health = health.onResult(RouteId.UserProxy, AttemptOutcome.Success, 50L, now) }
+        repeat(5) { health = health.onResult(RouteId.Default, AttemptOutcome.Success, 50L, now) }
         assertEquals(RouteId.Gate, health.lockedRoute, "锁定的才置顶，快的别来抢")
     }
 

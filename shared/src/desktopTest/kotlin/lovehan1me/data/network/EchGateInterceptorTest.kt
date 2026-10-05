@@ -8,6 +8,7 @@ import lovehan1me.core.domain.model.ProxyType
 import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.data.SettingsRepository
+import lovehan1me.data.network.egress.AttemptOutcome
 import lovehan1me.data.network.egress.DomainClass
 import lovehan1me.data.network.egress.EgressEvents
 import lovehan1me.data.network.egress.EgressPurpose
@@ -23,9 +24,11 @@ import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Protocol
 import okhttp3.Request
+import okhttp3.RequestBody.Companion.toRequestBody
 import okhttp3.Response
 import okhttp3.ResponseBody.Companion.toResponseBody
 import java.io.IOException
+import java.net.SocketException
 import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -558,5 +561,108 @@ class EchGateInterceptorTest {
         // 非 IO 异常从裸分发线程逃逸 → exit 10。本断言钉住这条递送契约。
         val failure: Exception = NoRouteException(DomainClass.CdnMedia, "test")
         assertTrue(failure is java.io.IOException)
+    }
+
+    // ── 3.1 多步让位 × 3.2 路由折叠 ──
+    // 折叠后计划至多两步 [Gate, Default]，Default 通常就在末位、无处可让；唯一还能
+    // 让位的形态是 Default 被粘滞锁定置顶成 [Default, Gate]。下面两条钉住这个形态：
+    // 幂等方法失败必须让位到 Gate（否则 Gate 是死步，F5），非幂等禁止让位。
+
+    /** 预置粘滞锁定：Default 连续 3 次成功 ⇒ 排表时它会置顶到 Gate 之前。 */
+    private fun lockDefaultFirst() {
+        repeat(3) {
+            RouteRegistry.update(DomainClass.Hanime) {
+                it.onResult(RouteId.Default, AttemptOutcome.Success, 50L, currentEpochMillis())
+            }
+        }
+    }
+
+    @Test
+    fun `默认出口锁定在首位时失败让位网关`() = withHttpProxy {
+        EchGate.publish(EchGateStatus.Running(18080))
+        try {
+            lockDefaultFirst()
+            var hits = 0
+            val chain = RecordingChain(
+                Request.Builder().url("https://hanime1.me/").build(),
+            ) { req ->
+                hits++
+                // 首位 Default 挂了，应让位给排在它后面的 Gate（改写到回环）。
+                if (req.url.host != "127.0.0.1") throw SocketException("egress down")
+                textResponse(req, 200, "GATE")
+            }
+            val resp = EchGateInterceptor().intercept(chain)
+            assertEquals("GATE", resp.body.string())
+            assertEquals(2, chain.seen.size, "Default 失败后必须让位 Gate，否则 [Default, Gate] 的 Gate 是死步")
+            assertEquals(2, hits)
+        } finally {
+            EchGate.publish(EchGateStatus.Idle)
+        }
+    }
+
+    @Test
+    fun `非幂等方法在默认出口失败时不让位`() = withHttpProxy {
+        EchGate.publish(EchGateStatus.Running(18080))
+        try {
+            lockDefaultFirst()
+            var hits = 0
+            val chain = RecordingChain(
+                Request.Builder()
+                    .url("https://hanime1.me/api")
+                    .post("x".toRequestBody("text/plain".toMediaType()))
+                    .build(),
+            ) { req ->
+                hits++
+                throw SocketException("egress down")
+            }
+            // POST 换路重发有双提交风险：即便身后还有 Gate 也不让位。
+            val failure = assertFailsWith<IOException> { EchGateInterceptor().intercept(chain) }
+            assertFalse(failure is NoRouteException)
+            assertEquals(1, chain.seen.size, "非幂等方法禁止让位")
+            assertEquals(1, hits)
+        } finally {
+            EchGate.publish(EchGateStatus.Idle)
+        }
+    }
+
+    @Test
+    fun `网关502两次后默认出口也失败时诚实失败`() = withHttpProxy {
+        EchGate.publish(EchGateStatus.Running(18080))
+        try {
+            val chain = RecordingChain(
+                Request.Builder().url("https://hanime1.me/").build(),
+            ) { req ->
+                if (req.url.host == "127.0.0.1") textResponse(req, 502, "echgate: boom")
+                else throw SocketException("egress refused")
+            }
+            // 网关参与过的计划全败：按“无可用出口”诚实失败，不再交外层 Retry 反复撞。
+            assertFailsWith<NoRouteException> { EchGateInterceptor().intercept(chain) }
+            assertEquals(3, chain.seen.size, "网关两次（初次 + 单次重试）+ 默认出口一次，全败才诚实失败")
+        } finally {
+            EchGate.publish(EchGateStatus.Idle)
+        }
+    }
+
+    @Test
+    fun `纯默认出口计划失败时抛原异常而非NoRoute`() {
+        install()
+        runBlocking {
+            SettingsRepository.update { it.copy(useEchGate = false, proxyType = ProxyType.Direct) }
+        }
+        EchGate.publish(EchGateStatus.Idle)
+        try {
+            val chain = RecordingChain(
+                Request.Builder().url("https://hanime1.me/").build(),
+            ) { throw SocketException("rst") }
+            // 关网关 + 直连：单步纯默认出口计划（无网关步），异常要让外层 Retry 按幂等规则处理。
+            val failure = assertFailsWith<IOException> { EchGateInterceptor().intercept(chain) }
+            assertFalse(failure is NoRouteException, "纯默认出口计划不该被翻成 NoRoute，Retry 语义要保住")
+            assertEquals(1, chain.seen.size)
+        } finally {
+            EchGate.publish(EchGateStatus.Idle)
+            runBlocking {
+                SettingsRepository.update { it.copy(useEchGate = true, proxyType = ProxyType.System) }
+            }
+        }
     }
 }

@@ -111,7 +111,7 @@ class EchGateInterceptor(
                     GateStep.Next -> Unit
                 }
 
-                RouteId.UserProxy, RouteId.SystemProxy, RouteId.Direct -> {
+                RouteId.Default -> {
                     val startNs = System.nanoTime()
                     val via = try {
                         chain.proceed(request)
@@ -120,14 +120,27 @@ class EchGateInterceptor(
                         // 不喂熔断器，直接抛。否则取消风暴会把好端端的网关熔断，
                         // 下一个请求诚实失败 —— 2026-10-04 桌面崩溃的完整链条。
                         if (isCallCanceled(chain)) throw e
-                        // 让位路径直接抛了：本步记传输失败；挂起的网关指控按普通失败记
-                        // （非阻断口径），循环走到头后由兜底再走一遍原路。
+                        // 本步记传输失败；挂起的网关指控按普通失败记（非阻断口径）。
                         report(attempt.route, domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
                         if (gateBlamePending) {
                             gateBlamePending = false
                             reportGate(domain, AttemptOutcome.TransportError, -1L, blockedBudgetMs)
                         }
-                        throw e
+                        // 非幂等方法禁止让位（换一条路重发有双提交风险）：失败即止，抛出真实异常 ——
+                        // 身后还有 Gate 也**不能**谎称"候选出口全部不可用"：那是我们主动不走，
+                        // 不是它不可用（NoRoute 的语义是"表空 / 无路可去"）。
+                        if (!intent.isIdempotent) throw e
+                        // 幂等方法但已是最后一步：折叠后计划至多两步，Default 通常就在末位；
+                        // 唯一还能让位的形态是 Default 被粘滞锁定置顶时（[Default, Gate]）。
+                        if (index == plan.attempts.lastIndex) {
+                            if (plan.attempts.any { it.route == RouteId.Gate }) {
+                                throw NoRouteException(domain, "候选出口全部不可用（${plan.domain}）")
+                            }
+                            // 纯默认出口计划（关网关 / 第三方 / 强制定向）保持旧语义：
+                            // 原异常交外层 Retry 按幂等规则处理。
+                            throw e
+                        }
+                        continue
                     }
                     val rttMs = (System.nanoTime() - startNs) / 1_000_000
                     report(attempt.route, domain, AttemptOutcome.Success, rttMs, attempt.budgetMs)
@@ -154,10 +167,11 @@ class EchGateInterceptor(
             LogUtil.w(TAG, "网关阻断后无后路可比对，按有责记账 ${request.url.host}")
             reportGate(domain, AttemptOutcome.Blocked, -1L, blockedBudgetMs)
         }
-        // 候选全部 Next（网关 502 两次 / 异常）：受限域上不再撞直连，诚实失败。
-        // 直连本就允许的计划（开关关闭 / 第三方）走不到这里 —— 它们的 Direct 步要么返回响应，
-        // 要么抛传输异常（由外层 Retry 按原语义处理）。NoRoute 不是 IOException，
-        // 外层 Retry 与 Ktor 都不会重跑它，直达 UI。
+        // 走到这里只有一条原因：候选全是网关步且都返回 Next（502 两次 / 异常），
+        // 计划里没有可让位的非网关后路。受限域上不再撞直连，诚实失败。
+        // 非网关步失败的两种收尾已在上面的 catch 里分流（见那段注释）：
+        // 网关参与过 ⇒ 这里同款 NoRoute；纯直通 ⇒ 原异常交外层 Retry。
+        // NoRoute 不是 Retry 认得的连接类异常（见 `NoRouteException`），不重跑，直达 UI。
         throw NoRouteException(domain, "候选出口全部不可用（${plan.domain}）")
     }
 

@@ -57,7 +57,7 @@ class EgressSchedulerTest {
         )
         assertEquals(DomainClass.ThirdParty, plan.domain)
         assertTrue(plan.attempts.none { it.route == RouteId.Gate })
-        assertEquals(listOf(RouteId.Direct), plan.attempts.map { it.route })
+        assertEquals(listOf(RouteId.Default), plan.attempts.map { it.route })
         assertNull(plan.skipped, "故意不进网关，不是故障，不该报熔断")
     }
 
@@ -75,26 +75,26 @@ class EgressSchedulerTest {
     }
 
     @Test
-    fun `网关关闭时回到旧语义走直连`() {
+    fun `网关关闭时回到旧语义走默认出口`() {
         val plan = EgressScheduler.plan(
             hanimeApi,
             state(gate = readyGate.copy(enabled = false)),
             RouteHealth(),
             now,
         )
-        assertEquals(listOf(RouteId.Direct), plan.attempts.map { it.route })
+        assertEquals(listOf(RouteId.Default), plan.attempts.map { it.route })
         assertEquals(GateSkipReason.Disabled, plan.skipped)
     }
 
     @Test
-    fun `有手填代理时网关之后排用户代理`() {
+    fun `有手填代理时网关之后排默认出口`() {
         val plan = EgressScheduler.plan(
             hanimeApi,
             state(proxy = ProxyState.Explicit("203.0.113.7", 7890, socks = false)),
             RouteHealth(),
             now,
         )
-        assertEquals(listOf(RouteId.Gate, RouteId.UserProxy), plan.attempts.map { it.route })
+        assertEquals(listOf(RouteId.Gate, RouteId.Default), plan.attempts.map { it.route })
     }
 
     @Test
@@ -131,7 +131,7 @@ class EgressSchedulerTest {
         var health = RouteHealth()
         repeat(3) {
             health = health.onResult(
-                RouteId.UserProxy, AttemptOutcome.Success, 50L, now,
+                RouteId.Default, AttemptOutcome.Success, 50L, now,
             )
         }
         val plan = EgressScheduler.plan(
@@ -140,7 +140,7 @@ class EgressSchedulerTest {
             health,
             now,
         )
-        assertEquals(RouteId.UserProxy, plan.attempts.first().route)
+        assertEquals(RouteId.Default, plan.attempts.first().route)
         assertTrue(plan.attempts.map { it.route }.contains(RouteId.Gate))
     }
 
@@ -156,7 +156,7 @@ class EgressSchedulerTest {
             health,
             now,
         )
-        assertEquals(RouteId.UserProxy, plan.attempts.first().route)
+        assertEquals(RouteId.Default, plan.attempts.first().route)
         assertEquals(RouteId.Gate, plan.attempts.last().route)
     }
 
@@ -175,7 +175,18 @@ class EgressSchedulerTest {
             RouteHealth(),
             now,
         )
-        assertEquals(listOf(RouteId.Direct), plan.attempts.map { it.route })
+        assertEquals(listOf(RouteId.Default), plan.attempts.map { it.route })
+    }
+
+    @Test
+    fun `强制代理有代理时排默认出口`() {
+        val plan = EgressScheduler.plan(
+            hanimeApi.copy(force = ForceMode.ForceProxy),
+            state(proxy = ProxyState.Explicit("203.0.113.7", 7890, socks = false)),
+            RouteHealth(),
+            now,
+        )
+        assertEquals(listOf(RouteId.Default), plan.attempts.map { it.route })
     }
 
     @Test
@@ -191,11 +202,13 @@ class EgressSchedulerTest {
 
     @Test
     fun `预算按用途推导`() {
-        assertEquals(60_000L, EgressBudgets.budgetFor(EgressPurpose.Api, RouteId.Gate))
-        assertEquals(30_000L, EgressBudgets.budgetFor(EgressPurpose.Image, RouteId.Gate))
-        assertEquals(EgressBudgets.UNLIMITED, EgressBudgets.budgetFor(EgressPurpose.Video, RouteId.Gate))
-        assertEquals(EgressBudgets.UNLIMITED, EgressBudgets.budgetFor(EgressPurpose.Download, RouteId.UserProxy))
-        assertEquals(10_000L, EgressBudgets.budgetFor(EgressPurpose.Probe, RouteId.Direct))
+        // 预算只有 purpose 一维：`route` 参数已被删除（它从未被读过，
+        // 留着会让人以为不同路由有不同预算，见 EgressBudgets 的 KDoc）。
+        assertEquals(60_000L, EgressBudgets.budgetFor(EgressPurpose.Api))
+        assertEquals(30_000L, EgressBudgets.budgetFor(EgressPurpose.Image))
+        assertEquals(EgressBudgets.UNLIMITED, EgressBudgets.budgetFor(EgressPurpose.Video))
+        assertEquals(EgressBudgets.UNLIMITED, EgressBudgets.budgetFor(EgressPurpose.Download))
+        assertEquals(10_000L, EgressBudgets.budgetFor(EgressPurpose.Probe))
     }
 
     @Test

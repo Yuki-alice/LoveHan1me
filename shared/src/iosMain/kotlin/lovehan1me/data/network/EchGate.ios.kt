@@ -43,6 +43,10 @@ internal suspend fun echCookieHeader(originalUrl: Url): String? {
     return parts.takeIf { it.isNotEmpty() }?.joinToString("; ")
 }
 
-/** iOS 无网关运行时，no-op（运行时接入后在此拉起 gomobile 实例）。 */
+/**
+ * iOS 侧 no-op：网关**有**运行时，只是它的生命周期归 Swift 壳管
+ * （`EchGateBootstrap.start()` 无条件起服 → `EchGatePortReporter.setPort` 回填端口）。
+ * Kotlin 侧没有"拉起"这个动作可做，留空是对的分发，不是缺实现。
+ */
 actual fun ensureEchGateway() {
 }

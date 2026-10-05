@@ -128,9 +128,10 @@ val EchGateClientPlugin = createClientPlugin("EchGate", ::EchGatePluginConfig) {
                     GateStep.Next -> Unit
                 }
 
-                RouteId.UserProxy, RouteId.SystemProxy, RouteId.Direct -> {
+                RouteId.Default -> {
                     restoreOriginal(request, original)
                     val startMs = currentEpochMillis()
+                    val idempotent = request.method.value == "GET" || request.method.value == "HEAD"
                     val viaProxy = try {
                         proceed(request)
                     } catch (e: CancellationException) {
@@ -141,7 +142,21 @@ val EchGateClientPlugin = createClientPlugin("EchGate", ::EchGatePluginConfig) {
                             gateBlamePending = false
                             reportGate(domain, AttemptOutcome.TransportError, -1L, blockedBudgetMs)
                         }
-                        throw e
+                        // 与 OkHttp 执行器同款分流（见 `EchGateInterceptor` 内注释）：
+                        // 非幂等方法失败即止、抛真实异常（不谎称 NoRoute）；幂等但已是最后一步时，
+                        // 网关参与过的计划全败走 NoRoute，纯默认出口计划把原异常交出去。
+                        // 折叠后唯一能让位的形态是 Default 被粘滞锁定置顶时的 [Default, Gate]。
+                        if (!idempotent) throw e
+                        // 幂等但已是最后一步：网关参与过的计划全败走 NoRoute，
+                        // 纯默认出口计划把原异常交出去。
+                        // 折叠后唯一能让位的形态是 Default 被粘滞锁定置顶时的 [Default, Gate]。
+                        if (index == plan.attempts.lastIndex) {
+                            if (plan.attempts.any { it.route == RouteId.Gate }) {
+                                throw NoRouteException(domain, "候选出口全部不可用（${plan.domain}）")
+                            }
+                            throw e
+                        }
+                        continue
                     }
                     val rttMs = currentEpochMillis() - startMs
                     report(attempt.route, domain, AttemptOutcome.Success, rttMs, attempt.budgetMs)
@@ -166,7 +181,8 @@ val EchGateClientPlugin = createClientPlugin("EchGate", ::EchGatePluginConfig) {
             pluginConfig.logger?.invoke("EchGate: 网关阻断后无后路可比对，按有责记账 $original")
             reportGate(domain, AttemptOutcome.Blocked, -1L, blockedBudgetMs)
         }
-        // 候选全部 Next（网关 502 两次 / 异常）：受限域上不再撞直连，诚实失败。
+        // 走到这里只有一条原因：候选全是网关步且都返回 Next（502 两次 / 异常）。
+        // 非网关步失败的收尾已在上面的 catch 里分流（网关参与过 ⇒ NoRoute；纯直通 ⇒ 原异常）。
         throw NoRouteException(domain, "候选出口全部不可用（${plan.domain}）")
     }
 }
