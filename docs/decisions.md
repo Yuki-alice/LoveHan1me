@@ -77,3 +77,36 @@
   新增自建 OkHttp 客户端时**必须登记**（守卫测试只能证"遍历生效"，证不了"每个都登记了"）。
   失效条件＝复位入口改为按类型/注解自动发现（届时登记表可删）；或引入统一的 client 工厂
   使所有客户端都出自同一处（那就不需要登记）。重认日期 2027-04-02。
+
+## iOS 播放：本轮不接 ECH 网关（阶段 3.2 的评估结论）
+
+- **结论：不在本轮立项实现**（明确记为"不做"）。iOS 播放继续走直连，UI 保持如实说明
+  （`use_ech_gate_summary` 三语种已写明"iOS 播放仍走直连，不经网关"）；
+  `PlayerWiring.ios.kt` 的 `rewriteForGate` 恒 `null`，且**不覆写** `onGateLoadOutcome`
+  （不过网关就没有"网关结局"可报，编一条只会污染该域健康）。
+
+- **为什么 `AVURLAssetHTTPHeaderFieldsKey` 不行**（既有结论，复核仍成立）：官方文档明确
+  不保证对所有请求生效，HLS 分片更是不经过它。写出一个"有时生效"的改写比承认做不到更糟。
+
+- **正解路径已探明，且比原判断更省**：`mediamp-avkit 0.5.0` 的
+  `AVKitMediampPlayerFactory.create(...)` **带 per-open 钩子**
+  `configurePlayerItem: (AVPlayerItem, MediaData) -> Unit`（本机从缓存
+  `mediamp-avkit-iossimulatorarm64-0.5.0-metadata.jar` 的 klib 元数据核对签名与 KDoc：
+  "optional per-open hook to customize each [AVPlayerItem] … before it is attached to the player"）。
+  于是**不必 fork mediamp / 不必改资源加载层**：在该钩子里拿到 `item.asset as AVURLAsset`，
+  设 `asset.resourceLoader.setDelegate(...)` 即可接入 `AVAssetResourceLoaderDelegate`。
+  这一点修正了交接文档"需动 `:video:engine` 的 iOS 资源加载层"的估计。
+
+- **但为什么仍不本轮做**：`AVAssetResourceLoaderDelegate` **只拦自定义 scheme**。要让 AVPlayer
+  的每个子请求都进 delegate，必须把媒体 URL 换成自定义 scheme（如 `lhgate+https://…`），
+  然后由我们**自建取数层**：拉 m3u8 → 把分片/音轨 URL 一并改写成自定义 scheme → 逐分片
+  经 `http://127.0.0.1:<port>` + `X-Ech-Target` 头取回 → 处理 `AVAssetResourceLoadingRequest`
+  的 content-information（长度/类型）与 byte-range，还要覆盖 HLS 变体播放列表。
+  这是一个独立子项目（播放/下载两类内容、三种 track），且需要 macOS/Xcode + 真机验证 ——
+  当前环境（Windows，仅能交叉编译 iOS klib）无法实跑，做出来也无法证明它"真的通了"。
+
+- **保留的将来落点**：立项时从 `MediampAvPlaybackEngine` 构造处的 `configurePlayerItem`
+  钩子接入，取数层复用 `:shared` 的 `PlayerNetworkConfig`（`rewriteForGate` / `proxyUrlFor`），
+  与 HTTP/其它端同一份出口判定；失败必须能回退原生直连（自定义 scheme 取数失败时换回 https）。
+  失效条件＝mediamp-avkit 移除 `configurePlayerItem` 钩子（届时需 fork 或换引擎），
+  或 iOS 获得可直接注入按请求头的官方 API。重认日期 2027-04-02。
