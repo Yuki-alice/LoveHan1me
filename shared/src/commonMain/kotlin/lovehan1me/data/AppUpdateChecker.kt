@@ -1,6 +1,7 @@
 package lovehan1me.data
 
 import lovehan1me.core.util.LogUtil
+import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.data.SettingsRepository
 import lovehan1me.Res
 import lovehan1me.core.domain.model.Announcement
@@ -51,14 +52,31 @@ object AppUpdateChecker {
         allowTrailingComma = true
     }
 
-    suspend fun checkForUpdate(): AppUpdateCheckResult {
+    /**
+     * 更新检查 TTL：更新 JSON 几乎不变，冷启动不必每次都打一次远端请求
+     * （本机实测单次 1.5–3.5s，且串行挡在首页之前）。
+     *
+     * TTL 内且有缓存直接用缓存、不碰网络；强制更新的发现最多延迟一个 TTL。
+     * 失败不记时间（下次启动重试），成功才落戳。
+     */
+    internal const val UPDATE_CHECK_TTL_MS = 12 * 60 * 60 * 1000L
+
+    suspend fun checkForUpdate(nowMs: Long = currentEpochMillis()): AppUpdateCheckResult {
         val cachedJson = SettingsRepository.current.cachedUpdateJson
+        if (cachedJson != null &&
+            nowMs - SettingsRepository.current.updateCheckedAtMs < UPDATE_CHECK_TTL_MS
+        ) {
+            return cachedJson.toUpdateCheckResult()
+        }
 
         val responseJson = runCatching { requestUpdateJson() }
             .onFailure { LogUtil.e(TAG, "Failed to check for updates", it) }
             .getOrNull()
 
-        if (responseJson != null) SettingsRepository.setCachedUpdateJson(responseJson)
+        if (responseJson != null) {
+            SettingsRepository.setCachedUpdateJson(responseJson)
+            SettingsRepository.setUpdateCheckedAtMs(nowMs)
+        }
 
         val jsonToUse = responseJson ?: cachedJson
         if (responseJson == null) {

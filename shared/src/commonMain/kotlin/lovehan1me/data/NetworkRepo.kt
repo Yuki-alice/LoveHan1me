@@ -68,7 +68,8 @@ object NetworkRepo {
 
     fun getHomePage() = websiteIOFlow(
         request = { HanimeNetwork.hanimeService.getHomePage(SettingsRepository.homeUrl) },
-        action = Parser::homePageVer2
+        action = Parser::homePageVer2,
+        onBody = { html -> writeCachedHomeHtml(homePageCacheKey(), html) },
     )
 
     fun getHanimeSearchResult(
@@ -638,11 +639,17 @@ object NetworkRepo {
     private fun <T> websiteIOFlow(
         request: suspend () -> HttpResponse,
         permittedSuccessCode: IntArray? = null,
+        // 首屏缓存写透（仅首页用）：拿到 body 先给调用方落盘，下次冷启动先展陈旧内容。
+        // 位置刻意在 action 之前：老调用点的 trailing lambda 绑的仍是 action，零改动。
+        // 默认 null，其余调用点零影响。
+        onBody: (suspend (String) -> Unit)? = null,
         // P4：action 改 suspend（Parser.homePageVer2 用 composeResources getString 需要）
         action: suspend (String) -> WebsiteState<T>,
     ) = flow {
         val requestResult = ioRequest(request, permittedSuccessCode)
-        emit(action.invoke(requestResult.bodyAsText()))
+        val text = requestResult.bodyAsText()
+        onBody?.invoke(text)
+        emit(action.invoke(text))
     }.catch { e ->
         emit(WebsiteState.Error(handleException(e)))
     }.flowOn(ioDispatcher)
