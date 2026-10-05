@@ -6,6 +6,9 @@ import lovehan1me.core.domain.model.AppSettings
 import lovehan1me.core.domain.model.ProxyType
 import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.data.SettingsRepository
+import lovehan1me.data.network.egress.ForceMode
+import lovehan1me.data.network.egress.ProxyState
+import lovehan1me.data.network.egress.RouteRegistry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
@@ -14,6 +17,8 @@ import java.net.Proxy
 import java.net.URI
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
+import kotlin.test.assertNull
 import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
@@ -124,6 +129,172 @@ class MediaProxyUrlTest {
     @Test
     fun `直连档播放器不设代理`() = withProxy(ProxyType.Direct) {
         assertEquals(null, resolveMediaProxyUrl())
+    }
+}
+
+/**
+ * 播放层代理落点（[mediaProxyUrlFor]）的回归：**关掉 ECH 网关 + 用系统代理** 这个组合。
+ *
+ * 隧道与改写道同源（[lovehan1me.data.network.egress.EgressScheduler.tunnelUrl]），
+ * 网关一关隧道即 null。旧实现里"系统代理"档只给隧道，于是 mpv 拿到 null 去裸直连，
+ * 受限网下报 `tls: IO error -10054` / `mpv_error=-13` —— 2026-10-05 桌面视频打不开的根因。
+ */
+class MediaProxyFallbackTest {
+
+    @Test
+    fun `系统代理在网关关闭时仍把具体代理交给 mpv`() {
+        assertEquals(
+            "http://127.0.0.1:7897",
+            mediaProxyUrlFor(
+                proxy = ProxyState.SystemResolved,
+                resolvedProxyUrl = "http://127.0.0.1:7897",
+                // 网关关闭 → 隧道为 null；旧实现在这里把可用的系统代理整个丢掉。
+                tunnelUrl = null,
+            ),
+        )
+    }
+
+    @Test
+    fun `解析不出具体代理时退隧道兜底`() {
+        // SOCKS：resolveMediaProxyUrl 返回 null，此时才轮到网关 CONNECT 隧道。
+        assertEquals(
+            "http://127.0.0.1:8080",
+            mediaProxyUrlFor(
+                proxy = ProxyState.Explicit("203.0.113.7", 7891, socks = true),
+                resolvedProxyUrl = null,
+                tunnelUrl = "http://127.0.0.1:8080",
+            ),
+        )
+    }
+
+    @Test
+    fun `无代理时不编造出口`() {
+        assertNull(
+            mediaProxyUrlFor(
+                proxy = ProxyState.None,
+                resolvedProxyUrl = "http://127.0.0.1:7897",
+                tunnelUrl = "http://127.0.0.1:8080",
+            ),
+        )
+    }
+}
+
+/**
+ * 媒体让位代理（2026-10-05 新增）。
+ *
+ * 实测依据：同一 1080p 直链，网关 CNAME 降级通道（`vdownload.hembed.com →
+ * *.rsc.cdn77.org`）本机只有 ~23–33 KB/s，系统代理 `127.0.0.1:7897` 有 ~235 KB/s
+ * （约 8 倍）。网关是绕 SNI 阻断的通道、不是带宽通道，视频走它只会一直缓冲，
+ * 故只要解析得出**具体 HTTP 代理**，媒体就不该被网关改写。
+ */
+class PreferProxyOverGateForMediaTest {
+
+    @Test
+    fun `解析出具体代理时媒体让位代理`() {
+        assertTrue(
+            preferProxyOverGateForMedia(
+                force = ForceMode.Auto,
+                proxy = ProxyState.SystemResolved,
+                resolvedProxyUrl = "http://127.0.0.1:7897",
+            ),
+        )
+    }
+
+    @Test
+    fun `SOCKS 解析不出地址时仍走网关`() {
+        // ffmpeg 的 http_proxy 只认 HTTP 代理：SOCKS 时让位等于让 mpv 裸直连，比网关更糟。
+        assertFalse(
+            preferProxyOverGateForMedia(
+                force = ForceMode.Auto,
+                proxy = ProxyState.Explicit("203.0.113.7", 7891, socks = true),
+                resolvedProxyUrl = null,
+            ),
+        )
+    }
+
+    @Test
+    fun `无代理时不编排让位`() {
+        assertFalse(
+            preferProxyOverGateForMedia(
+                force = ForceMode.Auto,
+                proxy = ProxyState.None,
+                resolvedProxyUrl = "http://127.0.0.1:7897",
+            ),
+        )
+    }
+
+    @Test
+    fun `强制网关不让位`() {
+        assertFalse(
+            preferProxyOverGateForMedia(
+                force = ForceMode.ForceGate,
+                proxy = ProxyState.SystemResolved,
+                resolvedProxyUrl = "http://127.0.0.1:7897",
+            ),
+        )
+    }
+}
+
+/**
+ * 串线级守卫：让位判定真的接在 `defaultPlayerNetworkConfig()` 上。
+ *
+ * [PreferProxyOverGateForMediaTest] 只钉纯判据，这里钉**两半都要到位**：
+ * 有代理时 `rewriteForGate` 必须放行、`proxyUrlFor` 必须把代理交出去 ——
+ * 少任何一半，mpv 都会退回裸直连（或慢网关），正是"一直缓冲"的成因。
+ */
+class MediaProxyPreferenceWiringTest {
+
+    private val mediaUri = "https://vdownload.hembed.com/408492-1080p.mp4?secure=abc,123"
+
+    @Test
+    fun `有手填 HTTP 代理时媒体不改写网关且拿到代理`() =
+        withProxy(ProxyType.Http, "203.0.113.7", 7890) {
+            withRunningGate {
+                val config = defaultPlayerNetworkConfig()
+                assertNull(config.rewriteForGate(mediaUri), "有可用代理时媒体不该再被改写到网关")
+                assertEquals("http://203.0.113.7:7890", config.proxyUrlFor(mediaUri))
+            }
+        }
+
+    @Test
+    fun `无代理时媒体仍走网关改写`() = withProxy(ProxyType.Direct) {
+        withRunningGate {
+            val config = defaultPlayerNetworkConfig()
+            val rewrite = config.rewriteForGate(mediaUri)
+            assertTrue(
+                rewrite?.first?.startsWith("http://127.0.0.1:2602/") == true,
+                "无代理时媒体应仍被改写到网关，实际=${rewrite?.first}",
+            )
+            assertEquals("vdownload.hembed.com", rewrite?.second?.get(EchGatePolicy.TARGET_HEADER))
+            // 网关已改写 → 播放层不得再塞 http-proxy（ffmpeg 没有 bypass，会给回环请求也套代理）。
+            assertNull(config.proxyUrlFor(mediaUri))
+        }
+    }
+
+    /**
+     * 起网关 + 清健康度 + 显式打开网关开关。
+     *
+     * 两处都是全 JVM 共享状态，别的用例会写坏且不还原，不显式建立前置条件本类就会
+     * 因测试顺序随机变红（单独跑则必绿）：
+     * - `useEchGate`：[EchGateRuntimeTest] / [EchGateInterceptorTest] / [NetworkChangeReactionsTest]
+     *   会把它写成 false（同 [EchGateLiveTest] 的处理）；
+     * - 熔断：[RouteRegistry] 里的健康度，别的用例可能已把视频域熔掉。
+     */
+    private fun withRunningGate(block: () -> Unit) {
+        ensureStoreInstalled()
+        val previousStatus = EchGate.status
+        val previousUseEchGate = runCatching { SettingsRepository.useEchGate }.getOrDefault(true)
+        RouteRegistry.reset()
+        runCatching { runBlocking { SettingsRepository.update { it.copy(useEchGate = true) } } }
+        EchGate.publish(EchGateStatus.Running(2602))
+        try {
+            block()
+        } finally {
+            EchGate.publish(previousStatus)
+            runCatching {
+                runBlocking { SettingsRepository.update { it.copy(useEchGate = previousUseEchGate) } }
+            }
+        }
     }
 }
 
