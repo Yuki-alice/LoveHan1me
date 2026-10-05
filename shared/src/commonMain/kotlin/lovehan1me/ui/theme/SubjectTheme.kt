@@ -3,8 +3,8 @@ package lovehan1me.ui.theme
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -47,22 +47,23 @@ fun SubjectThemeOverride(
         content()
         return
     }
-    val settings by SettingsRepository.settings.collectAsState()
-    val isDark = when (settings.themeMode.value) {
+    // B4：与 HanimeTheme 同源，只订阅主题四量。
+    val themeConfig by SettingsRepository.themeConfigFlow.collectAsStateWithLifecycle()
+    val isDark = when (themeConfig.themeMode.value) {
         "always_on" -> true
         "always_off" -> false
         else -> isSystemInDarkTheme()
     }
-    var colorScheme = remember(seed, isDark, settings.contrastLevel) {
+    var colorScheme = remember(seed, isDark, themeConfig.contrastLevel) {
         dynamicColorScheme(
             seedColor = seed,
             isDark = isDark,
             style = PaletteStyle.TonalSpot,
-            contrastLevel = settings.contrastLevel.spec,
+            contrastLevel = themeConfig.contrastLevel.spec,
         )
     }
     // AMOLED 与全局主题同规则：只在深色下叠加纯黑。
-    if (settings.amoled && isDark) colorScheme = colorScheme.amoled()
+    if (themeConfig.amoled && isDark) colorScheme = colorScheme.amoled()
     HanimeTheme(colorScheme = animateColorScheme(colorScheme), content = content)
 }
 

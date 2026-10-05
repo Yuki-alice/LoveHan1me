@@ -9,19 +9,23 @@ import lovehan1me.core.domain.model.ContrastLevel
 import lovehan1me.core.domain.model.PlayerKernel
 import lovehan1me.core.domain.model.SearchFilterPreset
 import lovehan1me.core.domain.model.SettingsStore
+import lovehan1me.core.domain.model.ThemeConfig
 import lovehan1me.core.domain.model.ThemeMode
 import lovehan1me.core.domain.model.VideoAspectMode
 import lovehan1me.core.domain.model.PictureAdjust
 import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
 import lovehan1me.core.domain.model.cfCookieFor
 import lovehan1me.core.domain.model.cfCookieKeyFor
+import lovehan1me.core.domain.model.themeConfig
 import lovehan1me.data.network.CloudflareChallenges
 import lovehan1me.data.network.egress.ForceMode
+import lovehan1me.feature.danmaku.DanmakuRenderOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
@@ -43,6 +47,47 @@ object SettingsRepository : SettingsStore {
 
     val loginStateFlow by lazy { settings.map { it.isAlreadyLogin }.stateIn(scope, SharingStarted.Eagerly, current.isAlreadyLogin) }
     val checkInEnabledFlow by lazy { settings.map { it.checkInEnabled }.stateIn(scope, SharingStarted.Eagerly, current.checkInEnabled) }
+
+    /**
+     * B4 主题派生流：只含主题子树关心的四量（mode/id/对比度/AMOLED）。
+     *
+     * 照既有 `loginStateFlow` 模式（`map + stateIn(Eagerly)`），外加
+     * `distinctUntilChanged` —— 改弹幕字号、切代理等无关写操作不再发射，
+     * `HanimeTheme` / `SubjectThemeOverride` 随之免重组。
+     * 去重键是 [ThemeConfig] 的 data class `equals`，四字段全稳定，不断言。
+     */
+    val themeConfigFlow: StateFlow<ThemeConfig> by lazy {
+        settings.map { it.themeConfig() }
+            .distinctUntilChanged()
+            .stateIn(scope, SharingStarted.Eagerly, current.themeConfig())
+    }
+
+    /**
+     * B4 弹幕观感派生流：只含绘制四量（字号/不透明度/显示区/速度）。
+     *
+     * 映射与 `DanmakuRenderWiring.danmakuRenderOptions()` 同源（字段一一对应，
+     * 不分头写）；`DanmakuRenderOptions` 是 data class，去重语义同上。
+     * 设置页滑杆拖动时只重组弹幕绘制订阅者，不碰主题树。
+     */
+    val danmakuRenderOptionsFlow: StateFlow<DanmakuRenderOptions> by lazy {
+        settings.map {
+            DanmakuRenderOptions(
+                fontSizeSp = it.danmakuFontSizeSp,
+                opacityPercent = it.danmakuOpacityPercent,
+                displayAreaPercent = it.danmakuDisplayAreaPercent,
+                speedPercent = it.danmakuSpeedPercent,
+            )
+        }
+            .distinctUntilChanged()
+            .stateIn(scope, SharingStarted.Eagerly, current.toDanmakuRenderOptions())
+    }
+
+    private fun AppSettings.toDanmakuRenderOptions(): DanmakuRenderOptions = DanmakuRenderOptions(
+        fontSizeSp = danmakuFontSizeSp,
+        opacityPercent = danmakuOpacityPercent,
+        displayAreaPercent = danmakuDisplayAreaPercent,
+        speedPercent = danmakuSpeedPercent,
+    )
 
     /** 命名筛选预设：给 UI 用的响应式流（增删改都要立刻反映到常驻栏/弹窗上）。 */
     val searchFilterPresetsFlow by lazy {

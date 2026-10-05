@@ -5,8 +5,8 @@ import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.data.SettingsRepository
 
 /**
@@ -44,21 +44,22 @@ fun HanimeTheme(
     content: @Composable () -> Unit,
 ) {
     val systemDarkTheme = isSystemInDarkTheme()
-    val settings by SettingsRepository.settings.collectAsState()
-    val resolvedDarkTheme = darkTheme ?: when (settings.themeMode.value) {
+    // B4：只订阅主题四量（mode/id/对比度/AMOLED），改弹幕字号等无关设置不再重组整树。
+    val themeConfig by SettingsRepository.themeConfigFlow.collectAsStateWithLifecycle()
+    val resolvedDarkTheme = darkTheme ?: when (themeConfig.themeMode.value) {
         "always_on" -> true
         "always_off" -> false
         else -> systemDarkTheme
     }
     // 命名槽位现场色算（materialkolor，真三端）。
     var colorScheme = boardColorScheme(
-        board = ThemeBoard.fromId(settings.themeId),
+        board = ThemeBoard.fromId(themeConfig.themeId),
         isDark = resolvedDarkTheme,
         // 高对比度接设置（默认档 = 0.0，即原先写死的值）。
-        contrastLevel = settings.contrastLevel.spec,
+        contrastLevel = themeConfig.contrastLevel.spec,
     )
     // AMOLED 是与深浅正交的独立开关，只在深色下叠加（Mihon 模式）。
-    if (settings.amoled && resolvedDarkTheme) colorScheme = colorScheme.amoled()
+    if (themeConfig.amoled && resolvedDarkTheme) colorScheme = colorScheme.amoled()
     // 切槽位 / 深浅 / 对比度 / AMOLED 时平滑过渡（不再硬切）。
     val animatedColorScheme = animateColorScheme(colorScheme)
     ConfigureSystemBars(
