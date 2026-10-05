@@ -19,7 +19,6 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.core.constant.EMPTY_STRING
 import lovehan1me.data.SettingsRepository
-import lovehan1me.data.network.EchGate
 import lovehan1me.Res
 import lovehan1me.alternative
 import lovehan1me.custom
@@ -68,12 +67,14 @@ import lovehan1me.data.network.HanimeDns
 import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.data.network.ServiceCreator
 import lovehan1me.data.network.egress.RouteRegistry
-import lovehan1me.data.network.egress.DomainClass
-import lovehan1me.data.network.egress.RouteId
 import lovehan1me.data.network.egress.EgressEvents
+import lovehan1me.data.network.egress.EgressStatusTexts
 import lovehan1me.data.network.egress.buildEgressExport
-import lovehan1me.data.network.egress.currentProxyState
-import lovehan1me.data.network.egress.isUsable
+import lovehan1me.data.network.egress.detail
+import lovehan1me.data.network.egress.egressStatusSnapshot
+import lovehan1me.data.network.egress.formatLines
+import lovehan1me.data.network.egress.recentEgressRows
+import lovehan1me.data.network.egress.title
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.site.SiteSwitcher
 import lovehan1me.ui.component.ConfirmDialog
@@ -164,53 +165,25 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
     val triMeltedTemplate = stringResource(Res.string.egress_tri_melted)
     val triUnstableTemplate = stringResource(Res.string.egress_tri_unstable)
     val triNoRouteText = stringResource(Res.string.egress_tri_no_route)
-    val echGateStatus = remember(gateStatusTick, settings) {
-        val port = EchGate.port
-        val base = when {
-            port > 0 -> gateRunningTemplate.replace("%1\$d", port.toString())
-            EchGate.starting -> gateStartingText
-            EchGate.lastError != null ->
-                gateFailedTemplate.replace("%1\$s", EchGate.lastError.orEmpty())
-
-            else -> gateStoppedText
-        }
-        // 三态（与诊断同源）：熔断域 / 不稳定域 / 无可用出口。正常时不贴条。
-        val now = currentEpochMillis()
-        val tracked = DomainClass.entries.filter { it != DomainClass.ThirdParty }
-        val melted = tracked.filter { RouteRegistry.healthOf(it).isOpen(RouteId.Gate, now) }
-        val unstable = tracked.filter { domain ->
-            domain !in melted && RouteRegistry.healthOf(domain).routes.values.any { it.consecutiveFailures > 0 }
-        }
-        val extra = buildList {
-            if (melted.isNotEmpty()) {
-                add(triMeltedTemplate.replace("%1\$s", melted.joinToString { it.name }))
-            }
-            if (unstable.isNotEmpty()) {
-                val fails = unstable.maxOf { domain ->
-                    RouteRegistry.healthOf(domain).routes.values.maxOf { it.consecutiveFailures }
-                }
-                add(
-                    triUnstableTemplate
-                        .replace("%1\$s", unstable.joinToString { it.name })
-                        .replace("%2\$d", fails.toString()),
-                )
-            }
-            if (settings.useEchGate && port <= 0 && !currentProxyState().isUsable) {
-                add(triNoRouteText)
-            }
-        }
-        if (extra.isEmpty()) base else base + "\n" + extra.joinToString("\n")
-    }
-    // 诊断事件（2s tick 刷新，近 50 条）与导出文本同源。
-    val timeFormat = remember { java.text.SimpleDateFormat("HH:mm:ss", java.util.Locale.US) }
-    val egressEvents = remember(gateStatusTick) {
-        EgressEvents.recent().takeLast(50).map { event ->
-            EgressEventUi(
-                title = "${event.domain} · ${event.route} · ${event.outcome}",
-                detail = "${timeFormat.format(java.util.Date(event.atMs))} · " +
-                    "rtt ${event.rttMs}ms · budget ${event.budgetMs}ms",
+    // 三态与诊断的判定本体已上提到 commonMain 纯函数（iOS 网络页要用同一份）：
+    // 这里只剩"取快照 + 按本地化文案排版"，不再自己算熔断域。
+    val snapshot = remember(gateStatusTick, settings) { egressStatusSnapshot(currentEpochMillis()) }
+    val echGateStatus = remember(snapshot) {
+        snapshot.formatLines(
+            EgressStatusTexts(
+                running = gateRunningTemplate,
+                starting = gateStartingText,
+                stopped = gateStoppedText,
+                failed = gateFailedTemplate,
+                melted = triMeltedTemplate,
+                unstable = triUnstableTemplate,
+                noRoute = triNoRouteText,
             )
-        }
+        )
+    }
+    // 诊断事件（2s tick 刷新，近 50 条）与导出文本同源；时间口径由 commonMain 统一给出。
+    val egressEvents = remember(gateStatusTick) {
+        recentEgressRows(50).map { row -> EgressEventUi(title = row.title(), detail = row.detail()) }
     }
     val egressExportText = remember(gateStatusTick) {
         buildEgressExport(EgressEvents.recent().takeLast(50))

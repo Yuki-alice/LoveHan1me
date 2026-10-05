@@ -22,3 +22,21 @@ actual fun settingsPlatformCapabilities(): SettingsPlatformCapabilities =
         mpvVideoOutput = false,
         mpvMediacodecHwdec = false,
     )
+
+/**
+ * iOS 播放能力真值。依据：
+ * - `fullscreen = true` —— `IosVideoPageHost.applyFullscreen` 经 `IosFullscreenBridge` 真实现；
+ * - `brightness = true` —— `UIScreen.mainScreen.brightness` 读写真实现（C1a）；
+ * - `pipMode = true` —— 真支持 PiP（`settingsPlatformCapabilities().pipMode` 同口径）；
+ * - `gateRewrite = false` —— AVPlayer 无可靠的按请求注入口（`AVURLAssetHTTPHeaderFieldsKey`
+ *   不保证对 HLS 分片生效），恒 `null`，正解是 `AVAssetResourceLoaderDelegate`（阶段 3.2）；
+ * - `mediaProxy = false` —— iOS 没有 URL 形式代理注入口，系统代理由 AVFoundation 自行跟随。
+ */
+actual fun playerPlatformCapabilities(): PlayerPlatformCapabilities =
+    PlayerPlatformCapabilities(
+        fullscreen = true,
+        brightness = true,
+        pipMode = true,
+        gateRewrite = false,
+        mediaProxy = false,
+    )

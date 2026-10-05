@@ -225,7 +225,7 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="auto_built_in_hosts">Auto-select built-in nodes</string>
     <string name="auto_built_in_hosts_summary">Prefer built-in IPs for site domains, fall back to system DNS when none connect\nOn by default: system DNS resolves these domains to unreachable addresses</string>
     <string name="use_ech_gate">ECH gateway (direct, no proxy · experimental)</string>
-    <string name="use_ech_gate_summary">Experimental: route site traffic through the local ECH gateway so the SNI is encrypted and cannot be reset\nFirst load may take a few seconds (waiting for the gateway); falls back to direct/proxy on failure\nDesktop only for now, mobile runtime in progress</string>
+    <string name="use_ech_gate_summary">Experimental: route site traffic through the local ECH gateway so the SNI is encrypted and cannot be reset\nFirst load may take a few seconds (waiting for the gateway); falls back to direct/proxy on failure\nAvailable on desktop, Android and iOS (media playback on iOS still uses a direct connection)</string>
     <string name="ech_gate_status_running">Gateway running (127.0.0.1:%1$d)</string>
     <string name="ech_gate_status_starting">Gateway starting…</string>
     <string name="ech_gate_status_stopped">Gateway not running</string>
@@ -243,6 +243,10 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="egress_diagnostics_empty">No egress events yet</string>
     <string name="egress_copy">Copy</string>
     <string name="egress_close">Close</string>
+    <string name="network_platform_limits_title">Not configurable on this platform</string>
+    <string name="network_platform_limits_ios">Custom DNS, HTTP/SOCKS proxy and custom hosts follow the system settings here and cannot be set in the app. The ECH gateway, route override and diagnostics below are fully available.</string>
+    <string name="network_gate_section">ECH gateway</string>
+    <string name="network_diag_section">Connection diagnostics</string>
     <string name="custom_hosts">Custom Hosts</string>
     <string name="custom_hosts_format">Multiple IPs separated by commas, e.g. 1.2.3.4,5.6.7.8</string>
     <string name="custom_hosts_empty_summary">Not set (using built-in mapping)</string>

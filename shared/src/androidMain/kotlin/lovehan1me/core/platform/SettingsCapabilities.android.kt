@@ -19,3 +19,21 @@ actual fun settingsPlatformCapabilities(): SettingsPlatformCapabilities =
         mpvVideoOutput = false,
         mpvMediacodecHwdec = false,
     )
+
+/**
+ * Android 播放能力真值。依据：
+ * - `fullscreen = true` —— `AndroidVideoPageHost.applyFullscreen` 真实现（方向 + 系统栏）；
+ * - `brightness = true` —— `window.screenBrightness` 覆盖真实现；
+ * - `pipMode = true` —— 真支持 PiP（`settingsPlatformCapabilities().pipMode` 同口径）；
+ * - `gateRewrite = true` —— `PlayerWiring.android.rewriteForGate` 接 `gateRewrite`；
+ * - `mediaProxy = false` —— Exo 的 `DefaultHttpDataSource` 不消费 URL 形式代理，
+ *   `proxyUrlFor` 恒 `null`（显式代理走 JVM 系统属性，与本方法无关）。
+ */
+actual fun playerPlatformCapabilities(): PlayerPlatformCapabilities =
+    PlayerPlatformCapabilities(
+        fullscreen = true,
+        brightness = true,
+        pipMode = true,
+        gateRewrite = true,
+        mediaProxy = false,
+    )

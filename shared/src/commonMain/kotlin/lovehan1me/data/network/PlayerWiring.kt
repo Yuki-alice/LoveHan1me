@@ -1,7 +1,10 @@
 package lovehan1me.data.network
 
+import lovehan1me.core.util.LogUtil
 import lovehan1me.data.SettingsRepository
+import lovehan1me.data.network.egress.AttemptOutcome
 import lovehan1me.data.network.egress.EgressPurpose
+import lovehan1me.data.network.egress.EgressReporter
 import lovehan1me.data.network.egress.EgressRequest
 import lovehan1me.data.network.egress.EgressScheduler
 import lovehan1me.data.network.egress.RouteId
@@ -61,4 +64,27 @@ internal fun gateRewrite(uri: String): Pair<String, Map<String, String>>? {
         ?.takeIf { it.route == RouteId.Gate }
         ?.rewrite ?: return null
     return rewrite.url to mapOf(EchGatePolicy.TARGET_HEADER to rewrite.targetHost)
+}
+
+/**
+ * 播放网关链路结局 → [EgressReporter]（F9 / 阶段 4.2）。
+ *
+ * 只上报 [RouteId.Gate]：调用点（引擎的 `onGateLoadOutcome`）保证只在**确实走了
+ * [gateRewrite]** 时回调。视频 CDN 与图床常不同域（如
+ * `vdownload.hembed.com → *.rsc.cdn77.org`），此前没有任何数据流进它的 [RouteRegistry]
+ * 健康，该域的网关出口**永不熔断**——正是"能浏览、不能播"的账本缺失。
+ *
+ * 失败按 [AttemptOutcome.TransportError]（攒够阈值才熔）记；不区分网关 502 与连接类
+ * 异常：引擎侧（Exo/mpv）拿到的都是 IOException，编一个更细的口径不如诚实粗一点。
+ * rtt 记 -1（无样本，不动 EWMA）：一次"加载"跨多个请求，不是一个 RTT。
+ */
+internal fun reportGateLoadOutcome(uri: String, ok: Boolean, reason: String?) {
+    val domain = classifyDomain(uri, EgressPurpose.Video)
+    EgressReporter.report(
+        domain = domain,
+        route = RouteId.Gate,
+        outcome = if (ok) AttemptOutcome.Success else AttemptOutcome.TransportError,
+        rttMs = -1L,
+    )
+    if (!ok) LogUtil.w("PlayerWiring", "视频域网关加载失败（$domain）：${reason ?: "未知"}")
 }

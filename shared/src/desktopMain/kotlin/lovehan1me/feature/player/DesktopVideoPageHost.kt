@@ -1,6 +1,7 @@
 package lovehan1me.feature.player
 
 import lovehan1me.app.bridge.VideoPageHost
+import lovehan1me.core.platform.playerPlatformCapabilities
 import java.awt.GraphicsEnvironment
 
 /**
@@ -32,6 +33,11 @@ class DesktopVideoPageHost : VideoPageHost {
     override fun togglePlayPause() {
         // 桌面暂无全局媒体键/通知栏控制入口
     }
+
+    /** 全屏/亮度真值取自平台能力表（[playerPlatformCapabilities]），在桌面分别 true / false。 */
+    override fun supportsFullscreen(): Boolean = playerPlatformCapabilities().fullscreen
+
+    override fun supportsBrightness(): Boolean = playerPlatformCapabilities().brightness
 
     override fun applyFullscreen(fullscreen: Boolean, forceLandscape: Boolean) {
         val window = DesktopWindowHolder.window ?: return

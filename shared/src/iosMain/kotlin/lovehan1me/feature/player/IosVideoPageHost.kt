@@ -5,6 +5,7 @@ package lovehan1me.feature.player
 import kotlinx.cinterop.ExperimentalForeignApi
 import lovehan1me.app.bridge.PipModeReporter
 import lovehan1me.app.bridge.VideoPageHost
+import lovehan1me.core.platform.playerPlatformCapabilities
 import lovehan1me.core.util.LogUtil
 import lovehan1me.data.SettingsRepository
 import platform.AVFAudio.AVAudioSession
@@ -94,8 +95,9 @@ object IosVideoPageHost : VideoPageHost, PipModeReporter {
      * C1a：亮度是真实现（`UIScreen.mainScreen.brightness` 读写），故声明支持。
      *
      * 调用方（手势 HUD）全在 Compose 主线程，与 Android 直接读写窗口同约束。
+     * 真值取自平台能力表（[playerPlatformCapabilities]）。
      */
-    override fun supportsBrightness(): Boolean = true
+    override fun supportsBrightness(): Boolean = playerPlatformCapabilities().brightness
 
     override fun currentBrightness(): Float =
         UIScreen.mainScreen.brightness.toFloat().coerceIn(0.01f, 1f)
@@ -107,8 +109,9 @@ object IosVideoPageHost : VideoPageHost, PipModeReporter {
     /**
      * C1b：iOS 全屏已实现（手动路线：布局态复用 common `isFullscreen`，
      * 系统栏/方向经 [IosFullscreenBridge] 交 Swift 壳，PiP 层不动）。
+     * 真值取自平台能力表（[playerPlatformCapabilities]）。
      */
-    override fun supportsFullscreen(): Boolean = true
+    override fun supportsFullscreen(): Boolean = playerPlatformCapabilities().fullscreen
 
     override fun applyFullscreen(fullscreen: Boolean, forceLandscape: Boolean) {
         IosFullscreenBridge.publish(fullscreen, forceLandscape)

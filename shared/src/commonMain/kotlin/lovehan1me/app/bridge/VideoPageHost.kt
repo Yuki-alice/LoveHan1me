@@ -7,9 +7,11 @@ import androidx.compose.ui.geometry.Rect
  *
  * 原 `:app` `VideoRouteHostScreen` 把 PiP / 常亮 / 全屏 / 亮度 / 系统栏全部直调
  * `MainActivity.window`；下沉后窗口操作收敛到本接口（默认空实现）：
- * - Android（`:app` `AndroidVideoPageHost`）：搬原 Host 代码（PiP RemoteAction、
- *   FLAG_KEEP_SCREEN_ON、requestedOrientation、systemBars、亮度读写、host 注册）；
- * - 桌面/iOS：[NoopVideoPageHost]（窗口全屏/画中画随 M-后续增强）。
+ * - Android（`AndroidVideoPageHost`）：PiP RemoteAction、FLAG_KEEP_SCREEN_ON、
+ *   requestedOrientation、systemBars、亮度读写、host 注册；
+ * - 桌面（`DesktopVideoPageHost`）：AWT 全屏；无 PiP / 亮度 / 系统栏；
+ * - iOS（`IosVideoPageHost`）：`IosFullscreenBridge` 全屏、`UIScreen.brightness` 亮度、真 PiP；
+ * - [NoopVideoPageHost]：未注入真实宿主时的兜底，各项能力一律按"没有"回答。
  *
  * 纯逻辑（评论徽标、PiP 准入判断、播放切换）由共享 Host 内部实现，不经过本接口。
  */
@@ -32,11 +34,12 @@ interface VideoPageHost {
     /**
      * 本平台是否实现了全屏。
      *
-     * iOS 目前**没有**实现（`IosVideoPageHost` 未覆写 [applyFullscreen]）：
-     * 此前调用方无条件把 `isFullscreen` 置真，于是 UI 切成全屏形态、画面却没全屏 ——
-     * 与"亮度手势假动作"同一类问题。UI 据此隐藏全屏入口，不撒谎。
+     * 默认 `false`：**没实现就不许声称支持**。此前默认 `true`，于是忘记注入真实宿主的
+     * [NoopVideoPageHost] 也会让 UI 亮出全屏键，按了没反应（与"亮度手势假动作"同类）。
+     * 真实实现的平台（Android / 桌面 / iOS）从 [lovehan1me.core.platform.playerPlatformCapabilities]
+     * 取真值并显式覆写。
      */
-    fun supportsFullscreen(): Boolean = true
+    fun supportsFullscreen(): Boolean = false
 
     /** 全屏切换（含横竖屏与系统栏），UI 侧 isFullscreen 状态由调用方维护。 */
     fun applyFullscreen(fullscreen: Boolean, forceLandscape: Boolean = false) {}

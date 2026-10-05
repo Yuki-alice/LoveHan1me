@@ -28,3 +28,20 @@ actual fun settingsPlatformCapabilities(): SettingsPlatformCapabilities =
         mpvVideoOutput = false,
         mpvMediacodecHwdec = false,
     )
+
+/**
+ * 桌面播放能力真值。依据：
+ * - `fullscreen = true` —— `DesktopVideoPageHost.applyFullscreen` 用 AWT `setFullScreenWindow` 真实现；
+ * - `brightness = false` —— 桌面无调节显示器硬件亮度的 API，`applyBrightness` 是空实现；
+ * - `pipMode = false` —— `shouldEnterPip()` 恒 `false`（桌面多窗口语义，非遗漏）；
+ * - `gateRewrite = true` / `mediaProxy = true` —— `PlayerWiring.desktop` 两条通道都接了实现
+ *   （`gateRewrite` 共用 common 判定，`proxyUrlFor` 在本端真有取值逻辑）。
+ */
+actual fun playerPlatformCapabilities(): PlayerPlatformCapabilities =
+    PlayerPlatformCapabilities(
+        fullscreen = true,
+        brightness = false,
+        pipMode = false,
+        gateRewrite = true,
+        mediaProxy = true,
+    )

@@ -15,6 +15,19 @@ interface PlayerNetworkConfig {
     // ECH 网关改写：返回改写后 URL + 需附加的网关头，网关未运行返回 null。
     // 对应原 EchGatePolicy.rewrite + mediaUrlForGate 语义。
     fun rewriteForGate(uri: String): Pair<String, Map<String, String>>?
+
+    // 网关链路加载结局回报（F9 / 阶段 4.2）。
+    //
+    // ⚠️ 只在**本次加载确实经 rewriteForGate 走了网关改写**时回调。直连加载不得调用 ——
+    // 否则会把直连的失败记到网关账上，造出假熔断。
+    //
+    // 实现（:shared 的 PlayerWiring）据 uri 分类域并回 EgressReporter，让视频域拥有
+    // 自己的网关健康数据：视频 CDN（如 vdownload.hembed.com → *.rsc.cdn77.org）与图床
+    // 常不同域，此前没有任何数据流进它的 RouteHealth，该域的网关出口**永不熔断**。
+    //
+    // 不传 rtt：引擎侧一次"加载"跨越 manifest + 分片（Exo）或整个 loadfile（mpv），
+    // 不是单次请求的 RTT，编一个数不如诚实留空。
+    fun onGateLoadOutcome(uri: String, ok: Boolean, reason: String? = null) {}
 }
 
 // mpv 选项快照（Gate3-P1 设置项解耦）。

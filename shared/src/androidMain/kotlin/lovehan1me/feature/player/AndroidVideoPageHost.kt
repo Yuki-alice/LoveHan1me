@@ -33,6 +33,7 @@ import lovehan1me.app.main.ACTION_TOGGLE_PLAY
 import lovehan1me.data.SettingsRepository
 import lovehan1me.reason_for_download_notification
 import lovehan1me.app.bridge.VideoPageHost
+import lovehan1me.core.platform.playerPlatformCapabilities
 import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.launch
 import org.jetbrains.compose.resources.getString
@@ -189,8 +190,10 @@ class AndroidVideoPageHost(
         }
     }
 
-    /** Android 侧亮度是真实现的（window.screenBrightness 覆盖），故声明支持。 */
-    override fun supportsBrightness(): Boolean = true
+    /** 全屏/亮度真值取自平台能力表（[playerPlatformCapabilities]），Android 两项均为 true。 */
+    override fun supportsFullscreen(): Boolean = playerPlatformCapabilities().fullscreen
+
+    override fun supportsBrightness(): Boolean = playerPlatformCapabilities().brightness
 
     override fun currentBrightness(): Float {
         val overrideBrightness = activity.window.attributes.screenBrightness

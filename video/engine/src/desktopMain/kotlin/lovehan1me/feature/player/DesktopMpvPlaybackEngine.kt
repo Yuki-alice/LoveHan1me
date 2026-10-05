@@ -127,6 +127,11 @@ class DesktopMpvPlaybackEngine(
                 playWhenReady = playWhenReadyFor(request),
                 startPositionMillis = startPositionFor(request),
             )
+            // 阶段 4.2：网关链路结局上报（只此一处成功点；失败走下面的 catch）。
+            // 注意这是"引擎侧观察到的加载结局"：mpv 的 loadfile 之后才异步拉流，
+            // 同步 setMediaData 返回不代表字节到齐 —— 但本方法与 catch 的口径一致
+            //（失败回退也只兜同步抛），不假装看到了全部。
+            if (gateRewrite != null) network.onGateLoadOutcome(request.uri, ok = true)
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -140,6 +145,8 @@ class DesktopMpvPlaybackEngine(
             // 症状就是"同一部片，封面能刷出来、视频打不开"。这里补上同一份兜底，
             // 只重试一次（直连不通就真的不通，别循环）。
             if (gateRewrite != null) {
+                // 先记网关这次失败再回退（F9）：视频域据此能独立熔断，回退成功不代表网关是好的。
+                network.onGateLoadOutcome(request.uri, ok = false, reason = e.message)
                 LogUtil.w(
                     TAG,
                     "网关链路加载失败，回退直连重试一次 ${request.uri.substringBefore('?')}",
