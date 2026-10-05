@@ -28,3 +28,17 @@ actual fun writeCachedHomeHtml(key: String, html: String) {
         current.writeText(html)
     }.onFailure { LogUtil.w(TAG, "write cache failed: ${it.message}") }
 }
+
+actual fun readCachedDiscoverHtml(key: String): String? = runCatching {
+    fileFor(key).takeIf { it.isFile && it.length() in 1..MAX_CACHED_HTML_BYTES }?.readText()
+}.onFailure { LogUtil.w(TAG, "read discover cache failed: ${it.message}") }.getOrNull()
+
+actual fun writeCachedDiscoverHtml(key: String, html: String) {
+    runCatching {
+        val current = fileFor(key)
+        // 只留当前 key（`discover_` 前缀自理，不碰 `home_*` 文件）。
+        cacheDir().listFiles { file -> file.isFile && file.name.startsWith("discover_") && file != current }
+            ?.forEach { it.delete() }
+        current.writeText(html)
+    }.onFailure { LogUtil.w(TAG, "write discover cache failed: ${it.message}") }
+}

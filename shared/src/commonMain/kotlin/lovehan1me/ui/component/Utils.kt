@@ -5,7 +5,6 @@ import lovehan1me.core.util.LogUtil
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
@@ -18,6 +17,7 @@ import androidx.compose.ui.platform.LocalInspectionMode
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import coil3.request.CachePolicy
 import coil3.request.ImageRequest
 import coil3.request.crossfade
 import lovehan1me.data.SettingsRepository
@@ -39,12 +39,15 @@ fun RetryableImage(
 ) {
     val context = LocalPlatformContext.current
     var retryCount by remember { mutableIntStateOf(0) }
-    var currentModel by remember { mutableStateOf(model) }
 
+    // 重试不换 URL：此前 `?retry=` 拼法同时击穿内存/磁盘/服务端三级缓存，
+    // 且 CDN 会把它当新资源。失败本就无缓存可命中，同 URL 重发即重拉；
+    // 显式 bypass 磁盘只为语义明确。retryCount 只做重组触发器。
     AsyncImage(
         model = ImageRequest.Builder(context)
-            .data(currentModel)
+            .data(model)
             .crossfade(true)
+            .apply { if (retryCount > 0) networkCachePolicy(CachePolicy.DISABLED) }
             .listener(
                 onError = { _, result ->
                     LogUtil.e("CoilError", "Image load failed", result.throwable)
@@ -56,10 +59,7 @@ fun RetryableImage(
         error = error,
         modifier = modifier,
         onError = {
-            if (retryCount < retryLimit) {
-                retryCount++
-                currentModel = "$model?retry=$retryCount"
-            }
+            if (retryCount < retryLimit) retryCount++
         },
         contentScale = contentScale ?: ContentScale.Fit
     )

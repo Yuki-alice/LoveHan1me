@@ -11,6 +11,9 @@ import lovehan1me.site.hanime1.HanimeAdvancedSearchRepo.toDbString
 import lovehan1me.site.hanime1.HanimeAdvancedSearchRepo.toSearchOptionSet
 import lovehan1me.data.DatabaseRepo
 import lovehan1me.data.NetworkRepo
+import lovehan1me.data.discoverCacheKey
+import lovehan1me.data.readCachedDiscoverHtml
+import lovehan1me.site.hanime1.Parser
 import lovehan1me.data.database.entity.SearchHistoryEntity
 import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.core.domain.model.HanimeInfo
@@ -136,11 +139,32 @@ class SearchViewModel() : ViewModel() {
         sort: String?, broad: Boolean, date: String?,
         duration: String?, tags: Set<String>, brands: Set<String>,
     ) {
+        // 发现页默认浏览（空搜 page=1、无任何筛选）走 stale 缓存：
+        // key 本来就不含筛选参数，有条件的请求天然不可缓存，不会串结果。
+        val cacheable = page == 1 && query.isNullOrBlank() && genre == null &&
+                sort == null && !broad && date == null && duration == null &&
+                tags.isEmpty() && brands.isEmpty()
         viewModelScope.launch {
+            // 先展陈旧第一页（~0.2s 解析），再正常拉新覆盖 —— 进 tab 不再白等整轮网络。
+            // 刷新行为不变（永远拉新）；无缓存/解析失败就当 miss。
+            var staleReplaced = false
+            if (cacheable) {
+                val cached = runCatching {
+                    withContext(ioDispatcher) {
+                        readCachedDiscoverHtml(discoverCacheKey())?.let(Parser::hanimeSearch)
+                    }
+                }.getOrNull()
+                if (cached is PageLoadingState.Success) {
+                    _searchStateFlow.value = cached
+                    _searchFlow.value = withWatched(cached.info)
+                    staleReplaced = true
+                }
+            }
             NetworkRepo.getHanimeSearchResult(
                 page, query, genre,
                 sort, broad, date ,
-                duration, tags, brands
+                duration, tags, brands,
+                writeCache = cacheable,
             ).collect { state ->
                 val prev = _searchStateFlow.getAndUpdate { state }
                 if (prev is PageLoadingState.Loading) _searchFlow.value = emptyList()
@@ -148,25 +172,29 @@ class SearchViewModel() : ViewModel() {
                     when (state) {
 //                        is PageLoadingState.Success -> prevList + state.info
                         is PageLoadingState.Success -> {
-                            val list = state.info
-                            val updatedList = if (SettingsRepository.showPlayedIndicator) {
-                                val codes = list.map { it.videoCode }
-                                val watchedCodes = withContext(ioDispatcher) {
-                                    DatabaseRepo.WatchHistory.getWatched(codes).toSet()
-                                }
-                                list.map { item ->
-                                    item.copy(watched = watchedCodes.contains(item.videoCode))
-                                }
-                            } else {
-                                list
-                            }
-                            (prevList + updatedList).distinctBy(HanimeInfo::videoCode)
+                            val updatedList = withWatched(state.info)
+                            // 陈旧页被新鲜第一页替换（不是追加）：去重保首项，
+                            // 直接追加会把旧快照顶在前面、顺序错乱。
+                            val base =
+                                if (staleReplaced) { staleReplaced = false; emptyList() } else prevList
+                            (base + updatedList).distinctBy(HanimeInfo::videoCode)
                         }
                         is PageLoadingState.Loading -> emptyList()
                         else -> prevList
                     }
                 }
             }
+        }
+    }
+
+    /** 已看标记：原来内联在收集分支里，缓存首展与网络刷新共用。 */
+    private suspend fun withWatched(list: List<HanimeInfo>): List<HanimeInfo> {
+        if (!SettingsRepository.showPlayedIndicator) return list
+        val watchedCodes = withContext(ioDispatcher) {
+            DatabaseRepo.WatchHistory.getWatched(list.map { it.videoCode }).toSet()
+        }
+        return list.map { item ->
+            item.copy(watched = watchedCodes.contains(item.videoCode))
         }
     }
 

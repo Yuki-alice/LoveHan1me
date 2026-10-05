@@ -20,6 +20,10 @@ import androidx.compose.runtime.snapshotFlow
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import coil3.compose.LocalPlatformContext
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
+import lovehan1me.ui.component.rememberHanimeImageLoader
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.core.domain.model.HanimeInfo.Companion.NORMAL
@@ -129,6 +133,9 @@ import kotlin.time.Duration.Companion.milliseconds
 // 搜索结果网格
 // ─────────────────────────────────────────────
 
+/** 新页到达时预热的封面数（约一屏，磁盘-only，方向反转浪费可控）。 */
+private const val PREFETCH_COVER_COUNT = 12
+
 @Composable
 fun SearchResultsGrid(
     videos: List<HanimeInfo>, state: PageLoadingState<*>, showPlayedIndicator: Boolean,
@@ -147,6 +154,30 @@ fun SearchResultsGrid(
             }
     }
     LaunchedEffect(state) { if (state !is PageLoadingState.Loading) isLoadingMore = false }
+    // 新页封面预热：分页到达即把新到一页送进磁盘缓存，快滑翻页时只剩解码。
+    // 只取尾部（新页在尾）——已预热过的不重做，无 churn；只写磁盘不写内存
+    // （解码尺寸由展示侧定，预热定死尺寸反而污染内存缓存）。
+    val imageLoader = rememberHanimeImageLoader()
+    val platformContext = LocalPlatformContext.current
+    LaunchedEffect(videos.size) {
+        videos
+            .takeLast(PREFETCH_COVER_COUNT)
+            .distinctBy { it.coverUrl }
+            .forEach { video ->
+                val url = video.coverUrl
+                if (url.isNotBlank()) {
+                    runCatching {
+                        imageLoader.enqueue(
+                            ImageRequest.Builder(platformContext)
+                                .data(url)
+                                .diskCachePolicy(CachePolicy.ENABLED)
+                                .memoryCachePolicy(CachePolicy.DISABLED)
+                                .build(),
+                        )
+                    }
+                }
+            }
+    }
     Box(modifier = modifier.fillMaxSize()) {
         val normalCardWidth = rememberVideoCardMinWidth(simplified = false)
         val simplifiedCardWidth = rememberVideoCardMinWidth(simplified = true)
@@ -168,7 +199,7 @@ fun SearchResultsGrid(
             horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
             verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium)
         ) {
-            items(videos, key = { it.videoCode }) {
+            items(videos, key = { it.videoCode }, contentType = { it.itemType }) {
                 VideoCardItem(
                     modifier = Modifier,
                     videoItem = it,

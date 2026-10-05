@@ -11,12 +11,17 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import coil3.compose.LocalPlatformContext
+import coil3.request.CachePolicy
+import coil3.request.ImageRequest
+import lovehan1me.ui.component.rememberHanimeImageLoader
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -43,6 +48,7 @@ import lovehan1me.ui.adaptive.rememberPageHorizontalMargin
  * @param onAnnouncementRead 某条公告被用户看过（关闭其详情）时调用，调用方落盘已读
  * @param modifier 应用于列表根布局的修饰符。
  */
+private const val PREFETCH_COVER_COUNT = 12
 @Composable
 fun HomePageContent(
     data: HomeData,
@@ -70,6 +76,33 @@ fun HomePageContent(
     val categories = remember(data.page, isAVSite) {
         buildCategoryList(data.page, isAVSite)
     }
+    // 封面预热（激进但有界）：数据到达即把首屏量级封面送进磁盘缓存，
+    // 用户滑到时只剩解码 + 内存，体感"无加载"。
+    // 只写磁盘不写内存——解码尺寸由展示侧决定，预热时定死尺寸反而污染内存缓存；
+    // 数量封顶 12（约一屏半），方向反转浪费可控。
+    // 注意与 `RetryableImage` 的重试语义正交：预热只管"有"，显示只管"对"。
+    val imageLoader = rememberHanimeImageLoader()
+    val platformContext = LocalPlatformContext.current
+    LaunchedEffect(categories) {
+        categories
+            .flatMap { it.videos }
+            .distinctBy { it.coverUrl }
+            .take(PREFETCH_COVER_COUNT)
+            .forEach { video ->
+                val url = video.coverUrl
+                if (url.isNotBlank()) {
+                    runCatching {
+                        imageLoader.enqueue(
+                            ImageRequest.Builder(platformContext)
+                                .data(url)
+                                .diskCachePolicy(CachePolicy.ENABLED)
+                                .memoryCachePolicy(CachePolicy.DISABLED)
+                                .build(),
+                        )
+                    }
+                }
+            }
+    }
     // 页面左右边距统一由窗口档驱动，各区块不再各写各的 12.dp，
     // 否则分类矩阵（按扣边距后的宽度分档）会比 banner 宽出一截、视觉对不齐。
     val margin = rememberPageHorizontalMargin()
@@ -78,7 +111,7 @@ fun HomePageContent(
         state = listState,
         contentPadding = PaddingValues(top = contentTopPadding),
     ) {
-        item(key = "banner") {
+        item(key = "banner", contentType = "banner") {
             BannerCarousel(
                 banners = banners,
                 onBannerClick = { videoCode ->
@@ -90,7 +123,7 @@ fun HomePageContent(
             )
         }
         if (updateInfo != null) {
-            item(key = "app_update_${updateInfo.versionCode}") {
+            item(key = "app_update_${updateInfo.versionCode}", contentType = "app_update") {
                 AppUpdateCard(
                     updateInfo = updateInfo,
                     onUpdateClick = {
@@ -104,7 +137,7 @@ fun HomePageContent(
             }
         }
         if (cardAnnouncement != null) {
-            item(key = "announcement_${cardAnnouncement.stableKey}") {
+            item(key = "announcement_${cardAnnouncement.stableKey}", contentType = "announcement") {
                 Column(
                     modifier = Modifier.padding(horizontal = margin, vertical = 4.dp)
                 ) {
@@ -130,7 +163,7 @@ fun HomePageContent(
             }
         }
         categories.forEach { category ->
-            item(key = "category_${category.titleRes}") {
+            item(key = "category_${category.titleRes}", contentType = "category") {
                 CategoryBlock(
                     title = stringResource(category.titleRes),
                     videos = category.videos,

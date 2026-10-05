@@ -56,3 +56,25 @@ actual fun writeCachedHomeHtml(key: String, html: String) {
         }
     }.onFailure { LogUtil.w(TAG, "write cache failed: ${it.message}") }
 }
+
+actual fun readCachedDiscoverHtml(key: String): String? = runCatching {
+    val dir = cacheDir() ?: return null
+    val path = fileFor(key, dir)
+    if (fileSizeOf(path) !in 1..MAX_CACHED_HTML_BYTES) return null
+    readBytesAtPath(path)?.decodeToString()
+}.onFailure { LogUtil.w(TAG, "read discover cache failed: ${it.message}") }.getOrNull()
+
+actual fun writeCachedDiscoverHtml(key: String, html: String) {
+    runCatching {
+        val dir = cacheDir() ?: return
+        val current = fileFor(key, dir)
+        // 只留当前 key（`discover_` 前缀自理，不碰 `home_*` 文件）。
+        NSFileManager.defaultManager.contentsOfDirectoryAtPath(dir, error = null)
+            ?.filterIsInstance<String>()
+            ?.filter { it.startsWith("discover_") && "$dir/$it" != current }
+            ?.forEach { NSFileManager.defaultManager.removeItemAtPath("$dir/$it", error = null) }
+        if (!writeBytesAtPath(current, html.encodeToByteArray())) {
+            LogUtil.w(TAG, "write discover cache failed")
+        }
+    }.onFailure { LogUtil.w(TAG, "write discover cache failed: ${it.message}") }
+}

@@ -22,7 +22,7 @@ data class HanimeInfo(
 
     val isPlaying: Boolean = false, // for video playlist only.
 
-    override var itemType: Int,
+    override val itemType: Int,
     override val reviews: String? = "",
     override val currentArtist: String? = "",
     val watched: Boolean ?= false,

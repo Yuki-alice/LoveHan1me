@@ -76,6 +76,9 @@ object NetworkRepo {
         page: Int, query: String?, genre: String?,
         sort: String?, broad: Boolean, date: String?,
         duration: String?, tags: Set<String>, brands: Set<String>,
+        // 发现页默认浏览写透缓存（调用方判定 cacheable，见 SearchViewModel）：
+        // 拿到 body 先落盘，下次进 tab 先展陈旧第一页。默认 false，其余调用点零影响。
+        writeCache: Boolean = false,
     ) = pageIOFlow(
         request = {
             HanimeNetwork.hanimeService.getHanimeSearchResult(
@@ -83,6 +86,11 @@ object NetworkRepo {
                 if (broad) "on" else null,
                 date, duration, tags, brands
             )
+        },
+        onBody = if (writeCache) {
+            { html -> writeCachedDiscoverHtml(discoverCacheKey(), html) }
+        } else {
+            null
         },
         action = Parser::hanimeSearch
     )
@@ -659,10 +667,15 @@ object NetworkRepo {
      */
     private fun <T> pageIOFlow(
         request: suspend () -> HttpResponse,
+        // 发现页缓存写透（仅默认浏览用）：位置刻意在 action 之前，
+        // 老调用点的 trailing lambda 绑的仍是 action，零改动。默认 null。
+        onBody: (suspend (String) -> Unit)? = null,
         action: (String) -> PageLoadingState<T>,
     ) = flow {
         val requestResult = ioRequest(request)
-        emit(action.invoke(requestResult.bodyAsText()))
+        val text = requestResult.bodyAsText()
+        onBody?.invoke(text)
+        emit(action.invoke(text))
     }.catch { e ->
         emit(PageLoadingState.Error(handleException(e)))
     }.flowOn(ioDispatcher)
