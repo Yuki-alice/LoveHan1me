@@ -45,7 +45,7 @@ import kotlinx.coroutines.launch
 import lovehan1me.data.SettingsRepository
 import lovehan1me.feature.player.PlaybackController
 import lovehan1me.feature.player.PlaybackPhase
-import lovehan1me.feature.player.PlaybackSessionState
+import lovehan1me.feature.player.PlaybackUiState
 import lovehan1me.ui.theme.HanimeTheme
 import lovehan1me.ui.theme.ThemeBoard
 import lovehan1me.ui.theme.amoled
@@ -115,18 +115,21 @@ import org.openani.mediamp.togglePlayWhenReady
 /**
  * 播放器外壳：把 mediamp 的实时状态接到控件层，并决定每一层画什么。
  *
- * 状态走两条路，**不是疏漏**：
+ * 状态走三条路，**不是疏漏**：
  * - 画面内的事实（位置、时长、是否在播、缓冲、生效画面比例）直读 [player]，控件因此与
  *   后端同帧刷新，拖进度条不会有"状态机还没跟上"的滞后；
  * - 用户意图（倍速、画面比例、画质、超分）走 [controller]，因为引擎每次开流都会丢画面类
  *   偏好，只有它记着"用户想要什么"并在 load 之后重下。
+ * - 只有"画哪一层"才需要的那几个布尔/相位走 [playbackState]（`PlaybackUiState` 投影）。
+ *   它刻意不含位置 —— 位置每个推送周期都变，进了参数就等于让本层跟着重组，而本层
+ *   对位置没有任何诉求（上面第一条已把位置交给 [player] 直读）。
  * 于是每个选择器都是两段式：操作期间写 feature 出即时反馈，收尾回调 [controller] 落定。
  */
 @Composable
 fun VideoPlayerShell(
     player: MediampPlayer,
     controller: PlaybackController,
-    playbackState: PlaybackSessionState,
+    playbackState: PlaybackUiState,
     videoSurface: @Composable BoxScope.() -> Unit,
     modifier: Modifier = Modifier,
     expanded: Boolean = true,
@@ -252,7 +255,7 @@ fun VideoPlayerShell(
             gestureLocked = gestureLocked,
             video = {
                 // 海报垫在渲染面**之下**：首帧没到时它是看得见的那一层，到了就被画面盖住。
-                if (!playbackState.engine.hasRenderedFirstFrame) cover?.invoke(this)
+                if (!playbackState.hasRenderedFirstFrame) cover?.invoke(this)
                 videoSurface()
             },
             danmakuHost = {
@@ -354,10 +357,10 @@ fun VideoPlayerShell(
                 }
                 PlayerStateCards(
                     showResumeButton = showResumeButton,
-                    isPlaybackEnded = playbackState.engine.phase == PlaybackPhase.Ended,
-                    showRetry = playbackState.engine.phase == PlaybackPhase.Error,
+                    isPlaybackEnded = playbackState.phase == PlaybackPhase.Ended,
+                    showRetry = playbackState.phase == PlaybackPhase.Error,
                     isLocked = gestureLocked,
-                    errorMessage = playbackState.engine.errorMessage,
+                    errorMessage = playbackState.errorMessage,
                     onResumeClick = onResumeClick,
                     onReplay = onReplay,
                     onRetry = onRetry,

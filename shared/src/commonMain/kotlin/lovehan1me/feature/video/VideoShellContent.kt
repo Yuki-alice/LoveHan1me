@@ -38,7 +38,7 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import lovehan1me.feature.player.PlaybackController
 import lovehan1me.feature.player.PlaybackEngine
-import lovehan1me.feature.player.PlaybackSessionState
+import lovehan1me.feature.player.PlaybackUiState
 import lovehan1me.feature.player.PlatformVideoSurface
 import lovehan1me.ui.adaptive.rememberRelatedPaneWidth
 import lovehan1me.ui.component.HanimeAsyncImage
@@ -63,7 +63,7 @@ fun VideoShellContent(
     /** 窄屏播放器的框高（null = 由剩余空间决定）。宽屏左列与 PiP 传 null。 */
     playerHeightDp: Dp?,
     controller: PlaybackController,
-    playbackState: PlaybackSessionState,
+    playbackState: PlaybackUiState,
     posterUrl: String?,
     // 与列表页卡片封面配对的共享元素 key（null = 不做过渡）
     sharedElementKey: String? = null,

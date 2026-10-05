@@ -176,7 +176,10 @@ fun VideoRouteHostScreen(
         }
     }
     val playbackController = remember(playbackEngine) { PlaybackController(playbackEngine) }
-    val playbackState by playbackController.state.collectAsStateWithLifecycle()
+    // 组合期只订投影，不订原始状态：位置/缓冲每个推送周期都会变，读原状态等于让整页
+    // 组合树跟着位置重组（见 PlaybackUiState）。位置仍可用 `playbackController.state.value`
+    // 在回调里现场取，只是不再进组合。
+    val uiState by playbackController.uiState.collectAsStateWithLifecycle()
     // 单栏 / 双栏判定：对齐 animeko `EpisodePage.showExpandedUI`
     // （`showExpandedUI = (w >= 840) || (w >= 600 && h < 480)`）。
     // 宽度用内容区可用宽度（常驻抽屉占宽已扣，见 ProvideContentWidth），
@@ -276,9 +279,10 @@ fun VideoRouteHostScreen(
      * M3-c：抓当前帧 → PNG → 保存并唤起系统分享。
      *
      * 三个刻意的选择：
-     * 1. **现场读 `playbackController.state.value`**，而不是用组合期捕获的 `playbackState`：
-     *    后者是"上一次重组那一刻"的快照，而播放位置每几百毫秒就变一次 ——
-     *    点截图却截到半秒前的画面，用户只会觉得"截偏了"。
+     * 1. **现场读 `playbackController.state.value`**，而不是用组合期那份 `uiState`：
+     *    后者刻意不含位置（见 `PlaybackUiState`），而且组合期快照本身也是"上一次重组
+     *    那一刻"的值 —— 播放位置每几百毫秒就变一次，点截图却截到半秒前的画面，
+     *    用户只会觉得"截偏了"。
      * 2. **原本在播就接着播**：抓帧实现会 pause 播放器（mpv 要先 pause 才取到稳定帧，
      *    Exo 与 iOS 同理），截图不该顺手把播放停掉。
      * 3. **失败全部走 AppToast**：没有对话框可以承载错误文案，
@@ -442,8 +446,8 @@ fun VideoRouteHostScreen(
     LaunchedEffect(
         isFullscreen,
         playbackController,
-        playbackState.engine.videoWidth,
-        playbackState.engine.videoHeight,
+        uiState.videoWidth,
+        uiState.videoHeight,
     ) {
         if (!isFullscreen) return@LaunchedEffect
         val width = playbackController.state.value.engine.videoWidth
@@ -512,8 +516,8 @@ fun VideoRouteHostScreen(
     // M5-3：上次是"看到结尾"的话，这次从头开始（成熟播放器同规则）。
     // 判据是"本次起播位置已接近总时长"，避免用户一点进来就撞上结束卡；
     // 时长要等引擎报出来，故放在 LaunchedEffect 里随 durationMs 变化触发。
-    LaunchedEffect(route.videoCode, playbackState.engine.durationMs) {
-        val duration = playbackState.engine.durationMs
+    LaunchedEffect(route.videoCode, uiState.durationMs) {
+        val duration = uiState.durationMs
         if (startPositionUsed > 0L && duration > 0L &&
             startPositionUsed >= duration - NEAR_END_TOLERANCE_MS
         ) {
@@ -599,7 +603,7 @@ fun VideoRouteHostScreen(
                                 PlayerTrace.mark("load-called")
                                 // 播放器侧缓冲已在 LaunchedEffect(showLoading) 记 span，
                                 // 这里额外记一个进入 preparing 时刻，方便算 load→首帧
-                                PlayerTrace.event("player-phase", playbackState.engine.phase.name)
+                                PlayerTrace.event("player-phase", uiState.phase.name)
                                 playbackController.load(
                                     title = request.title,
                                     qualities = request.qualities,
@@ -673,8 +677,8 @@ fun VideoRouteHostScreen(
         }
     }
 
-    LaunchedEffect(playbackState.engine.isPlaying) {
-        viewModel.setScrollDisabled(playbackState.engine.isPlaying)
+    LaunchedEffect(uiState.isPlaying) {
+        viewModel.setScrollDisabled(uiState.isPlaying)
         updatePipAction()
     }
 
@@ -710,7 +714,7 @@ fun VideoRouteHostScreen(
     DisposableEffect(videoTitle) { onDispose { PlayerTrace.summary() } }
 
     // 首帧：量"起播 → 出画"，三端可比
-    val hasRenderedFirstFrame = playbackState.engine.hasRenderedFirstFrame
+    val hasRenderedFirstFrame = uiState.hasRenderedFirstFrame
     LaunchedEffect(hasRenderedFirstFrame) {
         if (hasRenderedFirstFrame) PlayerTrace.mark("first-frame")
     }
@@ -718,19 +722,19 @@ fun VideoRouteHostScreen(
     // 缓冲起止：提前成 val —— 下面 showLoading 直接复用，避免两处表达式漂移
     val showLoading =
         (videoState is VideoLoadingState.Loading ||
-                playbackState.engine.phase == PlaybackPhase.Preparing ||
+                uiState.phase == PlaybackPhase.Preparing ||
                 // 卡顿看门狗（M5-3）：位置停滞时也转圈 —— 引擎侧的 isBuffering
                 // 三端语义不一致，只有 Exo 是真信号，mpv/iOS 中途卡住根本不置位。
-                playbackState.isStalled) &&
+                uiState.isStalled) &&
                 // 切画质期间不显示全屏转圈：画面保留上一帧才像"无缝换档"，
                 // 转圈+海报反而是"重新打开了一遍"的观感。
-                !playbackState.isSwitchingQuality
+                !uiState.isSwitchingQuality
     LaunchedEffect(showLoading) {
         if (showLoading) PlayerTrace.spanStart("buffering") else PlayerTrace.spanEnd("buffering")
     }
 
     // 错误：引擎/网络给的真实原因（与重试卡上屏的同源）
-    val engineError = playbackState.engine.errorMessage
+    val engineError = uiState.errorMessage
     LaunchedEffect(engineError) {
         if (!engineError.isNullOrBlank()) PlayerTrace.event("error", engineError)
     }
@@ -747,9 +751,9 @@ fun VideoRouteHostScreen(
     // 同一条导航。新页面 phase 从头开始，不会连环触发；单片/尾集/开关关闭
     // 时 shouldAutoPlayNext 为 false，原地停在结束态（行为与之前一致）。
     val autoPlayNext = SettingsRepository.settings.collectAsStateWithLifecycle().value.autoPlayNext
-    LaunchedEffect(playbackState.engine.phase, autoPlayNext, nextPlaylistItem) {
+    LaunchedEffect(uiState.phase, autoPlayNext, nextPlaylistItem) {
         if (shouldAutoPlayNext(
-                playbackState.engine.phase,
+                uiState.phase,
                 autoPlayNext,
                 nextPlaylistItem != null,
             )
@@ -842,7 +846,8 @@ fun VideoRouteHostScreen(
         rememberDanmakuSession(
             videoCode = code,
             title = videoTitle,
-            playbackState = playbackState,
+            // 弹幕时钟要位置，所以这里给**流**不是投影：收流不产生组合期依赖。
+            playbackStateFlow = playbackController.state,
             comments = danmakuComments,
         )
     }
@@ -860,7 +865,7 @@ fun VideoRouteHostScreen(
         isFullscreen = isFullscreen,
         playerHeightDp = resolvedPlayerHeightDp,
         controller = playbackController,
-        playbackState = playbackState,
+        playbackState = uiState,
         sidebarVisible = sidebarVisible,
         onToggleSidebar = { sidebarVisible = it },
         isFavVideo = video?.isFav == true,
@@ -953,7 +958,7 @@ fun VideoRouteHostScreen(
         },
         // 首帧未到不画：弹幕飘在海报上是穿帮。PiP 由 VideoShellContent 统一收掉。
         danmakuLayer = danmakuSession?.takeIf {
-            playbackState.engine.hasRenderedFirstFrame
+            uiState.hasRenderedFirstFrame
         }?.let { session ->
             @Composable {
                 // 在 lambda **内**取：设置变了只重组弹幕这一槽，不动整个播放器组合
@@ -1025,9 +1030,11 @@ fun VideoRouteHostScreen(
     // M3-b：录 GIF。抓帧回调直连 controller（同包，无需 import）
     if (showGifCapture) {
         GifCaptureDialog(
-            sourceWidth = playbackState.engine.videoWidth,
-            sourceHeight = playbackState.engine.videoHeight,
-            startPositionMs = playbackState.engine.positionMs,
+            sourceWidth = uiState.videoWidth,
+            sourceHeight = uiState.videoHeight,
+            // 命令式现场取：录 GIF 的起点就是"点开对话框那一刻"的位置，
+            // 它不需要（也不该）驱动本页的组合。
+            startPositionMs = playbackController.state.value.engine.positionMs,
             onDismiss = { showGifCapture = false },
             captureFrameAt = { positionMs, width, height ->
                 playbackController.grabFrameArgb(positionMs, width, height)

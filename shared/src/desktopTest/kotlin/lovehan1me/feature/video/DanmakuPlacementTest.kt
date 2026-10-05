@@ -10,7 +10,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.unit.dp
 import lovehan1me.feature.player.PlaybackEngineState
-import lovehan1me.feature.player.PlaybackSessionState
+import lovehan1me.feature.player.PlaybackUiState
 import lovehan1me.ui.preview.HanimePreviewTheme
 import org.jetbrains.skia.EncodedImageFormat
 import org.jetbrains.skia.Image
@@ -67,12 +67,10 @@ class DanmakuPlacementTest {
                             videoHeight = videoHeight,
                         ),
                         controller = fakePlaybackController(engine),
-                        playbackState = PlaybackSessionState(
-                            engine = PlaybackEngineState(
-                                videoWidth = videoWidth,
-                                videoHeight = videoHeight,
-                                hasRenderedFirstFrame = true,
-                            ),
+                        playbackState = PlaybackUiState(
+                            videoWidth = videoWidth,
+                            videoHeight = videoHeight,
+                            hasRenderedFirstFrame = true,
                         ),
                         videoSurface = { Box(Modifier.fillMaxSize().background(Color.Black)) },
                         modifier = Modifier.fillMaxSize(),

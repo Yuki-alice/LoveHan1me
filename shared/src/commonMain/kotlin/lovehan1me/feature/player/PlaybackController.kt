@@ -6,8 +6,12 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import lovehan1me.video.contract.VideoEnhancementController
@@ -36,6 +40,61 @@ data class PlaybackSessionState(
      * 引擎到达 Ready 或 Error 时自动撤销。
      */
     val isSwitchingQuality: Boolean = false,
+)
+
+/**
+ * 组合期唯一该读的播放状态投影。
+ *
+ * 与 [PlaybackSessionState] 只差一件事：**剔除每个推送周期都会变的字段**
+ * （`engine.positionMs` / `engine.bufferedPositionMs`）。
+ *
+ * 为什么必须剔除：位置由后端按推送周期前进（Android 250ms / iOS 500ms / 桌面事件驱动，
+ * 见 `rememberDanmakuSession`）。组合期读的状态只要跟着它变，读数的那一层组合作用域
+ * 就会以这个频率被无效化 —— 而播放页是"整页读一个状态对象、再逐层传下去"的结构，
+ * 于是一次位置推进就把整棵播放页组合树重算一遍。位置本该只驱动**绘制**（进度条画到哪）
+ * 与**命令式取值**（落盘续播、抓帧），两者都不需要组合期参与：
+ * - 控件层的画面内事实（位置/时长/播放态/缓冲）直读 mediamp 的 `player`（见
+ *   `VideoPlayerShell` 文件头）；
+ * - 弹幕层与续播落盘各走流或 `state.value` 命令式读。
+ *
+ * 去重键是本 data class 的 `equals`：字段全部是基础类型 + 一次性赋予的
+ * `qualities`（`load()` 时整组替换，播放期间同一实例），诚实不额外断言稳定。
+ *
+ * 字段是"组合期真有消费点"的那一批，不是"状态里有什么就搬什么"：
+ * `title` / `artworkUri` 是喂引擎的开流参数（见 `loadQuality`），页面另持自己的标题，
+ * 组合期没有读者，故不进投影。
+ */
+data class PlaybackUiState(
+    val qualities: List<PlaybackQuality> = emptyList(),
+    val selectedQualityIndex: Int = -1,
+    val phase: PlaybackPhase = PlaybackPhase.Idle,
+    val isPlaying: Boolean = false,
+    val isBuffering: Boolean = false,
+    /** 位置停滞（看门狗判定）。UI 据此转圈 —— 引擎的 isBuffering 三端语义不一致。 */
+    val isStalled: Boolean = false,
+    /** 正在切换画质：UI 据此不显示全屏转圈/海报，画面保留上一帧。 */
+    val isSwitchingQuality: Boolean = false,
+    val hasRenderedFirstFrame: Boolean = false,
+    val errorMessage: String? = null,
+    val durationMs: Long = 0L,
+    val videoWidth: Int = 0,
+    val videoHeight: Int = 0,
+)
+
+/** 见 [PlaybackUiState]：位置与缓冲被刻意留在这里，不进组合期。 */
+fun PlaybackSessionState.toUiState(): PlaybackUiState = PlaybackUiState(
+    qualities = qualities,
+    selectedQualityIndex = selectedQualityIndex,
+    phase = engine.phase,
+    isPlaying = engine.isPlaying,
+    isBuffering = engine.isBuffering,
+    isStalled = isStalled,
+    isSwitchingQuality = isSwitchingQuality,
+    hasRenderedFirstFrame = engine.hasRenderedFirstFrame,
+    errorMessage = engine.errorMessage,
+    durationMs = engine.durationMs,
+    videoWidth = engine.videoWidth,
+    videoHeight = engine.videoHeight,
 )
 
 /**
@@ -79,6 +138,20 @@ class PlaybackController(
     private var requestedPictureAdjust: PictureAdjust = PictureAdjust.Neutral
 
     val state: StateFlow<PlaybackSessionState> = mutableState.asStateFlow()
+
+    /**
+     * 组合期只订这条（见 [PlaybackUiState]）。照 B4 既有 `themeConfigFlow` 模式
+     * （`map + distinctUntilChanged + stateIn(Eagerly)`）：位置每 tick 变一次，
+     * 投影后与上一份相等，`distinctUntilChanged` 把它挡在 `stateIn` 之前，
+     * 于是播放页的组合树不再跟着位置走。
+     *
+     * 需要位置的地方（弹幕时钟、续播落盘、抓帧）继续用完好的 [state]。
+     */
+    val uiState: StateFlow<PlaybackUiState> by lazy {
+        state.map { it.toUiState() }
+            .distinctUntilChanged()
+            .stateIn(scope, SharingStarted.Eagerly, state.value.toUiState())
+    }
 
     fun load(
         title: String,

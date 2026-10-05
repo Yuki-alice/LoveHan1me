@@ -17,7 +17,7 @@ import androidx.compose.ui.semantics.getOrNull
 import androidx.compose.ui.unit.Density
 import lovehan1me.feature.danmaku.DanmakuControls
 import lovehan1me.feature.player.PlaybackEngineState
-import lovehan1me.feature.player.PlaybackSessionState
+import lovehan1me.feature.player.PlaybackUiState
 import lovehan1me.ui.preview.HanimePreviewTheme
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -75,13 +75,10 @@ class PlayerControlsVisibilityInteractionTest {
                     VideoPlayerShell(
                         player = player,
                         controller = fakePlaybackController(engine),
-                        playbackState = PlaybackSessionState(
-                            title = "控件可见性交互用例",
-                            engine = PlaybackEngineState(
-                                videoWidth = 1600,
-                                videoHeight = 900,
-                                hasRenderedFirstFrame = true,
-                            ),
+                        playbackState = PlaybackUiState(
+                            videoWidth = 1600,
+                            videoHeight = 900,
+                            hasRenderedFirstFrame = true,
                         ),
                         videoSurface = {},
                         modifier = Modifier.fillMaxSize(),

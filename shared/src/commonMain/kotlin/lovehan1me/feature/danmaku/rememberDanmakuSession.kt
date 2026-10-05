@@ -10,6 +10,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.StateFlow
 import lovehan1me.core.domain.model.VideoComments
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.danmaku.DanmakuProvider
@@ -36,7 +37,8 @@ import lovehan1me.feature.player.PlaybackPhase
 fun rememberDanmakuSession(
     videoCode: String,
     title: String,
-    playbackState: PlaybackSessionState?,
+    /** 播放状态源。收流而非状态值，见下方快照 effect 的注释。 */
+    playbackStateFlow: StateFlow<PlaybackSessionState>,
     comments: List<VideoComments.VideoComment> = emptyList(),
 ): DanmakuSession? {
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
@@ -93,17 +95,23 @@ fun rememberDanmakuSession(
 
     // 位置与播放态的唯一入口。每次状态推送（Android 250ms / iOS 500ms / 桌面事件驱动）
     // 喂一次快照；[PlaybackPhase.Ready] 之外视为"位置失去参考意义"，整组丢掉重来。
-    LaunchedEffect(playbackState) {
-        val state = playbackState ?: return@LaunchedEffect
-        val engine = state.engine
-        session.onPlaybackSnapshot(
-            positionMs = engine.positionMs,
-            durationMs = engine.durationMs,
-            playbackSpeed = engine.playbackSpeed,
-            frozen = !engine.isPlaying || engine.isBuffering ||
-                state.isStalled || state.isSwitchingQuality,
-            reset = engine.phase != PlaybackPhase.Ready,
-        )
+    //
+    // 收**流**、不收状态值：收值的话 key 每个推送周期都是新对象，这个 effect 会以
+    // 4 次/秒的节奏被取消重建；而更要紧的是，参数一旦是"每次都在变的对象"，
+    // 调用方为了传参就得在组合期读原始状态，整棵播放页组合树跟着位置重组
+    // （`PlaybackController.uiState` 那段的来由）。流本身是稳态引用，key 不抖。
+    LaunchedEffect(session, playbackStateFlow) {
+        playbackStateFlow.collect { state ->
+            val engine = state.engine
+            session.onPlaybackSnapshot(
+                positionMs = engine.positionMs,
+                durationMs = engine.durationMs,
+                playbackSpeed = engine.playbackSpeed,
+                frozen = !engine.isPlaying || engine.isBuffering ||
+                    state.isStalled || state.isSwitchingQuality,
+                reset = engine.phase != PlaybackPhase.Ready,
+            )
+        }
     }
 
     return session
