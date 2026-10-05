@@ -55,6 +55,7 @@ import coil3.ImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import kotlinx.coroutines.withTimeoutOrNull
+import kotlinx.coroutines.launch
 import java.net.ProxySelector
 import java.net.URI
 
@@ -154,6 +155,15 @@ fun main() {
             LogUtil.i("Desktop", "startup: $startup（第 ${attempt + 1} 次尝试，耗时 ${elapsed}ms）")
             if (startup is DesktopStartup.Failed) {
                 LogUtil.e("Desktop", "startup failed: ${(startup as DesktopStartup.Failed).message}")
+            }
+            // 下载队列恢复挪出 Ready 关键路径：首帧不等 Room 扫库（此前占 ~1.3s）。
+            // Ready 只要求"能看"，下载列表晚一拍无妨；失败只记日志，不影响已就绪的首屏。
+            if (startup is DesktopStartup.Ready) {
+                launch {
+                    runCatching { initializeDesktopDownloadQueue() }
+                        .onFailure { LogUtil.w("Desktop", "download queue restore failed: ${it.message}") }
+                    StartupTrace.mark("download-queue")
+                }
             }
         }
 
@@ -322,11 +332,6 @@ private suspend fun initializeDesktop() {
             .onFailure { LogUtil.w("Desktop", "main: ECH 网关启动失败：${it.message}") }
     }
     StartupTrace.mark("ech-gate")
-
-    // 恢复未完成的下载队列（Room 里的 Downloading/Queued 任务）
-    initializeDesktopDownloadQueue()
-    StartupTrace.mark("download-queue")
-    LogUtil.d("Desktop", "main: download queue restored")
 }
 
 /**

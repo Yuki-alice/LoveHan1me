@@ -26,7 +26,6 @@ import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
@@ -363,8 +362,8 @@ object DesktopDownloadWorkController : DownloadWorkController {
 }
 
 /** 平台壳入口的公开薄封装（[downloadWorkController] 是 internal）。 */
-fun initializeDesktopDownloadQueue() {
-    runBlocking { DesktopDownloadWorkController.initialize() }
+suspend fun initializeDesktopDownloadQueue() {
+    DesktopDownloadWorkController.initialize()
 }
 
 /** 跨模块薄封装（[downloadWorkController] 是 internal；供 :desktopApp 冒烟/壳层用）。 */
