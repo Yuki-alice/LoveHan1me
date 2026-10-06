@@ -66,15 +66,6 @@ import lovehan1me.clear_failed
 import lovehan1me.clear_success
 import lovehan1me.current_version
 import lovehan1me.follow_system
-import lovehan1me.local_data_export_failed
-import lovehan1me.local_data_export_success
-import lovehan1me.local_data_import_failed
-import lovehan1me.local_data_import_success
-import lovehan1me.login_first
-import lovehan1me.online_data_export_failed
-import lovehan1me.online_data_export_success
-import lovehan1me.online_data_import_failed
-import lovehan1me.online_data_import_success
 import lovehan1me.request_pip_alert
 import lovehan1me.simplified_chinese
 import lovehan1me.success_value
@@ -91,8 +82,6 @@ import lovehan1me.attention
 import lovehan1me.apply_deep_links_tips
 import lovehan1me.apply_deep_links_summary
 import lovehan1me.apply_deep_links
-import lovehan1me.data.LocalListRepository
-import lovehan1me.data.OnlineListsBackup
 import lovehan1me.core.domain.model.AppLanguage
 import lovehan1me.core.domain.model.DisplayDensity
 import lovehan1me.core.domain.model.NavBarStyle
@@ -125,12 +114,10 @@ fun HomeSettingsRouteScreen(
     val uriHandler = LocalUriHandler.current
     val coroutineScope = rememberCoroutineScope()
     // P6d-3-C3：回调内非 suspend，固定串在此预解析
-    val loginFirstText = stringResource(Res.string.login_first)
     val requestPipText = stringResource(Res.string.request_pip_alert)
     val deepLinksWarnText = stringResource(Res.string.action_app_open_by_default_settings_not_support)
     val cacheEmptyText = stringResource(Res.string.cache_empty)
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
-    val isLoggedIn by SettingsRepository.loginStateFlow.collectAsStateWithLifecycle()
     var cacheKey by remember { mutableIntStateOf(0) }
     var showClearCacheConfirm by remember { mutableStateOf(false) }
     var showRestartConfirmDialog by remember { mutableStateOf(false) }
@@ -146,62 +133,6 @@ fun HomeSettingsRouteScreen(
         }
     }
     val importLauncher = rememberBackupImportLauncher { pendingImportUri = it }
-    val localListsExportLauncher = rememberBackupExportLauncher { uri ->
-        uri ?: return@rememberBackupExportLauncher
-        coroutineScope.launch(ioDispatcher) {
-            runCatching {
-                val jsonText = LocalListRepository.exportLocalListsJson()
-                check(writeBackupText(uri, jsonText)) { "Unable to open output file" }
-            }.onSuccess {
-                AppToast.success(getString(Res.string.local_data_export_success))
-            }.onFailure {
-                AppToast.error(it.message ?: getString(Res.string.local_data_export_failed))
-            }
-        }
-    }
-    val localListsImportLauncher = rememberBackupImportLauncher { uri ->
-        uri ?: return@rememberBackupImportLauncher
-        coroutineScope.launch(ioDispatcher) {
-            runCatching {
-                val jsonText = readBackupText(uri) ?: error("Unable to open input file")
-                LocalListRepository.importLocalListsJson(jsonText, merge = true)
-            }.onSuccess {
-                AppToast.success(getString(Res.string.local_data_import_success))
-            }.onFailure {
-                AppToast.error(it.message ?: getString(Res.string.local_data_import_failed))
-            }
-        }
-    }
-    val onlineListsExportLauncher = rememberBackupExportLauncher { uri ->
-        uri ?: return@rememberBackupExportLauncher
-        coroutineScope.launch(ioDispatcher) {
-            runCatching {
-                val jsonText = OnlineListsBackup.exportOnlineListsJson()
-                check(writeBackupText(uri, jsonText)) { "Unable to open output file" }
-            }.onSuccess {
-                AppToast.success(getString(Res.string.online_data_export_success))
-            }.onFailure {
-                AppToast.error(it.message ?: getString(Res.string.online_data_export_failed))
-            }
-        }
-    }
-    val onlineListsImportLauncher = rememberBackupImportLauncher {
-        if (!SettingsRepository.isAlreadyLogin) {
-            AppToast.warning(loginFirstText)
-            return@rememberBackupImportLauncher
-        }
-        val uri = it ?: return@rememberBackupImportLauncher
-        coroutineScope.launch(ioDispatcher) {
-            runCatching {
-                val jsonText = readBackupText(uri) ?: error("Unable to open input file")
-                OnlineListsBackup.importOnlineListsJson(jsonText)
-            }.onSuccess {
-                AppToast.success(getString(Res.string.online_data_import_success))
-            }.onFailure {
-                AppToast.error(it.message ?: getString(Res.string.online_data_import_failed))
-            }
-        }
-    }
     var cacheSummary by remember { mutableStateOf("") }
 
     LaunchedEffect(cacheKey) {
@@ -235,7 +166,6 @@ fun HomeSettingsRouteScreen(
     HomeSettingsScreen(
         page = page,
         state = uiState,
-        isLoggedIn = isLoggedIn,
         actions = HomeSettingsActions(
             videoLanguageChange = { value ->
                 if (value != SettingsRepository.videoLanguage) {
@@ -365,30 +295,6 @@ fun HomeSettingsRouteScreen(
             },
             importBackup = {
                 importLauncher()
-            },
-            exportLocalLists = {
-                localListsExportLauncher(
-                    "LoveHan1me-local-lists-${currentEpochMillis()}.json"
-                )
-            },
-            importLocalLists = {
-                localListsImportLauncher()
-            },
-            exportOnlineLists = {
-                if (!SettingsRepository.isAlreadyLogin) {
-                    AppToast.warning(loginFirstText)
-                } else {
-                    onlineListsExportLauncher(
-                        "LoveHan1me-online-lists-${currentEpochMillis()}.json"
-                    )
-                }
-            },
-            importOnlineLists = {
-                if (!SettingsRepository.isAlreadyLogin) {
-                    AppToast.warning(loginFirstText)
-                } else {
-                    onlineListsImportLauncher()
-                }
             },
             submitBug = { uriHandler.openUri(HA1_GITHUB_ISSUE_URL) },
             openForum = { uriHandler.openUri(HA1_GITHUB_FORUM_URL) },

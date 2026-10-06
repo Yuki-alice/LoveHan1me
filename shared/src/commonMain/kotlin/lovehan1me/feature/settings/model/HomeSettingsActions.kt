@@ -54,10 +54,6 @@ class HomeSettingsActions(
     val clearCache: () -> Unit,
     val exportBackup: () -> Unit,
     val importBackup: () -> Unit,
-    val exportLocalLists: () -> Unit,
-    val importLocalLists: () -> Unit,
-    val exportOnlineLists: () -> Unit,
-    val importOnlineLists: () -> Unit,
     val submitBug: () -> Unit,
     val openForum: () -> Unit,
 )

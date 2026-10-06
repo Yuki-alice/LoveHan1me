@@ -84,16 +84,6 @@ import lovehan1me.privacy
 import lovehan1me.perception
 import lovehan1me.open_source_license_summary
 import lovehan1me.open_source_license
-import lovehan1me.online_data_section
-import lovehan1me.online_data_import_title
-import lovehan1me.online_data_import_summary
-import lovehan1me.online_data_export_title
-import lovehan1me.online_data_export_summary
-import lovehan1me.local_data_section
-import lovehan1me.local_data_import_title
-import lovehan1me.local_data_import_summary
-import lovehan1me.local_data_export_title
-import lovehan1me.local_data_export_summary
 import lovehan1me.information
 import lovehan1me.home_category_layout_summary
 import lovehan1me.home_category_layout
@@ -210,7 +200,6 @@ internal enum class HomeSettingsChoiceDialog {
 fun HomeSettingsScreen(
     page: HomeSettingsPage,
     state: HomeSettingsUiState,
-    isLoggedIn: Boolean,
     actions: HomeSettingsActions,
     networkSettingsContent: @Composable () -> Unit,
     downloadSettingsContent: @Composable () -> Unit,
@@ -357,7 +346,7 @@ fun HomeSettingsScreen(
                 openHomeCategory = { showHomeCategoryDialog = true },
             )
 
-            HomeSettingsPage.DataPrivacy -> dataPrivacySection(state, actions, isLoggedIn)
+            HomeSettingsPage.DataPrivacy -> dataPrivacySection(state, actions)
 
             HomeSettingsPage.DeveloperOptions -> developerOptionsSection(
                 state, actions,

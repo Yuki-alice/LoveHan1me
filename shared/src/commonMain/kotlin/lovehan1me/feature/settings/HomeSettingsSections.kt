@@ -61,16 +61,6 @@ import lovehan1me.privacy
 import lovehan1me.perception
 import lovehan1me.open_source_license_summary
 import lovehan1me.open_source_license
-import lovehan1me.online_data_section
-import lovehan1me.online_data_import_title
-import lovehan1me.online_data_import_summary
-import lovehan1me.online_data_export_title
-import lovehan1me.online_data_export_summary
-import lovehan1me.local_data_section
-import lovehan1me.local_data_import_title
-import lovehan1me.local_data_import_summary
-import lovehan1me.local_data_export_title
-import lovehan1me.local_data_export_summary
 import lovehan1me.information
 import lovehan1me.home_category_layout_summary
 import lovehan1me.home_category_layout
@@ -523,7 +513,6 @@ internal fun AnimatedLazyListScope.interfaceInteractionSection(
 internal fun AnimatedLazyListScope.dataPrivacySection(
     state: HomeSettingsUiState,
     actions: HomeSettingsActions,
-    isLoggedIn: Boolean,
 ) {
     item {
         SettingsSection(stringResource(Res.string.privacy)) {
@@ -571,40 +560,6 @@ internal fun AnimatedLazyListScope.dataPrivacySection(
                 iconRes = Res.drawable.ic_clear_all,
                 onClick = actions.clearCache,
             )
-        }
-    }
-    item {
-        SettingsSection(stringResource(Res.string.local_data_section)) {
-            SettingNavigationItem(
-                title = stringResource(Res.string.local_data_export_title),
-                summary = stringResource(Res.string.local_data_export_summary),
-                iconRes = Res.drawable.ic_export,
-                onClick = actions.exportLocalLists,
-            )
-            SettingNavigationItem(
-                title = stringResource(Res.string.local_data_import_title),
-                summary = stringResource(Res.string.local_data_import_summary),
-                iconRes = Res.drawable.ic_download,
-                onClick = actions.importLocalLists,
-            )
-        }
-    }
-    if (isLoggedIn) {
-        item {
-            SettingsSection(stringResource(Res.string.online_data_section)) {
-                SettingNavigationItem(
-                    title = stringResource(Res.string.online_data_export_title),
-                    summary = stringResource(Res.string.online_data_export_summary),
-                    iconRes = Res.drawable.ic_export,
-                    onClick = actions.exportOnlineLists,
-                )
-                SettingNavigationItem(
-                    title = stringResource(Res.string.online_data_import_title),
-                    summary = stringResource(Res.string.online_data_import_summary),
-                    iconRes = Res.drawable.ic_download,
-                    onClick = actions.importOnlineLists,
-                )
-            }
         }
     }
 }
