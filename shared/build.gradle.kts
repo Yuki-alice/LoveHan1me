@@ -228,6 +228,10 @@ kotlin {
         val desktopTest by getting {
             dependencies {
                 implementation(kotlin("test"))
+                // DataStore 迁移测试要直连 PreferenceDataStoreFactory + runBlocking。
+                implementation(libs.datastore.preferences.core)
+                implementation(libs.coroutines.core)
+                implementation(libs.okio)
                 // service 的站点地址是"每请求实时解析"这一契约要能被断言：用假引擎抓请求 URL。
                 implementation(libs.ktor.client.mock)
                 // 指针输入类回归（下拉刷新的触摸/鼠标门控）必须真发指针事件；

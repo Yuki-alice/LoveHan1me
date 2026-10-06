@@ -36,6 +36,10 @@ interface DanmakuDao {
     @Query("DELETE FROM DanmakuMappingEntity WHERE videoCode = :videoCode")
     suspend fun deleteMapping(videoCode: String)
 
+    /** 整机备份恢复用（先清后插，与其它库 deleteAll + insertAll 同语义）。 */
+    @Query("DELETE FROM DanmakuMappingEntity")
+    suspend fun deleteAllMappings()
+
     // ---------- 弹幕缓存 ----------
 
     @Query(

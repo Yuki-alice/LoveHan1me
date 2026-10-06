@@ -13,7 +13,6 @@ import lovehan1me.core.domain.model.PlaylistExport
 import lovehan1me.core.domain.model.Playlists
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
-import kotlinx.serialization.json.Json
 import lovehan1me.core.platform.randomUUIDString
 import lovehan1me.core.platform.currentEpochMillis
 /**
@@ -26,12 +25,6 @@ object LocalListRepository {
     const val PLAYLIST_KIND = "playlist"
 
     private val dao: LocalListDao = Han1meDatabases.localList.localListDao
-    private val json = Json {
-        ignoreUnknownKeys = true
-        // B7：同 BackupManager —— 机器读写的交换格式，缩进只增体积与耗时。
-        prettyPrint = false
-        encodeDefaults = true
-    }
 
     fun observeWatchLater(): Flow<List<HanimeInfo>> =
         dao.observeItems(WATCH_LATER_CODE).map { rows -> rows.map { it.toHanimeInfo() } }
@@ -118,23 +111,7 @@ object LocalListRepository {
         dao.getItems(listCode).map { it.toHanimeInfo() }
 
     suspend fun exportLocalLists(): ListsExport =
-        ListsExport(
-            watchLater = dao.getItems(WATCH_LATER_CODE).map { it.toExport() },
-            favorites = dao.getItems(FAVORITE_CODE).map { it.toExport() },
-            playlists = dao.getPlaylistsOnce().map { row ->
-                PlaylistExport(
-                    title = row.title,
-                    desc = row.desc,
-                    items = dao.getItems(row.listCode).map { it.toExport() },
-                )
-            },
-        )
-
-    suspend fun exportLocalListsJson(): String =
-        json.encodeToString(exportLocalLists())
-
-    suspend fun importLocalListsJson(jsonText: String, merge: Boolean = true) =
-        importLocalLists(json.decodeFromString<ListsExport>(jsonText), merge)
+        assembleListsExport(dao.getAllItems(), dao.getPlaylistsOnce())
 
     suspend fun importLocalLists(data: ListsExport, merge: Boolean) {
         if (!merge) {
@@ -217,20 +194,6 @@ object LocalListRepository {
             coverUrl = coverUrl,
         )
 
-    private fun LocalListItemEntity.toExport(): ListItemExport =
-        ListItemExport(
-            videoCode = videoCode,
-            title = title,
-            coverUrl = coverUrl,
-            duration = duration,
-            views = views,
-            uploadTime = uploadTime,
-            genre = genre,
-            reviews = reviews,
-            currentArtist = currentArtist,
-            addedAt = addedAt,
-        )
-
     private fun ListItemExport.toEntity(
         listCode: String,
         fallbackAddedAt: Long,
@@ -249,3 +212,46 @@ object LocalListRepository {
             addedAt = if (addedAt > 0) addedAt else fallbackAddedAt,
         )
 }
+
+/**
+ * B7-N1：导出组装纯函数（`exportLocalLists` 的全部语义）。
+ *
+ * 输入是一次性拿到的全表（`LocalListDao.getAllItems`，全局 `addedAt DESC`）；
+ * 按 `listCode` 分组后各组天然仍是 DESC —— `groupBy` 保持遭遇顺序，
+ * 与原来逐表 `getItems`（同为 `ORDER BY addedAt DESC`）的序列一致。
+ *
+ * 抽成纯函数是因为 `LocalListRepository` 是直连 Room 的 object、
+ * headless 起不来，而"分组装配"正是本项的全部语义 —— 同 B3 `mergeSearchPage` 的路子。
+ * 不在任何已知桶里的条目直接丢弃（旧实现根本不会去查它们）。
+ */
+internal fun assembleListsExport(
+    allItems: List<LocalListItemEntity>,
+    playlistRows: List<LocalPlaylistRow>,
+): ListsExport {
+    val byList = allItems.groupBy { it.listCode }
+    return ListsExport(
+        watchLater = byList[LocalListRepository.WATCH_LATER_CODE].orEmpty().map { it.toExport() },
+        favorites = byList[LocalListRepository.FAVORITE_CODE].orEmpty().map { it.toExport() },
+        playlists = playlistRows.map { row ->
+            PlaylistExport(
+                title = row.title,
+                desc = row.desc,
+                items = byList[row.listCode].orEmpty().map { it.toExport() },
+            )
+        },
+    )
+}
+
+internal fun LocalListItemEntity.toExport(): ListItemExport =
+    ListItemExport(
+        videoCode = videoCode,
+        title = title,
+        coverUrl = coverUrl,
+        duration = duration,
+        views = views,
+        uploadTime = uploadTime,
+        genre = genre,
+        reviews = reviews,
+        currentArtist = currentArtist,
+        addedAt = addedAt,
+    )

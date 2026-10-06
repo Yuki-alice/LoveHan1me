@@ -1,11 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?><!--
-   Sample backup rules file; uncomment and customize as necessary.
-   See https://developer.android.com/guide/topics/data/autobackup
-   for details.
-   Note: This file is ignored for devices older that API 31
-   See https://developer.android.com/about/versions/12/backup-restore
+   旧版全量备份规则（API 31 以下走这里；31+ 走 data_extraction_rules.xml，
+   两份口径保持一致）。
 -->
 <full-backup-content>
    <include domain="sharedpref" path="."/>
    <include domain="database" path="." />
+   <!-- 登录态独立文件不漫游（与手动备份 AUTH_KEYS 同口径）。 -->
+   <exclude domain="file" path="datastore/auth.preferences_pb" />
 </full-backup-content>

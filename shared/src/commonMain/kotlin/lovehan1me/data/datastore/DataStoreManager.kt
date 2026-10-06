@@ -3,10 +3,13 @@ package lovehan1me.data.datastore
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
+import androidx.datastore.preferences.core.mutablePreferencesOf
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.floatPreferencesKey
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import lovehan1me.core.domain.model.AppLanguage
@@ -28,6 +31,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
@@ -48,6 +52,16 @@ import okio.Path.Companion.toPath
 object DataStoreManager : SettingsStore {
     // 旧实现是 preferencesDataStoreFile("settings")，实际落盘名带 .preferences_pb 后缀
     private const val FILE_NAME = "settings.preferences_pb"
+
+    /**
+     * 登录态独立文件（P0-1 系统备份排除）。
+     *
+     * Android 系统备份规则只能按文件排除、不能按 key 排除，而登录态 6 键此前与
+     * 90 个普通设置混在同一个 `settings.preferences_pb` 里 —— `AUTH_KEYS` 在手动
+     * 备份里能过滤，在系统备份里形同虚设。独立成文件后，两份 xml 只排除它，
+     * 普通设置照常漫游。备份导出/导入的 `AUTH_KEYS` 过滤保留（双保险）。
+     */
+    internal const val AUTH_FILE_NAME = "auth.preferences_pb"
 
     /** 命名筛选预设整表序列化后放这个键上（见 [AppSettings.searchFilterPresets]）。 */
     private const val KEY_SEARCH_FILTER_PRESETS = "search_filter_presets"
@@ -72,6 +86,7 @@ object DataStoreManager : SettingsStore {
     private val cfCookiesSerializer = MapSerializer(String.serializer(), String.serializer())
 
     private lateinit var dataStore: DataStore<Preferences>
+    private lateinit var authStore: DataStore<Preferences>
     @Volatile private var initialized = false
 
     fun initialize() {
@@ -82,41 +97,53 @@ object DataStoreManager : SettingsStore {
                 migrations = platformPreferenceMigrations(),
                 produceFile = { dataStoreFilePath(FILE_NAME).toPath() },
             )
+            authStore = PreferenceDataStoreFactory.createWithPath(
+                produceFile = { dataStoreFilePath(AUTH_FILE_NAME).toPath() },
+            )
             // 先开门：对象就绪即允许读写，磁盘读 + 默认值回填全放后台。
-            // update() 在 edit 内读实时盘态（不是内存快照），故加载窗口内的写入
+            // update() 读合并视图（不是内存快照），故加载窗口内的写入
             // 不会被回填覆盖；回填本身幂等（写回读到的同一份值）。调用方感知的
             // settings 初值仍是 defaults，磁盘值到达后经 StateFlow 正常推送
             // （data class 相等去重，无多余重组）。
             initialized = true
             scope.launch {
-                val initial = dataStore.data.first().toAppSettings()
+                // 老存档的登录态键还在主文件里：搬到独立文件（auth 侧已有的不覆盖）。
+                runCatching { migrateAuthKeysToDedicatedStore(dataStore, authStore) }
+                val initial = mergeAuthPreferences(dataStore.data.first(), authStore.data.first())
+                    .toAppSettings()
                 // 首启/升级缺键回填：全量写盘放后台，首屏不等它。
-                runCatching { dataStore.edit { it.write(initial) } }
+                runCatching {
+                    dataStore.edit { it.writeMain(initial) }
+                    authStore.edit { it.writeAuth(initial) }
+                }
                 mutableSettings.value = initial
-                dataStore.data.map { it.toAppSettings() }.collect { mutableSettings.value = it }
+                combine(dataStore.data, authStore.data) { main, auth ->
+                    mergeAuthPreferences(main, auth).toAppSettings()
+                }.collect { mutableSettings.value = it }
             }
         }
     }
 
     override suspend fun update(transform: (AppSettings) -> AppSettings) {
         check(initialized) { "DataStoreManager must be initialized before use" }
-        lateinit var updated: AppSettings
-        dataStore.edit {
-            updated = transform(it.toAppSettings())
-            it.write(updated)
-        }
+        val merged = mergeAuthPreferences(dataStore.data.first(), authStore.data.first())
+        val updated = transform(merged.toAppSettings())
+        dataStore.edit { it.writeMain(updated) }
+        authStore.edit { it.writeAuth(updated) }
         mutableSettings.value = updated
     }
 
     private val current: AppSettings get() = settings.value
 
     suspend fun restoreBackup(values: Map<String, Any>) {
-        lateinit var restored: AppSettings
         dataStore.edit { preferences ->
             values.filterKeys { it !in AUTH_KEYS }.forEach { (name, value) -> preferences.putRaw(name, value) }
-            restored = preferences.toAppSettings()
-            preferences.write(restored)
         }
+        // 登录态不随备份走：auth 存原样不动；合并视图重算，避免主存缺 auth 键
+        // 把登录态读成默认值（否则恢复后会闪现一次"未登录"再纠正）。
+        val restored = mergeAuthPreferences(dataStore.data.first(), authStore.data.first())
+            .toAppSettings()
+        dataStore.edit { it.writeMain(restored) }
         mutableSettings.value = restored
     }
 
@@ -194,14 +221,18 @@ object DataStoreManager : SettingsStore {
         displayDensity = DisplayDensity.fromPercent(int("developer_display_density_percent", defaults.displayDensity.percent)),
     )
 
-    private fun MutablePreferences.write(value: AppSettings) {
+    private fun MutablePreferences.writeMain(value: AppSettings) {
         remove(stringPreferencesKey("app_update_cached_json"))
         remove(stringPreferencesKey("saf_download_path"))
-        // 旧单行 clearance 已并入 cf_cookies，这里彻底删掉：留着的话用户清掉验证后，
+        // 旧单行 clearance 已并入 cf_cookies，这里彻底删掉：留着的话用户清掉验证后、
         // 读侧升级回落会把它再捞回来（复活一把已经作废的钥匙）。
         remove(stringPreferencesKey(LEGACY_KEY_CF_COOKIE))
         remove(stringPreferencesKey(LEGACY_KEY_CF_COOKIE_HOST))
-        value.toMap().forEach { (name, raw) -> putRaw(name, raw) }
+        value.toMap().filterKeys { it !in AUTH_KEYS }.forEach { (name, raw) -> putRaw(name, raw) }
+    }
+
+    private fun MutablePreferences.writeAuth(value: AppSettings) {
+        value.toMap().filterKeys { it in AUTH_KEYS }.forEach { (name, raw) -> putRaw(name, raw) }
     }
 
     private fun AppSettings.toMap(): Map<String, Any> = buildMap {
@@ -307,7 +338,7 @@ object DataStoreManager : SettingsStore {
         builtInAppId = defaults.danmakuAppId,
         builtInAppSecret = defaults.danmakuAppSecret,
     )
-    private fun MutablePreferences.putRaw(name: String, value: Any) { when (value) { is Boolean -> this[booleanPreferencesKey(name)] = value; is Int -> this[intPreferencesKey(name)] = value; is Long -> this[longPreferencesKey(name)] = value; is String -> this[stringPreferencesKey(name)] = value } }
+    private fun MutablePreferences.putRaw(name: String, value: Any) { when (value) { is Boolean -> this[booleanPreferencesKey(name)] = value; is Int -> this[intPreferencesKey(name)] = value; is Long -> this[longPreferencesKey(name)] = value; is Float -> this[floatPreferencesKey(name)] = value; is String -> this[stringPreferencesKey(name)] = value; is Set<*> -> this[stringSetPreferencesKey(name)] = value.filterIsInstance<String>().toSet() } }
     /**
      * 备份导出/导入都跳过这些键。
      *
@@ -318,6 +349,61 @@ object DataStoreManager : SettingsStore {
         "already_login", "saved_user_id", "cookie", KEY_CF_COOKIES,
         "danmaku_app_id", "danmaku_app_secret",
     )
+
+    private val AUTH_BOOL_KEYS = listOf("already_login")
+    private val AUTH_STRING_KEYS = listOf(
+        "saved_user_id", "cookie", KEY_CF_COOKIES,
+        "danmaku_app_id", "danmaku_app_secret",
+    )
+
+    /**
+     * 合并视图：主存 + 登录态独立存。auth 侧有值才覆盖（缺键回落主存的老值/默认），
+     * 故迁移窗口内（主存还有、auth 还没有）读到的仍是老值，不闪断。
+     */
+    internal fun mergeAuthPreferences(main: Preferences, auth: Preferences): Preferences =
+        mutablePreferencesOf().apply {
+            @Suppress("UNCHECKED_CAST")
+            for ((key, value) in main.asMap()) {
+                this[key as Preferences.Key<Any?>] = value
+            }
+            for (name in AUTH_BOOL_KEYS) {
+                val key = booleanPreferencesKey(name)
+                auth[key]?.let { this[key] = it }
+            }
+            for (name in AUTH_STRING_KEYS) {
+                val key = stringPreferencesKey(name)
+                auth[key]?.let { this[key] = it }
+            }
+        }
+
+    /**
+     * 老存档一次性迁移：主存里的登录态键搬到独立存。
+     *
+     * auth 侧已有不覆盖（崩溃在"写 auth 后、删主存前"会留下双份，以 auth 为准）；
+     * 搬完从主存删除 —— 此后主存永不再出现这 6 个键（`writeMain` 本来就不写它们）。
+     * 幂等：主存无残留即 no-op。
+     */
+    internal suspend fun migrateAuthKeysToDedicatedStore(
+        main: DataStore<Preferences>,
+        auth: DataStore<Preferences>,
+    ) {
+        val mainFirst = main.data.first()
+        val boolKeys = AUTH_BOOL_KEYS.map(::booleanPreferencesKey)
+        val stringKeys = AUTH_STRING_KEYS.map(::stringPreferencesKey)
+        if (boolKeys.none { mainFirst.contains(it) } && stringKeys.none { mainFirst.contains(it) }) return
+        auth.edit { a ->
+            for (key in boolKeys) {
+                if (!a.contains(key)) mainFirst[key]?.let { a[key] = it }
+            }
+            for (key in stringKeys) {
+                if (!a.contains(key)) mainFirst[key]?.let { a[key] = it }
+            }
+        }
+        main.edit { m ->
+            boolKeys.forEach { m.remove(it) }
+            stringKeys.forEach { m.remove(it) }
+        }
+    }
 }
 
 /**

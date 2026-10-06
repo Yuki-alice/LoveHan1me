@@ -71,6 +71,16 @@ interface LocalListDao {
     @Query("SELECT * FROM LocalListItemEntity WHERE listCode = :listCode ORDER BY addedAt DESC")
     suspend fun getItems(listCode: String): List<LocalListItemEntity>
 
+    /**
+     * B7-N1：导出专用的一次性全量读取。
+     *
+     * `exportLocalLists` 原先逐表 `getItems`（P 个播放列表 = P+3 次查询）；
+     * 本查询一次拿全表（仍 `addedAt DESC`），调用侧按 `listCode` 分组 ——
+     * `groupBy` 保持遭遇顺序，每组内天然仍是 DESC，与逐表查的序列一致。
+     */
+    @Query("SELECT * FROM LocalListItemEntity ORDER BY addedAt DESC")
+    suspend fun getAllItems(): List<LocalListItemEntity>
+
     @Query(
         "SELECT * FROM LocalListItemEntity WHERE listCode = :listCode AND videoCode = :videoCode LIMIT 1"
     )

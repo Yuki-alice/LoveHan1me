@@ -2,6 +2,7 @@ package lovehan1me.data.database.entity
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
 /**
  * 「这一集对应弹幕库里的哪一集」的用户级关联记录。
@@ -11,8 +12,9 @@ import androidx.room.PrimaryKey
  * 该 videoCode 都直接按这条记录去拉弹幕，不再重复搜索。
  *
  * 这张表存的是**用户资产**（重新关联的成本远高于重新拉取弹幕），
- * 因此不随缓存过期清理、也不纳入备份导出。
+ * 因此不随缓存过期清理；整机备份纳入它（换机不丢人工关联）。
  */
+@Serializable
 @Entity(tableName = "DanmakuMappingEntity")
 data class DanmakuMappingEntity(
     /** hanime1 视频页编号，一集一条（站内没有"季/部"的层级，页面即集）。 */

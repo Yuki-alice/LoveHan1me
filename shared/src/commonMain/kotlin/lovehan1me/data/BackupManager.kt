@@ -10,7 +10,9 @@ import lovehan1me.core.platform.downloadWorkController
 import okio.buffer
 import lovehan1me.core.platform.openBackupSink
 import lovehan1me.core.platform.rebuildSystemProxy
+import lovehan1me.core.domain.model.ListsExport
 import lovehan1me.data.database.entity.CheckInRecordEntity
+import lovehan1me.data.database.entity.DanmakuMappingEntity
 import lovehan1me.data.database.entity.WatchHistoryEntity
 import lovehan1me.data.database.entity.download.DownloadCategoryEntity
 import lovehan1me.data.database.entity.download.DownloadGroupEntity
@@ -18,6 +20,12 @@ import lovehan1me.data.database.entity.download.HanimeCategoryCrossRef
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.boolean
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.floatOrNull
 // okio 桥接：1.11.0 里叫 encodeToBufferedSink / decodeFromBufferedSource（收
 // BufferedSink / BufferedSource，不是裸 Sink / Source）——写错名字会"能解析依赖、
 // 但符号找不到"，排查时别被"依赖下下来了"骗过去。
@@ -37,18 +45,26 @@ object BackupManager {
     }
 
     @Serializable
-    private data class BackupData(
+    internal data class BackupData(
         val version: Int = BACKUP_VERSION,
         val appVersionCode: Int = appVersionCodeRaw(),
         val appVersionName: String = appVersionNameRaw(),
         val exportedAt: Long = currentEpochMillis(),
-        val settings: Map<String, PreferenceValue>? = null,
+        // 设置值以原始 JSON 存（而非多态 PreferenceValue）：`PreferenceValue` 的
+        // 多态鉴别名含包名，上游包与本包不同，直接解码上游备份必炸。读侧按
+        // [decodeSettingValue] 宽容还原（后缀名匹配 + 形状兜底），写侧形状不变，
+        // 故本机新旧包互读、上游包读入都成立。
+        val settings: Map<String, JsonElement>? = null,
         val checkInRecords: List<CheckInRecordEntity>? = null,
         val watchHistories: List<WatchHistoryEntity>? = null,
         val downloadGroups: List<DownloadGroupEntity>? = null,
         val downloads: List<HanimeDownloadEntity>? = null,
         val downloadCategories: List<DownloadCategoryEntity>? = null,
         val downloadCategoryCrossRefs: List<HanimeCategoryCrossRef>? = null,
+        /** 本机清单（稍后看/喜欢/播放列表）。上游包无此键，读入时跳过。 */
+        val localLists: ListsExport? = null,
+        /** 弹幕人工关联。缓存表（可再生）不进备份。 */
+        val danmakuMappings: List<DanmakuMappingEntity>? = null,
     )
 
     @Serializable
@@ -94,6 +110,9 @@ object BackupManager {
         }
         applyBackup(backup)
     }
+
+    /** 上游包兼容的解码入口（测试与未来"选择上游包导入"共用；写盘走 DB 不走这里）。 */
+    internal fun decodeBackupJson(text: String): BackupData = json.decodeFromString(text)
 
     private suspend fun applyBackup(backup: BackupData) {
         backup.checkInRecords?.let { checkInRecords ->
@@ -144,16 +163,29 @@ object BackupManager {
         }
 
         backup.settings?.let { settings ->
-            DataStoreManager.restoreBackup(settings.mapValues { (_, value) -> value.rawValue })
+            DataStoreManager.restoreBackup(decodeSettingsValues(settings))
             applyAppLanguage(SettingsRepository.current.appLanguage)
             rebuildSystemProxy()
             downloadWorkController().updateDownloadLimit(SettingsRepository.current.downloadCountLimit)
+        }
+
+        backup.localLists?.let { lists ->
+            LocalListRepository.importLocalLists(lists, merge = false)
+        }
+
+        backup.danmakuMappings?.let { mappings ->
+            Han1meDatabases.danmaku.danmakuDao.apply {
+                deleteAllMappings()
+                mappings.forEach { upsertMapping(it) }
+            }
         }
     }
 
     private suspend fun buildBackup(): BackupData = BackupData(
         settings = DataStoreManager.exportBackup().mapValuesNotNull { (_, value) ->
-            value.toPreferenceValue()
+            value.toPreferenceValue()?.let { pv: PreferenceValue ->
+                json.encodeToJsonElement(PreferenceValue.serializer(), pv)
+            }
         },
         checkInRecords = Han1meDatabases.checkInRecord.checkInDao().getAllRecords(),
         watchHistories = Han1meDatabases.history.watchHistory.getAll(),
@@ -161,7 +193,54 @@ object BackupManager {
         downloads = Han1meDatabases.download.hanimeDownloadDao.getAll(),
         downloadCategories = Han1meDatabases.download.downloadCategoryDao.getAllCategoriesOnce(),
         downloadCategoryCrossRefs = Han1meDatabases.download.downloadCategoryDao.getAllCrossRefs(),
+        localLists = LocalListRepository.exportLocalLists(),
+        danmakuMappings = Han1meDatabases.danmaku.danmakuDao.getAllMappings(),
     )
+
+    /**
+     * 设置值的宽容解码（上游备份兼容的核心）。
+     *
+     * 两类输入都成立：本机包（鉴别名是本包 FQN）与上游包（鉴别名是上游 FQN）。
+     * 判据只看 `type` 的后缀简单名（`BooleanValue` 等六个，两边同名），包名差异忽略；
+     * `type` 缺失或不可辨时按 `value` 形状兜底。单键失败只丢该键，不连累整包。
+     * Int/Long 严格按声明还原（错位会让读侧落到默认值，比"值对类型错"更糟）。
+     */
+    internal fun decodeSettingsValues(raw: Map<String, JsonElement>): Map<String, Any> =
+        raw.mapNotNull { (name, element) ->
+            decodeSettingValue(element)?.let { name to it }
+        }.toMap()
+
+    internal fun decodeSettingValue(element: JsonElement): Any? {
+        val obj = element as? JsonObject ?: return null
+        val value = obj["value"] ?: return null
+        val type = (obj["type"] as? JsonPrimitive)?.content?.substringAfterLast('.')
+        return when (type) {
+            "BooleanValue" -> (value as? JsonPrimitive)?.booleanOrNull
+            "IntValue" -> (value as? JsonPrimitive)?.content?.toIntOrNull()
+            "LongValue" -> (value as? JsonPrimitive)?.content?.toLongOrNull()
+            "FloatValue" -> (value as? JsonPrimitive)?.content?.toFloatOrNull()
+            "StringValue" -> (value as? JsonPrimitive)?.takeIf { it.isString }?.content
+            "StringSetValue" -> (value as? kotlinx.serialization.json.JsonArray)
+                ?.mapNotNull { (it as? JsonPrimitive)?.takeIf { e -> e.isString }?.content }
+                ?.toSet()
+            // 无 type 或不可辨：按形状兜底（手写包/未来类型）。
+            else -> sniffSettingValue(value)
+        }
+    }
+
+    private fun sniffSettingValue(value: JsonElement): Any? = when (value) {
+        is JsonPrimitive -> when {
+            value.isString -> value.content
+            value.booleanOrNull != null -> value.boolean
+            else -> value.content.toLongOrNull()?.let { l ->
+                if (l in Int.MIN_VALUE..Int.MAX_VALUE) l.toInt() else l
+            } ?: value.floatOrNull
+        }
+        is kotlinx.serialization.json.JsonArray -> value
+            .mapNotNull { (it as? JsonPrimitive)?.takeIf { e -> e.isString }?.content }
+            .toSet()
+        else -> null
+    }
 
     private inline fun <K, V, R : Any> Map<K, V>.mapValuesNotNull(
         transform: (Map.Entry<K, V>) -> R?
@@ -181,15 +260,5 @@ object BackupManager {
             else -> null
         }
     }
-
-    private val PreferenceValue.rawValue: Any
-        get() = when (this) {
-            is PreferenceValue.BooleanValue -> value
-            is PreferenceValue.FloatValue -> value
-            is PreferenceValue.IntValue -> value
-            is PreferenceValue.LongValue -> value
-            is PreferenceValue.StringSetValue -> value
-            is PreferenceValue.StringValue -> value
-        }
 
 }

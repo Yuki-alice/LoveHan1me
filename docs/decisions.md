@@ -3,6 +3,29 @@
 > 本文件当前保存 2026-10-02 起的条目。更早的条目仍完整留在 git 历史里
 > （`git checkout HEAD -- docs/decisions.md` 可取回并合并）。
 
+## 登录态独立存储（2026-10-06，P0 数据隐私）
+
+- **背景**：手动备份以 `AUTH_KEYS` 排除登录态 6 键，但 Android 系统备份规则
+  只能按文件排除、不能按 key 排除，而 6 键与 90 个普通设置混在同一个
+  `settings.preferences_pb` 里 —— 系统备份形同虚设（cookie/cf/弹幕密钥明文漫游）。
+- **改动**：新增 `auth.preferences_pb` 独立存 6 键（读写合并视图、写侧分流、
+  启动时老键一次性迁移、冲突以独立存为准、幂等）；两份 xml 只排除该文件，
+  普通设置照常漫游；手动备份的 `AUTH_KEYS` 过滤保留（双保险）。
+  守卫 `AuthStoreMigrationTest` 4 例（真文件实测迁移/冲突/合并/空安装）。
+  失效条件＝DataStore 换存储后端（合并/迁移语义需重写），或决定登录态可漫游
+  （与手动备份口径同步改）。重认日期 2027-04-06。
+
+## 下载限速移除（2026-10-06，用户决策）
+
+- **移除上游带来的下载限速整套**：`SpeedLimitInterceptor` /
+  `SpeedLimitResponseBody`、下载设置页档位 UI、`AppSettings.downloadSpeedLimitIndex`
+  + `DOWNLOAD_SPEED_BYTES`、`SettingsRepository` 读写口、DataStore 读写、
+  中英繁 `download_speed_limit` 文案。理由：窄场景（移动数据后台下载不抢带宽），
+  投入产出比不如下载调度本身；此前桌面/iOS 侧本就是半截实现。
+  存量迁移＝无：老设备残留键不再读取、无害忽略；旧备份同理。
+  失效条件＝有用户明确要"后台下载不抢带宽"（届时按三端同时可验的标准重做，
+  不接受单端半截）。重认日期 2027-04-06。
+
 ## 网络：本地 ECH 网关的 Android 接入形态
 
 - **Android 的网关运行时落在 `:app` 壳，经 jvm 共享门面接入**。门面 `EchGateRuntime`
