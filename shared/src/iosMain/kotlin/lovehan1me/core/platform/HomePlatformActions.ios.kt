@@ -1,12 +1,47 @@
+@file:OptIn(kotlinx.cinterop.ExperimentalForeignApi::class)
+
 package lovehan1me.core.platform
 
 import lovehan1me.core.domain.model.AppLanguage
+import platform.Foundation.NSFileManager
+import platform.Foundation.NSFileSize
+import platform.Foundation.NSNumber
+import platform.Foundation.NSTemporaryDirectory
+import platform.Foundation.NSURLCache
 import platform.Foundation.NSUserDefaults
 
-// P6d-4：iOS 平台面降级（沙盒缓存目录/NSBundle 版本号随 P7 收口）
-actual suspend fun getCacheDirSize(): Long = 0L
+/**
+ * P0-2：iOS 清缓存生效（此前恒返回 0/false，按钮是摆设）。
+ *
+ * iOS 侧可清的有两处：`NSTemporaryDirectory()`（备份中转、图片解码临时文件等）
+ * 与 `NSURLCache.sharedURLCache`（Ktor Darwin 经 NSURLSession 落盘的 HTTP 缓存，
+ * 响应头里可能带 Set-Cookie ——不清它等于"清缓存"不清登录痕迹）。
+ * Room/NSString 数据目录（`Documents/db`、`Documents/datastore`）与下载目录一律不动。
+ */
+actual suspend fun getCacheDirSize(): Long = runCatching {
+    tmpDirSize() + NSURLCache.sharedURLCache().currentDiskUsage.toLong()
+}.getOrDefault(0L)
 
-actual suspend fun clearCacheDir(): Boolean = false
+actual suspend fun clearCacheDir(): Boolean = runCatching {
+    val fm = NSFileManager.defaultManager
+    val tmp = NSTemporaryDirectory()
+    fm.subpathsOfDirectoryAtPath(tmp, null)?.forEach { relative ->
+        fm.removeItemAtPath("$tmp/$relative", null)
+    }
+    NSURLCache.sharedURLCache().removeAllCachedResponses()
+    true
+}.getOrDefault(false)
+
+private fun tmpDirSize(): Long {
+    val fm = NSFileManager.defaultManager
+    val tmp = NSTemporaryDirectory()
+    var total = 0L
+    fm.subpathsOfDirectoryAtPath(tmp, null)?.forEach { relative ->
+        val attrs = fm.attributesOfItemAtPath("$tmp/$relative", null) as? Map<*, *>
+        total += (attrs?.get(NSFileSize) as? NSNumber)?.longLongValue ?: 0L
+    }
+    return total
+}
 
 /**
  * iOS 语言生效（M5-2：对齐 Android 的启动时应用）。

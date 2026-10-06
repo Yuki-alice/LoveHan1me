@@ -88,8 +88,23 @@ object IosVideoPageHost : VideoPageHost, PipModeReporter {
     private var backgroundObserver: Any? = null
 
     override fun showCommentBadge(count: Int) {}
+
+    /**
+     * F12 收口：以下三处是**刻意留空**，不是遗漏实现（与桌面宿主同口径）。
+     *
+     * - `togglePlayPause`：iOS 没有广播机制，外部调用方为零（共享 `pageHost`
+     *   包装器自己调 `PlaybackController.togglePlayPause`）；PiP 窗的播放/暂停键
+     *   由系统按 `AVPlayer` 渲染并直驱播放器，状态经引擎观察回流 UI。
+     *   真机若出现"按了不同步"，修的是引擎的外部 rate 观察，不是这里。
+     * - `onPipModeChanged`：PiP 进出经 delegate → `PipModeReporter.pipModeListener`
+     *   → 共享包装器，同样零外部调用。
+     * - `refreshPipAction`：Android RemoteAction 的刷新口；iOS 无此 API，
+     *   系统控制条跟随 `AVPlayer.rate` 自动翻转，无需应用侧刷新。
+     */
     override fun togglePlayPause() {}
     override fun onPipModeChanged(isInPip: Boolean) {}
+
+    override fun refreshPipAction(isPlaying: Boolean, toggleDescription: String) {}
 
     /**
      * C1a：亮度是真实现（`UIScreen.mainScreen.brightness` 读写），故声明支持。

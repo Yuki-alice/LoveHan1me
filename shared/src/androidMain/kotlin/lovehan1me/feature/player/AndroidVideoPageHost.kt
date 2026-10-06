@@ -105,6 +105,9 @@ class AndroidVideoPageHost(
     }
     override fun shouldEnterPip(): Boolean = false
     override fun enterPipMode() {}
+    // F12 收口：以下两处刻意留空。PiP 广播（MainActivity.ACTION_TOGGLE_PLAY）与
+    // 前后台切换（Fragment.onPipModeChanged）调的都是共享 pageHost 包装器
+    //（它直连 PlaybackController / ViewModel），本宿主的同名方法零调用方。
     override fun onPipModeChanged(isInPip: Boolean) {}
     override fun togglePlayPause() {}
 
