@@ -81,6 +81,9 @@ kotlin {
             implementation(libs.coroutines.core)
             implementation(libs.datetime)
             implementation(libs.serialization.json)
+            // B7：okio 桥接，让备份可以 encodeToSink / decodeFromSource 真流式读写
+            // （版本与 serialization-json 同源，见 libs.versions.toml 注释）。
+            implementation(libs.serialization.json.okio)
 
             // 备份导出/导入走 okio 流式读写（`openBackupSink/Source` 的签名即 okio 类型）
             implementation(libs.okio)

@@ -41,6 +41,32 @@ import androidx.compose.runtime.setValue
  * @author Yenaly Liew（上游原作者，见 NOTICE）
  * @time 2022/06/13 013 22:29
  */
+
+/**
+ * 搜索结果常驻上限（B3）。
+ *
+ * `_searchFlow` 原本无界累加：每翻一页就把新页并进旧列表、再对**整表** `distinctBy`，
+ * 于是常驻内存随页数线性上涨，且单页成本也随累计量涨（翻到第 N 页时累计成本是平方级）。
+ * 封顶后常驻内存封顶、单页成本恒定（上限 + 一页）。
+ *
+ * 取舍（有意为之，文档已记）：超出上限后**丢弃最早的一批**，用户往上翻会看不到最初几页。
+ * 这是「封顶 vs 切 Paging3」里选前者的既定代价——后者改动量高一个量级。
+ */
+internal const val SEARCH_RESULT_LIMIT = 500
+
+/**
+ * 把新一页并入已有结果：先按 `videoCode` 去重，再按 [limit] 封顶（保最新）。
+ *
+ * 抽成纯函数是为了可测：ViewModel 依赖 DB/网络，headless 下起不来；
+ * 而"去重 + 封顶"这段正是 B3 的全部语义，单独钉住即可（同 `PlaybackUiStateTest` 的路子）。
+ */
+internal fun mergeSearchPage(
+    prev: List<HanimeInfo>,
+    incoming: List<HanimeInfo>,
+    limit: Int = SEARCH_RESULT_LIMIT,
+): List<HanimeInfo> =
+    (prev + incoming).distinctBy(HanimeInfo::videoCode).takeLast(limit)
+
 // P6c：SavedStateHandle（androidx）不可下沉 commonMain；nav3 @Serializable 路由不依赖它做参数传递，
 // 原 state 持久化（进程死亡恢复查询/滚动）改普通属性，持久化接入推迟 P6d 导航层（债务记录）。
 class SearchViewModel() : ViewModel() {
@@ -177,7 +203,8 @@ class SearchViewModel() : ViewModel() {
                             // 直接追加会把旧快照顶在前面、顺序错乱。
                             val base =
                                 if (staleReplaced) { staleReplaced = false; emptyList() } else prevList
-                            (base + updatedList).distinctBy(HanimeInfo::videoCode)
+                            // B3：去重 + 封顶（超出上限丢最早的，见 SEARCH_RESULT_LIMIT 注释）。
+                            mergeSearchPage(base, updatedList)
                         }
                         is PageLoadingState.Loading -> emptyList()
                         else -> prevList

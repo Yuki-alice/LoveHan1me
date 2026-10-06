@@ -115,6 +115,10 @@ compose-ui-ui-tooling = { group = "androidx.compose.ui", name = "ui-tooling" }
 materialkolor = { module = "com.materialkolor:material-kolor", version.ref = "materialkolor" }
 # Parse
 serialization-json = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json", version.ref = "serialization" }
+# B7 备份流式化：给 kotlinx-serialization 补 okio 桥接（encodeToBufferedSink /
+# decodeFromBufferedSource）。
+# 版本必须与上面的 serialization 完全一致（同一个 kotlinx-serialization 发行）。
+serialization-json-okio = { group = "org.jetbrains.kotlinx", name = "kotlinx-serialization-json-okio", version.ref = "serialization" }
 jsoup = { group = "org.jsoup", name = "jsoup", version.ref = "jsoup" }
 
 # Network

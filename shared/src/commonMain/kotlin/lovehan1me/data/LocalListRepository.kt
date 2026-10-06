@@ -28,7 +28,8 @@ object LocalListRepository {
     private val dao: LocalListDao = Han1meDatabases.localList.localListDao
     private val json = Json {
         ignoreUnknownKeys = true
-        prettyPrint = true
+        // B7：同 BackupManager —— 机器读写的交换格式，缩进只增体积与耗时。
+        prettyPrint = false
         encodeDefaults = true
     }
 

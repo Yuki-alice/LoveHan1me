@@ -40,11 +40,24 @@ fun RetryableImage(
     val context = LocalPlatformContext.current
     var retryCount by remember { mutableIntStateOf(0) }
 
+    // B6：ImageRequest **必须 remember**。
+    //
+    // 它原先直接写在组合体里，于是每次重组都是一个新的实例。AsyncImage 以 model
+    // 作为"要不要重启这次加载"的依据，实例一换就把加载从头再来 —— 表现就是卡片
+    // 一重组就闪回占位图。快滑时一屏几十张卡在反复重组，图闪正是这么来的（B6 的
+    // 验收口径就是"快滑图闪"）。记住之后，只有 URL 真变或重试推进才会重建请求。
+    //
+    // 顺带说清为什么**不**按原计划写死 `size()`：coil3 的 AsyncImage 用
+    // ConstraintsSizeResolver 从布局约束解析解码尺寸，项目自己的预热路径也写着
+    // "解码尺寸由展示侧定，预热定死尺寸反而污染内存缓存"。在这里定死尺寸只会把
+    // 不同宽度的卡片塞进同一个缓存键。记忆住的请求本身就是稳定缓存键的来源
+    // （data + 解析出的尺寸 + 变换），不必再手工指定 memoryCacheKey。
+    //
     // 重试不换 URL：此前 `?retry=` 拼法同时击穿内存/磁盘/服务端三级缓存，
     // 且 CDN 会把它当新资源。失败本就无缓存可命中，同 URL 重发即重拉；
     // 显式 bypass 磁盘只为语义明确。retryCount 只做重组触发器。
-    AsyncImage(
-        model = ImageRequest.Builder(context)
+    val request = remember(context, model, retryCount) {
+        ImageRequest.Builder(context)
             .data(model)
             .crossfade(true)
             .apply { if (retryCount > 0) networkCachePolicy(CachePolicy.DISABLED) }
@@ -52,7 +65,11 @@ fun RetryableImage(
                 onError = { _, result ->
                     LogUtil.e("CoilError", "Image load failed", result.throwable)
                 }
-            ).build(),
+            ).build()
+    }
+
+    AsyncImage(
+        model = request,
         imageLoader = rememberHanimeImageLoader(),
         contentDescription = contentDescription,
         placeholder = placeholder,

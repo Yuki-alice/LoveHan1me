@@ -22,7 +22,8 @@ object OnlineListsBackup {
 
     private val json = Json {
         ignoreUnknownKeys = true
-        prettyPrint = true
+        // B7：同 BackupManager —— 机器读写的交换格式，缩进只增体积与耗时。
+        prettyPrint = false
         encodeDefaults = true
     }
 
