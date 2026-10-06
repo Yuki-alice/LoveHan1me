@@ -154,7 +154,11 @@ fun SubscriptionContent(
 
             items(
                 items = uiState.videos,
-                key = { it.videoCode }
+                key = { it.videoCode },
+                // contentType 是 Lazy 的"Recyclerview viewType"：本网格里视频卡与
+                // 通栏的头部/分割线/加载更多混在一起，不区分类型的话，跨类型的槽位
+                // 复用会丢弃已缓存的组合、每次都重建。
+                contentType = { "subscription_video" },
             ) { video ->
                 Box(
                     modifier = Modifier.animateItem()

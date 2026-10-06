@@ -224,7 +224,13 @@ fun ArtistDetailScreen(
                                 onAction = { selectedTab = 2 },
                             )
                         }
-                        items(items = homePlaylists.take(videoColumns * 2), key = { it.listId }) { summary ->
+                        // contentType：本网格被 3 个 tab 共用（作品视频 / 播放列表 / chips+列表），
+                        // 不标类型的话切 tab 时槽位会跨类型复用，已缓存的组合全丢、逐个重建。
+                        items(
+                            items = homePlaylists.take(videoColumns * 2),
+                            key = { it.listId },
+                            contentType = { "playlist" },
+                        ) { summary ->
                             PlaylistCard(
                                 summary = summary,
                                 onClick = {
@@ -241,7 +247,7 @@ fun ArtistDetailScreen(
                     }
                 }
                 1 -> {
-                    items(items = works, key = { it.videoCode }) { video ->
+                    items(items = works, key = { it.videoCode }, contentType = { "video" }) { video ->
                         VideoCardItem(
                             videoItem = video,
                             onClickVideosItem = { onNavigateToVideo(video.videoCode) },
@@ -267,6 +273,7 @@ fun ArtistDetailScreen(
                     items(
                         items = playlists?.summaries.orEmpty(),
                         key = { it.listId },
+                        contentType = { "playlist" },
                     ) { summary ->
                         PlaylistCard(
                             summary = summary,

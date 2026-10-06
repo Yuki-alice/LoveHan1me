@@ -15,6 +15,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
@@ -57,11 +58,15 @@ fun PlaylistContent(
             val totalItems = layoutInfo.totalItemsCount
             val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
             lastVisibleItem >= totalItems - 3 && uiState.playlists.isNotEmpty()
-        }.collect { shouldLoad ->
-            if (shouldLoad && !loadingMore && !noMore) {
-                onEvent(PlaylistEvent.OnLoadMore)
-            }
         }
+            // snapshotFlow 对"读到的状态变了"就发一次，不看成不成立的布尔值是否重复。
+            // 不去重的话触底那一小段滚动里会连续发几十个 true，反复打 OnLoadMore。
+            .distinctUntilChanged()
+            .collect { shouldLoad ->
+                if (shouldLoad && !loadingMore && !noMore) {
+                    onEvent(PlaylistEvent.OnLoadMore)
+                }
+            }
     }
 
     // transitionSpec 的 lambda 不是 @Composable 上下文，spec 要在外面取。
@@ -94,7 +99,8 @@ fun PlaylistContent(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                items(uiState.playlists) { playlist ->
+                // key 用 listCode（服务端稳定 ID）：分页追加 / 删除后卡片身份才不断。
+                items(uiState.playlists, key = { it.listCode }) { playlist ->
                     PlaylistItem(
                         playlist = playlist,
                         modifier = Modifier.height(140.dp)

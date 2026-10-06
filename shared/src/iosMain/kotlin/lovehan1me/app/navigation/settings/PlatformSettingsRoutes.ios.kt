@@ -19,7 +19,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -99,7 +99,7 @@ private const val REFRESH_TICK_MS = 2_000L
 @Composable
 actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
     val scope = rememberCoroutineScope()
-    val settings by SettingsRepository.settings.collectAsState()
+    val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
     val copyToClipboard = rememberCopyTextToClipboard()
 
     // 与 jvm 侧同款 2s 刷新：三态、事件、导出文本都靠它活起来。

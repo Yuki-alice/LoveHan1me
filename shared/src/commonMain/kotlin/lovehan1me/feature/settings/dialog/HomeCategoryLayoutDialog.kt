@@ -90,7 +90,10 @@ internal fun HomeCategoryLayoutDialog(
 
                 items(
                     items = order,
-                    key = { it }
+                    key = { it },
+                    // 拖拽排序时整列重排；标类型后槽位在同类型卡片间复用，
+                    // 不会每次拖动都把已缓存的组合丢掉重建。
+                    contentType = { "home_category" },
                 ) { key ->
                     val item = itemByKey[key] ?: return@items
                     val isDragging = draggedKey == key

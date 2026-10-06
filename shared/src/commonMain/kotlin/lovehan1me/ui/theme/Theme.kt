@@ -6,6 +6,7 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialExpressiveTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import lovehan1me.data.SettingsRepository
 
@@ -52,18 +53,30 @@ fun HanimeTheme(
         else -> systemDarkTheme
     }
     // 命名槽位现场色算（materialkolor，真三端）。
-    var colorScheme = boardColorScheme(
+    // 色算本身在 boardColorScheme 内部已 remember，不会每帧重算。
+    val baseColorScheme = boardColorScheme(
         board = ThemeBoard.fromId(themeConfig.themeId),
         isDark = resolvedDarkTheme,
         // 高对比度接设置（默认档 = 0.0，即原先写死的值）。
         contrastLevel = themeConfig.contrastLevel.spec,
     )
     // AMOLED 是与深浅正交的独立开关，只在深色下叠加（Mihon 模式）。
-    if (themeConfig.amoled && resolvedDarkTheme) colorScheme = colorScheme.amoled()
+    //
+    // 这里必须 remember：amoled() 是一次 copy()，不加记忆的话主题过渡那 300ms 里
+    // **每一帧都新造一个 ColorScheme 实例**。ColorScheme 没重写 equals（按引用比），
+    // 于是 ConfigureSystemBars 每帧都认为入参变了而重组一次；记住后过渡期间传下去
+    // 的是同一个实例，子项才能真的跳过。
+    val targetColorScheme = remember(baseColorScheme, themeConfig.amoled, resolvedDarkTheme) {
+        if (themeConfig.amoled && resolvedDarkTheme) baseColorScheme.amoled() else baseColorScheme
+    }
     // 切槽位 / 深浅 / 对比度 / AMOLED 时平滑过渡（不再硬切）。
-    val animatedColorScheme = animateColorScheme(colorScheme)
+    //
+    // 注意：这 48 个 animateColorAsState 的 .value 都在本作用域读，所以过渡的每一帧
+    // 本函数都会重组一次、并向下分发一个新的 ColorScheme —— 这是"整棵子树跟着渐变"
+    // 的既定代价，改不了；上面两步做的是把这一帧里能省的（色算 / 实例分配 / 子项跳过）省掉。
+    val animatedColorScheme = animateColorScheme(targetColorScheme)
     ConfigureSystemBars(
-        colorScheme = colorScheme,
+        colorScheme = targetColorScheme,
         isDark = resolvedDarkTheme,
     )
 

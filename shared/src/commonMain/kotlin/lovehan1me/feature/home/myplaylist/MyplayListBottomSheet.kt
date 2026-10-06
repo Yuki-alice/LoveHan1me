@@ -33,7 +33,6 @@ import androidx.compose.material3.TopAppBarDefaults.topAppBarColors
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -84,6 +83,8 @@ import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.adaptive.PageMetrics
 import lovehan1me.feature.library.PlaylistController
 import lovehan1me.core.util.AppToast
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.distinctUntilChanged
 
 /**
  * 播放列表详情底部弹窗。
@@ -105,17 +106,22 @@ fun PlaylistBottomSheet(
     onLongClickItem: (String, String) -> Unit,
     vm: PlaylistController,
 ) {
-    val playlistState by vm.playlistStateFlow.collectAsState()
-    val playlist by vm.playlistFlow.collectAsState()
+    val playlistState by vm.playlistStateFlow.collectAsStateWithLifecycle()
+    val playlist by vm.playlistFlow.collectAsStateWithLifecycle()
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
         enabledValues = setOf(SheetValue.Hidden, SheetValue.Expanded),
     )
-    if (listCode.isNotEmpty()) {
-        vm.setListInfo(listCode, playListTitle)
+    // 原来这行是 `if (listCode.isNotEmpty()) vm.setListInfo(...)`，**写在组合体里**。
+    // 组合阶段写 ViewModel（也就是写 State）属于"反向写"：每次重组都触发一次，
+    // 且写在快照里会让本次重组作废重来。改挂到 LaunchedEffect，只在入参真变时执行一次。
+    LaunchedEffect(listCode, playListTitle) {
+        if (listCode.isNotEmpty()) {
+            vm.setListInfo(listCode, playListTitle)
+        }
     }
 
-    val listInfo by vm.currentListInfo.collectAsState()
+    val listInfo by vm.currentListInfo.collectAsStateWithLifecycle()
     val currentCode = listInfo?.first ?: ""
     val currentTitle = listInfo?.second ?: ""
     val savedScrollState = remember(currentCode, vm) {
@@ -141,7 +147,10 @@ fun PlaylistBottomSheet(
     LaunchedEffect(Unit) { sheetState.show() }
 
     LaunchedEffect(gridState, currentCode) {
+        // 滚动位置每移动一像素就会发射一次；不去重的话等于"每帧写一次 ViewModel"，
+        // 写回去又触发本页重组 → 滚动掉帧。distinctUntilChanged 把写入压到真正变化时。
         snapshotFlow { gridState.firstVisibleItemIndex to gridState.firstVisibleItemScrollOffset }
+            .distinctUntilChanged()
             .collect { (index, offset) ->
                 vm.updatePlaylistSheetScrollState(currentCode, index, offset)
             }
@@ -234,7 +243,7 @@ private fun PlaylistSheetContent(
     var showDeletePlaylistConfirm by remember { mutableStateOf(false) }
     var showDeleteItemConfirm by remember { mutableStateOf<Triple<String, String, Int>?>(null) }
     var showEditPlaylistDialog by remember { mutableStateOf(false) }
-    val desc by playlistDesc.collectAsState()
+    val desc by playlistDesc.collectAsStateWithLifecycle()
 
     Column(modifier = Modifier.fillMaxSize()) {
         Box(Modifier
@@ -345,7 +354,12 @@ private fun PlaylistSheetContent(
                 horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
                 verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium)
             ) {
-                itemsIndexed(playlist) { index, item ->
+                itemsIndexed(
+                    playlist,
+                    // 不传 key 时 Lazy 用**下标**当身份：删除中间一项后，后面的卡片
+                    // 全部"换人"，组合状态与入场动画全乱。videoCode 是服务端稳定 ID。
+                    key = { _, item -> item.videoCode },
+                ) { index, item ->
                     VideoCardItem(
                         videoItem = item,
                         isHorizontalCard = true,
@@ -389,18 +403,25 @@ private fun PlaylistSheetContent(
             }
 
             LaunchedEffect(gridState, playlistState) {
-                snapshotFlow { gridState.layoutInfo }.collect { layoutInfo ->
-                    val totalItems = layoutInfo.totalItemsCount
+                snapshotFlow {
+                    val layoutInfo = gridState.layoutInfo
                     val lastVisibleItem = layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: 0
-                    if (lastVisibleItem >= totalItems - 3 &&
-                        playlistState !is PageLoadingState.Loading &&
-                        playlistState !is PageLoadingState.NoMoreData &&
-                        !viewModel.isLoadingMore
-                    ) {
-                        viewModel.currentPage++
-                        viewModel.getPlaylistItems(viewModel.currentPage, listCode)
-                    }
+                    lastVisibleItem >= layoutInfo.totalItemsCount - 3
                 }
+                    // layoutInfo 每滚动一像素都是新对象 —— 直接 collect 它等于每帧都跑一遍
+                    // 分页判断，且触底那一瞬间会连着发好几个 true 打重复请求。
+                    // 先映射成"是否接近末尾"再去重，只在翻转时才往下走。
+                    .distinctUntilChanged()
+                    .collect { nearEnd ->
+                        if (nearEnd &&
+                            playlistState !is PageLoadingState.Loading &&
+                            playlistState !is PageLoadingState.NoMoreData &&
+                            !viewModel.isLoadingMore
+                        ) {
+                            viewModel.currentPage++
+                            viewModel.getPlaylistItems(viewModel.currentPage, listCode)
+                        }
+                    }
             }
 
             showDeleteItemConfirm?.let { (code, videoCode, index) ->

@@ -15,7 +15,7 @@ import androidx.compose.material3.rememberTopAppBarState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -66,8 +66,8 @@ fun PlaylistScreen(
     onClickItem: (String) -> Unit,
     onLongClickItem: (String, String) -> Unit,
 ) {
-    val state by viewModel.myPlaylistsFlow.collectAsState()
-    val uiState by viewModel.mainUiState.collectAsState()
+    val state by viewModel.myPlaylistsFlow.collectAsStateWithLifecycle()
+    val uiState by viewModel.mainUiState.collectAsStateWithLifecycle()
     val scrollBehavior = pinnedScrollBehavior(rememberTopAppBarState())
     var isRefreshing by remember { mutableStateOf(false) }
     val refreshState = rememberPullToRefreshState()

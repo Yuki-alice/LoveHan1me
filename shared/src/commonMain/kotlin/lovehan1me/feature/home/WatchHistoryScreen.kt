@@ -151,11 +151,14 @@ fun WatchHistoryTabScreen(
     val localListState = rememberLazyListState()
     val showClearFab by rememberWatchHistoryFabVisibility(localListState)
     val localHistories by localHistoriesFlow.collectAsStateWithLifecycle(initialValue = emptyList())
-    val currentOnlineItems by onlineItems.collectAsState()
-    val currentOnlineState by onlineState.collectAsState()
-    val currentOnlineSort by onlineSort.collectAsState()
-    val currentOnlineLoadedPageCount by onlineLoadedPageCount.collectAsState()
-    val currentOnlineIsLoadingMore by onlineIsLoadingMore.collectAsState()
+    // 这 5 个流全部来自 ViewModel（组合体之外）。用 collectAsState 的话，
+    // 页面退到后台仍在收集，上游的取历史 / 分页查询跟着空转；
+    // collectAsStateWithLifecycle 把收集绑到 STARTED，后台即停。
+    val currentOnlineItems by onlineItems.collectAsStateWithLifecycle()
+    val currentOnlineState by onlineState.collectAsStateWithLifecycle()
+    val currentOnlineSort by onlineSort.collectAsStateWithLifecycle()
+    val currentOnlineLoadedPageCount by onlineLoadedPageCount.collectAsStateWithLifecycle()
+    val currentOnlineIsLoadingMore by onlineIsLoadingMore.collectAsStateWithLifecycle()
     var showDeleteAllLocalDialog by rememberSaveable { mutableStateOf(false) }
 
     LaunchedEffect(pagerState.currentPage) {

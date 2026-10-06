@@ -250,6 +250,9 @@ val libraries by produceLibraries { Res.readBytes("files/aboutlibraries.json").d
                     items(
                         items = filteredLicenseItems,
                         key = { it.library.uniqueId },
+                        // 搜索过滤后列表整体换血，标了 contentType 才能让复用槽位
+                        // 在同类型的卡片之间流转，而不是每次都当"新类型"重建。
+                        contentType = { "license" },
                     ) { item ->
                         LicenseLibraryItem(
                             item = item,

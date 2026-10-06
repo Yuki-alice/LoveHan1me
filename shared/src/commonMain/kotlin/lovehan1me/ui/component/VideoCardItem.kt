@@ -67,6 +67,18 @@ import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.launch
 
 /**
+ * 封面底部遮罩的渐变。
+ *
+ * 卡片是**全应用最高频**的组合项（首页/搜索/播放列表/历史，一屏几十个）。
+ * 原先这个 Brush 在每个卡片的组合体里现造（`Brush.verticalGradient(listOf(...))`），
+ * 滚动时每次新建卡片都重新分配一个 List + 一个 Brush。它是纯常量，提到文件级
+ * 只造一次即可，省掉每卡片的分配压力。
+ */
+private val CoverScrimBrush = Brush.verticalGradient(
+    colors = listOf(Color.Transparent, Color(0x9F000000)),
+)
+
+/**
  * 标准视频卡片项组件。
  *
  * 展示视频封面、标题等信息，支持水平和垂直两种布局。
@@ -179,14 +191,7 @@ fun VideoCardItem(
                         modifier = Modifier
                             .fillMaxWidth()
                             .align(Alignment.BottomCenter)
-                            .background(
-                                Brush.verticalGradient(
-                                    colors = listOf(
-                                        Color.Transparent,
-                                        Color(0x9F000000)
-                                    ),
-                                ),
-                            )
+                            .background(CoverScrimBrush)
                             .padding(horizontal = 6.dp),
                     ) {
                         videoItem.views?.let {

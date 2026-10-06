@@ -54,7 +54,7 @@ fun SubjectThemeOverride(
         "always_off" -> false
         else -> isSystemInDarkTheme()
     }
-    var colorScheme = remember(seed, isDark, themeConfig.contrastLevel) {
+    val baseColorScheme = remember(seed, isDark, themeConfig.contrastLevel) {
         dynamicColorScheme(
             seedColor = seed,
             isDark = isDark,
@@ -63,7 +63,12 @@ fun SubjectThemeOverride(
         )
     }
     // AMOLED 与全局主题同规则：只在深色下叠加纯黑。
-    if (themeConfig.amoled && isDark) colorScheme = colorScheme.amoled()
+    //
+    // 与 HanimeTheme 同理：amoled() 的 copy() 不加记忆的话，取色主题过渡的每一帧都会
+    // 新造一个 ColorScheme 实例，下游按引用比全都跳过不了。记住后过渡期间实例恒定。
+    val colorScheme = remember(baseColorScheme, themeConfig.amoled, isDark) {
+        if (themeConfig.amoled && isDark) baseColorScheme.amoled() else baseColorScheme
+    }
     HanimeTheme(colorScheme = animateColorScheme(colorScheme), content = content)
 }
 

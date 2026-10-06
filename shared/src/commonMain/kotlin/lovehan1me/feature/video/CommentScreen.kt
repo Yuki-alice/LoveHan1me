@@ -46,6 +46,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.snapshotFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -206,9 +207,11 @@ fun CommentScreen(
     val showCommentFab by rememberCommentFabVisibility(listState)
 
     LaunchedEffect(listState) {
+        // 缺了 distinctUntilChanged 时，这段每滚动一像素就往 ViewModel 写一次滚动位置，
+        // 写回去又触发本页重组 —— 评论页滚动掉帧的主因。去重后只在位置真变时写。
         snapshotFlow {
             listState.firstVisibleItemIndex to listState.firstVisibleItemScrollOffset
-        }.collect { (index, offset) ->
+        }.distinctUntilChanged().collect { (index, offset) ->
             onCommentScrollChange(index, offset)
         }
     }
