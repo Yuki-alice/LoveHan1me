@@ -107,8 +107,8 @@ fun HomeSettingsRouteScreen(
     page: HomeSettingsPage,
     onNavigateToOpenSourceLicenses: () -> Unit = {},
     onOpenThemeAudit: () -> Unit = {},
-    // P6d-4E：下载设置页依赖 :app 的 SAF（SafFileManager/WorkManager），由 Android 壳注入；
-    // 桌面/iOS 下载目录能力随 P7 提供，默认空占位
+    // 下载设置内嵌卡片：各端壳经 `PlatformScreens.downloadSettingsEmbedded`
+    // 注入（`embedded = true`），对齐上游 `HomeSettingsRoute:286` 同款内嵌。
     downloadSettingsContent: @Composable () -> Unit = {},
 ) {
     val uriHandler = LocalUriHandler.current

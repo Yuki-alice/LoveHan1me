@@ -188,6 +188,10 @@ private fun platformScreens(activity: MainActivityHost): PlatformScreens = Platf
             DownloadSettingsRouteScreen()
         }
     },
+    // 「网络与下载」分类内嵌卡片（对齐上游内嵌；独立页保留路由）。
+    downloadSettingsEmbedded = {
+        DownloadSettingsRouteScreen(embedded = true)
+    },
 )
 
 @Composable

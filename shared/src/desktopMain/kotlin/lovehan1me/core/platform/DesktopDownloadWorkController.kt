@@ -12,6 +12,7 @@ import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import lovehan1me.data.network.HanimeDns
 import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.data.network.ServiceCreator
+import lovehan1me.data.network.egress.EgressPurpose
 import lovehan1me.data.network.interceptor.EchGateInterceptor
 import lovehan1me.data.network.interceptor.RetryInterceptor
 import lovehan1me.core.domain.model.HanimeVideo
@@ -22,13 +23,13 @@ import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.sync.Semaphore
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
+import java.util.concurrent.atomic.AtomicInteger
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.File
@@ -58,11 +59,29 @@ object DesktopDownloadWorkController : DownloadWorkController {
     @Volatile
     private var maxConcurrent = 2
 
-    @Volatile
-    private var semaphore = Semaphore(maxConcurrent)
+    /**
+     * P1-3：并发许可池（替代 `Semaphore`）。
+     *
+     * `kotlinx.coroutines.Semaphore.release()` 禁止无归还的凭空放行，
+     * 扩容只能重建实例 —— 而重建瞬间在飞任务的归还会落到旧实例上丢失。
+     * 通道方案无此约束：扩容只管塞、缩容只管取，在飞任务的收发永远配对。
+     * 不变量：`permits.size + 在飞任务数 == maxConcurrent`（静稳时 `permits.size` 即上限）。
+     */
+    private val permits = Channel<Unit>(Channel.UNLIMITED).also { repeat(2) { _ -> it.trySend(Unit) } }
 
     /** 引擎活性（设置页/调试用；NoOp 平台恒 0） */
     private val activeCount = MutableStateFlow(0)
+
+    /**
+     * 空闲许可数记账（仅测试/诊断读；正常路径看 runningCount / DB 状态）。
+     *
+     * 与通道配对维护：塞许可时 +1、取走时 -1，调用处均在取/塞同一行紧随其后。
+     * 测试场景无在飞任务，不存在读写竞态；生产环境仅作诊断读数，不参与调度。
+     */
+    private val freePermits = AtomicInteger(2)
+
+    /** 当前可用许可数（测试用）。 */
+    internal val availableDownloadPermits: Int get() = freePermits.get()
 
     override fun prune() {
         // 桌面无 WorkManager 尾账，no-op
@@ -82,8 +101,20 @@ object DesktopDownloadWorkController : DownloadWorkController {
     override fun runningCount(): Flow<Int> = activeCount
 
     override fun updateDownloadLimit(count: Int) {
-        maxConcurrent = count.coerceAtLeast(1)
-        // Semaphore 无法扩容：仅对新任务的许可语义生效（下次重启重建）
+        val target = count.coerceAtLeast(1)
+        val old = maxConcurrent
+        maxConcurrent = target
+        if (target == old) return
+        if (target > old) {
+            // 扩容即时生效：塞差额许可（持有者为零，无人受影响）。
+            repeat(target - old) { permits.trySend(Unit); freePermits.incrementAndGet() }
+        } else {
+            // 缩容后台慢慢收回差额许可（不阻塞设置页调用方；在飞任务不受影响，
+            // 归还的许可被这里消化，新任务上限自然落到 target）。
+            scope.launch {
+                repeat(old - target) { permits.receive(); freePermits.decrementAndGet() }
+            }
+        }
     }
 
     // ── 发起下载（视频页「下载」按钮 → 选清晰度）──
@@ -178,6 +209,9 @@ object DesktopDownloadWorkController : DownloadWorkController {
             .let { if (it.name == "downloads") it else File(it, "LoveHan1me/downloads") }
     }
 
+    /** 设置页展示用（与落盘同源，不分头写第二份目录推导）。 */
+    internal fun currentDownloadDir(): File = downloadDir()
+
     private fun sanitizeFileName(name: String) =
         name.replace(Regex("[\\\\/:*?\"<>|]"), "_").take(120).ifBlank { "video" }
 
@@ -237,8 +271,13 @@ object DesktopDownloadWorkController : DownloadWorkController {
         val key = taskKey(entity)
         if (jobs.containsKey(key)) return
         jobs[key] = scope.launch {
-            semaphore.withPermit {
+            permits.receive()
+            freePermits.decrementAndGet()
+            try {
                 runDownload(entity)
+            } finally {
+                permits.trySend(Unit)
+                freePermits.incrementAndGet()
             }
         }
     }
@@ -345,7 +384,9 @@ object DesktopDownloadWorkController : DownloadWorkController {
             .addInterceptor(RetryInterceptor())
             .dns(HanimeDns.SHARED)
             .proxySelector(HanimeProxySelector.SHARED)
-            .addInterceptor(EchGateInterceptor())
+            // 下载走 Download 档（预算 UNLIMITED、熔断记视频域下访客行为）——
+            // 此前用默认 Api 档，与 Android downloadClient / iOS 下载链对不齐。
+            .addInterceptor(EchGateInterceptor(defaultPurpose = EgressPurpose.Download))
             .build()
     }
 

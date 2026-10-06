@@ -147,7 +147,7 @@
     <string name="reply_child_comment">回复子评论</string>
     <string name="login_first">请先登录</string>
     <string name="clear_cache">清除缓存</string>
-    <string name="cache_usage_summary">&lt;![CDATA[当前占用了 &lt;b&gt;%1$s&lt;/b&gt; 的存储空间]]&gt;</string>
+    <string name="cache_usage_summary"><![CDATA[当前占用了 <b>%1$s</b> 的存储空间]]></string>
     <string name="allow">允许</string>
     <string name="deny">拒绝</string>
     <string name="no_video_links_found">未发现影片链接</string>
@@ -399,7 +399,6 @@
     <string name="action_not_support">此设备不支持该操作</string>
     <string name="download_settings">下载设置</string>
     <string name="download_count_limit">同时下载数量限制</string>
-    <string name="download_speed_limit">下载速度限制</string>
     <string name="no_limit">无限制</string>
     <string name="check_video_exists_in_download">我注意到你好像下载过分辨率为 %1$s 的该影片</string>
     <string name="retry">重试</string>

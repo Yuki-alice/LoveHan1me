@@ -54,7 +54,6 @@ import lovehan1me.import_progress
 import lovehan1me.confirm_import
 import lovehan1me.cancel
 import lovehan1me.data.database.dao.Han1meDatabases
-import lovehan1me.data.network.interceptor.SpeedLimitInterceptor
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.component.TripleButtonDialog
 import lovehan1me.feature.settings.DownloadSettingsScreen
@@ -102,7 +101,6 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
     DownloadSettingsScreen(
         state = uiState,
         maxDownloadCountLimit = 10,
-        maxDownloadSpeedLimitIndex = SpeedLimitInterceptor.SPEED_BYTES.lastIndex,
         onOpenDownloadPath = { showDownloadPathDialog = true },
         onRestoreDefaultPath = { },
         onImportDownloadedFiles = {
@@ -120,9 +118,6 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
                 SettingsRepository.setDownloadCountLimit(value)
                 HanimeDownloadManager.maxConcurrentDownloadCount = value
             }
-        },
-        onDownloadSpeedLimitChange = { value ->
-            coroutineScope.launch { SettingsRepository.setDownloadSpeedLimitIndex(value) }
         },
         embedded = embedded,
     )
@@ -218,13 +213,26 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
     )
 
     if (showSpecifyPathDialog) {
+        // P1-3：死胡同改成带路的门——此前只有一个"明白了"解散键，
+        // 用户点导入无目录时只能干瞪眼（"按钮无反应"体感的来源）。
+        // 确认键直达目录选择器，选完即满足导入前置（见上 onImportDownloadedFiles）。
         AlertDialog(
             onDismissRequest = { showSpecifyPathDialog = false },
             title = { Text(stringResource(Res.string.specify_path_first)) },
             text = { Text(stringResource(Res.string.path_permission_message)) },
-            confirmButton = {
+            dismissButton = {
                 TextButton(onClick = { showSpecifyPathDialog = false }) {
                     Text(stringResource(Res.string.understood))
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showSpecifyPathDialog = false
+                        openDirectoryPicker.launch(SafFileManager.buildOpenDirectoryIntent())
+                    }
+                ) {
+                    Text(stringResource(Res.string.select_download_folder))
                 }
             },
         )
@@ -297,14 +305,9 @@ private fun buildDownloadSettingsUiState(context: Context, unknownError: String,
                     noLimit,
                     SettingsRepository.downloadCountLimit
                 ),
-                downloadSpeedLimitIndex = SettingsRepository.current.downloadSpeedLimitIndex,
-                downloadSpeedLimitSummary = SpeedLimitInterceptor.SPEED_BYTES[
-                    SettingsRepository.current.downloadSpeedLimitIndex
-                ].toDownloadSpeedPrettyString(noLimit),
             )
         )?.name ?: uri.toString()
     }
-    val speedIndex = SettingsRepository.current.downloadSpeedLimitIndex
     return DownloadSettingsUiState(
         downloadPathSummary = pathSummary,
         downloadCountLimit = SettingsRepository.downloadCountLimit,
@@ -312,8 +315,5 @@ private fun buildDownloadSettingsUiState(context: Context, unknownError: String,
             noLimit,
             SettingsRepository.downloadCountLimit
         ),
-        downloadSpeedLimitIndex = speedIndex,
-        downloadSpeedLimitSummary = SpeedLimitInterceptor.SPEED_BYTES[speedIndex]
-            .toDownloadSpeedPrettyString(noLimit),
     )
 }

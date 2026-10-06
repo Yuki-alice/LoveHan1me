@@ -39,10 +39,9 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.Semaphore
 import kotlinx.coroutines.sync.withLock
-import kotlinx.coroutines.sync.withPermit
 import kotlinx.coroutines.withContext
 import platform.Foundation.NSDocumentDirectory
 import platform.Foundation.NSFileManager
@@ -95,8 +94,8 @@ object IosDownloadWorkController : DownloadWorkController {
     @Volatile
     private var maxConcurrent = 2
 
-    @Volatile
-    private var semaphore = Semaphore(maxConcurrent)
+    // 并发许可池（对齐桌面 P1-3：通道替代 Semaphore，扩容免重建）。
+    private val permits = Channel<Unit>(Channel.UNLIMITED).also { repeat(2) { _ -> it.trySend(Unit) } }
 
     /** 引擎活性（设置页/调试用；NoOp 平台恒 0） */
     private val activeCount = MutableStateFlow(0)
@@ -119,8 +118,19 @@ object IosDownloadWorkController : DownloadWorkController {
     override fun runningCount(): Flow<Int> = activeCount
 
     override fun updateDownloadLimit(count: Int) {
-        maxConcurrent = count.coerceAtLeast(1)
-        // Semaphore 无法扩容：仅对新任务的许可语义生效（下次重启重建，对齐桌面）
+        val target = count.coerceAtLeast(1)
+        val old = maxConcurrent
+        maxConcurrent = target
+        if (target == old) return
+        if (target > old) {
+            // 扩容即时生效：塞差额许可（对齐桌面）。
+            repeat(target - old) { permits.trySend(Unit) }
+        } else {
+            // 缩容后台收回差额许可，不阻塞调用方；在飞任务不受影响（对齐桌面）。
+            scope.launch {
+                repeat(old - target) { permits.receive() }
+            }
+        }
     }
 
     // ── 发起下载（视频页「下载」按钮 → 选清晰度）──
@@ -328,6 +338,9 @@ object IosDownloadWorkController : DownloadWorkController {
 
     private fun downloadDir(): String = "${documentsDir()}/LoveHan1me/downloads"
 
+    /** 设置页展示用（与落盘同源）。iOS 沙盒固定，不可改。 */
+    internal fun currentDownloadDir(): String = downloadDir()
+
     private fun videoFolderPath(videoCode: String) = "${downloadDir()}/$videoCode"
 
     private fun sanitizeFileName(name: String) =
@@ -358,8 +371,11 @@ object IosDownloadWorkController : DownloadWorkController {
         withJobs {
             if (containsKey(key)) return
             put(key, scope.launch {
-                semaphore.withPermit {
+                permits.receive()
+                try {
                     runDownload(entity)
+                } finally {
+                    permits.trySend(Unit)
                 }
             })
         }

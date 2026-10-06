@@ -59,6 +59,12 @@ data class PlatformScreens(
     )? = null,
     /** `DownloadSettingsRoute`：下载设置（依赖 SAF，P7）。实现需自带 Scaffold。 */
     val downloadSettings: (@Composable PlatformNavScope.() -> Unit)? = null,
+    /**
+     * 「网络与下载」分类内嵌的下载设置卡片（`embedded = true`，对齐上游
+     * `HomeSettingsRoute:286` 同款内嵌）。与独立页共存：卡片是日常入口，
+     * 独立页保留路由（与上游一致）。
+     */
+    val downloadSettingsEmbedded: (@Composable () -> Unit)? = null,
 
     /**
      * 视频页的窗口宿主（PiP / 常亮 / 全屏 / 亮度 / 系统栏）。

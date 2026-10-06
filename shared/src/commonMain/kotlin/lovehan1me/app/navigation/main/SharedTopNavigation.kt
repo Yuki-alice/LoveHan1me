@@ -105,7 +105,8 @@ import kotlinx.serialization.json.Json
  *   `DownloadSettingsRoute`（SAF/WorkManager P7）/ `PreviewCommentRoute`（评论 UI 随 M3）
  *   为占位（参数回显 + 返回，不崩）；
  * - `OpenSourceLicensesRoute` 去 `BackHandler`（Android-only；显式搜索按钮可关）；
- * - 设置页 `downloadSettingsContent` 槽位传空（桌面下载目录 P7）。
+ * - 设置页 `downloadSettingsContent` 由各端壳经 `PlatformScreens.downloadSettingsEmbedded`
+ *   注入（内嵌卡片，对齐上游；未注入的端该位置空）。
  */
 @OptIn(ExperimentalAnimationApi::class, ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -397,13 +398,23 @@ fun SharedTopNavigation(
                 onOpenAbout = { backStack.add(AboutSettingsRoute) },
                 onNavigateToOpenSourceLicenses = { backStack.add(OpenSourceLicensesRoute) },
                 onOpenThemeAudit = { backStack.add(ThemeAuditRoute) },
+                // 下载设置内嵌卡片（对齐上游内嵌；未注入的端该分类位置空）。
+                downloadSettingsContent = {
+                    platformScreens.downloadSettingsEmbedded?.invoke()
+                },
             )
         }
         entry<VideoPlaybackSettingsRoute>(metadata = pageTransition()) {
             SettingsRouteHost(backStack = backStack, category = SettingsCategory.VideoPlayback)
         }
         entry<NetworkDownloadSettingsRoute>(metadata = pageTransition()) {
-            SettingsRouteHost(backStack = backStack, category = SettingsCategory.NetworkDownload)
+            SettingsRouteHost(
+                backStack = backStack,
+                category = SettingsCategory.NetworkDownload,
+                downloadSettingsContent = {
+                    platformScreens.downloadSettingsEmbedded?.invoke()
+                },
+            )
         }
         entry<AppearanceSettingsRoute>(metadata = pageTransition()) {
             SettingsRouteHost(backStack = backStack, category = SettingsCategory.Appearance)

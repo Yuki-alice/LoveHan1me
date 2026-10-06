@@ -232,6 +232,16 @@ fun main() {
                         // M5-2：注入桌面窗口宿主，播放器全屏走 AWT setFullScreenWindow
                         platformScreens = PlatformScreens(
                             videoPageHost = remember { DesktopVideoPageHost() },
+                            // 下载设置真页（路径选择 + 并发数；此前 NavPlaceholder 随 P7）。
+                            downloadSettings = {
+                                lovehan1me.app.navigation.settings.DownloadSettingsRouteScreen()
+                            },
+                            // 「网络与下载」分类内嵌卡片（对齐上游内嵌）。
+                            downloadSettingsEmbedded = {
+                                lovehan1me.app.navigation.settings.DownloadSettingsRouteScreen(
+                                    embedded = true,
+                                )
+                            },
                             // M5-5 / 阶段一⑩：CF 验证独立弹窗（CDP 可见窗口自动收割，
                             // 本机无浏览器/失败/超时由窗口内转手动兜底；KCEF 已删除）。
                             cloudflare = { route ->

@@ -292,7 +292,6 @@
     <string name="action_not_support">此裝置不支援此操作</string>
     <string name="download_settings">下載設定</string>
     <string name="download_count_limit">同時下載數量限制</string>
-    <string name="download_speed_limit">下載速度限制</string>
     <string name="no_limit">不限</string>
     <string name="check_video_exists_in_download">我注意到你似乎下載過解析度為 %s 的這部影片</string>
     <string name="retry">重試</string>

@@ -2,18 +2,6 @@ package lovehan1me.core.domain.model
 
 import lovehan1me.video.contract.VideoEnhancementLevels
 
-val DOWNLOAD_SPEED_BYTES = longArrayOf(
-    0L,
-    128 * 1024L,
-    256 * 1024L,
-    512 * 1024L,
-    1024 * 1024L,
-    2048 * 1024L,
-    4096 * 1024L,
-    8192 * 1024L,
-    10240 * 1024L,
-)
-
 /**
  * 长按速播倍率读侧钳制到 2.0~5.0（设置页选项表 `LONG_PRESS_SPEED_CHOICES` 同界）。
  * 不做数据迁移——历史值（1.x、>5 的备份导入）读出即落到边界。
@@ -218,7 +206,6 @@ data class AppSettings(
     val readAnnouncementKeys: List<String> = emptyList(),
     val ignoredVersionCode: Int = -1,
     val downloadCountLimit: Int = 2,
-    val downloadSpeedLimitIndex: Int = 0,
     val usePrivateStorage: Boolean = true,
     val safDownloadPath: String? = null,
     val collapseDownloadedGroup: Boolean = false,

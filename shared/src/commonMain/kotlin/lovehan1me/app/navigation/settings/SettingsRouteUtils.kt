@@ -5,7 +5,6 @@ import lovehan1me.core.constant.HanimeConstants.AV_URL
 import lovehan1me.core.constant.HanimeConstants.HANIME_HOSTNAME
 import lovehan1me.core.constant.HanimeConstants.HANIME_URL
 import lovehan1me.Res
-import lovehan1me.core.util.formatBytesPerSecond
 import lovehan1me.core.util.formatFileSize
 import org.jetbrains.compose.resources.getString
 
@@ -27,14 +26,6 @@ suspend fun generateClearCacheSummary(size: Long): String {
     // 模板 cache_usage_summary 仅含 <b> 对
     val raw = getString(Res.string.cache_usage_summary, size.formatFileSize())
     return Regex("<[^>]+>").replace(raw, "")
-}
-
-fun Long.toDownloadSpeedPrettyString(noLimitText: String): String {
-    return if (this == 0L) {
-        noLimitText
-    } else {
-        formatBytesPerSecond()
-    }
 }
 
 fun toDownloadCountLimitPrettyString(noLimitText: String, value: Int): String {

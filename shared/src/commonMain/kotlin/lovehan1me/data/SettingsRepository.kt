@@ -13,7 +13,6 @@ import lovehan1me.core.domain.model.ThemeConfig
 import lovehan1me.core.domain.model.ThemeMode
 import lovehan1me.core.domain.model.VideoAspectMode
 import lovehan1me.core.domain.model.PictureAdjust
-import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
 import lovehan1me.core.domain.model.cfCookieFor
 import lovehan1me.core.domain.model.cfCookieKeyFor
 import lovehan1me.core.domain.model.themeConfig
@@ -181,7 +180,7 @@ object SettingsRepository : SettingsStore {
     val mpvTlsVerify get() = current.mpvTlsVerify
     val mpvNetworkTimeout get() = current.mpvNetworkTimeout
     val customMpvParams get() = current.customMpvParams
-    val downloadSpeedLimit get() = DOWNLOAD_SPEED_BYTES[current.downloadSpeedLimitIndex]
+
     val searchGridColumnsConfig get() = SearchGridColumnsConfig(current.searchGridColumnsCompact, current.searchGridColumnsMedium, current.searchGridColumnsExpanded, current.searchGridColumnsLarge, current.searchGridColumnsExtraLarge)
     val subscriptionArtistRows get() = current.subscriptionArtistRows
     val alwaysShowUpdateCard get() = current.alwaysShowUpdateCard
@@ -268,7 +267,6 @@ object SettingsRepository : SettingsStore {
     suspend fun setUsePrivateStorage(value: Boolean) = update { it.copy(usePrivateStorage = value) }
     suspend fun setDownloadStorage(usePrivate: Boolean, path: String?) = update { it.copy(usePrivateStorage = usePrivate, safDownloadPath = path) }
     suspend fun setDownloadCountLimit(value: Int) = update { it.copy(downloadCountLimit = value) }
-    suspend fun setDownloadSpeedLimitIndex(value: Int) = update { it.copy(downloadSpeedLimitIndex = value.coerceIn(DOWNLOAD_SPEED_BYTES.indices)) }
     suspend fun setSubscriptionArtistRows(value: Int) = update { it.copy(subscriptionArtistRows = value.coerceIn(1, 3)) }
     suspend fun setHomeCategories(order: List<String>, hidden: Set<String>) = update { it.copy(homeCategoryOrder = order, hiddenHomeCategoryKeys = hidden) }
     suspend fun setCachedUpdateJson(value: String?) = update { it.copy(cachedUpdateJson = value) }

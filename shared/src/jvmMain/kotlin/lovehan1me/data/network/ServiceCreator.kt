@@ -4,7 +4,6 @@ import lovehan1me.data.network.egress.EgressPurpose
 import lovehan1me.data.network.interceptor.EchGateInterceptor
 import lovehan1me.data.network.interceptor.GetchuInterceptor
 import lovehan1me.data.network.interceptor.RetryInterceptor
-import lovehan1me.data.network.interceptor.SpeedLimitInterceptor
 import lovehan1me.data.network.interceptor.UrlLoggingInterceptor
 import lovehan1me.data.network.interceptor.UserAgentInterceptor
 import okhttp3.Cache
@@ -34,8 +33,6 @@ object ServiceCreator {
         maxSize = 10 * 1024 * 1024
     )
 
-    private val downloadSpeedLimitInterceptor = SpeedLimitInterceptor()
-
     private val dns = HanimeDns.SHARED
 
     /**
@@ -59,7 +56,7 @@ object ServiceCreator {
 
     /**
      * 三个客户端只依赖不随设置变化的参数（超时 / 协议 / 缓存目录）。出口判定
-     * （DNS、代理、网关）、UA、Cookie、限速全部在拦截器里每请求读取实时设置，
+     * （DNS、代理、网关）、UA、Cookie 全部在拦截器里每请求读取实时设置，
      * 所以它们是**稳定单例**：改任何网络设置都不需要重建。
      */
     val hClient: OkHttpClient = buildHClient()
@@ -126,7 +123,6 @@ object ServiceCreator {
             // UNLIMITED 同语义；连接阶段由 connect 5s + Retry 总预算兜底。
             .addInterceptor(retryInterceptor)
             .addInterceptor(UserAgentInterceptor)
-            .addInterceptor(downloadSpeedLimitInterceptor)
             // 视频直链同样被 SNI 阻断（CDN77 走网关 CNAME 策略）：下载必须与浏览同出口。
             // 失败时 EchGateInterceptor 自己回退直连，不会把下载卡死在网关上。
             .addInterceptor(downloadGateInterceptor)

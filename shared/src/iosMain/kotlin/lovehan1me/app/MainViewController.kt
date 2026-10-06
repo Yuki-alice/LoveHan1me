@@ -47,6 +47,16 @@ fun MainViewController(): UIViewController {
             platformScreens = PlatformScreens(
                 // 阶段一⑨：iOS 画中画宿主（退后台自动进 PiP；桌面明确不做，见注释）
                 videoPageHost = IosVideoPageHost,
+                // 下载设置真页（路径只读展示 + 并发数；此前 NavPlaceholder 随 P7）。
+                downloadSettings = {
+                    lovehan1me.app.navigation.settings.DownloadSettingsRouteScreen()
+                },
+                // 「网络与下载」分类内嵌卡片（对齐上游内嵌）。
+                downloadSettingsEmbedded = {
+                    lovehan1me.app.navigation.settings.DownloadSettingsRouteScreen(
+                        embedded = true,
+                    )
+                },
                 cloudflare = { route ->
                     Column(modifier = Modifier.fillMaxSize()) {
                         Text(
