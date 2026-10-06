@@ -10,10 +10,6 @@ import lovehan1me.core.platform.downloadWorkController
 import okio.buffer
 import lovehan1me.core.platform.openBackupSink
 import lovehan1me.core.platform.rebuildSystemProxy
-import lovehan1me.data.SettingsRepository
-import lovehan1me.data.database.dao.CheckInRecordDatabase
-import lovehan1me.data.database.dao.DownloadDatabase
-import lovehan1me.data.database.dao.HistoryDatabase
 import lovehan1me.data.database.entity.CheckInRecordEntity
 import lovehan1me.data.database.entity.WatchHistoryEntity
 import lovehan1me.data.database.entity.download.DownloadCategoryEntity
@@ -35,7 +31,7 @@ object BackupManager {
     private val json = Json {
         ignoreUnknownKeys = true
         // B7：备份是纯机器读写的交换格式，缩进对人毫无用处，却让体积翻倍、
-        // 编解码都变慢。同款改动一并落在 LocalListRepository / OnlineListsBackup。
+        // 编解码都变慢。
         prettyPrint = false
         encodeDefaults = true
     }
