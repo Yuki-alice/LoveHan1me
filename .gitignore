@@ -30,6 +30,8 @@ generated-images/
 .agents/
 # Qoder 本地 skill 副本（.qoder/skills 系本机 ~/.claude/skills 拷贝，机器相关，不入库）
 .qoder/
+# Trae 工具目录（本机会话/插件数据，机器相关，不入库）
+.trae/
 
 # Reference projects (external repos for study, 214M)
 reference/
@@ -52,7 +54,14 @@ local.properties
 # 构建产物由 `go build` 生成后拷进 desktopApp/src/main/resources/ 作为应用资源，
 # 那一份才随仓库走；这份是本地的中间产物，重复提交没意义。
 echgate/echgate.exe
+# echgate 运行时缓存（IP/ECH 探测与 CNAME 映射缓存，可再生成，不入库）
+echgate/.cache/
 
 # Python 字节码（验收脚本的 py_compile 产物）
 __pycache__/
 *.pyc
+
+# docs/ 与 tools/：文档内容与事实严重不符、脚本为一次性验收产物（机器相关），
+# 2026-10-07 取消入库跟踪。工作区文件仍留在本机，仅供个人查阅/运行。
+docs/
+tools/
