@@ -39,6 +39,7 @@ import lovehan1me.app.navigation.main.PlatformScreens
 import lovehan1me.app.web.CloudflareVerificationWindow
 import lovehan1me.core.platform.applyAppLanguage
 import lovehan1me.core.platform.initializeDesktopDownloadQueue
+import lovehan1me.core.platform.DesktopSingleInstance
 import lovehan1me.core.util.LogUtil
 import lovehan1me.core.util.StartupTrace
 import lovehan1me.data.SettingsRepository
@@ -85,6 +86,24 @@ fun main() {
     //     HAN1ME_LOG=debug ./gradlew :desktopApp:run     （d 及以上）
     //     HAN1ME_LOG=verbose ./gradlew :desktopApp:run   （全放行）
     LogUtil.setLevelByName(System.getenv("HAN1ME_LOG"))
+
+    // 单实例锁（必须在一切之前，包括 DataStore 初始化）。
+    // DataStore 只保证进程内单实例；两个系统进程同时写同一份
+    // settings.preferences_pb 会撞成 `Unable to rename ... .tmp` 崩溃，
+    // 而且报错里看不出第二个实例在另一个进程。双开直接拦在门外，
+    // 话说清楚再退（stderr 给终端/日志留一句，弹窗给双击启动的用户）。
+    if (!DesktopSingleInstance.tryAcquireAppLock()) {
+        System.err.println("LoveHan1me 已在运行：同一时间只能开一个实例（多开会同时写同一份设置文件并崩溃）。")
+        runCatching {
+            javax.swing.JOptionPane.showMessageDialog(
+                null,
+                "LoveHan1me 已在运行，同一时间只能开一个实例。",
+                "LoveHan1me",
+                javax.swing.JOptionPane.WARNING_MESSAGE,
+            )
+        }
+        kotlin.system.exitProcess(2)
+    }
 
     // M5-2：埋点起点放在最前 —— 连崩溃处理器注册、冒烟判定都算进"启动"里。
     StartupTrace.begin("desktop:main")
