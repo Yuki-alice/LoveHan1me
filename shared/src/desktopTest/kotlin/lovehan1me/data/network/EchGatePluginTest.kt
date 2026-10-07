@@ -48,7 +48,7 @@ class EchGatePluginTest {
     }
 
     private fun install() {
-        runCatching { SettingsRepository.install(PluginTestStore(AppSettings())) }
+        SettingsRepository.install(PluginTestStore(AppSettings()))
         runBlocking { SettingsRepository.update { it.copy(useEchGate = true) } }
         RouteRegistry.reset()
         EgressEvents.clear()

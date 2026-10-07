@@ -61,7 +61,8 @@ import java.net.URI
 /**
  * M1 桌面入口：
  *  - 先初始化 DataStore 并把它装进 SettingsRepository（等价 :app HanimeApplication 的
- *    DataStoreManager.initialize + SettingsRepository.install 两步；漏装会 UninitializedPropertyAccessException）。
+ *    DataStoreManager.initialize + SettingsRepository.install 两步；漏装会在首次读设置时
+ *    抛 IllegalStateException）。
  *    拦截器链里的 HanimeProxySelector/HanimeDns 等都会在第一次网络请求时读它，顺序必须在此之前；
  *  - Coil 桌面需注册单例 ImageLoader；注册口委派共享出口 [sharedHanimeImageLoader]
  *    （与 `rememberHanimeImageLoader` 同一实例，出口为 createCdnFetchClient），否则图片不会加载；

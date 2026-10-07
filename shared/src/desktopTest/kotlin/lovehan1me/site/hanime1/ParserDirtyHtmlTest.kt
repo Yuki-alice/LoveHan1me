@@ -22,7 +22,7 @@ import lovehan1me.data.SettingsRepository
 class ParserDirtyHtmlTest {
 
     init {
-        runCatching { SettingsRepository.install(InMemorySettingsStore()) }
+        SettingsRepository.install(InMemorySettingsStore())
     }
 
     private fun card(

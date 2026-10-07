@@ -56,9 +56,9 @@ private class InMemorySettingsStore : SettingsStore {
     }
 }
 
-/** 同 JVM 跑多个测试类时只允许 install 一次（`SettingsRepository.install` 本身有 check）。 */
+/** 装一份内存 store。`install` 可重复调用，同 JVM 里多个测试类各装各的不会互相干扰。 */
 private fun installTestStore() {
-    runCatching { SettingsRepository.install(InMemorySettingsStore()) }
+    SettingsRepository.install(InMemorySettingsStore())
 }
 
 /**

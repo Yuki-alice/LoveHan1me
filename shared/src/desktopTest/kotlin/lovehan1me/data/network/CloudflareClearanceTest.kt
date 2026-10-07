@@ -51,7 +51,7 @@ private class InMemorySettingsStore : SettingsStore {
 }
 
 private fun installStore() {
-    runCatching { SettingsRepository.install(InMemorySettingsStore()) }
+    SettingsRepository.install(InMemorySettingsStore())
 }
 
 class CfClearanceLookupTest {

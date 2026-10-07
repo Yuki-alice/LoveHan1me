@@ -34,7 +34,8 @@ class CdnFetchClientTest {
     private fun client(
         connectTimeoutSeconds: Long = 15L,
         extra: List<Interceptor> = emptyList(),
-    ) = runCatching { SettingsRepository.install(CdnFetchTestStore()) }.let {
+    ) = run {
+        SettingsRepository.install(CdnFetchTestStore())
         createCdnFetchClient(connectTimeoutSeconds = connectTimeoutSeconds, extraInterceptors = extra)
     }
 

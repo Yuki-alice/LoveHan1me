@@ -33,7 +33,7 @@ class HanimeServiceBaseUrlTest {
 
     @Test
     fun `同一个 service 实例切站后请求打到新站`() = runBlocking {
-        runCatching { SettingsRepository.install(BaseUrlTestStore()) }
+        SettingsRepository.install(BaseUrlTestStore())
         // 别的用例可能先装过 store；统一以"当前值"为基准，用完还原，避免污染后续用例。
         val originalDomain = SettingsRepository.current.domainName
         val originalMirror = SettingsRepository.current.useCustomMirrorSite

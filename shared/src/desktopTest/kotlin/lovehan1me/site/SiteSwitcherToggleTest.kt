@@ -27,7 +27,7 @@ class SiteSwitcherToggleTest {
     }
 
     private fun useSite(domainName: String, selectedBaseUrl: String) {
-        runCatching { SettingsRepository.install(InMemorySettingsStore()) }
+        SettingsRepository.install(InMemorySettingsStore())
         runBlocking {
             SettingsRepository.update { it.copy(domainName = domainName, selectedBaseUrl = selectedBaseUrl) }
         }

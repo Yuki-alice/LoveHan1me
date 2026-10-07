@@ -69,7 +69,7 @@ class IosDownloadSmokeTest {
             return@runBlocking
         }
         DataStoreManager.initialize()
-        runCatching { SettingsRepository.install(DataStoreManager) }
+        SettingsRepository.install(DataStoreManager)
 
         val db = Han1meDatabases.download
         val dao = db.hanimeDownloadDao

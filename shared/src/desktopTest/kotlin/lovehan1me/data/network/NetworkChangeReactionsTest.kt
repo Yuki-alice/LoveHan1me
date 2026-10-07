@@ -44,7 +44,7 @@ private class NetworkChangeTestStore : SettingsStore {
 class NetworkChangeReactionsTest {
 
     private fun ensureStoreInstalled() {
-        runCatching { SettingsRepository.install(NetworkChangeTestStore()) }
+        SettingsRepository.install(NetworkChangeTestStore())
     }
 
     @AfterTest

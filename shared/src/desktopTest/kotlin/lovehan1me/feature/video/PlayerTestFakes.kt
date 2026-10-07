@@ -171,8 +171,8 @@ fun fakePlaybackController(engine: FakePlaybackEngine): PlaybackController =
  * 内存设置仓库。
  *
  * 播放器外壳要读主题（控件恒为深色场景，配色得从用户选的板子里取），没装 store 就是
- * `UninitializedPropertyAccessError`。[install] 全 JVM 只许成功一次，故用 runCatching 兜住
- * 同类里第二个用例。
+ * `IllegalStateException`。[SettingsRepository.install] 现已可重复调用（替换时旧代次的
+ * 派生流会一并重建），故每个用例都装上自己的一份，不再需要 `runCatching` 兜底。
  */
 class InMemorySettingsStore : SettingsStore {
     private val state = MutableStateFlow(AppSettings())
@@ -184,5 +184,5 @@ class InMemorySettingsStore : SettingsStore {
 }
 
 fun installInMemorySettingsStore() {
-    runCatching { SettingsRepository.install(InMemorySettingsStore()) }
+    SettingsRepository.install(InMemorySettingsStore())
 }

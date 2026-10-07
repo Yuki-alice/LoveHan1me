@@ -60,7 +60,7 @@ private class InMemorySettingsStore : SettingsStore {
 
 private fun installTestStore() {
     // 同一 JVM 跑多个测试类时只允许 install 一次，重复的忽略。
-    runCatching { SettingsRepository.install(InMemorySettingsStore()) }
+    SettingsRepository.install(InMemorySettingsStore())
 }
 
 private fun maskEmail(email: String): String {

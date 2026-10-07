@@ -44,7 +44,7 @@ class SitePageCaptureLiveTest {
     @Test
     fun `抓作者页与系列清单页`() = runBlocking {
         System.setProperty("java.net.useSystemProxies", "true")
-        runCatching { SettingsRepository.install(InMemorySettingsStore()) }
+        SettingsRepository.install(InMemorySettingsStore())
         runCatching {
             val proxies = ProxySelector.getDefault().select(URI("https://hanime1.me/"))
             println("[capture] JVM 选定代理: $proxies")

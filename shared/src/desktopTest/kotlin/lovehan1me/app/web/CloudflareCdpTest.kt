@@ -264,7 +264,7 @@ class CloudflareCdpTest {
 
     @Test
     fun `网关可用时验证窗走网关`() {
-        runCatching { SettingsRepository.install(CdpProxyTestStore()) }
+        SettingsRepository.install(CdpProxyTestStore())
         runBlocking {
             SettingsRepository.update { it.copy(useEchGate = true, proxyType = ProxyType.Direct) }
         }
@@ -288,7 +288,7 @@ class CloudflareCdpTest {
 
     @Test
     fun `网关熔断时验证窗回落到用户代理`() {
-        runCatching { SettingsRepository.install(CdpProxyTestStore()) }
+        SettingsRepository.install(CdpProxyTestStore())
         runBlocking {
             SettingsRepository.update {
                 it.copy(

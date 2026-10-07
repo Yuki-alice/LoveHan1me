@@ -57,7 +57,7 @@ class WatchFetchPerfLiveTest {
         System.setProperty("user.home", coldHome.absolutePath)
         System.setProperty("java.net.useSystemProxies", "true")
 
-        runCatching { SettingsRepository.install(InMemorySettingsStore()) }
+        SettingsRepository.install(InMemorySettingsStore())
         PlayerTrace.resetForTest()
         PlayerTrace.begin("perf-probe")
 

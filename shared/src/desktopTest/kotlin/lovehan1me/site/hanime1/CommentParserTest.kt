@@ -23,7 +23,7 @@ class CommentParserTest {
     init {
         // `logIfParseNull(loginNeeded = true)` 会读 SettingsRepository.isAlreadyLogin；
         // 不装个 store 就是 lateinit 未初始化直接炸，那是跟解析无关的噪声。
-        runCatching { SettingsRepository.install(InMemorySettingsStore()) }
+        SettingsRepository.install(InMemorySettingsStore())
     }
 
     private fun commentsEnvelope(html: String): String =

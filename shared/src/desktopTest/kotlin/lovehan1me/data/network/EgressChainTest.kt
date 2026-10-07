@@ -42,8 +42,16 @@ private class EgressTestStore : SettingsStore {
     }
 }
 
+/**
+ * 确保有一个可写的 store。
+ *
+ * **必须用 [SettingsRepository.installIfAbsent] 而不是 `install`**：本助手在外层
+ * （[withProxy]）与内层（[withRunningGate]）都会被调到。若每次调用都 `install` 一个全新的
+ * 出厂默认 store，内层那次会把外层刚设好的代理清掉 —— `MediaProxyPreferenceWiringTest`
+ * 随即看到"没有可用代理"而误判要改写到网关。用 installIfAbsent 才是真正的"确保存在"。
+ */
 private fun ensureStoreInstalled() {
-    runCatching { SettingsRepository.install(EgressTestStore()) }
+    SettingsRepository.installIfAbsent(EgressTestStore())
 }
 
 private fun withProxy(type: ProxyType, ip: String = "", port: Int = -1, block: () -> Unit) {
