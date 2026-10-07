@@ -28,6 +28,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlin.concurrent.Volatile
 
 object SettingsRepository : SettingsStore {
     /** 「已读公告」表的保留上限，见 [markAnnouncementsRead]。 */
@@ -94,6 +95,21 @@ object SettingsRepository : SettingsStore {
         fun dispose() = scope.cancel()
     }
 
+    /**
+     * 当前代次。
+     *
+     * **并发策略**：`@Volatile` 而非锁 —— 与 `RouteRegistry` / `EgressReporter` 同一策略
+     * （见那两处的注释）。`install` 只发生在启动流程（各平台入口各一次）与测试的串行路径上，
+     * 保证跨线程可见即可，不需要互斥。
+     *
+     * **两个平台坑，改动前务必看清**：
+     * 1. `commonMain` 里**不能用 `synchronized`** —— Kotlin/Native 根本没有这个函数，
+     *    JVM/Android 编得过，iOS 编不过（`Unresolved reference 'synchronized'`）。
+     * 2. `@Volatile` **必须** `import kotlin.concurrent.Volatile`。裸写 `@Volatile` 在 JVM 上
+     *    会静默解析到 `kotlin.jvm.Volatile`（JVM 默认导入 `kotlin.jvm.*`），同样只有 iOS 才炸
+     *    （`Unresolved reference 'Volatile'`）。全仓 `commonMain` 的其余 6 处 `@Volatile` 都
+     *    显式带这个 import，照着写。
+     */
     @Volatile
     private var session: Session? = null
 
@@ -111,11 +127,9 @@ object SettingsRepository : SettingsStore {
      * 它逼出来的 16 处 `runCatching`。
      */
     fun install(store: SettingsStore) {
-        synchronized(this) {
-            val previous = session
-            session = Session(store)
-            previous?.dispose()
-        }
+        val previous = session
+        session = Session(store)
+        previous?.dispose()
     }
 
     /**
@@ -130,9 +144,7 @@ object SettingsRepository : SettingsStore {
      * 一起跑红"。名字叫 ensure 就该只是 ensure。
      */
     fun installIfAbsent(store: SettingsStore) {
-        synchronized(this) {
-            if (session == null) session = Session(store)
-        }
+        if (session == null) session = Session(store)
     }
 
     private val active: Session

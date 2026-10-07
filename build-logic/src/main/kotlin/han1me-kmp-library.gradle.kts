@@ -24,6 +24,7 @@
  * 在 android {} lambda 内会被接收者同名属性遮蔽——命名务必避开 DSL 属性名。
  */
 
+import org.gradle.api.tasks.testing.Test
 import org.jetbrains.kotlin.gradle.ExperimentalKotlinGradlePluginApi
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
@@ -103,4 +104,23 @@ configure<KotlinMultiplatformExtension> {
             jvmTarget.set(JvmTarget.JVM_21)
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// JVM 单测固定 locale（desktopTest / testAndroidHostTest）
+//
+// 为什么必须固定：CMP 的 stringResource 按 **JVM 默认 locale** 解析，而各 runner 的默认
+// locale 不同 —— 本机是 zh-CN，GitHub 的 windows-latest 是 en-US。于是任何用
+// `onNodeWithText("中文串")` 定位节点的用例都会「本地绿、CI 红」。
+//
+// 实证：`DataPrivacySectionSpacingTest` 从 2026-10-06 起在 CI 稳定失败，报
+// `performScrollTo() failed ... could not find any node that ... contains '缓存'` ——
+// 因为 en-US 下 `cache_section` 渲染成 "Cache"，中文节点根本不存在。
+//
+// 固定为 zh-CN 而不是 en-US 的依据：仓里已有用例是按中文文案写的，且本机（zh-CN）跑全量
+// desktopTest 实测 584 用例 0 失败 —— 以实测为准，避免反过来改一批用例文案。
+// 若将来整体转向英文文案，这里连同用例一起改即可。
+tasks.withType<Test>().configureEach {
+    systemProperty("user.language", "zh")
+    systemProperty("user.country", "CN")
 }
