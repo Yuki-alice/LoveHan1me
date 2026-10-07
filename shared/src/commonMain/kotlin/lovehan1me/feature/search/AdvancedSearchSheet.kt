@@ -161,8 +161,8 @@ private fun optionValue(options: List<SearchOption>, searchKey: String?): String
 /**
  * 把 [SearchViewModel] 的当前筛选态映射成 6 个 [FilterBlockSpec]。
  *
- * 必须是 @Composable：维度值都是普通 `var`（不是 State），靠调用方传入的 [selectionVersion]
- * 被读取来注册 State 依赖 —— 参数求值发生在组合期，改版本号即触发本函数重算。
+ * 维度值都是 Compose State（2026-10-07 起），本函数在组合期读取它们即自动注册依赖，
+ * 任何位置改动筛选态都会让这里重新求值 —— 不再需要调用方传版本号来"手动通知"。
  *
  * @param openDialog 由调用方决定弹窗挂在哪（底栏弹窗 or 常驻栏各有自己的 dialogState）。
  */
@@ -170,7 +170,6 @@ private fun optionValue(options: List<SearchOption>, searchKey: String?): String
 private fun buildFilterBlocks(
     viewModel: SearchViewModel,
     labels: FilterLabels,
-    selectionVersion: Int,
     tagScopes: List<SearchScopeSection>,
     brandScope: List<SearchScopeSection>,
     openDialog: (AdvancedSearchDialogState) -> Unit,
@@ -223,7 +222,7 @@ private fun buildFilterBlocks(
             label = labels.tag,
             value = if (tagKeys.isNotEmpty()) countLabel(tagKeys.size) else null,
             checked = viewModel.tagMap.isNotEmpty(),
-            onClear = { viewModel.tagMap.clear() },
+            onClear = { viewModel.tagMap = emptyMap() },
             onOpen = {
                 openDialog(
                     AdvancedSearchDialogState.MultiChoice(
@@ -237,7 +236,7 @@ private fun buildFilterBlocks(
                             viewModel.broad = broad
                             viewModel.tagMap = groupSelectedTagOptions(selected, viewModel.tags)
                         },
-                        onReset = { viewModel.tagMap.clear() },
+                        onReset = { viewModel.tagMap = emptyMap() },
                     )
                 )
             },
@@ -246,7 +245,7 @@ private fun buildFilterBlocks(
             label = labels.brand,
             value = if (brandKeys.isNotEmpty()) countLabel(brandKeys.size) else null,
             checked = viewModel.brandMap.isNotEmpty(),
-            onClear = { viewModel.brandMap.clear() },
+            onClear = { viewModel.brandMap = emptyMap() },
             onOpen = {
                 openDialog(
                     AdvancedSearchDialogState.MultiChoice(
@@ -258,7 +257,7 @@ private fun buildFilterBlocks(
                         // 品牌没有「宽泛配对」语义（站点只对 tags[] 生效），显示开关会误导。
                         showBroad = false,
                         onSave = { selected, _ -> viewModel.brandMap = mutableMapOf(0 to selected) },
-                        onReset = { viewModel.brandMap.clear() },
+                        onReset = { viewModel.brandMap = emptyMap() },
                     )
                 )
             },
@@ -338,7 +337,6 @@ fun AdvancedSearchSheet(
         HanimeAdvancedSearchRepo.getSearchHistories()
     }.collectAsStateWithLifecycle(initialValue = emptyList())
     var dialogState by remember { mutableStateOf<AdvancedSearchDialogState?>(null) }
-    var selectionVersion by remember { mutableIntStateOf(0) }
     val sheetState = rememberBottomSheetState(
         initialValue = SheetValue.Hidden,
         enabledValues = setOf(
@@ -353,15 +351,13 @@ fun AdvancedSearchSheet(
         listOf(SearchScopeSection(Res.string.brand, viewModel.brands))
     }
 
-    fun updateSelection(block: () -> Unit) {
-        block()
-        selectionVersion++
-    }
+    // 保留这个"包一层"的接缝：下游弹窗/区块都按 (block) -> Unit 的签名传它，
+    // 筛选态改成 Compose State 后不再需要手动 +1 版本号，但它仍是统一写入口。
+    fun updateSelection(block: () -> Unit) = block()
 
     val blocks = buildFilterBlocks(
         viewModel = viewModel,
         labels = labels,
-        selectionVersion = selectionVersion,
         tagScopes = tagScopes,
         brandScope = brandScope,
         openDialog = { dialogState = it },
@@ -418,8 +414,7 @@ fun AdvancedSearchSheet(
                     SearchPresetSection(
                         presets = presets,
                         // 至少要选中一个筛选维度才让存：空条件存成预设没意义，纯关键词搜索由历史负责。
-                        // 判据取自 blocks（它已挂上 selectionVersion 的重组 key），而不是
-                        // currentFilterSnapshot()——后者读的是普通 var，不会触发重组，会拿到过期结果。
+                        // 判据取自 blocks（它读取的是 Compose State，筛选态一变就重算）。
                         canSave = selectedDimensionCount > 0,
                         onApply = { preset -> applySnapshotAndSearch(viewModel, preset.snapshot) },
                         onSave = { name ->
@@ -474,7 +469,6 @@ fun AdvancedSearchSidePanel(
     modifier: Modifier = Modifier,
 ) {
     var dialogState by remember { mutableStateOf<AdvancedSearchDialogState?>(null) }
-    var selectionVersion by remember { mutableIntStateOf(0) }
     val scope = rememberCoroutineScope()
     val labels = rememberFilterLabels()
     val presets by SettingsRepository.searchFilterPresetsFlow.collectAsStateWithLifecycle()
@@ -483,17 +477,13 @@ fun AdvancedSearchSidePanel(
         listOf(SearchScopeSection(Res.string.brand, viewModel.brands))
     }
 
-    fun updateSelection(block: () -> Unit) {
-        block()
-        selectionVersion++
-    }
+    // 保留这个"包一层"的接缝：下游弹窗/区块都按 (block) -> Unit 的签名传它，
+    // 筛选态改成 Compose State 后不再需要手动 +1 版本号，但它仍是统一写入口。
+    fun updateSelection(block: () -> Unit) = block()
 
     val blocks = buildFilterBlocks(
         viewModel = viewModel,
         labels = labels,
-        // 本地 selectionVersion 管面板内改动；viewModel.filterRevision 管面板外改动
-        // （右栏「已生效条件」chip 逐项移除、历史/预设恢复…），两者任一变化都要重读。
-        selectionVersion = selectionVersion + viewModel.filterRevision,
         tagScopes = tagScopes,
         brandScope = brandScope,
         openDialog = { dialogState = it },

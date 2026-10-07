@@ -339,11 +339,9 @@ fun SearchScreen(
             viewModel.month = null
             viewModel.approxTime = null
         }
-        if (clearTags) viewModel.tagMap.clear()
-        if (clearBrands) viewModel.brandMap.clear()
+        if (clearTags) viewModel.tagMap = emptyMap()
+        if (clearBrands) viewModel.brandMap = emptyMap()
         if (clearBroad) viewModel.broad = false
-        // 本次改动发生在筛选面板之外：常驻栏靠版本号才能重新读到新值（否则显示漂移）。
-        viewModel.bumpFilterRevision()
         doSearch(resetScroll = true)
     }
 

@@ -35,7 +35,7 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 
 /**
@@ -73,23 +73,30 @@ internal fun mergeSearchPage(
 // 原 state 持久化（进程死亡恢复查询/滚动）改普通属性，持久化接入推迟 P6d 导航层（债务记录）。
 class SearchViewModel() : ViewModel() {
 
+    /** 分页序号：纯命令式计数，不参与 UI 展示，故保持普通属性。 */
     var page: Int = 1
-    var query: String? = null
-    var genre: String? = null
-    var sort: String? = null
-    var year: Int? = null
-    var month: Int? = null
-    var approxTime: String? = null
-    var broad: Boolean = false
-    var duration: String? = null
 
+    // 筛选态：Compose State（2026-10-07 重构，原为普通 var + filterRevision 手动版本号约定）。
+    // 普通 var 在组合期读取不会触发重组，所以此前要靠"谁改了谁记得 ++ 版本号"这种脆弱约定；
+    // 改成 State 后读写即自动建立依赖，跨 composable 的写入也能立刻反映到常驻筛选栏。
+    var query: String? by mutableStateOf(null)
+    var genre: String? by mutableStateOf(null)
+    var sort: String? by mutableStateOf(null)
+    var year: Int? by mutableStateOf(null)
+    var month: Int? by mutableStateOf(null)
+    var approxTime: String? by mutableStateOf(null)
+    var broad: Boolean by mutableStateOf(false)
+    var duration: String? by mutableStateOf(null)
+
+    /** 网格滚动位置：由 snapshotFlow 高频写入，作普通属性即可（不被组合期读取）。 */
     var gridFirstVisibleItemIndex: Int = 0
     var gridFirstVisibleItemScrollOffset: Int = 0
 
-    // P6c：SparseArray → MutableMap（key 仅作占位/分组 id，见 sheet groupSelectedTagOptions）
+    // P6c：SparseArray → Map（key 仅作占位/分组 id，见 sheet groupSelectedTagOptions）
     // P6d-3-C4：tagMap key 改 String（scope 名；原 titleRes Int 已改为 StringResource）
-    var tagMap = mutableMapOf<String, Set<SearchOption>>()
-    var brandMap = mutableMapOf<Int, Set<SearchOption>>()
+    // 用不可变 Map + 整体替换：State 对原地 clear()/put() 不可见，只有换引用才触发重组。
+    var tagMap by mutableStateOf<Map<String, Set<SearchOption>>>(emptyMap())
+    var brandMap by mutableStateOf<Map<Int, Set<SearchOption>>>(emptyMap())
 
     val genres by unsafeLazy {
         decodeComposeAsset<List<SearchOption>>(if (SiteIdentity.isAvSite) "files/search_options/genre_av.json" else "files/search_options/genre.json").orEmpty()
@@ -112,23 +119,6 @@ class SearchViewModel() : ViewModel() {
     }
     val timeList by unsafeLazy {
         decodeComposeAsset<List<SearchOption>>("files/search_options/release_date.json").orEmpty()
-    }
-
-    /**
-     * 筛选态版本号。
-     *
-     * 上面这些筛选字段都是普通 `var`（不是 Compose State），所以**跨 composable 的写入不会
-     * 触发重组**：宽屏下右侧结果区的「已生效条件」chip 把日期清掉后，左侧常驻筛选栏仍显示
-     * 旧的「1990 年 / 已选 2 项」（2026-09-16 实测）。
-     *
-     * 约定：凡是**从筛选面板之外**改动筛选态的方法，改完都要 [bumpFilterRevision]；
-     * 常驻栏把本值并进重组 key 即可重新读取。面板内部的改动走它自己的 selectionVersion。
-     */
-    var filterRevision by mutableIntStateOf(0)
-        private set
-
-    fun bumpFilterRevision() {
-        filterRevision++
     }
 
     private val _searchStateFlow =
@@ -167,13 +157,12 @@ class SearchViewModel() : ViewModel() {
         approxTime = null
         broad = false
         duration = null
-        tagMap.clear()
-        brandMap.clear()
+        tagMap = emptyMap()
+        brandMap = emptyMap()
         gridFirstVisibleItemIndex = 0
         gridFirstVisibleItemScrollOffset = 0
         _searchFlow.value = emptyList()
         _searchStateFlow.value = PageLoadingState.Loading
-        bumpFilterRevision()
     }
 
     /**
@@ -401,19 +390,13 @@ class SearchViewModel() : ViewModel() {
 
             restoreDate(this, snapshot.date)
 
-            tagMap.clear()
-            brandMap.clear()
+            tagMap = snapshot.tags?.takeIf { it.isNotBlank() }?.let { tagsString ->
+                mapOf("history" to tagsString.toSearchOptionSet())
+            } ?: emptyMap()
 
-            snapshot.tags?.takeIf { it.isNotBlank() }?.let { tagsString ->
-                val tagOptions = tagsString.toSearchOptionSet()
-                tagMap.put("history", tagOptions)
-            }
-
-            snapshot.brands?.takeIf { it.isNotBlank() }?.let { brandsString ->
-                val brandOptions = brandsString.toSearchOptionSet()
-                brandMap.put(0, brandOptions)
-            }
-            bumpFilterRevision()
+            brandMap = snapshot.brands?.takeIf { it.isNotBlank() }?.let { brandsString ->
+                mapOf(0 to brandsString.toSearchOptionSet())
+            } ?: emptyMap()
         }
     }
     private fun restoreDate(viewModel: SearchViewModel, date: String?) {
