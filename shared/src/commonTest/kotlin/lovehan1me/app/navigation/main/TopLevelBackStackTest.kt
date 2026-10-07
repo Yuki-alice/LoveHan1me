@@ -88,4 +88,65 @@ class TopLevelBackStackTest {
 
         assertFalse(stack.popTo("missing"), "不存在的键应返回 false")
     }
+
+    /**
+     * 不变式（固定种子 fuzz）。
+     *
+     * 这一层是导航内核，两类回归会让**面向用户的界面直接崩或钉死**：
+     *  1. `backStack` 变空 —— `currentKey = backStack.last()` 抛 `NoSuchElementException`，
+     *     同时 NavDisplay 拿到一个非法栈；
+     *  2. `currentKey` 不再等于 `topLevelKey` 那个栈的栈顶 —— 界面停在不该显示的页面
+     *     （历史上"切 tab 后钉死在搜索页且不可逆"就是这一类）。
+     *
+     * 手写用例只走得到单条路径，交叉路径才是历史 bug 的来源；这里用固定种子的伪随机
+     * 操作序列覆盖五种操作的组合，每步都断言不变式。种子固定 → 可复现、不 flaky。
+     */
+    @Test
+    fun `随机操作序列下不变式恒成立`() {
+        val keys = listOf("home", "discover", "mine", "detail", "settings", "category")
+        val stack = TopLevelBackStack("home")
+        var seed = 20261007L
+
+        fun nextInt(bound: Int): Int {
+            seed = seed * 6364136223846793005L + 1442695040888963407L
+            return ((seed ushr 33).toInt() and Int.MAX_VALUE) % bound
+        }
+
+        repeat(20_000) { step ->
+            val where = "step=$step"
+            when (nextInt(5)) {
+                0 -> {
+                    val key = keys[nextInt(keys.size)]
+                    stack.add(key, launchSingleTop = nextInt(2) == 0)
+                    assertEquals(key, stack.currentKey, "$where: add 后栈顶必须是该键")
+                }
+
+                1 -> {
+                    val key = keys[nextInt(keys.size)]
+                    stack.addTopLevel(key)
+                    assertEquals(key, stack.currentKey, "$where: 切 tab 后必须落在该 tab 根")
+                }
+
+                2 -> {
+                    val key = keys[nextInt(keys.size)]
+                    stack.replaceTop(key)
+                    assertEquals(key, stack.currentKey, "$where: replaceTop 后栈顶必须是该键")
+                }
+
+                3 -> stack.removeLast()
+
+                else -> stack.popTo(keys[nextInt(keys.size)], inclusive = nextInt(2) == 0)
+            }
+
+            assertTrue(
+                stack.backStack.isNotEmpty(),
+                "$where: backStack 绝不能为空（currentKey 取 last()，NavDisplay 也要求非空）",
+            )
+            assertEquals(
+                stack.currentKey,
+                stack.backStack.last(),
+                "$where: currentKey 必须是 backStack 末尾",
+            )
+        }
+    }
 }
