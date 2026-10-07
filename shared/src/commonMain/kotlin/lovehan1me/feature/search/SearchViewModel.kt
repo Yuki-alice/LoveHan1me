@@ -24,6 +24,7 @@ import lovehan1me.core.domain.state.PageLoadingState
 import lovehan1me.core.domain.state.PagingGate
 import lovehan1me.core.util.decodeComposeAsset
 import lovehan1me.core.util.unsafeLazy
+import lovehan1me.ui.foundation.launchSafely
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -218,7 +219,7 @@ class SearchViewModel() : ViewModel() {
         val cacheable = page == 1 && query.isNullOrBlank() && genre == null &&
                 sort == null && !broad && date == null && duration == null &&
                 tags.isEmpty() && brands.isEmpty()
-        viewModelScope.launch {
+        launchSafely("SearchViewModel.launchSearch") {
             try {
                 // 先展陈旧第一页（~0.2s 解析），再正常拉新覆盖 —— 进 tab 不再白等整轮网络。
                 // 刷新行为不变（永远拉新）；无缓存/解析失败就当 miss。
@@ -283,7 +284,7 @@ class SearchViewModel() : ViewModel() {
     }
 
     fun insertSearchHistory(history: SearchHistoryEntity) {
-        viewModelScope.launch(ioDispatcher) {
+        launchSafely("SearchViewModel.insertSearchHistory", ioDispatcher) {
             DatabaseRepo.SearchHistory.insert(history)
             LogUtil.d("insert_search_hty", "$history DONE!")
         }
@@ -305,7 +306,7 @@ class SearchViewModel() : ViewModel() {
         sort: String?, broad: Boolean, date: String?,
         duration: String?, tags: Set<SearchOption>, brands: Set<SearchOption>,
     ) {
-        viewModelScope.launch(ioDispatcher) {
+        launchSafely("SearchViewModel.insertAdvancedSearchHistory", ioDispatcher) {
             val histories = HanimeAdvancedSearchRepo.getSearchHistories(limit = 10)
                 .first()
 
@@ -331,7 +332,7 @@ class SearchViewModel() : ViewModel() {
                     tags = tags,
                     brands = brands,
                 )
-                return@launch
+                return@launchSafely
             }
             LogUtil.i("insertAdvancedSearchHistory","记录重复！")
 
@@ -339,7 +340,7 @@ class SearchViewModel() : ViewModel() {
     }
 
     fun deleteSearchHistory(history: SearchHistoryEntity) {
-        viewModelScope.launch(ioDispatcher) {
+        launchSafely("SearchViewModel.deleteSearchHistory", ioDispatcher) {
             DatabaseRepo.SearchHistory.delete(history)
             LogUtil.d("delete_search_hty", "$history DONE!")
         }
@@ -349,7 +350,7 @@ class SearchViewModel() : ViewModel() {
         DatabaseRepo.SearchHistory.loadAll(keyword).flowOn(ioDispatcher)
 
     fun deleteSearchHistoryByKeyword(query: String) {
-        viewModelScope.launch(ioDispatcher) {
+        launchSafely("SearchViewModel.deleteSearchHistoryByKeyword", ioDispatcher) {
             DatabaseRepo.SearchHistory.deleteByKeyword(query)
             LogUtil.d("delete_search_hty", "$query DONE!")
         }

@@ -10,6 +10,7 @@ import lovehan1me.core.domain.model.UserAccountAction
 import lovehan1me.core.domain.model.UserAccountActionEvent
 import lovehan1me.core.domain.model.UserAccountSubmittingState
 import lovehan1me.core.domain.state.WebsiteState
+import lovehan1me.ui.foundation.launchSafely
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asSharedFlow
@@ -36,7 +37,7 @@ class UserAccountViewModel : ViewModel() {
             )
             return
         }
-        viewModelScope.launch {
+        launchSafely("UserAccountViewModel.loadAccount") {
             _accountState.value = WebsiteState.Loading
             NetworkRepo.getUserAccountPage(userId).collect { state ->
                 _accountState.value = state
@@ -47,7 +48,7 @@ class UserAccountViewModel : ViewModel() {
     fun updateProfile(name: String, email: String) {
         val account = (_accountState.value as? WebsiteState.Success)?.info ?: return
         if (_submittingState.value != UserAccountSubmittingState.Idle) return
-        viewModelScope.launch {
+        launchSafely("UserAccountViewModel.updateProfile") {
             _submittingState.value = UserAccountSubmittingState.UpdatingProfile
             _actionFlow.emit(UserAccountActionEvent(UserAccountAction.ProfileUpdated, WebsiteState.Loading))
             NetworkRepo.updateUserAccountProfile(
@@ -70,7 +71,7 @@ class UserAccountViewModel : ViewModel() {
     fun updatePassword(oldPassword: String, newPassword: String, newPasswordConfirm: String) {
         val account = (_accountState.value as? WebsiteState.Success)?.info ?: return
         if (_submittingState.value != UserAccountSubmittingState.Idle) return
-        viewModelScope.launch {
+        launchSafely("UserAccountViewModel.updatePassword") {
             _submittingState.value = UserAccountSubmittingState.UpdatingPassword
             _actionFlow.emit(UserAccountActionEvent(UserAccountAction.PasswordUpdated, WebsiteState.Loading))
             NetworkRepo.updateUserAccountPassword(
@@ -92,7 +93,7 @@ class UserAccountViewModel : ViewModel() {
     fun updateAvatar(avatarBytes: ByteArray, avatarName: String) {
         val account = (_accountState.value as? WebsiteState.Success)?.info ?: return
         if (_submittingState.value != UserAccountSubmittingState.Idle) return
-        viewModelScope.launch {
+        launchSafely("UserAccountViewModel.updateAvatar") {
             _submittingState.value = UserAccountSubmittingState.UpdatingAvatar
             _actionFlow.emit(UserAccountActionEvent(UserAccountAction.AvatarUpdated, WebsiteState.Loading))
             NetworkRepo.updateUserAccountAvatar(

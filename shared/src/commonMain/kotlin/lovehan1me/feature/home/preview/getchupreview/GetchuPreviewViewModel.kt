@@ -9,6 +9,7 @@ import lovehan1me.core.domain.model.GetchuPreview
 import lovehan1me.core.domain.model.GetchuPreviewDetail
 import lovehan1me.core.domain.state.PageState
 import lovehan1me.core.domain.state.WebsiteState
+import lovehan1me.ui.foundation.launchSafely
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.asStateFlow
@@ -32,12 +33,12 @@ class GetchuPreviewViewModel : ViewModel() {
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), detailCache[id] ?: PageState.Loading)
 
     fun getPreview(date: String) {
-        viewModelScope.launch {
+        launchSafely("GetchuPreviewViewModel.getPreview") {
             LogUtil.d("GetchuPreviewVM", "getPreview date=$date cacheHit=${previewCache.containsKey(date)}")
             previewCache[date]?.let {
                 _previewFlow.value = it
                 LogUtil.d("GetchuPreviewVM", "emit cached list date=$date state=${it.logSummary()}")
-                return@launch
+                return@launchSafely
             }
             _previewFlow.value = PageState.Loading
             getGetchuPreview(date).collect { state ->
@@ -52,12 +53,12 @@ class GetchuPreviewViewModel : ViewModel() {
     }
 
     fun getDetail(id: String) {
-        viewModelScope.launch {
+        launchSafely("GetchuPreviewViewModel.getDetail") {
             LogUtil.d("GetchuPreviewVM", "getDetail id=$id cacheHit=${detailCache.containsKey(id)}")
             detailCache[id]?.let { cachedState ->
                 setDetailState(id, cachedState)
                 LogUtil.d("GetchuPreviewVM", "emit cached detail id=$id state=${cachedState.logSummary()}")
-                return@launch
+                return@launchSafely
             }
             setDetailState(id, PageState.Loading)
             getGetchuPreviewDetail(id).collect { state ->

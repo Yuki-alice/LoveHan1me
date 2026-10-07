@@ -7,6 +7,7 @@ import lovehan1me.data.NetworkRepo
 import lovehan1me.core.domain.model.HanimePreview
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.core.util.TagLocalizer
+import lovehan1me.ui.foundation.launchSafely
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -29,10 +30,10 @@ class PreviewViewModel : ViewModel() {
     val previewFlow = _previewFlow.asStateFlow()
 
     fun getHanimePreview(date: String) {
-        viewModelScope.launch {
+        launchSafely("PreviewViewModel.getHanimePreview") {
             previewCache[date]?.let {
                 _previewFlow.value = it
-                return@launch
+                return@launchSafely
             }
             NetworkRepo.getHanimePreview(date).collect { preview ->
                 val localizedPreview = preview.withLocalizedTags()
@@ -46,7 +47,7 @@ class PreviewViewModel : ViewModel() {
 
     fun preloadPreview(date: String) {
         if (previewCache.containsKey(date)) return
-        viewModelScope.launch {
+        launchSafely("PreviewViewModel.preloadPreview") {
             val preview = runCatching {
                 withContext(ioDispatcher) {
                     NetworkRepo.getHanimePreview(date)

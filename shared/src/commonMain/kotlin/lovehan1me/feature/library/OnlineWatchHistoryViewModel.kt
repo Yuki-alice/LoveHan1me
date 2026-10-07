@@ -11,6 +11,7 @@ import lovehan1me.core.domain.model.OnlineWatchHistorySort
 import lovehan1me.core.domain.state.PageLoadingState
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.data.network.CsrfTokenProvider.csrfToken
+import lovehan1me.ui.foundation.launchSafely
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -45,7 +46,7 @@ class OnlineWatchHistoryViewModel : ViewModel() {
     private var loadJob: Job? = null
 
     init {
-        viewModelScope.launch {
+        launchSafely("OnlineWatchHistoryViewModel.init") {
             SettingsRepository.loginStateFlow.drop(1).collect { isLoggedIn ->
                 if (!isLoggedIn) {
                     clearLoggedOutState()
@@ -83,7 +84,7 @@ class OnlineWatchHistoryViewModel : ViewModel() {
         }
         _isLoadingMore.value = !isRefreshing && _items.value.isNotEmpty()
         loadJob?.cancel()
-        loadJob = viewModelScope.launch {
+        loadJob = launchSafely("OnlineWatchHistoryViewModel.loadPage") {
             NetworkRepo.getOnlineWatchHistories(userId, _selectedSort.value, page).collect { pageState ->
                 _state.value = pageState
                 _items.update { previousItems ->
@@ -137,7 +138,7 @@ class OnlineWatchHistoryViewModel : ViewModel() {
         }
         val position = _items.value.indexOfFirst { it.videoCode == item.videoCode }
         if (position < 0) return
-        viewModelScope.launch {
+        launchSafely("OnlineWatchHistoryViewModel.deleteItem") {
             NetworkRepo.deleteOnlineWatchHistory(
                 videoCode = item.videoCode,
                 position = position,

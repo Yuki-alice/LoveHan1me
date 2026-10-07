@@ -7,6 +7,7 @@ import lovehan1me.data.DatabaseRepo
 import lovehan1me.data.database.entity.download.DownloadGroupEntity
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import lovehan1me.data.database.entity.download.VideoWithCategories
+import lovehan1me.ui.foundation.launchSafely
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -57,7 +58,7 @@ class DownloadViewModel : ViewModel() {
         sortedBy: HanimeDownloadEntity.SortedBy = HanimeDownloadEntity.SortedBy.ID,
         ascending: Boolean = false,
     ) {
-        viewModelScope.launch {
+        launchSafely("DownloadViewModel.loadAllDownloadedHanime") {
             DatabaseRepo.HanimeDownload.loadAllDownloadedHanime(sortedBy, ascending)
                 .catch { e -> e.printStackTrace() }
                 .flowOn(ioDispatcher)
@@ -76,7 +77,7 @@ class DownloadViewModel : ViewModel() {
      * @param selectedGroupId 目标分组的ID
      */
     fun updateVideoGroup(videoCode: String, selectedGroupId: Int) {
-        viewModelScope.launch {
+        launchSafely("DownloadViewModel.updateVideoGroup") {
             DatabaseRepo.HanimeDownload.updateVideoGroup(videoCode, selectedGroupId)
         }
     }
@@ -89,7 +90,7 @@ class DownloadViewModel : ViewModel() {
      * @param groupName 新分组的名称，不能为空或空白字符串
      */
     fun createNewGroup(groupName: String){
-        viewModelScope.launch {
+        launchSafely("DownloadViewModel.createNewGroup") {
             DatabaseRepo.HanimeDownload.createNewGroup(groupName)
         }
     }
@@ -107,7 +108,7 @@ class DownloadViewModel : ViewModel() {
      * updateGroupName(1, "收藏视频")
      */
     fun updateGroupName(groupId: Int, newName: String){
-        viewModelScope.launch {
+        launchSafely("DownloadViewModel.updateGroupName") {
             try {
                 val oldGroupName = DatabaseRepo.HanimeDownload.getGroupById(groupId)
                 if (oldGroupName != null){
@@ -120,19 +121,19 @@ class DownloadViewModel : ViewModel() {
         }
     }
     fun deleteGroup(group: DownloadGroupEntity){
-        viewModelScope.launch {
+        launchSafely("DownloadViewModel.deleteGroup") {
             DatabaseRepo.HanimeDownload.deleteGroup(group)
         }
     }
 
     fun updateDownloadHanime(entity: HanimeDownloadEntity) {
-        viewModelScope.launch {
+        launchSafely("DownloadViewModel.updateDownloadHanime") {
             DatabaseRepo.HanimeDownload.update(entity)
         }
     }
 
     fun deleteDownloadHanimeBy(videoCode: String, quality: String) {
-        viewModelScope.launch(ioDispatcher) {
+        launchSafely("DownloadViewModel.deleteDownloadHanimeBy", ioDispatcher) {
             DatabaseRepo.HanimeDownload.delete(videoCode, quality)
         }
     }

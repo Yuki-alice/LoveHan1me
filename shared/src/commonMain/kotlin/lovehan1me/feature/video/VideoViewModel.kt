@@ -39,6 +39,7 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import lovehan1me.ui.foundation.launchSafely
 import lovehan1me.video.contract.safeCombine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
@@ -273,7 +274,7 @@ class VideoViewModel(
         // fetch-start 卡在 LaunchedEffect 调度后，新增一个同步点标记动画帧就绪
         PlayerTrace.mark("vm-getHanimeVideo-called")
         PlayerTrace.mark("fetch-start")
-        viewModelScope.launch {
+        launchSafely("VideoViewModel.getHanimeVideo") {
             PlayerTrace.mark("fetch-coroutine-start")
             val flow = if (fromDownload) {
                 cacheStore.load(videoCode).map { hv ->
@@ -353,7 +354,7 @@ class VideoViewModel(
         likeStatus: Boolean,
         currentUserId: String?,
     ) {
-        viewModelScope.launch {
+        launchSafely("VideoViewModel.modifyFavVideoInternal") {
             NetworkRepo.addToMyFavVideo(
                 videoCode, likeStatus, currentUserId, csrfToken
             ).collect { state ->
@@ -368,7 +369,7 @@ class VideoViewModel(
     }
 
     fun rateVideo(video: HanimeVideo, isPositive: Boolean) {
-        viewModelScope.launch {
+        launchSafely("VideoViewModel.rateVideo") {
             NetworkRepo.rateVideo(
                 videoCode = videoCode,
                 isPositive = isPositive,
@@ -396,7 +397,7 @@ class VideoViewModel(
         isChecked: Boolean,
         position: Int,
     ) {
-        viewModelScope.launch {
+        launchSafely("VideoViewModel.modifyMyList") {
             NetworkRepo.addToMyList(listCode, videoCode, isChecked, position, csrfToken).collect {
                 _modifyMyListFlow.emit(it)
                 _hanimeVideoFlow.update { prev ->
@@ -416,7 +417,7 @@ class VideoViewModel(
 
     fun toggleLocalFavorite() {
         val video = _hanimeVideoFlow.value ?: return
-        viewModelScope.launch(ioDispatcher) {
+        launchSafely("VideoViewModel.toggleLocalFavorite", ioDispatcher) {
             runCatching {
                 val isFavorite = LocalListRepository.isFavorite(videoCode)
                 if (isFavorite) {
@@ -443,7 +444,7 @@ class VideoViewModel(
             if (info.isSelected == newChecked) null else info to newChecked
         }
         if (changes.isEmpty()) return
-        viewModelScope.launch(ioDispatcher) {
+        launchSafely("VideoViewModel.updateLocalMyListSelection", ioDispatcher) {
             runCatching {
                 changes.forEach { (info, newChecked) ->
                     if (info.code == LocalListRepository.WATCH_LATER_CODE) {
@@ -466,20 +467,20 @@ class VideoViewModel(
     }
 
     fun insertWatchHistory(history: WatchHistoryEntity) {
-        viewModelScope.launch(ioDispatcher) {
+        launchSafely("VideoViewModel.insertWatchHistory", ioDispatcher) {
             DatabaseRepo.WatchHistory.insert(history)
             LogUtil.d("insert_watch_hty", "$history DONE!")
         }
     }
 
     fun insertWatchHistoryWithCover(history: WatchHistoryEntity) {
-        viewModelScope.launch(ioDispatcher) {
+        launchSafely("VideoViewModel.insertWatchHistoryWithCover", ioDispatcher) {
             DatabaseRepo.WatchHistory.insert(history)
         }
     }
 
     fun findDownloadedHanime(videoCode: String) {
-        viewModelScope.launch(ioDispatcher) {
+        launchSafely("VideoViewModel.findDownloadedHanime", ioDispatcher) {
             val info = DatabaseRepo.HanimeDownload.find(videoCode)
             _loadDownloadedFlow.emit(info)
         }
@@ -493,7 +494,7 @@ class VideoViewModel(
         userId: String,
         artistId: String,
     ) {
-        viewModelScope.launch {
+        launchSafely("VideoViewModel.subscribeArtist") {
             NetworkRepo.subscribeArtist(csrfToken, userId, artistId, true).collect { state ->
                 _subscribeArtistFlow.emit(state)
                 if (state is WebsiteState.Success) {
@@ -509,7 +510,7 @@ class VideoViewModel(
         userId: String,
         artistId: String,
     ) {
-        viewModelScope.launch {
+        launchSafely("VideoViewModel.unsubscribeArtist") {
             NetworkRepo.subscribeArtist(csrfToken, userId, artistId, false).collect { state ->
                 _subscribeArtistFlow.emit(state)
                 if (state is WebsiteState.Success) {

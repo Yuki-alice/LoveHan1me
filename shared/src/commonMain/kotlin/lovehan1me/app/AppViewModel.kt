@@ -9,6 +9,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 import lovehan1me.data.network.CsrfTokenProvider
 import lovehan1me.data.network.IHCsrfToken
+import lovehan1me.ui.foundation.launchSafely
 
 /**
  * @project LoveHan1me
@@ -34,12 +35,12 @@ object AppViewModel : ViewModel(), IHCsrfToken {
         // 取消，防止每次启动都有残留的更新任务
         controller.prune()
 
-        viewModelScope.launch(ioDispatcher) {
+        launchSafely("AppViewModel.init-1", ioDispatcher) {
             // HanimeDownloadManager.init()
             controller.initialize()
         }
 
-        viewModelScope.launch(ioDispatcher) {
+        launchSafely("AppViewModel.init-2", ioDispatcher) {
             controller.runningCount().collect { count ->
                 // P6c：原 HanimeDownloadWorker.TAG（:app worker）不可见，日志 tag 用字面量保持一致
                 LogUtil.d("HanimeDownloadWorker", "getRunningWorkInfoCount: $count")

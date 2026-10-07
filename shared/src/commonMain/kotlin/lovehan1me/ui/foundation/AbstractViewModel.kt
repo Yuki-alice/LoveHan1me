@@ -1,12 +1,16 @@
 package lovehan1me.ui.foundation
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import kotlin.coroutines.CoroutineContext
+import kotlin.coroutines.EmptyCoroutineContext
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.launch
 import lovehan1me.core.util.LogUtil
 
 /**
@@ -60,3 +64,35 @@ abstract class AbstractViewModel(
         backgroundScope.cancel()
     }
 }
+
+/**
+ * 带异常落点的 `viewModelScope.launch`。
+ *
+ * ### 为什么必须有它
+ *
+ * `viewModelScope` 的 context 是 `SupervisorJob() + Dispatchers.Main.immediate`，**不含
+ * `CoroutineExceptionHandler`**。块内一旦抛出未捕获异常，异常会沿 `SupervisorJob` 冒到根协程，
+ * 因无处理器而交给线程的默认未捕获处理器 —— 在 Android 上就是**进程闪退**。
+ * `combine` 内部 null Flow 的 NPE 之所以能炸进程，走的正是这条路。
+ *
+ * 这里把一个 `CoroutineExceptionHandler` 加进本次 launch 的 context：对 `launch` 而言，
+ * 处理器从协程自身的 context 里查找，因此能拦下异常、落日志，而不是杀进程。
+ *
+ * 用法与 `viewModelScope.launch` 一致，多一个 [tag] 供日志检索：
+ * ```kotlin
+ * launchSafely("VideoVM.getVideo") { NetworkRepo.getHanimeVideo(code).collect { ... } }
+ * launchSafely("SearchVM.insertHistory", ioDispatcher) { DatabaseRepo.SearchHistory.insert(it) }
+ * ```
+ *
+ * 注意：它只负责"别崩"，不负责"重试/降级"——真需要恢复语义的地方仍应显式 `try/catch`。
+ */
+fun ViewModel.launchSafely(
+    tag: String,
+    context: CoroutineContext = EmptyCoroutineContext,
+    block: suspend CoroutineScope.() -> Unit,
+): Job = viewModelScope.launch(
+    context + CoroutineExceptionHandler { _, throwable ->
+        LogUtil.e(tag, "uncaught exception in launchSafely, 已拦下避免进程闪退", throwable)
+    },
+    block = block,
+)

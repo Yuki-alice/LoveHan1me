@@ -17,6 +17,7 @@ import lovehan1me.data.network.CsrfTokenProvider.csrfToken
 import lovehan1me.site.hanime1.SiteAuthorHeader
 import lovehan1me.site.hanime1.SiteAuthorPlaylists
 import lovehan1me.site.hanime1.SitePlaylistSummary
+import lovehan1me.ui.foundation.launchSafely
 import lovehan1me.Res
 import lovehan1me.login_first
 import org.jetbrains.compose.resources.getString
@@ -71,7 +72,7 @@ class ArtistViewModel : ViewModel() {
         _works.value = emptyList()
         _worksLoading.value = true
         _worksError.value = null
-        loadJob = viewModelScope.launch {
+        loadJob = launchSafely("ArtistViewModel.load") {
             NetworkRepo.getArtistPage(userId).collect { state ->
                 if (!shouldApplyArtistResponse(userId, loadedUserId)) return@collect
                 if (state is WebsiteState.Success) {
@@ -92,7 +93,7 @@ class ArtistViewModel : ViewModel() {
         if (loading || endReached) return
         loading = true
         _worksLoading.value = true
-        loadJob = viewModelScope.launch { loadMoreInternal(userId) }
+        loadJob = launchSafely("ArtistViewModel.loadMore") { loadMoreInternal(userId) }
     }
 
     private suspend fun loadMoreInternal(userId: String) {
@@ -140,7 +141,7 @@ class ArtistViewModel : ViewModel() {
     fun loadPlaylists(userId: String, sort: String? = null) {
         loadedUserId = userId
         _playlistsLoading.value = true
-        viewModelScope.launch {
+        launchSafely("ArtistViewModel.loadPlaylists") {
             NetworkRepo.getAuthorPlaylists(userId, sort).collect { state ->
                 when (state) {
                     is PageLoadingState.Success -> _playlists.value = state.info
@@ -162,11 +163,11 @@ class ArtistViewModel : ViewModel() {
     fun toggleSubscribe(postUserId: String?, postArtistId: String?) {
         if (postUserId == null || postArtistId == null) return
         if (!SettingsRepository.isAlreadyLogin) {
-            viewModelScope.launch { AppToast.warning(getString(Res.string.login_first)) }
+            launchSafely("ArtistViewModel.toggleSubscribe-1") { AppToast.warning(getString(Res.string.login_first)) }
             return
         }
         val target = !(_subscribed.value ?: false)
-        viewModelScope.launch {
+        launchSafely("ArtistViewModel.toggleSubscribe-2") {
             NetworkRepo.subscribeArtist(csrfToken, postUserId, postArtistId, target).collect { state ->
                 if (state is WebsiteState.Success) _subscribed.value = target
             }

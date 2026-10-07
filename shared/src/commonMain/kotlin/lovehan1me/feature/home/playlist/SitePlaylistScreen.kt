@@ -39,6 +39,7 @@ import lovehan1me.ui.component.VideoCardItem
 import lovehan1me.ui.component.appbar.HanimeTopAppBar
 import lovehan1me.ui.component.lazy.LazyVerticalGrid
 import lovehan1me.ui.component.rememberVideoGridColumns
+import lovehan1me.ui.foundation.launchSafely
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.unknown_error
 import org.jetbrains.compose.resources.stringResource
@@ -92,7 +93,7 @@ class SitePlaylistViewModel : ViewModel() {
 
     fun load(listId: String, sort: String?) {
         _detail.value = null
-        viewModelScope.launch {
+        launchSafely("SitePlaylistViewModel.load") {
             NetworkRepo.getSitePlaylist(listId, sort).collect { _detail.value = it }
         }
     }

@@ -21,6 +21,7 @@ import lovehan1me.data.network.CsrfTokenProvider.csrfToken
 import lovehan1me.core.util.AppToast
 import lovehan1me.core.util.decodeComposeAsset
 import lovehan1me.core.util.unsafeLazy
+import lovehan1me.ui.foundation.launchSafely
 import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -135,7 +136,7 @@ class CommentViewModel : ViewModel() {
     }
 
     fun getComment(type: String, code: String) {
-        viewModelScope.launch {
+        launchSafely("CommentViewModel.getComment") {
             if (commentsLoadedFor != code) {
                 commentsLoadedFor = code
                 _videoCommentFlow.value = emptyList()
@@ -167,7 +168,7 @@ class CommentViewModel : ViewModel() {
      */
     fun loadReplies(commentId: String, force: Boolean = false) {
         if (!force && _replyThreads.value[commentId]?.items?.isNotEmpty() == true) return
-        viewModelScope.launch {
+        launchSafely("CommentViewModel.loadReplies") {
             _replyThreads.update { it + (commentId to threadOf(it, commentId).copy(loading = true, error = null)) }
             NetworkRepo.getCommentReply(commentId).collect { state ->
                 when (state) {
@@ -206,7 +207,7 @@ class CommentViewModel : ViewModel() {
         type: String,
         text: String,
     ) {
-        viewModelScope.launch {
+        launchSafely("CommentViewModel.postComment") {
             NetworkRepo.postComment(csrfToken, currentUserId, targetUserId, type, text)
                 .collect(_postCommentFlow::emit)
         }
@@ -216,7 +217,7 @@ class CommentViewModel : ViewModel() {
         replyCommentId: String,
         text: String,
     ) {
-        viewModelScope.launch {
+        launchSafely("CommentViewModel.postReply") {
             NetworkRepo.postCommentReply(csrfToken, replyCommentId, text)
                 .collect { state ->
                     if (state is WebsiteState.Success) {
@@ -254,7 +255,7 @@ class CommentViewModel : ViewModel() {
         likeCommentStatus: Boolean = false,
         unlikeCommentStatus: Boolean = false,
     ) {
-        viewModelScope.launch {
+        launchSafely("CommentViewModel.likeCommentInternal") {
             NetworkRepo.likeComment(
                 csrfToken,
                 commentPlace,
@@ -346,7 +347,7 @@ class CommentViewModel : ViewModel() {
         reportableType: String?,
         reportableId: String?
     ){
-        viewModelScope.launch {
+        launchSafely("CommentViewModel.reportComment") {
             // ⚠️ 不打 csrfToken 本身（它是凭据，且这行是 INFO 级，日志门槛拦不住）；
             // 只需知道"拿到没拿到"。
             LogUtil.d("ReportComment", "提交举报（csrfToken ${if (csrfToken.isNullOrBlank()) "缺失" else "已取到"}）")

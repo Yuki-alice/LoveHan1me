@@ -15,6 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import lovehan1me.ui.foundation.launchSafely
 import lovehan1me.video.contract.safeCombine
 import kotlinx.datetime.LocalDate
 
@@ -88,7 +89,7 @@ class CheckInCalendarViewModel : ViewModel() {
         type: String,
         feeling: String
     ) {
-        viewModelScope.launch {
+        launchSafely("CheckInCalendarViewModel.addRecord") {
             val record = CheckInRecordEntity(
                 date = date.toString(),
                 time = time,
@@ -101,7 +102,7 @@ class CheckInCalendarViewModel : ViewModel() {
     }
 
     fun deleteRecord(record: CheckInRecordEntity, onDone: () -> Unit = {}) {
-        viewModelScope.launch {
+        launchSafely("CheckInCalendarViewModel.deleteRecord") {
             dao.delete(record)
             val date = LocalDate.parse(record.date)
             reloadDateAndStats(date)
@@ -110,21 +111,21 @@ class CheckInCalendarViewModel : ViewModel() {
     }
 
     fun getRecordsByDate(date: LocalDate, onResult: (List<CheckInRecordEntity>) -> Unit) {
-        viewModelScope.launch {
+        launchSafely("CheckInCalendarViewModel.getRecordsByDate") {
             val result = dao.getRecordsByDate(date.toString())
             onResult(result)
         }
     }
 
     fun getCountByDate(date: LocalDate, onResult: (Int) -> Unit) {
-        viewModelScope.launch {
+        launchSafely("CheckInCalendarViewModel.getCountByDate") {
             val count = dao.getCountByDate(date.toString())
             onResult(count)
         }
     }
 
     fun clearCheckIn(date: LocalDate) {
-        viewModelScope.launch {
+        launchSafely("CheckInCalendarViewModel.clearCheckIn") {
             val records = dao.getRecordsByDate(date.toString())
             records.forEach { dao.delete(it) }
             reloadDateAndStats(date)
@@ -132,7 +133,7 @@ class CheckInCalendarViewModel : ViewModel() {
     }
 
     fun loadYearRecords(year: Int) {
-        viewModelScope.launch {
+        launchSafely("CheckInCalendarViewModel.loadYearRecords") {
             val allRecords = dao.getYearlyRecords(year.toString())
             val countMap = mutableMapOf<LocalDate, Int>()
             allRecords.forEach {
@@ -161,7 +162,7 @@ class CheckInCalendarViewModel : ViewModel() {
     }
 
     private fun loadMonthRecords(month: YearMonth) {
-        viewModelScope.launch {
+        launchSafely("CheckInCalendarViewModel.loadMonthRecords") {
             val start = month.atDay(1)
             val end = month.atEndOfMonth()
             val allRecords = dao.getRecordsBetween(start.toString(), end.toString())

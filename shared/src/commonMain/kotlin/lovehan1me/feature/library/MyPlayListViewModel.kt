@@ -21,6 +21,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import lovehan1me.ui.foundation.launchSafely
 import lovehan1me.video.contract.safeCombine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -121,7 +122,7 @@ class MyPlayListViewModel : ViewModel(), PlaylistController {
             _isLoadingMorePlaylists.value = true
         }
         val userId = SettingsRepository.savedUserId
-        viewModelScope.launch {
+        launchSafely("MyPlayListViewModel.loadMyPlayList") {
             NetworkRepo.getPlaylists(page, userId).collect { state ->
                 when (state) {
                     is WebsiteState.Loading -> {
@@ -159,8 +160,8 @@ class MyPlayListViewModel : ViewModel(), PlaylistController {
         LogUtil.i("getPlaylistItems","isLoadingMore:$isLoadingMore,listCode:$listCode,")
         if (isLoadingMore) return
         isLoadingMore = true
-        viewModelScope.launch {
-            if (listCode.isBlank()) return@launch
+        launchSafely("MyPlayListViewModel.getPlaylistItems") {
+            if (listCode.isBlank()) return@launchSafely
             LogUtil.i("getPlaylistItems","page:$page,refresh:$refresh")
             // 如果是第一页或刷新，重置状态
             if (page == 1 || refresh) {
@@ -211,7 +212,7 @@ class MyPlayListViewModel : ViewModel(), PlaylistController {
     override val deleteFromPlaylistFlow = _deleteFromPlaylistFlow.asSharedFlow()
     // 从详情页删除某视频
     override fun deleteFromPlaylist(listCode: String, videoCode: String, position: Int) {
-        viewModelScope.launch {
+        launchSafely("MyPlayListViewModel.deleteFromPlaylist") {
             NetworkRepo.deleteMyListItems(listCode, videoCode, position, csrfToken).collect {
                 _deleteFromPlaylistFlow.emit(it)
                 _playlistFlow.update { prevList ->
@@ -228,7 +229,7 @@ class MyPlayListViewModel : ViewModel(), PlaylistController {
     // 编辑Playlist
     override fun modifyPlaylist(listCode: String, title: String, desc: String, delete: Boolean) {
         LogUtil.i("modify_playlist","${listCode},${title},${desc}")
-        viewModelScope.launch {
+        launchSafely("MyPlayListViewModel.modifyPlaylist") {
             NetworkRepo.modifyPlaylist(listCode, title, desc, delete, csrfToken).collect {
                 _modifyPlaylistFlow.emit(it)
                 if (delete) {
@@ -247,7 +248,7 @@ class MyPlayListViewModel : ViewModel(), PlaylistController {
     override val createPlaylistFlow = _createPlaylistFlow.asSharedFlow()
     //创建Playlist
     override fun createPlaylist(title: String, description: String) {
-        viewModelScope.launch {
+        launchSafely("MyPlayListViewModel.createPlaylist") {
             NetworkRepo.createPlaylist(EMPTY_STRING, title, description, csrfToken).collect {
                 _createPlaylistFlow.emit(it)
             }

@@ -18,6 +18,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import lovehan1me.ui.foundation.launchSafely
 import lovehan1me.video.contract.safeCombine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -88,7 +89,7 @@ class LocalPlayListViewModel : ViewModel(), PlaylistController {
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), PlaylistUiState())
 
     init {
-        viewModelScope.launch {
+        launchSafely("LocalPlayListViewModel.init") {
             LocalListRepository.observePlaylists().collect { playlists ->
                 _cachedMyPlayList.value = playlists
                 _myPlaylistsFlow.value = WebsiteState.Success(Playlists(playlists))
@@ -100,7 +101,7 @@ class LocalPlayListViewModel : ViewModel(), PlaylistController {
     }
 
     override fun loadMyPlayList(page: Int, forceReload: Boolean) {
-        viewModelScope.launch {
+        launchSafely("LocalPlayListViewModel.loadMyPlayList") {
             if (page == 1 || forceReload) {
                 _myPlaylistsFlow.value = WebsiteState.Loading
             }
@@ -128,7 +129,7 @@ class LocalPlayListViewModel : ViewModel(), PlaylistController {
     override fun getPlaylistItems(page: Int, listCode: String, refresh: Boolean) {
         if (isLoadingMore) return
         isLoadingMore = true
-        viewModelScope.launch {
+        launchSafely("LocalPlayListViewModel.getPlaylistItems") {
             try {
                 if (page == 1 || refresh) {
                     _playlistFlow.value = emptyList()
@@ -171,7 +172,7 @@ class LocalPlayListViewModel : ViewModel(), PlaylistController {
     }
 
     override fun modifyPlaylist(listCode: String, title: String, desc: String, delete: Boolean) {
-        viewModelScope.launch {
+        launchSafely("LocalPlayListViewModel.modifyPlaylist") {
             runCatching {
                 if (delete) {
                     LocalListRepository.deletePlaylist(listCode)
@@ -191,7 +192,7 @@ class LocalPlayListViewModel : ViewModel(), PlaylistController {
     }
 
     override fun deleteFromPlaylist(listCode: String, videoCode: String, position: Int) {
-        viewModelScope.launch(ioDispatcher) {
+        launchSafely("LocalPlayListViewModel.deleteFromPlaylist", ioDispatcher) {
             runCatching {
                 LocalListRepository.removeItem(listCode, videoCode)
             }.onSuccess {
@@ -208,7 +209,7 @@ class LocalPlayListViewModel : ViewModel(), PlaylistController {
     }
 
     override fun createPlaylist(title: String, description: String) {
-        viewModelScope.launch {
+        launchSafely("LocalPlayListViewModel.createPlaylist") {
             runCatching {
                 LocalListRepository.createPlaylist(title, description)
             }.onSuccess {

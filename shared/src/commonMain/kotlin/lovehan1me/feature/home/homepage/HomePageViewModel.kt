@@ -28,6 +28,7 @@ import lovehan1me.app.AppViewModel
 import lovehan1me.app.navigation.main.HanimeScreen
 import lovehan1me.app.navigation.main.HomeRoute
 import lovehan1me.app.navigation.main.TopLevelBackStack
+import lovehan1me.ui.foundation.launchSafely
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -77,7 +78,7 @@ class HomePageViewModel: ViewModel() {
     private var initializationJob: Job? = null
 
     init {
-        viewModelScope.launch {
+        launchSafely("HomePageViewModel.init") {
             // 初始化默认已下载分组，防止[FOREIGN KEY constraint failed]
             DatabaseRepo.HanimeDownload.insertDefaultGroup()
         }
@@ -86,7 +87,7 @@ class HomePageViewModel: ViewModel() {
     fun initializeHomePage() {
         if (!SettingsRepository.usageNoticeAccepted) return
         if (initializationJob != null || _appUpdateState.value !is AppUpdateState.Checking) return
-        initializationJob = viewModelScope.launch {
+        initializationJob = launchSafely("HomePageViewModel.initializeHomePage-1") {
             StartupTrace.mark("home-update-check-start")
             val updateResult = AppUpdateChecker.checkForUpdate()
             StartupTrace.mark("home-update-check-end")
@@ -94,7 +95,7 @@ class HomePageViewModel: ViewModel() {
             // 冷启动公告只读缓存（~0ms），远端刷新放后台：公告曾因 404/timeout
             // 拖慢启动数秒，而它不挡首屏内容。手动下拉仍走网络版 refreshAnnouncements()。
             _announcements.value = AnnouncementRepository.visibleFromCache(_updateAnnouncement.value)
-            viewModelScope.launch {
+            launchSafely("HomePageViewModel.initializeHomePage-2") {
                 _announcements.value = AnnouncementRepository.load(_updateAnnouncement.value)
             }
             val updateInfo = updateResult.updateInfo
@@ -110,7 +111,7 @@ class HomePageViewModel: ViewModel() {
     fun ignoreUpdate(versionCode: Int) {
         val available = _appUpdateState.value as? AppUpdateState.Available ?: return
         if (available.info.forceUpdate || available.info.versionCode != versionCode) return
-        viewModelScope.launch {
+        launchSafely("HomePageViewModel.ignoreUpdate") {
             AppUpdateChecker.ignoreUpdate(versionCode)
             _appUpdateState.value = AppUpdateState.NoUpdate
         }
@@ -127,7 +128,7 @@ class HomePageViewModel: ViewModel() {
             AppUpdateState.NoUpdate -> Unit
         }
         homePageJob?.cancel()
-        homePageJob = viewModelScope.launch {
+        homePageJob = launchSafely("HomePageViewModel.getHomePage") {
             val current = _homePageFlow.value
             val cachedErrorInfo = if (current is PageState.Error) current.cachedInfo else null
             if (isRefresh && current is PageState.Success) {
@@ -200,21 +201,21 @@ class HomePageViewModel: ViewModel() {
      */
     fun markAnnouncementsRead(keys: Collection<String>) {
         if (keys.isEmpty()) return
-        viewModelScope.launch {
+        launchSafely("HomePageViewModel.markAnnouncementsRead") {
             SettingsRepository.markAnnouncementsRead(keys)
             _announcements.value = AnnouncementRepository.visibleFromCache(_updateAnnouncement.value)
         }
     }
 
     fun deleteWatchHistory(history: WatchHistoryEntity) {
-        viewModelScope.launch(ioDispatcher) {
+        launchSafely("HomePageViewModel.deleteWatchHistory", ioDispatcher) {
             DatabaseRepo.WatchHistory.delete(history)
             LogUtil.d("delete_watch_hty", "$history DONE!")
         }
     }
 
     fun deleteAllWatchHistories() {
-        viewModelScope.launch(ioDispatcher) {
+        launchSafely("HomePageViewModel.deleteAllWatchHistories", ioDispatcher) {
             DatabaseRepo.WatchHistory.deleteAll()
             LogUtil.d("del_all_watch_hty", "DONE!")
         }
