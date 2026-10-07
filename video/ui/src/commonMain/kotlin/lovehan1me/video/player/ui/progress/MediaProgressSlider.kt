@@ -72,8 +72,8 @@ import androidx.compose.ui.window.PopupPositionProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.collectLatest
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOf
+import lovehan1me.video.contract.safeCombine
 import lovehan1me.video.player.ui.gesture.SwipeSeekerConfig
 import lovehan1me.video.player.ui.gesture.isVerticalDragCancelled
 import lovehan1me.video.player.ui.support.PlatformPopupProperties
@@ -185,7 +185,7 @@ fun rememberMediaProgressSliderState(
     onPreviewFinished: (positionMillis: Long) -> Unit,
 ): PlayerProgressSliderState {
     val flow = remember(player, chaptersFlow) {
-        combine(
+        safeCombine(
             player.currentPositionMillis,
             player.mediaProperties,
             chaptersFlow,

@@ -37,9 +37,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import lovehan1me.video.contract.safeCombine
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.onStart
@@ -107,7 +107,7 @@ class VideoViewModel(
      * 登录时与 [hanimeVideoFlow] 保持一致。
      */
     @OptIn(ExperimentalCoroutinesApi::class)
-    val displayVideoFlow: StateFlow<HanimeVideo?> = combine(
+    val displayVideoFlow: StateFlow<HanimeVideo?> = safeCombine(
         _hanimeVideoFlow,
         _videoCodeFlow,
         SettingsRepository.loginStateFlow,
@@ -116,7 +116,7 @@ class VideoViewModel(
             if (video == null || isLoggedIn || code.isBlank()) {
                 flowOf(video)
             } else {
-                combine(
+                safeCombine(
                     LocalListRepository.observeIsFavorite(code),
                     LocalListRepository.observeIsWatchLater(code),
                     LocalListRepository.observeListCodes(code),

@@ -15,9 +15,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import lovehan1me.video.contract.safeCombine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -121,7 +121,7 @@ class MediampExoPlaybackEngine(
 
     private fun startEnhancementObserver() {
         scope.launch {
-            combine(
+            safeCombine(
                 state.map { it.videoWidth to it.videoHeight },
                 surfaceSize,
             ) { video, surface -> video to surface }

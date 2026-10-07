@@ -13,9 +13,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import lovehan1me.video.contract.safeCombine
 import kotlinx.datetime.LocalDate
 
 class CheckInCalendarViewModel : ViewModel() {
@@ -30,7 +30,7 @@ class CheckInCalendarViewModel : ViewModel() {
     private val _yearStats = MutableStateFlow(MonthlyStats())
 
     /** 对外暴露的唯一 UI 状态流。 */
-    val uiState: StateFlow<DailyCheckInUiState> = combine(
+    val uiState: StateFlow<DailyCheckInUiState> = safeCombine(
         _currentMonth, _records, _checkedDays, _monthTotal, _monthlyStats,
     ) { array ->
         @Suppress("UNCHECKED_CAST")

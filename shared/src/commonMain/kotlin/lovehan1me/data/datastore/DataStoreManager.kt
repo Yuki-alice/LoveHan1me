@@ -30,9 +30,9 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
+import lovehan1me.video.contract.safeCombine
 import kotlinx.coroutines.launch
 import kotlinx.serialization.builtins.MapSerializer
 import kotlinx.serialization.builtins.serializer
@@ -105,10 +105,19 @@ object DataStoreManager : SettingsStore {
             // settings 初值仍是 defaults，磁盘值到达后经 StateFlow 正常推送
             // （data class 相等去重，无多余重组）。
             initialized = true
+            // 关键：DataStore 的 `data` 属性**每次访问都会构造一个新 Flow**（内部是
+            // `flow { ... }`）。若在 `combine(dataStore.data, authStore.data)` 里直接
+            // 读两次属性，combine 拿到的是两个不同时刻构造的 Flow；而 `update()` 也会
+            // 并发读 `.data.first()`。协程版本错位时，combineInternal 的 vararg 数组
+            // 可能出现 null 槽 → `this.$flows[this.$i] is null` 进程闪退。
+            // 这里在初始化阶段把两个 Flow 引用各快照一次，后续全走同一个实例，从根上
+            // 消掉"同一个属性读两次拿到不同 Flow"的窗口。
+            val mainData = dataStore.data
+            val authData = authStore.data
             scope.launch {
                 // 老存档的登录态键还在主文件里：搬到独立文件（auth 侧已有的不覆盖）。
                 runCatching { migrateAuthKeysToDedicatedStore(dataStore, authStore) }
-                val initial = mergeAuthPreferences(dataStore.data.first(), authStore.data.first())
+                val initial = mergeAuthPreferences(mainData.first(), authData.first())
                     .toAppSettings()
                 // 首启/升级缺键回填：全量写盘放后台，首屏不等它。
                 runCatching {
@@ -116,7 +125,7 @@ object DataStoreManager : SettingsStore {
                     authStore.edit { it.writeAuth(initial) }
                 }
                 mutableSettings.value = initial
-                combine(dataStore.data, authStore.data) { main, auth ->
+                safeCombine(mainData, authData) { main, auth ->
                     mergeAuthPreferences(main, auth).toAppSettings()
                 }.collect { mutableSettings.value = it }
             }

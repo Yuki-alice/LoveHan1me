@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
+import lovehan1me.video.contract.safeCombine
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -64,7 +64,7 @@ class MyPlayListViewModel : ViewModel(), PlaylistController {
     private val _noMorePlaylists = MutableStateFlow(false)
 
     /** 对外暴露的唯一主页面 UI 状态流。 */
-    override val mainUiState: StateFlow<PlaylistUiState> = combine(
+    override val mainUiState: StateFlow<PlaylistUiState> = safeCombine(
         _cachedMyPlayList,
         _showSheet,
         _currentListInfo,

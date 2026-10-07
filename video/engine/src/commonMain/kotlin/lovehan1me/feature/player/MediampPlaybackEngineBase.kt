@@ -8,7 +8,7 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.combine
+import lovehan1me.video.contract.safeCombine
 import kotlinx.coroutines.launch
 import lovehan1me.core.util.LogUtil
 import lovehan1me.video.contract.PlaybackLoadStatus
@@ -94,7 +94,7 @@ abstract class MediampPlaybackEngineBase : PlaybackEngine {
     /** 子类构造完 [mediampPlayer] 后调用一次。 */
     protected fun startObserving() {
         scope.launch {
-            combine(
+            safeCombine(
                 mediampPlayer.state,
                 mediampPlayer.currentPositionMillis,
                 mediampPlayer.mediaProperties,
