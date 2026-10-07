@@ -18,19 +18,30 @@ import lovehan1me.data.SettingsRepository
  * 只缓存"无条件浏览"，key 不含筛选参数 —— 有筛选/有词的请求天然 miss，
  * 不会串结果。
  */
+/**
+ * 缓存 key 的纯决策：前缀 + 安全 host + 安全用户。
+ *
+ * 从 `homePageCacheKey` / `discoverCacheKey` 里抽出来 —— 那两个读全局
+ * `SettingsRepository`（未初始化时静默退化），headless 测不了；这里只做
+ * 字符串变换，可被确定性断言（同 `mergeSearchPage` 的路子）。
+ */
+internal fun cacheKeyFor(prefix: String, domain: String, user: String): String {
+    val safeHost = domain.substringAfter("://", domain).substringBefore("/").ifBlank { "default" }
+    val safeUser = user.ifBlank { "anon" }
+    return "${prefix}_${safeHost}_${safeUser}"
+}
+
 fun homePageCacheKey(): String {
     val domain = runCatching { SettingsRepository.domainName }.getOrDefault("default")
     val user = runCatching { SettingsRepository.savedUserId }.getOrDefault("").ifBlank { "anon" }
-    val safeHost = domain.substringAfter("://", domain).substringBefore("/").ifBlank { "default" }
-    return "home_${safeHost}_${user}"
+    return cacheKeyFor("home", domain, user)
 }
 
 /** 发现页默认浏览缓存 key（与首页同输入，`discover_` 前缀隔离）。 */
 fun discoverCacheKey(): String {
     val domain = runCatching { SettingsRepository.domainName }.getOrDefault("default")
     val user = runCatching { SettingsRepository.savedUserId }.getOrDefault("").ifBlank { "anon" }
-    val safeHost = domain.substringAfter("://", domain).substringBefore("/").ifBlank { "default" }
-    return "discover_${safeHost}_${user}"
+    return cacheKeyFor("discover", domain, user)
 }
 
 /** 读缓存 HTML；null = 无缓存/不可用（调用方直接走网络）。 */

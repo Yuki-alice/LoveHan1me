@@ -43,5 +43,11 @@ kotlin {
                 implementation(libs.mediamp.mpv.desktop)
             }
         }
+
+        // 冒烟守卫的执行口（与 :video:contract 同款）：desktopTest 源集本身由
+        // target 自动建好，这里只补 kotlin.test（commonTest 声明即可被 desktopTest 看到）。
+        commonTest.dependencies {
+            implementation(kotlin("test"))
+        }
     }
 }

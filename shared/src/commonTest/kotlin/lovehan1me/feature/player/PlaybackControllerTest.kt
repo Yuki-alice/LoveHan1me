@@ -310,6 +310,46 @@ class PlaybackControllerTest {
             c.release()
         }
     }
+
+    @Test
+    fun `seekTo超上界钳到duration_负数钳零`() {
+        val (c, engine) = controller()
+        try {
+            engine.engineState.value = PlaybackEngineState(durationMs = 100_000L, positionMs = 0L)
+            c.seekTo(200_000L)
+            assertEquals(listOf(100_000L), engine.seeks, "越过片尾必须钳到 duration")
+            c.seekTo(-5_000L)
+            assertEquals(listOf(100_000L, 0L), engine.seeks, "负数必须钳到 0")
+        } finally {
+            c.release()
+        }
+    }
+
+    @Test
+    fun `seekBy越过片尾钳到duration`() {
+        val (c, engine) = controller()
+        try {
+            engine.engineState.value = PlaybackEngineState(durationMs = 100_000L, positionMs = 90_000L)
+            c.seekBy(50_000L)
+            assertEquals(listOf(100_000L), engine.seeks, "快进越过片尾必须停在 duration")
+        } finally {
+            c.release()
+        }
+    }
+
+    @Test
+    fun `未知时长只保下界不钳上界`() {
+        val (c, engine) = controller()
+        try {
+            // 默认 durationMs=0（直播/未就绪）：上界无从钳起，保持旧语义直透。
+            c.seekTo(200_000L)
+            assertEquals(listOf(200_000L), engine.seeks, "未知时长不应凭空钳上界")
+            c.seekTo(-1L)
+            assertEquals(listOf(200_000L, 0L), engine.seeks, "未知时长仍须保下界")
+        } finally {
+            c.release()
+        }
+    }
 }
 
 /**

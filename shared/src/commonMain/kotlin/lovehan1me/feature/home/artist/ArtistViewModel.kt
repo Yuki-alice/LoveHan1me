@@ -2,6 +2,7 @@ package lovehan1me.feature.home.artist
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -52,13 +53,17 @@ class ArtistViewModel : ViewModel() {
     private var endReached = false
     private var loading = false
     private var loadedUserId: String? = null
+    private var loadJob: Job? = null
 
     /**
      * G2-1b-2：信息头 + 作品全量（`/user/{id}` + `/uploaded?page=`）。
      * v1 的搜索兜底已移除——作者页自有列表为准，不再依赖搜索索引时效。
+     *
+     * 并发：`load()` 直接取消在途（快速切作者时旧请求不再与新请求交织），
+     * 响应合并前校验 [shouldApplyArtistResponse]（cancel 生效前的窗口兜底）。
      */
     fun load(userId: String) {
-        if (loading) return
+        loadJob?.cancel()
         loading = true
         loadedUserId = userId
         page = 1
@@ -66,8 +71,9 @@ class ArtistViewModel : ViewModel() {
         _works.value = emptyList()
         _worksLoading.value = true
         _worksError.value = null
-        viewModelScope.launch {
+        loadJob = viewModelScope.launch {
             NetworkRepo.getArtistPage(userId).collect { state ->
+                if (!shouldApplyArtistResponse(userId, loadedUserId)) return@collect
                 if (state is WebsiteState.Success) {
                     _header.value = state.info.header
                     _recent.value = state.info.recentVideos
@@ -86,11 +92,13 @@ class ArtistViewModel : ViewModel() {
         if (loading || endReached) return
         loading = true
         _worksLoading.value = true
-        viewModelScope.launch { loadMoreInternal(userId) }
+        loadJob = viewModelScope.launch { loadMoreInternal(userId) }
     }
 
     private suspend fun loadMoreInternal(userId: String) {
         NetworkRepo.getArtistUploaded(userId, page).collect { state ->
+            // 快速切作者时上一位的晚到响应直接丢弃，不并入新一家的列表。
+            if (!shouldApplyArtistResponse(userId, loadedUserId)) return@collect
             when (state) {
                 is PageLoadingState.Success -> {
                     if (state.info.isEmpty()) endReached = true
@@ -165,3 +173,12 @@ class ArtistViewModel : ViewModel() {
         }
     }
 }
+
+/**
+ * 作者页响应的代际校验：`load()` 的 cancel 让旧收集器停，这个谓词兜住
+ * "cancel 生效前、已越过检查点的 emission"窗口（与 `shouldApplySearchResponse`
+ * 同手法）。抽成纯函数是因为 ViewModel 依赖 `NetworkRepo` 单例，
+ * headless 起不来，而这段正是并发加固的全部语义。
+ */
+internal fun shouldApplyArtistResponse(requestUserId: String, loadedUserId: String?): Boolean =
+    requestUserId == loadedUserId

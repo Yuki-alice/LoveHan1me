@@ -205,7 +205,17 @@ class PlaybackController(
         }
     }
 
-    fun seekTo(positionMs: Long) = playbackEngine.seekTo(positionMs)
+    /**
+     * 跳到绝对位置。上下界都钳：长按快进/键盘 seek 越过片尾时位置不再大于时长，
+     * 否则进度条与续播落点行为未定义。时长未知（直播/未就绪，durationMs<=0）时
+     * 只保下界，保持旧语义。
+     */
+    fun seekTo(positionMs: Long) {
+        val durationMs = mutableState.value.engine.durationMs
+        val clamped = if (durationMs > 0) positionMs.coerceIn(0L, durationMs)
+        else positionMs.coerceAtLeast(0L)
+        playbackEngine.seekTo(clamped)
+    }
 
     fun seekBy(deltaMs: Long) {
         val state = mutableState.value.engine
