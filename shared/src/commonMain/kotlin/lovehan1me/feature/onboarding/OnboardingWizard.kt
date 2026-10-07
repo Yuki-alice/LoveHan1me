@@ -1,7 +1,10 @@
 package lovehan1me.feature.onboarding
 
-import androidx.compose.foundation.clickable
+import androidx.compose.animation.AnimatedContent
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -10,13 +13,14 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.Button
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +34,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.Lifecycle
@@ -38,16 +43,16 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import lovehan1me.Res
-import lovehan1me.theme_mode_light
-import lovehan1me.theme_mode_dark
-import lovehan1me.theme_mode_auto
-import lovehan1me.back
 import lovehan1me.core.domain.model.AppLanguage
 import lovehan1me.core.domain.model.ThemeMode
 import lovehan1me.core.platform.applyAppLanguage
 import lovehan1me.core.util.isDebugBuild
 import lovehan1me.data.SettingsRepository
 import lovehan1me.follow_system
+import lovehan1me.ic_download
+import lovehan1me.ic_launcher_h_chan_monochrome
+import lovehan1me.ic_play_circle
+import lovehan1me.ic_refresh
 import lovehan1me.onboarding_feature_offline
 import lovehan1me.onboarding_feature_player
 import lovehan1me.onboarding_feature_sync
@@ -63,11 +68,23 @@ import lovehan1me.onboarding_settings_title
 import lovehan1me.onboarding_start
 import lovehan1me.onboarding_welcome_subtitle
 import lovehan1me.onboarding_welcome_title
-import lovehan1me.ui.component.HapticTextButton as TextButton
+import lovehan1me.theme_mode_auto
+import lovehan1me.theme_mode_dark
+import lovehan1me.theme_mode_light
+import lovehan1me.ui.component.CardContainerSurface
+import lovehan1me.ui.component.FilledTonalButton
+import lovehan1me.ui.component.HapticButton
+import lovehan1me.ui.component.SettingChoiceItem
+import lovehan1me.ui.component.SettingsSegmentedGroup
+import lovehan1me.ui.component.appbar.HanimeTopAppBar
+import lovehan1me.ui.theme.HanimeDefaults
+import lovehan1me.ui.theme.contentFade
 import lovehan1me.usage_notice_accept_countdown
 import lovehan1me.usage_notice_content
 import lovehan1me.usage_notice_decline
 import lovehan1me.usage_notice_title
+import org.jetbrains.compose.resources.DrawableResource
+import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import kotlin.time.Duration.Companion.milliseconds
 
@@ -77,6 +94,11 @@ import kotlin.time.Duration.Companion.milliseconds
  * 替代此前的"三段门控"（使用须知对话框 → 来源确认问卷 → 非法来源警告）：
  * 来源确认整套删除——问用户从哪下载的、答错再罚抄仓库链接，
  * 本质是安全话剧，还把正常用户挡在门外。
+ *
+ * 布局语言参照 animeko 的 onboarding（`ui-onboarding`）：**顶栏承载标题与返回**，
+ * 正文限制在可读行宽内水平居中、短内容时垂直居中，主操作是内容末尾的**全宽按钮**。
+ * 与旧版的差别：返回键从底栏移到顶栏；三步之间用 [contentFade] 过渡；单色圆点
+ * 换成带图标的卡片，选中项复用设置页的 tonal 卡片。
  *
  * 约定：
  * - 只有全新用户（`usageNoticeAccepted == false`）走这里，老用户直接进应用；
@@ -96,151 +118,202 @@ fun OnboardingWizard(
 ) {
     var step by remember { mutableIntStateOf(STEP_WELCOME) }
     val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
 
-    Scaffold { padding ->
-        Column(
+    // 换步后回到顶部，避免把上一步的滚动位置带到下一步。
+    LaunchedEffect(step) { scrollState.scrollTo(0) }
+
+    Scaffold(
+        containerColor = HanimeDefaults.Colors.pageSurface,
+        topBar = {
+            Column {
+                HanimeTopAppBar(
+                    title = stepTitle(step),
+                    onBack = if (step > STEP_WELCOME) {
+                        { step-- }
+                    } else {
+                        null
+                    },
+                )
+                LinearProgressIndicator(
+                    progress = { (step + 1) / STEP_COUNT.toFloat() },
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+        },
+    ) { padding ->
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            LinearProgressIndicator(
-                progress = { (step + 1) / STEP_COUNT.toFloat() },
-                modifier = Modifier.fillMaxWidth(),
-            )
+            val verticalPadding = HanimeDefaults.Spacing.huge
+            // 内容不足一屏时也要撑满可视区，才能靠 Arrangement.Center 垂直居中；
+            // 超出时撑高、由外层滚动接管。
+            val minContentHeight = (maxHeight - verticalPadding * 2).coerceAtLeast(0.dp)
             Column(
                 modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                    .fillMaxSize()
+                    .verticalScroll(scrollState),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                when (step) {
-                    STEP_WELCOME -> WelcomeStep()
-                    STEP_NOTICE -> NoticeStep()
-                    else -> SettingsStep()
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .widthIn(max = HanimeDefaults.Widths.formMax)
+                        .heightIn(min = minContentHeight)
+                        .padding(horizontal = HanimeDefaults.Spacing.extraExtraLarge, vertical = verticalPadding),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center,
+                ) {
+                    // transitionSpec 不是 @Composable 上下文，转场要在组合期先算好。
+                    val stepTransition = contentFade()
+                    AnimatedContent(
+                        targetState = step,
+                        modifier = Modifier.fillMaxWidth(),
+                        transitionSpec = { stepTransition },
+                        contentAlignment = Alignment.Center,
+                        label = "onboarding-step",
+                    ) { current ->
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            when (current) {
+                                STEP_WELCOME -> WelcomeStep(onNext = { step++ })
+                                STEP_NOTICE -> NoticeStep(
+                                    onExit = onExit,
+                                    onNext = { step++ },
+                                )
+
+                                else -> SettingsStep(
+                                    onFinish = {
+                                        scope.launch {
+                                            SettingsRepository.setUsageNoticeAccepted(true)
+                                            onFinished()
+                                        }
+                                    },
+                                )
+                            }
+                        }
+                    }
                 }
             }
-            WizardActions(
-                step = step,
-                onBack = { if (step > STEP_WELCOME) step-- },
-                onNext = { if (step < STEP_SETTINGS) step++ },
-                onFinish = {
-                    scope.launch {
-                        SettingsRepository.setUsageNoticeAccepted(true)
-                        onFinished()
-                    }
-                },
-                onExit = onExit,
-            )
         }
     }
 }
 
 @Composable
-private fun WizardActions(
-    step: Int,
-    onBack: () -> Unit,
-    onNext: () -> Unit,
-    onFinish: () -> Unit,
-    onExit: () -> Unit,
-) {
-    Row(
+private fun stepTitle(step: Int): String = when (step) {
+    STEP_WELCOME -> stringResource(Res.string.onboarding_welcome_title)
+    STEP_NOTICE -> stringResource(Res.string.usage_notice_title)
+    else -> stringResource(Res.string.onboarding_settings_title)
+}
+
+@Composable
+private fun WelcomeStep(onNext: () -> Unit) {
+    Box(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically,
+            .size(96.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.primaryContainer),
+        contentAlignment = Alignment.Center,
     ) {
-        if (step == STEP_WELCOME) {
-            Spacer(modifier = Modifier.weight(1f))
-            Button(onClick = onNext) {
-                Text(stringResource(Res.string.onboarding_start))
-            }
-        } else if (step == STEP_NOTICE) {
-            // 须知页的操作键在内容区（同意带倒计时 / 不同意退出），底栏只留返回。
-            TextButton(onClick = onBack) {
-                Text(stringResource(Res.string.back))
-            }
-            Spacer(modifier = Modifier.weight(1f))
-            NoticeAcceptButtons(onExit = onExit, onNext = onNext)
-        } else {
-            TextButton(onClick = onBack) {
-                Text(stringResource(Res.string.back))
-            }
-            Button(onClick = onFinish) {
-                Text(stringResource(Res.string.onboarding_finish))
-            }
-        }
+        Icon(
+            painter = painterResource(Res.drawable.ic_launcher_h_chan_monochrome),
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onPrimaryContainer,
+            modifier = Modifier.size(56.dp),
+        )
     }
-}
-
-@Composable
-private fun WelcomeStep() {
-    Spacer(modifier = Modifier.height(48.dp))
-    Text(
-        text = stringResource(Res.string.onboarding_welcome_title),
-        style = MaterialTheme.typography.displaySmall,
-        color = MaterialTheme.colorScheme.primary,
-        textAlign = TextAlign.Center,
-    )
-    Spacer(modifier = Modifier.height(12.dp))
+    Spacer(modifier = Modifier.height(HanimeDefaults.Spacing.extraExtraLarge))
     Text(
         text = stringResource(Res.string.onboarding_welcome_subtitle),
         style = MaterialTheme.typography.bodyLarge,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center,
+        modifier = Modifier.fillMaxWidth(),
     )
-    Spacer(modifier = Modifier.height(32.dp))
+    Spacer(modifier = Modifier.height(HanimeDefaults.Spacing.huge))
     Column(
-        modifier = Modifier.widthIn(max = 400.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.large),
     ) {
-        FeatureBullet(stringResource(Res.string.onboarding_feature_player))
-        FeatureBullet(stringResource(Res.string.onboarding_feature_offline))
-        FeatureBullet(stringResource(Res.string.onboarding_feature_sync))
+        FeatureCard(
+            icon = Res.drawable.ic_play_circle,
+            text = stringResource(Res.string.onboarding_feature_player),
+        )
+        FeatureCard(
+            icon = Res.drawable.ic_download,
+            text = stringResource(Res.string.onboarding_feature_offline),
+        )
+        FeatureCard(
+            icon = Res.drawable.ic_refresh,
+            text = stringResource(Res.string.onboarding_feature_sync),
+        )
+    }
+    Spacer(modifier = Modifier.height(HanimeDefaults.Spacing.huge))
+    HapticButton(
+        onClick = onNext,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Text(stringResource(Res.string.onboarding_start))
     }
 }
 
 @Composable
-private fun FeatureBullet(text: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-    ) {
-        Text(
-            text = "•",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
+private fun FeatureCard(
+    icon: DrawableResource,
+    text: String,
+) {
+    CardContainerSurface(modifier = Modifier.fillMaxWidth()) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(
+                    horizontal = HanimeDefaults.Spacing.itemHorizontal,
+                    vertical = HanimeDefaults.Spacing.itemVertical,
+                ),
+            horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.extraLarge),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Icon(
+                painter = painterResource(icon),
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.size(24.dp),
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+            )
+        }
     }
 }
 
 @Composable
-private fun NoticeStep() {
-    Text(
-        text = stringResource(Res.string.usage_notice_title),
-        style = MaterialTheme.typography.headlineSmall,
-        color = MaterialTheme.colorScheme.onSurface,
-        textAlign = TextAlign.Center,
-        modifier = Modifier.fillMaxWidth(),
-    )
-    Spacer(modifier = Modifier.height(12.dp))
-    Text(
-        text = stringResource(Res.string.usage_notice_content),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier
-            .widthIn(max = 560.dp)
-            .fillMaxWidth()
-            .heightIn(max = 420.dp)
-            .verticalScroll(rememberScrollState()),
-    )
+private fun NoticeStep(
+    onExit: () -> Unit,
+    onNext: () -> Unit,
+) {
+    CardContainerSurface(modifier = Modifier.fillMaxWidth()) {
+        Text(
+            text = stringResource(Res.string.usage_notice_content),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 360.dp)
+                .verticalScroll(rememberScrollState())
+                .padding(
+                    horizontal = HanimeDefaults.Spacing.itemHorizontal,
+                    vertical = HanimeDefaults.Spacing.itemVertical,
+                ),
+        )
+    }
+    Spacer(modifier = Modifier.height(HanimeDefaults.Spacing.huge))
+    NoticeAcceptButtons(onExit = onExit, onNext = onNext)
 }
 
 @Composable
@@ -284,16 +357,14 @@ private fun NoticeAcceptButtons(
         }
     }
 
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
     ) {
-        TextButton(onClick = onExit) {
-            Text(stringResource(Res.string.usage_notice_decline))
-        }
-        Button(
-            enabled = remainingSeconds == 0,
+        HapticButton(
             onClick = onNext,
+            enabled = remainingSeconds == 0,
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Text(
                 text = if (remainingSeconds == 0) {
@@ -303,113 +374,100 @@ private fun NoticeAcceptButtons(
                 },
             )
         }
+        FilledTonalButton(
+            onClick = onExit,
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            Text(stringResource(Res.string.usage_notice_decline))
+        }
     }
 }
 
 @Composable
-private fun SettingsStep() {
+private fun SettingsStep(onFinish: () -> Unit) {
     val scope = rememberCoroutineScope()
     var language by remember { mutableStateOf(SettingsRepository.current.appLanguage) }
     var themeMode by remember { mutableStateOf(SettingsRepository.current.themeMode) }
 
     Text(
-        text = stringResource(Res.string.onboarding_settings_title),
-        style = MaterialTheme.typography.headlineSmall,
-        color = MaterialTheme.colorScheme.onSurface,
+        text = stringResource(Res.string.onboarding_settings_subtitle),
+        style = MaterialTheme.typography.bodyLarge,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         textAlign = TextAlign.Center,
         modifier = Modifier.fillMaxWidth(),
     )
-    Spacer(modifier = Modifier.height(8.dp))
-    Text(
-        text = stringResource(Res.string.onboarding_settings_subtitle),
-        style = MaterialTheme.typography.bodyMedium,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center,
-    )
-    Spacer(modifier = Modifier.height(24.dp))
+    Spacer(modifier = Modifier.height(HanimeDefaults.Spacing.huge))
 
-    Column(
-        modifier = Modifier.widthIn(max = 400.dp).fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(24.dp),
+    SectionLabel(stringResource(Res.string.onboarding_settings_language))
+    SettingsSegmentedGroup(modifier = Modifier.fillMaxWidth()) {
+        val followSystemLabel = stringResource(Res.string.follow_system)
+        val languageOptions = listOf(
+            AppLanguage.SYSTEM to followSystemLabel,
+            AppLanguage.ENGLISH to stringResource(Res.string.onboarding_lang_english),
+            AppLanguage.CHINESE_SIMPLIFIED to stringResource(Res.string.onboarding_lang_simplified),
+            AppLanguage.CHINESE_TRADITIONAL to stringResource(Res.string.onboarding_lang_traditional),
+        )
+        languageOptions.forEach { (value, label) ->
+            SettingChoiceItem(
+                title = label,
+                selected = language == value,
+                onClick = {
+                    if (language != value) {
+                        language = value
+                        scope.launch {
+                            SettingsRepository.setLanguage(value)
+                            applyAppLanguage(value)
+                        }
+                    }
+                },
+            )
+        }
+    }
+
+    Spacer(modifier = Modifier.height(HanimeDefaults.Spacing.extraLarge))
+    SectionLabel(stringResource(Res.string.onboarding_settings_theme))
+    SettingsSegmentedGroup(modifier = Modifier.fillMaxWidth()) {
+        // 文案与顺序跟设置页保持一致：浅色 / 深色 / 自动。
+        val themeOptions = listOf(
+            ThemeMode.Light to stringResource(Res.string.theme_mode_light),
+            ThemeMode.Dark to stringResource(Res.string.theme_mode_dark),
+            ThemeMode.System to stringResource(Res.string.theme_mode_auto),
+        )
+        themeOptions.forEach { (value, label) ->
+            SettingChoiceItem(
+                title = label,
+                selected = themeMode == value,
+                onClick = {
+                    if (themeMode != value) {
+                        themeMode = value
+                        scope.launch { SettingsRepository.setThemeMode(value) }
+                    }
+                },
+            )
+        }
+    }
+
+    Spacer(modifier = Modifier.height(HanimeDefaults.Spacing.huge))
+    HapticButton(
+        onClick = onFinish,
+        modifier = Modifier.fillMaxWidth(),
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = stringResource(Res.string.onboarding_settings_language),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            val followSystemLabel = stringResource(Res.string.follow_system)
-            val languageOptions = listOf(
-                AppLanguage.SYSTEM to followSystemLabel,
-                AppLanguage.ENGLISH to stringResource(Res.string.onboarding_lang_english),
-                AppLanguage.CHINESE_SIMPLIFIED to stringResource(Res.string.onboarding_lang_simplified),
-                AppLanguage.CHINESE_TRADITIONAL to stringResource(Res.string.onboarding_lang_traditional),
-            )
-            languageOptions.forEach { (value, label) ->
-                OptionRow(
-                    label = label,
-                    selected = language == value,
-                    onSelect = {
-                        if (language != value) {
-                            language = value
-                            scope.launch {
-                                SettingsRepository.setLanguage(value)
-                                applyAppLanguage(value)
-                            }
-                        }
-                    },
-                )
-            }
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = stringResource(Res.string.onboarding_settings_theme),
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.primary,
-            )
-            // 文案与顺序跟设置页保持一致：浅色 / 深色 / 自动。
-            val themeOptions = listOf(
-                ThemeMode.Light to stringResource(Res.string.theme_mode_light),
-                ThemeMode.Dark to stringResource(Res.string.theme_mode_dark),
-                ThemeMode.System to stringResource(Res.string.theme_mode_auto),
-            )
-            themeOptions.forEach { (value, label) ->
-                OptionRow(
-                    label = label,
-                    selected = themeMode == value,
-                    onSelect = {
-                        if (themeMode != value) {
-                            themeMode = value
-                            scope.launch { SettingsRepository.setThemeMode(value) }
-                        }
-                    },
-                )
-            }
-        }
+        Text(stringResource(Res.string.onboarding_finish))
     }
 }
 
 @Composable
-private fun OptionRow(
-    label: String,
-    selected: Boolean,
-    onSelect: () -> Unit,
-) {
-    Row(
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.labelLarge,
+        color = MaterialTheme.colorScheme.primary,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = onSelect)
-            .padding(vertical = 4.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        RadioButton(
-            selected = selected,
-            onClick = onSelect,
-        )
-        Text(
-            text = label,
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurface,
-        )
-    }
+            .padding(
+                top = HanimeDefaults.Spacing.large,
+                bottom = HanimeDefaults.Spacing.medium,
+                start = HanimeDefaults.Spacing.contentVertical,
+            ),
+    )
 }
