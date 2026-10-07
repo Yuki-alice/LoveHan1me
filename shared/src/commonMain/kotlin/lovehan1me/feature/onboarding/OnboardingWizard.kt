@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
@@ -142,61 +143,121 @@ fun OnboardingWizard(
             }
         },
     ) { padding ->
-        BoxWithConstraints(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding),
         ) {
-            val verticalPadding = HanimeDefaults.Spacing.huge
-            // 内容不足一屏时也要撑满可视区，才能靠 Arrangement.Center 垂直居中；
-            // 超出时撑高、由外层滚动接管。
-            val minContentHeight = (maxHeight - verticalPadding * 2).coerceAtLeast(0.dp)
-            Column(
+            // 可滚动内容区：主操作常驻下方，长内容只在这两者之间滚动，
+            // 按钮不会再被滚出可视区（小屏上设置/须知页曾需要先滚到底才点得到）。
+            BoxWithConstraints(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .verticalScroll(scrollState),
-                horizontalAlignment = Alignment.CenterHorizontally,
+                    .weight(1f)
+                    .fillMaxWidth(),
             ) {
+                val verticalPadding = HanimeDefaults.Spacing.huge
+                // 内容不足一屏时也要撑满可视区，才能靠 Arrangement.Center 垂直居中；
+                // 超出时撑高、由外层滚动接管。
+                val minContentHeight = (maxHeight - verticalPadding * 2).coerceAtLeast(0.dp)
                 Column(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .widthIn(max = HanimeDefaults.Widths.formMax)
-                        .heightIn(min = minContentHeight)
-                        .padding(horizontal = HanimeDefaults.Spacing.extraExtraLarge, vertical = verticalPadding),
+                        .fillMaxSize()
+                        .verticalScroll(scrollState),
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.Center,
                 ) {
-                    // transitionSpec 不是 @Composable 上下文，转场要在组合期先算好。
-                    val stepTransition = contentFade()
-                    AnimatedContent(
-                        targetState = step,
-                        modifier = Modifier.fillMaxWidth(),
-                        transitionSpec = { stepTransition },
-                        contentAlignment = Alignment.Center,
-                        label = "onboarding-step",
-                    ) { current ->
-                        Column(
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .widthIn(max = HanimeDefaults.Widths.formMax)
+                            .heightIn(min = minContentHeight)
+                            .padding(
+                                horizontal = HanimeDefaults.Spacing.extraExtraLarge,
+                                vertical = verticalPadding,
+                            ),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center,
+                    ) {
+                        // transitionSpec 不是 @Composable 上下文，转场要在组合期先算好。
+                        val stepTransition = contentFade()
+                        AnimatedContent(
+                            targetState = step,
                             modifier = Modifier.fillMaxWidth(),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                        ) {
-                            when (current) {
-                                STEP_WELCOME -> WelcomeStep(onNext = { step++ })
-                                STEP_NOTICE -> NoticeStep(
-                                    onExit = onExit,
-                                    onNext = { step++ },
-                                )
-
-                                else -> SettingsStep(
-                                    onFinish = {
-                                        scope.launch {
-                                            SettingsRepository.setUsageNoticeAccepted(true)
-                                            onFinished()
-                                        }
-                                    },
-                                )
+                            transitionSpec = { stepTransition },
+                            contentAlignment = Alignment.Center,
+                            label = "onboarding-step",
+                        ) { current ->
+                            Column(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                when (current) {
+                                    STEP_WELCOME -> WelcomeStep()
+                                    STEP_NOTICE -> NoticeStep()
+                                    else -> SettingsStep()
+                                }
                             }
                         }
                     }
+                }
+            }
+            OnboardingActionBar(
+                step = step,
+                onNext = { step++ },
+                onExit = onExit,
+                onFinish = {
+                    scope.launch {
+                        SettingsRepository.setUsageNoticeAccepted(true)
+                        onFinished()
+                    }
+                },
+            )
+        }
+    }
+}
+
+/**
+ * 常驻操作栏。
+ *
+ * 修正「主按钮放在内容末尾」的做法：设置页 / 须知页内容在小屏上超过一屏时，
+ * 末尾按钮会被滚出可视区。这里把它固定在内容区下方，只让内容滚动。
+ */
+@Composable
+private fun OnboardingActionBar(
+    step: Int,
+    onNext: () -> Unit,
+    onExit: () -> Unit,
+    onFinish: () -> Unit,
+) {
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        HorizontalDivider()
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .widthIn(max = HanimeDefaults.Widths.formMax)
+                .padding(
+                    horizontal = HanimeDefaults.Spacing.extraExtraLarge,
+                    vertical = HanimeDefaults.Spacing.extraLarge,
+                ),
+            verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
+        ) {
+            when (step) {
+                STEP_NOTICE -> NoticeAcceptButtons(onExit = onExit, onNext = onNext)
+
+                STEP_SETTINGS -> HapticButton(
+                    onClick = onFinish,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(Res.string.onboarding_finish))
+                }
+
+                else -> HapticButton(
+                    onClick = onNext,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(stringResource(Res.string.onboarding_start))
                 }
             }
         }
@@ -211,7 +272,7 @@ private fun stepTitle(step: Int): String = when (step) {
 }
 
 @Composable
-private fun WelcomeStep(onNext: () -> Unit) {
+private fun WelcomeStep() {
     Box(
         modifier = Modifier
             .size(96.dp)
@@ -252,13 +313,6 @@ private fun WelcomeStep(onNext: () -> Unit) {
             text = stringResource(Res.string.onboarding_feature_sync),
         )
     }
-    Spacer(modifier = Modifier.height(HanimeDefaults.Spacing.huge))
-    HapticButton(
-        onClick = onNext,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(stringResource(Res.string.onboarding_start))
-    }
 }
 
 @Composable
@@ -293,10 +347,7 @@ private fun FeatureCard(
 }
 
 @Composable
-private fun NoticeStep(
-    onExit: () -> Unit,
-    onNext: () -> Unit,
-) {
+private fun NoticeStep() {
     CardContainerSurface(modifier = Modifier.fillMaxWidth()) {
         Text(
             text = stringResource(Res.string.usage_notice_content),
@@ -312,8 +363,6 @@ private fun NoticeStep(
                 ),
         )
     }
-    Spacer(modifier = Modifier.height(HanimeDefaults.Spacing.huge))
-    NoticeAcceptButtons(onExit = onExit, onNext = onNext)
 }
 
 @Composable
@@ -384,7 +433,7 @@ private fun NoticeAcceptButtons(
 }
 
 @Composable
-private fun SettingsStep(onFinish: () -> Unit) {
+private fun SettingsStep() {
     val scope = rememberCoroutineScope()
     var language by remember { mutableStateOf(SettingsRepository.current.appLanguage) }
     var themeMode by remember { mutableStateOf(SettingsRepository.current.themeMode) }
@@ -445,14 +494,6 @@ private fun SettingsStep(onFinish: () -> Unit) {
                 },
             )
         }
-    }
-
-    Spacer(modifier = Modifier.height(HanimeDefaults.Spacing.huge))
-    HapticButton(
-        onClick = onFinish,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Text(stringResource(Res.string.onboarding_finish))
     }
 }
 
