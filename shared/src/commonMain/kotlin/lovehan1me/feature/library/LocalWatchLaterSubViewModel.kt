@@ -18,6 +18,9 @@ import kotlinx.coroutines.launch
 
 /**
  * 免登录本地"稍后再看"列表，数据来自 [LocalListRepository]。
+ *
+ * 本地列表**一次性加载全部**、没有分页：因此 [loadNextPage] 永远返回 `false`，
+ * [refresh] 只是重新订阅本地源。
  */
 class LocalWatchLaterSubViewModel(
     private val scope: CoroutineScope,
@@ -37,9 +40,17 @@ class LocalWatchLaterSubViewModel(
     override val deleteMyWatchLaterFlow: SharedFlow<WebsiteState<Boolean>> = deleteFlow.asSharedFlow()
     override val loadedPageCount: StateFlow<Int> = loadedPageCountFlow.asStateFlow()
     override val isLoadingMore: StateFlow<Boolean> = isLoadingMoreFlow.asStateFlow()
-    override var watchLaterPage = 1
 
-    override fun getMyWatchLaterItems(page: Int) {
+    /** 本地列表没有分页，不存在"下一页"。 */
+    override fun loadNextPage(): Boolean = false
+
+    override fun refresh() {
+        clearMyListItems()
+        reload()
+    }
+
+    /** 订阅本地稍后再看源：一次性灌入全部条目并置 [PageLoadingState.NoMoreData]。 */
+    private fun reload() {
         loadJob?.cancel()
         loadJob = scope.launch {
             LocalListRepository.observeWatchLater().collect { list ->

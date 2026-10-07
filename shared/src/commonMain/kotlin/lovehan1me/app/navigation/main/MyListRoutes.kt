@@ -45,17 +45,8 @@ fun FavVideoRouteScreen(
             val position = items.indexOfFirst { it.videoCode == item.videoCode }
             if (position >= 0) fav.deleteMyFavVideo(item.videoCode, position)
         },
-        onRefresh = {
-            fav.favVideoPage = 1
-            fav.clearMyListItems()
-            fav.getMyFavVideoItems(SettingsRepository.savedUserId, 1)
-            fav.favVideoPage = 2
-        },
-        onLoadMore = {
-            val page = fav.favVideoPage
-            fav.getMyFavVideoItems(SettingsRepository.savedUserId, page)
-            fav.favVideoPage = page + 1
-        },
+        onRefresh = { fav.refresh() },
+        onLoadMore = { fav.loadNextPage() },
     )
 }
 
@@ -88,16 +79,7 @@ fun WatchLaterRouteScreen(
             val position = items.indexOfFirst { it.videoCode == item.videoCode }
             if (position >= 0) wl.deleteMyWatchLater(item.videoCode, position)
         },
-        onRefresh = {
-            wl.watchLaterPage = 1
-            wl.clearMyListItems()
-            wl.getMyWatchLaterItems(1)
-            wl.watchLaterPage = 2
-        },
-        onLoadMore = {
-            val page = wl.watchLaterPage
-            wl.getMyWatchLaterItems(page)
-            wl.watchLaterPage = page + 1
-        },
+        onRefresh = { wl.refresh() },
+        onLoadMore = { wl.loadNextPage() },
     )
 }

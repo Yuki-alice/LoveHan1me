@@ -17,9 +17,10 @@ import java.net.ServerSocket
 import java.util.concurrent.TimeUnit
 import kotlin.test.Test
 import kotlin.test.assertTrue
+import org.junit.Assume
 
 /**
- * ECH 网关的**端到端**验证（需要真实网络 + `echgate.exe` 产物，属 live 用例）。
+ * ECH 网关的**端到端**验证（真实网络 + `echgate` 产物，属 live 用例，**默认跳过**）。
  *
  * ## 它证明什么
  * 直连时 TLS 的明文 SNI 会被 DPI 重置，所以：
@@ -30,8 +31,62 @@ import kotlin.test.assertTrue
  *
  * 网关进程由测试自己拉起（不用门面里的桌面运行时——那要求 exe 在测试 classpath 里，
  * 而它实际躺在 `desktopApp` 的 resources 中）。
+ *
+ * ## 默认 skip，为什么
+ * 它会拉起**真实网关子进程**并访问**真实公网**（曾是整个 `desktopTest` 里最慢的
+ * suite，约 27s）。放进日常 `desktopTest` 时网络一抖就红（`NoRouteException` /
+ * CDN 502），而那跟被测代码无关 —— 2026-10-06 实测：桌面套件 5 次全量 4 次红，
+ * 其中 3 次都红在本类的网络依赖上。这样的套件没法用来判断"某次优化改好了还是改坏了"。
+ *
+ * 因此与 [CloudflareCdpLiveTest] 采用同一套惯例：**环境变量开闸，不设就跳过**。
+ *
+ * ## 手工跑法
+ * ```
+ * export HAN1ME_ECHGATE_LIVE=1
+ * ./gradlew :shared:desktopTest --tests '*EchGateLiveTest*' --rerun-tasks
+ * ```
+ * 需要一个可用出口；若本机没有可执行的网关产物，用例还会再退一层 SKIP
+ * （见 [findExe]）—— 缺产物同样不算失败。
+ *
+ * ## 跳过的可观测性
+ * 未开闸时走 `Assume.assumeTrue`（JUnit4 的假设机制），所以 Gradle 的 XML 报表里
+ * 这 4 个用例落在 `<skipped/>` 而不是"<通过>"。于是"门禁有没有生效"、
+ * "有没有人悄悄把用例删了"，看一眼 skipped 计数就能区分。
  */
 class EchGateLiveTest {
+
+    /**
+     * live 闸门：统一由环境变量控制，四个用例在开头各自调用一次。
+     *
+     * 未开闸时同时做两件事：
+     * 1. `println` 一行原因（手工跑时看得见）；
+     * 2. 抛 JUnit4 的假设失败（经 [Assume.assumeTrue]），让它被记成 skipped。
+     *
+     * 这里**刻意没用** `CloudflareCdpLiveTest` 那种 `println + return`：
+     * 那种写法在报表里算 PASSED，门禁生没生效完全看不出来。
+     */
+    private fun assumeLiveOrSkip(case: String) {
+        val enabled = System.getenv(LIVE_ENV)?.takeIf { it.isNotBlank() } != null
+        if (!enabled) {
+            println("LIVE SKIP: $case 未设 $LIVE_ENV —— 跳过（手工跑法见类 KDoc）")
+        }
+        Assume.assumeTrue(
+            "$case 需要 $LIVE_ENV：本用例会拉起真实网关进程并访问真实公网",
+            enabled,
+        )
+    }
+
+    /**
+     * 第二层跳过：即使开了闸门，本机没有可执行的网关产物也不应判死 ——
+     * 环境变量表达"我想跑"，产物表达"我能跑"，两者缺一都不算失败。
+     */
+    private fun skipWithoutExe(case: String): File? {
+        val exe = findExe()
+        if (exe == null) {
+            println("LIVE SKIP: $case 未找到本机可执行的 echgate 产物，跳过")
+        }
+        return exe
+    }
 
     /**
      * 本机可执行的网关产物：按 OS/架构选名（与 [DesktopEchGateStarter.artifactNameFor]
@@ -160,6 +215,7 @@ class EchGateLiveTest {
      */
     @Test
     fun `不经网关直连站点必然失败`() {
+        assumeLiveOrSkip("不经网关直连站点必然失败")
         installStore()
         EchGate.publish(EchGateStatus.Idle)
 
@@ -184,12 +240,9 @@ class EchGateLiveTest {
     /** 正例：拉起网关后，站点必须能走完 TLS+HTTP（200 穿透；403 是 CF 应用层风控，同样证明链路通了）。 */
     @Test
     fun `经ECH网关直连站点拿到200`() {
+        assumeLiveOrSkip("经ECH网关直连站点拿到200")
         installStore()
-        val exe = findExe()
-        if (exe == null) {
-            println("LIVE SKIP: 未找到本机可执行的 echgate 产物，跳过（不把缺产物当成失败）")
-            return
-        }
+        val exe = skipWithoutExe("经ECH网关直连站点拿到200") ?: return
 
         val (proc, port) = startGate(exe)
         try {
@@ -219,12 +272,9 @@ class EchGateLiveTest {
      */
     @Test
     fun `视频CDN经网关可建立连接`() {
+        assumeLiveOrSkip("视频CDN经网关可建立连接")
         installStore()
-        val exe = findExe()
-        if (exe == null) {
-            println("LIVE SKIP: 未找到 echgate.exe，跳过")
-            return
-        }
+        val exe = skipWithoutExe("视频CDN经网关可建立连接") ?: return
 
         val (proc, port) = startGate(exe)
         try {
@@ -247,6 +297,9 @@ class EchGateLiveTest {
     }
 
     private companion object {
+        /** 开闸变量：非空即跑（惯例同 `CloudflareCdpLiveTest` 的 `HAN1ME_CF_LIVE_URL`）。 */
+        const val LIVE_ENV = "HAN1ME_ECHGATE_LIVE"
+
         const val SITE_URL = "https://hanime1.me/"
         const val SITE_JAVCHU_URL = "https://javchu.com/"
     }
@@ -257,12 +310,9 @@ class EchGateLiveTest {
      */
     @Test
     fun `经ECH网关javchu拿到200`() {
+        assumeLiveOrSkip("经ECH网关javchu拿到200")
         installStore()
-        val exe = findExe()
-        if (exe == null) {
-            println("LIVE SKIP: 未找到本机可执行的 echgate 产物，跳过")
-            return
-        }
+        val exe = skipWithoutExe("经ECH网关javchu拿到200") ?: return
 
         val (proc, port) = startGate(exe)
         try {

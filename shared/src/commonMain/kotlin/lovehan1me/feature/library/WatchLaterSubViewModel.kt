@@ -1,6 +1,5 @@
 package lovehan1me.feature.library
 
-import lovehan1me.data.SettingsRepository
 import lovehan1me.data.NetworkRepo
 import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.core.domain.model.MyListItems
@@ -14,17 +13,16 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.CoroutineScope
 
+/**
+ * 在线"稍后再看"列表。
+ *
+ * 分页（判重 / 页号 / 刷新打断）全部由基类 [MyListSubViewModel] 收敛；本类只声明列表类型。
+ */
 class WatchLaterSubViewModel(scope: CoroutineScope) :
-    MyListSubViewModel(scope), WatchLaterListController {
-
-    override var watchLaterPage = 1
+    MyListSubViewModel(scope, MyListType.WATCH_LATER), WatchLaterListController {
 
     override val watchLaterStateFlow: StateFlow<PageLoadingState<MyListItems<HanimeInfo>>> = itemsStateFlow.asStateFlow()
     override val watchLaterFlow: StateFlow<List<HanimeInfo>> = itemsFlow.asStateFlow()
-
-    override fun getMyWatchLaterItems(page: Int) {
-        loadItems(MyListType.WATCH_LATER, SettingsRepository.savedUserId, page)
-    }
 
     private val _deleteMyWatchLaterFlow = MutableSharedFlow<WebsiteState<Boolean>>()
     override val deleteMyWatchLaterFlow = _deleteMyWatchLaterFlow.asSharedFlow()
@@ -50,10 +48,5 @@ class WatchLaterSubViewModel(scope: CoroutineScope) :
                 }
             },
         )
-    }
-
-    override fun clearMyListItems() {
-        super.clearMyListItems()
-        watchLaterPage = 1
     }
 }

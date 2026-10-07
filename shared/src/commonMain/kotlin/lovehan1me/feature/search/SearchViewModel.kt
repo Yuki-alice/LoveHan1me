@@ -21,6 +21,7 @@ import lovehan1me.core.domain.model.SearchFilterSnapshot
 import lovehan1me.core.domain.model.SearchOption
 import lovehan1me.core.domain.model.SearchOption.Companion.flatten
 import lovehan1me.core.domain.state.PageLoadingState
+import lovehan1me.core.domain.state.PagingGate
 import lovehan1me.core.util.decodeComposeAsset
 import lovehan1me.core.util.unsafeLazy
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -136,12 +137,26 @@ class SearchViewModel() : ViewModel() {
     private val _searchFlow = MutableStateFlow(emptyList<HanimeInfo>())
     val searchFlow = _searchFlow.asStateFlow()
 
+    /**
+     * 分页闸门：判重 / 请求标识 / 作废，见 [PagingGate]。
+     *
+     * C 类修复的支点：**分页序列的唯一所有者**从 UI 回调挪回这里。此前
+     * `SearchScreen` 的 `onLoadMore` 是 `{ viewModel.page++; executeSearch() }`，
+     * 快速滑动可被连续触发，`page` 被连加、多个请求同时在途，且响应无差别并入列表。
+     */
+    private val pagingGate = PagingGate()
+
     fun clearHanimeSearchResult() {
+        // 清屏也要作废在途请求：否则一个已经在路上的旧请求会在清屏之后落回来，
+        // 把刚清掉的列表又填上（这正是"UI 自增 page + 无判重"那套的表现之一）。
+        pagingGate.cancel()
         _searchFlow.value = emptyList()
         _searchStateFlow.value = PageLoadingState.Loading
     }
 
     fun resetSearchUiState() {
+        // 同 clearHanimeSearchResult：态清空就必须同时作废在途请求，否则旧响应会落回来。
+        pagingGate.cancel()
         page = 1
         query = null
         genre = null
@@ -160,56 +175,98 @@ class SearchViewModel() : ViewModel() {
         bumpFilterRevision()
     }
 
-    fun getHanimeSearchResult(
-        page: Int, query: String?, genre: String?,
-        sort: String?, broad: Boolean, date: String?,
-        duration: String?, tags: Set<String>, brands: Set<String>,
-    ) {
+    /**
+     * 第 1 页加载入口：新查询 / 改筛选 / 下拉刷新 / 首次进入。
+     *
+     * 先 [PagingGate.restart] 作废在途请求 —— 刷新必须**能打断**在途请求，
+     * 不能被判重挡死，否则用户下拉时如果正好有翻页在跑，刷新就静默失效了。
+     *
+     * 顺带把 `page` 归 1 收进 VM：UI 不再持有分页序号。
+     */
+    fun startFirstPage() {
+        page = 1
+        launchSearch(page = 1, token = pagingGate.restart())
+    }
+
+    /**
+     * 加载下一页。**分页序列推进（`page` 自增 + 判重）全部收在这里。**
+     *
+     * @return 本次触发是否真的发起了加载；false = 已有在途请求，本次触发被判重丢弃。
+     *   UI 不需要看这个返回值（它只管调用），返回它只为让行为可断言。
+     */
+    fun loadNextPage(): Boolean {
+        // 判重：在途时直接丢弃本次触发。这就是"快速滑动只发一个请求"的那道闸。
+        val token = pagingGate.tryBegin() ?: return false
+        page += 1
+        launchSearch(page = page, token = token)
+        return true
+    }
+
+    /**
+     * 真正发起一次加载。筛选参数从本 VM 字段现取（原先由 UI 逐项转发，等价）。
+     *
+     * [token] 是本次加载的凭证：**响应回来先过 [PagingGate.isCurrent]**，
+     * 过期就直接丢弃 —— 不写 `_searchFlow`、不写 `_searchStateFlow`，
+     * 也就永远不会走到 [mergeSearchPage]。
+     */
+    private fun launchSearch(page: Int, token: PagingGate.Token) {
+        val tags = tagFlatten(tagMap)
+        val brands = brandFlatten(brandMap)
+        val date = getSearchDate()
         // 发现页默认浏览（空搜 page=1、无任何筛选）走 stale 缓存：
         // key 本来就不含筛选参数，有条件的请求天然不可缓存，不会串结果。
         val cacheable = page == 1 && query.isNullOrBlank() && genre == null &&
                 sort == null && !broad && date == null && duration == null &&
                 tags.isEmpty() && brands.isEmpty()
         viewModelScope.launch {
-            // 先展陈旧第一页（~0.2s 解析），再正常拉新覆盖 —— 进 tab 不再白等整轮网络。
-            // 刷新行为不变（永远拉新）；无缓存/解析失败就当 miss。
-            var staleReplaced = false
-            if (cacheable) {
-                val cached = runCatching {
-                    withContext(ioDispatcher) {
-                        readCachedDiscoverHtml(discoverCacheKey())?.let(Parser::hanimeSearch)
-                    }
-                }.getOrNull()
-                if (cached is PageLoadingState.Success) {
-                    _searchStateFlow.value = cached
-                    _searchFlow.value = withWatched(cached.info)
-                    staleReplaced = true
-                }
-            }
-            NetworkRepo.getHanimeSearchResult(
-                page, query, genre,
-                sort, broad, date ,
-                duration, tags, brands,
-                writeCache = cacheable,
-            ).collect { state ->
-                val prev = _searchStateFlow.getAndUpdate { state }
-                if (prev is PageLoadingState.Loading) _searchFlow.value = emptyList()
-                _searchFlow.update { prevList ->
-                    when (state) {
-//                        is PageLoadingState.Success -> prevList + state.info
-                        is PageLoadingState.Success -> {
-                            val updatedList = withWatched(state.info)
-                            // 陈旧页被新鲜第一页替换（不是追加）：去重保首项，
-                            // 直接追加会把旧快照顶在前面、顺序错乱。
-                            val base =
-                                if (staleReplaced) { staleReplaced = false; emptyList() } else prevList
-                            // B3：去重 + 封顶（超出上限丢最早的，见 SEARCH_RESULT_LIMIT 注释）。
-                            mergeSearchPage(base, updatedList)
+            try {
+                // 先展陈旧第一页（~0.2s 解析），再正常拉新覆盖 —— 进 tab 不再白等整轮网络。
+                // 刷新行为不变（永远拉新）；无缓存/解析失败就当 miss。
+                var staleReplaced = false
+                if (cacheable) {
+                    val cached = runCatching {
+                        withContext(ioDispatcher) {
+                            readCachedDiscoverHtml(discoverCacheKey())?.let(Parser::hanimeSearch)
                         }
-                        is PageLoadingState.Loading -> emptyList()
-                        else -> prevList
+                    }.getOrNull()
+                    // 读缓存是挂起的：期间可能已被 cancel/restart 作废，故同样要过闸门。
+                    if (cached is PageLoadingState.Success && pagingGate.isCurrent(token)) {
+                        _searchStateFlow.value = cached
+                        _searchFlow.value = withWatched(cached.info)
+                        staleReplaced = true
                     }
                 }
+                NetworkRepo.getHanimeSearchResult(
+                    page, query, genre,
+                    sort, broad, date,
+                    duration, tags, brands,
+                    writeCache = cacheable,
+                ).collect { state ->
+                    // 闸门：作废过的响应直接丢弃。不写流、不并列表，也不碰闸门
+                    // （新一轮已经在跑，finish 交给 finally，且它对过期凭证是 no-op）。
+                    if (!pagingGate.isCurrent(token)) return@collect
+                    val prev = _searchStateFlow.getAndUpdate { state }
+                    if (prev is PageLoadingState.Loading) _searchFlow.value = emptyList()
+                    _searchFlow.update { prevList ->
+                        when (state) {
+                            is PageLoadingState.Success -> {
+                                val updatedList = withWatched(state.info)
+                                // 陈旧页被新鲜第一页替换（不是追加）：去重保首项，
+                                // 直接追加会把旧快照顶在前面、顺序错乱。
+                                val base =
+                                    if (staleReplaced) { staleReplaced = false; emptyList() } else prevList
+                                // B3：去重 + 封顶（超出上限丢最早的，见 SEARCH_RESULT_LIMIT 注释）。
+                                mergeSearchPage(base, updatedList)
+                            }
+                            is PageLoadingState.Loading -> emptyList()
+                            else -> prevList
+                        }
+                    }
+                }
+            } finally {
+                // 放在 finally：请求异常 / 协程被取消也要释放闸门，否则翻页会永久卡死。
+                // 对已被作废的凭证是 no-op（不会误释放新一轮的闸门）。
+                pagingGate.finish(token)
             }
         }
     }

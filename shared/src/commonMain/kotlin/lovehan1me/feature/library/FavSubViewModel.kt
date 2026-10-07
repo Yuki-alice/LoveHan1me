@@ -13,18 +13,23 @@ import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.CoroutineScope
 
+/**
+ * 在线"我喜欢的影片"列表。
+ *
+ * 分页（判重 / 页号 / 刷新打断）全部由基类 [MyListSubViewModel] 收敛；本类只声明列表类型，
+ * 并借 [onPageSuccess] 捕获删除所需的 csrfToken。
+ */
 class FavSubViewModel(scope: CoroutineScope) :
-    MyListSubViewModel(scope), FavVideoListController {
+    MyListSubViewModel(scope, MyListType.FAV_VIDEO), FavVideoListController {
 
-    override var favVideoPage = 1
     private var csrfToken: String? = null
+
+    override fun onPageSuccess(info: MyListItems<HanimeInfo>) {
+        csrfToken = info.csrfToken
+    }
 
     override val favVideoStateFlow: StateFlow<PageLoadingState<MyListItems<HanimeInfo>>> = itemsStateFlow.asStateFlow()
     override val favVideoFlow: StateFlow<List<HanimeInfo>> = itemsFlow.asStateFlow()
-
-    override fun getMyFavVideoItems(userId: String, page: Int) {
-        loadItems(MyListType.FAV_VIDEO, userId, page) { csrfToken = it.csrfToken }
-    }
 
     private val _deleteMyFavVideoFlow = MutableSharedFlow<WebsiteState<Boolean>>()
     override val deleteMyFavVideoFlow = _deleteMyFavVideoFlow.asSharedFlow()
@@ -43,10 +48,5 @@ class FavSubViewModel(scope: CoroutineScope) :
             position = position,
             mapState = { it },
         )
-    }
-
-    override fun clearMyListItems() {
-        super.clearMyListItems()
-        favVideoPage = 1
     }
 }

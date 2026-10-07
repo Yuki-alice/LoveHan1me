@@ -176,22 +176,14 @@ fun SearchScreen(
     val showPlayedIndicator = SettingsRepository.showPlayedIndicator
 
     // 搜索执行
+    // C 类修复：分页序号不再由 UI 持有。这里是"从第 1 页开始"（新查询/改筛选/下拉刷新）入口，
+    // 由 VM 自己把 page 归 1 并作废在途请求（见 SearchViewModel.startFirstPage）。
     fun executeSearch() {
-        viewModel.getHanimeSearchResult(
-            viewModel.page,
-            viewModel.query,
-            viewModel.genre,
-            viewModel.sort,
-            viewModel.broad,
-            viewModel.getSearchDate(),
-            viewModel.duration,
-            tagFlatten(viewModel.tagMap),
-            brandFlatten(viewModel.brandMap)
-        )
+        viewModel.startFirstPage()
     }
 
     fun doSearch(resetScroll: Boolean = false) {
-        viewModel.page = 1
+        // page 归 1 已在 startFirstPage() 里做，UI 不再写它。
         viewModel.clearHanimeSearchResult()
         if (resetScroll) {
             viewModel.gridFirstVisibleItemIndex = 0
@@ -438,7 +430,10 @@ fun SearchScreen(
                         searchState,
                         showPlayedIndicator,
                         onOpenVideo,
-                        { viewModel.page++; executeSearch() },
+                        // C 类修复：UI 只发一次调用，不再自己 `page++`。
+                        // 判重与序号推进都在 VM 内（见 SearchViewModel.loadNextPage）：
+                        // 有在途请求时这次触发会被丢弃，于是不会出现"连点两次、两个请求赛跑"。
+                        { viewModel.loadNextPage() },
                         searchState !is PageLoadingState.NoMoreData,
                         gridState
                     )
