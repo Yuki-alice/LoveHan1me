@@ -4,6 +4,17 @@ LoveHan1me Attribution Notice
 LoveHan1me is distributed under the GNU Affero General Public License,
 version 3 (AGPLv3). See LICENSE for the full license text.
 
+License texts bundled with this repository:
+
+    LICENSE          GNU Affero General Public License v3 — the license of this
+                     project as a combined work.
+    LICENSE-GPL      GNU General Public License v3 — reproduced for the
+                     GPLv3-derived portions (see the Han1meViewer and MomoQR
+                     sections below), whose terms remain governed by GPLv3
+                     under AGPLv3 section 13.
+    LICENSE-APACHE   Apache License 2.0 — reproduced for the Apache-2.0-derived
+                     portions (see the Yenaly attribution below).
+
 The license is AGPLv3 rather than GPLv3 because this repository contains
 source code ported from open-ani/animeko, which is AGPLv3 (see the animeko
 section below). The additional terms of AGPLv3 section 13 apply: users who
@@ -33,8 +44,8 @@ An earlier/related location of the same project is:
     https://github.com/misaka10032w/Han1meViewer
 
 The Han1meViewer project is distributed under the GNU General Public License,
-version 3. This attribution and the applicable GPLv3 terms must be retained
-when that code is redistributed.
+version 3 (text bundled as LICENSE-GPL). This attribution and the applicable
+GPLv3 terms must be retained when that code is redistributed.
 
 Note: LoveHan1me has **replaced** Han1meViewer as this application's identity
 (display name, package id, update channel and about page). The upstream links
@@ -43,9 +54,19 @@ application's update channel or support channel.
 
 ### MomoQR  (GPLv3)
 
-This repository contains code derived from MomoQR by daisukiKaffuChino:
+This attribution is **inherited from the upstream Han1meViewer NOTICE** and is
+retained here to cover any portion of the Han1meViewer-derived client code that
+may have originated in MomoQR:
 
     https://github.com/daisukiKaffuChino/MomoQR
+
+Scope note (verified 2026-10-07): no file in this repository carries a MomoQR
+attribution header, and the feature most plausibly tied to MomoQR — QR-code
+scanning during login — was not ported. That entry point is already inert
+upstream (`onOpenQrScanner` is stubbed to the manual-cookie screen in
+Han1meViewer). The upstream NOTICE does not identify which files are
+MomoQR-derived, so this attribution is kept rather than dropped: retaining it
+costs nothing, while removing it would be a risk if indirect derivation exists.
 
 The MomoQR-derived code is licensed under the GNU GPLv3. This attribution and
 the applicable GPLv3 terms must be retained when that code is redistributed.
