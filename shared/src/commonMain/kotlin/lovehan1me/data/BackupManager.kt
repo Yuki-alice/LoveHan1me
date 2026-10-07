@@ -47,8 +47,12 @@ object BackupManager {
     @Serializable
     internal data class BackupData(
         val version: Int = BACKUP_VERSION,
-        val appVersionCode: Int = appVersionCodeRaw(),
-        val appVersionName: String = appVersionNameRaw(),
+        // 这两个默认值刻意**不调平台函数**：解码（含上游包导入）不该有副作用。
+        // Android 的 appVersionCodeRaw() 需要 `Han1meDatabaseContext` 已初始化，
+        // 拿它当构造默认值会让"不带该字段的 JSON"在无 context 的环境（Android host 测试）
+        // 解码即抛 `IllegalArgumentException`。真实值只在导出侧 [buildBackup] 求值注入。
+        val appVersionCode: Int = 0,
+        val appVersionName: String = "",
         val exportedAt: Long = currentEpochMillis(),
         // 设置值以原始 JSON 存（而非多态 PreferenceValue）：`PreferenceValue` 的
         // 多态鉴别名含包名，上游包与本包不同，直接解码上游备份必炸。读侧按
@@ -182,6 +186,9 @@ object BackupManager {
     }
 
     private suspend fun buildBackup(): BackupData = BackupData(
+        // 应用版本只在这一处（导出）求值：解码侧的默认值保持惰性、无副作用。
+        appVersionCode = appVersionCodeRaw(),
+        appVersionName = appVersionNameRaw(),
         settings = DataStoreManager.exportBackup().mapValuesNotNull { (_, value) ->
             value.toPreferenceValue()?.let { pv: PreferenceValue ->
                 json.encodeToJsonElement(PreferenceValue.serializer(), pv)
