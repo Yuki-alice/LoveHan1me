@@ -46,14 +46,12 @@ import lovehan1me.data.datastore.DataStoreManager
 import lovehan1me.data.network.DesktopEchGateStarter
 import lovehan1me.data.network.EchGateRuntime
 import lovehan1me.data.network.HanimeProxySelector
-import lovehan1me.data.network.createHanimeHttpClient
 import lovehan1me.feature.player.DesktopMpvPlaybackEngine
 import lovehan1me.feature.player.DesktopVideoPageHost
 import lovehan1me.feature.player.DesktopWindowHolder
 import lovehan1me.ui.component.content.LoadingContent
-import coil3.ImageLoader
+import lovehan1me.ui.component.sharedHanimeImageLoader
 import coil3.compose.setSingletonImageLoaderFactory
-import coil3.network.ktor3.KtorNetworkFetcherFactory
 import kotlinx.coroutines.withTimeoutOrNull
 import kotlinx.coroutines.launch
 import java.net.ProxySelector
@@ -64,7 +62,8 @@ import java.net.URI
  *  - 先初始化 DataStore 并把它装进 SettingsRepository（等价 :app HanimeApplication 的
  *    DataStoreManager.initialize + SettingsRepository.install 两步；漏装会 UninitializedPropertyAccessException）。
  *    拦截器链里的 HanimeProxySelector/HanimeDns 等都会在第一次网络请求时读它，顺序必须在此之前；
- *  - Coil 桌面需注册单例 ImageLoader 并挂上 ktor3 网络取图器（否则图片不会加载）；
+ *  - Coil 桌面需注册单例 ImageLoader；注册口委派共享出口 [sharedHanimeImageLoader]
+ *    （与 `rememberHanimeImageLoader` 同一实例，出口为 createCdnFetchClient），否则图片不会加载；
  *  - M2：使用须知/来源确认门控已进共享 App（与 Android 同语义），此处不再自动置位；
  *  - 受限网络下可用环境变量 HAN1ME_P3A_PROXY=host:port 给 JVM 设代理（否则走系统代理/直连）。
  *
@@ -116,15 +115,14 @@ fun main() {
         // 因此它留在 application 作用域、而不是下面的挂起初始化函数里。
         // 语义与原来一致：在任何图片请求之前注册好。
         setSingletonImageLoaderFactory { context ->
-            ImageLoader.Builder(context)
-                .components {
-                    // 图片同样在 CDN 上（实测 `vdownload.hembed.com/image/…`），和视频一样
-                    // 被 SNI 阻断。Coil 默认会**自建一个 Ktor 客户端**，那个客户端不带
-                    // ECH 网关拦截器，结果就是页面能开、图一张都出不来。
-                    // 显式复用应用自己的客户端，让图片与页面走同一条出口。
-                    add(KtorNetworkFetcherFactory(httpClient = { createHanimeHttpClient() }))
-                }
-                .build()
+            // A1.5：委派共享出口，与 `rememberHanimeImageLoader` 用**同一个**进程级 ImageLoader
+            // （同一把 loaderLock、同一个 singletonLoader），桌面不再岔成两套 Coil 缓存。
+            //
+            // 出口也一并纠正：图片走 `createCdnFetchClient`（OkHttp + HanimeDns + 代理选择器 +
+            // EchGateInterceptor，**不注入站点 Cookie**）—— 与浏览/下载同一条 CDN 出口。
+            // 此前这里复用 API/HTML 出口那个客户端（带 `hanime1_session`），等于把登录态绑到
+            // 图床 host（`vdownload.hembed.com`）发出去。
+            sharedHanimeImageLoader(context)
         }
 
         // ── M5-2：初始化状态机（替代原来的 runBlocking 阻塞 + 黑窗）──────

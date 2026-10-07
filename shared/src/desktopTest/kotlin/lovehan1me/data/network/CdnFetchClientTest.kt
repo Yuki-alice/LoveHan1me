@@ -7,9 +7,11 @@ import lovehan1me.data.network.interceptor.EchGateInterceptor
 import lovehan1me.data.network.interceptor.RetryInterceptor
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import okhttp3.CookieJar
 import okhttp3.Interceptor
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 private class CdnFetchTestStore : SettingsStore {
@@ -65,6 +67,19 @@ class CdnFetchClientTest {
         assertTrue(
             client.interceptors.first() is RetryInterceptor,
             "重试必须在最外层：它要重跑整条链（含网关改写），放在内层就只重放网络调用",
+        )
+    }
+
+    @Test
+    fun `图片出口不携带站点 Cookie`() {
+        val client = client()
+        // A1.5 行为守卫：CDN 抓取（封面/站点图片）与 API/HTML 出口的关键差异就在这里 ——
+        // 图床是第三方 host，登录态（hanime1_session）发过去只有泄漏风险、没有用途。
+        // 此前桌面图片错走了 createHanimeHttpClient（带 HCookieJar），登录态被绑到图床 host。
+        assertSame(
+            CookieJar.NO_COOKIES,
+            client.cookieJar,
+            "CDN 抓取挂了会存 Cookie 的 jar：登录态（hanime1_session）会被发去图床 host（vdownload.hembed.com）",
         )
     }
 
