@@ -4,13 +4,19 @@ import kotlinx.serialization.Serializable
 import lovehan1me.core.constant.DEF_VIDEO_TYPE
 
 /**
+ * 分辨率 → 播放链接映射。
+ *
+ * 刻意声明为只读的 [Map]（而非具体可变实现类 `LinkedHashMap`）：Compose 稳定性是
+ * **声明类型的编译期属性**，具体可变集合类会让消费它的模型被判定为 unstable。构造点
+ * 仍可传 `linkedMapOf(...)`（`Map` 的子类型），但对外契约只保证 `Map`。
+ *
  * P4：自 :app HanimeResolution.kt 下沉（包名不变）。
  * 两处 android 依赖已替换（语义等价）：
  *  - okhttp MediaType 解析 → 字符串按 '/' 切分（commonMain 不依赖 okhttp）；
  *  - HanimeLink.suffix 的默认后缀取 lovehan1me.core.constant.DEF_VIDEO_TYPE
  *   （与 androidMain HanimeFileManager 同一源，同 P2b HanimeDownloadEntity 处理方式）。
  */
-typealias ResolutionLinkMap = LinkedHashMap<String, HanimeLink>
+typealias ResolutionLinkMap = Map<String, HanimeLink>
 
 /**
  * 如果你在其他地方看到了 Quality，那就是 Resolution，我混用了。
