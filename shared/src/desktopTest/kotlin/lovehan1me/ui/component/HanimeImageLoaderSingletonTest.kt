@@ -131,4 +131,17 @@ class HanimeImageLoaderSingletonTest {
             "预览调用污染了单例：真实分支拿到的不是同一个实例",
         )
     }
+
+    @Test
+    fun `D6 单例的缓存访问不抛_首图可加载`() {
+        // 回归（2026-10-09 全端 LOAD FAILED）：`ImageLoader.Builder` 的
+        // `memoryCache {}` / `diskCache {}` 是**懒 factory** —— 单例构造成功
+        // 不代表缓存可用。D1 只断言了实例同一，漏掉了这一层，于是构造期全绿、
+        // 线上首图全挂（`DiskCache.Builder` 无 directory 即抛 IllegalStateException）。
+        // 这里显式访问两级缓存：配置有问题会在单测里当场炸，而不是等用户首图。
+        val loader = hanimeImageLoaderOrNull(context, inspection = false)
+        assertNotNull(loader, "首次取用没构造出 ImageLoader")
+        assertNotNull(loader.memoryCache, "内存缓存不可用：检查 Builder 的 memoryCache 配置")
+        assertNotNull(loader.diskCache, "磁盘缓存不可用：检查 Builder 的 diskCache 配置")
+    }
 }

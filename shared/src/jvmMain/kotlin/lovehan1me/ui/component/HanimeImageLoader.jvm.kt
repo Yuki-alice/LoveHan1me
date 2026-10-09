@@ -68,6 +68,12 @@ internal fun hanimeImageLoaderOrNull(
                 // 同样会被 SNI 阻断。配置收在 createCdnFetchClient，见 CdnFetchClientTest。
                 add(OkHttpNetworkFetcherFactory(callFactory = { createCdnFetchClient() }))
             }
+            // 注意：不要在这里手写 `.diskCache { DiskCache.Builder()… }`。
+            // 教训（2026-10-09 全端图片 LOAD FAILED）：`diskCache(factory)` 是**懒求值**，
+            // 单例构造时不执行、首图加载时才执行；而 `DiskCache.Builder` 不带 directory
+            // 就 `build()` 必抛 IllegalStateException —— 于是构造期测试全绿、线上首图全挂。
+            // Coil 默认磁盘缓存自带正确的平台目录；真要定制预算，必须同时给 directory，
+            // 并加一个访问 `loader.diskCache` 的回归用例（见 D4），否则同类事故必然重演。
             .build()
             // M5-2：图片管线真正就绪的时刻（Coil 是懒加载，这一步通常在首帧之后，属预期）。
             // 放在这里而不是各端入口：Android 没在 Application 里预建 ImageLoader，
