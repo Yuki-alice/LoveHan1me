@@ -97,15 +97,35 @@ object CloudflareChallenges {
     }
 
     /**
+     * P0-3：结局是否属于该 host 的纯判定（可单测）。
+     *
+     * 与 `AppSettings.cfCookieKeyFor` 同一规则：精确命中，或子域以后缀命中父域；
+     * 单段父域（TLD，如 `me`）永不命中——否则一条 `me` 的记录会叫醒整棵 .me 树。
+     */
+    internal fun outcomeMatchesHost(waitHost: String, outcomeHost: String): Boolean {
+        val name = waitHost.lowercase()
+        val parent = outcomeHost.lowercase()
+        if (name == parent) return true
+        if (!parent.contains('.')) return false
+        return name.endsWith(".$parent")
+    }
+
+    /**
      * 等 [host] 的验证结局，最多 [timeoutMs]；超时或被放弃都返回 false。
      *
      * 父域通过也算通过（`www.x` 认 `x` 的 clearance），判定规则与
      * `AppSettings.kt` 的 `cfCookieKeyFor` 保持一致，否则会出现"cookie 能用但没人叫醒"。
+     *
+     * P0-3 / iOS 分片头专项注记：iOS 的 AVURLAsset 分片请求不经过 Ktor/Darwin，
+     * 其 403 无法被 `ioRequest` 续跑。若某 m3u8 在 Android/桌面能播而 iOS 403，
+     * 先看 `cfFailureFingerprint` 的 hasClearance，再走
+     * `AVAssetResourceLoaderDelegate` 专项（另立项，需 AVFoundation 原生实现，
+     * commonMain 只收敛判定语义，不在此硬塞平台代码）。
      */
     suspend fun awaitPassed(host: String, timeoutMs: Long): Boolean {
         val name = host.lowercase()
         return withTimeoutOrNull(timeoutMs) {
-            _outcomes.first { it.host == name || name.endsWith(".${it.host}") } is Outcome.Solved
+            _outcomes.first { outcomeMatchesHost(name, it.host) } is Outcome.Solved
         } ?: false
     }
 }

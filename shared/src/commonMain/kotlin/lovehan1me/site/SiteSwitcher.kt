@@ -132,11 +132,13 @@ object SiteSwitcher {
         //
         //    只清真正跟"这次进程状态"绑定的：内存 cookie（各端清法见 HanimeAccount，
         //    iOS 顺带把已持久化的 CF cookie 也洗掉 —— CF clearance 本来就按域签发，
-        //    旧站的留着对新站无用）、WebView cookie、CSRF token（各站页面里重新拿）。
-        //    会话若在新站恰好过期，走原来的登录过期路径重新登录，与正常过期一致。
+        //    旧站的留着对新站无用）、WebView cookie。
+        //    CSRF 按站交接（P0-4）：旧站 token 存槽、新站 token 装回，无则 null 等页面重抓，
+        //    不再全局丢弃导致回切 419。会话若在新站恰好过期，走原来的登录过期路径重新登录，
+        //    与正常过期一致。
         clearMemoryCookies()
         clearWebCookies()
-        CsrfTokenProvider.csrfToken = null
+        CsrfTokenProvider.stashForSwitch(previous, domain)
 
         // 4) 清进程级、非按站点分键的缓存
         TagLocalizer.invalidate()

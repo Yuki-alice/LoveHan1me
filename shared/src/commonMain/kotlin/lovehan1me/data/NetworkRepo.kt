@@ -767,7 +767,16 @@ object NetworkRepo {
                 throw IllegalStateException("$code ${status.description}")
             }
 
-            else -> throw IllegalStateException("$code ${status.description}")
+            // 未知状态码：把 body 前 300 字符打出来再抛 —— 否则像 loadReplies 的 400
+            // 这种只能看到光秃秃的 "400 "，服务端到底拒了什么永远不知道。
+            // body 是公开站点的错误页/JSON，无凭据；截断防刷屏。
+            else -> {
+                LogUtil.e(
+                    "HTTP",
+                    "unhandled $code ${call.request.url} body=${body?.take(300)}",
+                )
+                throw IllegalStateException("$code ${status.description}")
+            }
         }
     }
 
