@@ -23,6 +23,8 @@ import lovehan1me.core.domain.model.SubscriptionVideosItem
 import lovehan1me.core.domain.model.VideoComments
 import lovehan1me.they_watched
 import lovehan1me.feature.home.homepage.HomeCategory
+import lovehan1me.feature.home.homepage.HomeHeroItem
+import lovehan1me.feature.home.homepage.buildHomeHeroItems
 import kotlinx.datetime.LocalDate
 
 
@@ -280,8 +282,7 @@ val fakeHomePage = HomePage(
     csrfToken = "preview-csrf-token",
     avatarUrl = "https://picsum.photos/128/128?random=avatar",
     username = "Preview User",
-    banner = fakeBanner.firstOrNull(),
-    latestHanime = fakeHomePageVideos.toMutableList(),
+    banner = fakeBanner.firstOrNull(),    latestHanime = fakeHomePageVideos.toMutableList(),
     latestRelease = fakeHomePageVideos.shuffled().toMutableList(),
     ecchiAnime = fakeHomePageVideos.shuffled().toMutableList(),
     shortEpisodeAnime = fakeHomePageVideos.shuffled().toMutableList(),
@@ -296,6 +297,9 @@ val fakeHomePage = HomePage(
     newAnimeTrailer = fakeHomePageVideos.shuffled().toMutableList(),
     userId = "preview-user-id",
 )
+
+/** Banner 轮播预览：运营位 + 分类视频混排（与生产同函数，保证预览即契约）。 */
+val fakeHeroItems: List<HomeHeroItem> = buildHomeHeroItems(fakeHomePage, fakeCategories)
 
 val fakeTagList1 = listOf("新番", "预告", "校园", "妹妹", "姐系", "正太", "萝莉")
 val fakeTagList2 = listOf(

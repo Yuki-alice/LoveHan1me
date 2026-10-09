@@ -43,7 +43,6 @@ fun CategoryBlock(
     videos: List<HanimeInfo>,
     onMoreClick: () -> Unit,
     onVideoClick: (String) -> Unit,
-    onVideoLongClick: (String, String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val margin = rememberPageHorizontalMargin()
@@ -92,7 +91,6 @@ fun CategoryBlock(
                                 isHorizontalCard = true,
                                 isHomePage = true,
                                 onClickVideosItem = onVideoClick,
-                                onLongClickVideosItem = onVideoLongClick,
                                 modifier = Modifier.weight(1f),
                             )
                         } else {

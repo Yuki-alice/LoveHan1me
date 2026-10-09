@@ -14,7 +14,6 @@ sealed interface HomeUiEvent {
     data class OpenSearchPage(val query: String = "") : HomeUiEvent
     data class NavigateToSearchAdvanced(val params: Map<String, String>) : HomeUiEvent
     data class OpenVideo(val videoCode: String) : HomeUiEvent
-    data class LongPressVideoCopy(val videoCode: String, val videoTitle: String) : HomeUiEvent
     data object ShowExitDialog : HomeUiEvent
     data class ShowAnnouncementDialog(val announcement: Announcement) : HomeUiEvent
     data class OpenUpdatePage(val downloadUrl: String) : HomeUiEvent

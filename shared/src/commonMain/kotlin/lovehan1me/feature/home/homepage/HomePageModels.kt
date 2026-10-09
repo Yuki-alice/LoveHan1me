@@ -28,6 +28,20 @@ val LocalSearchHistoryQuery = staticCompositionLocalOf<suspend (String) -> List<
 }
 
 /**
+ * 首页 Hero 轮播项统一模型（官网运营位 + 视频条目混排）。
+ *
+ * 来源见 `buildHomeHeroItems`：官网只下发一条运营位时轮播无法翻页，
+ * 故从下方分类行取视频补足。`subtitle` 对运营位是站下发的描述，
+ * 对视频是「作者 · 观看数 · 时间」合成（已本地化，缺段自动省略）。
+ */
+data class HomeHeroItem(
+    val imageUrl: String,
+    val title: String,
+    val subtitle: String?,
+    val videoCode: String?,
+)
+
+/**
  * 首页视频分类行数据。
  *
  * @param titleRes 分类标题的字符串资源。

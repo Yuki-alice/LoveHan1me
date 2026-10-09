@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -63,10 +64,6 @@ fun HomePageContent(
 ) {
     var showAnnouncementList by remember { mutableStateOf(false) }
 
-    val banners = remember(data.page.banner) {
-        listOfNotNull(data.page.banner)
-    }
-
     // 卡片位只放常规级，且只放最靠前的一条：阻断级由 SharedHomeScreen 的独占页承担，
     // 提示级按定义不占首页。其余的都从「查看全部」进列表弹窗。
     val cardAnnouncement = announcements
@@ -76,6 +73,13 @@ fun HomePageContent(
     val categories = remember(data.page, isAVSite) {
         buildCategoryList(data.page, isAVSite)
     }
+    // Hero 轮播：官网运营位 + 分类行视频混排（单运营位时仍可翻页）。
+    // categories 已按用户设置过滤排序，Hero 不会展示被隐藏分组。
+    val heroItems = remember(data.page, categories) {
+        buildHomeHeroItems(data.page, categories)
+    }
+    // pagerState 外提：当前仅轮播自用，为右侧待播队列/外部切换留口。
+    val heroPagerState = rememberPagerState(pageCount = { heroItems.size.coerceAtLeast(1) })
     // 封面预热（激进但有界）：数据到达即把首屏量级封面送进磁盘缓存，
     // 用户滑到时只剩解码 + 内存，体感"无加载"。
     // 只写磁盘不写内存——解码尺寸由展示侧决定，预热时定死尺寸反而污染内存缓存；
@@ -83,13 +87,11 @@ fun HomePageContent(
     // 注意与 `RetryableImage` 的重试语义正交：预热只管"有"，显示只管"对"。
     val imageLoader = rememberHanimeImageLoader()
     val platformContext = LocalPlatformContext.current
-    LaunchedEffect(categories) {
-        categories
-            .flatMap { it.videos }
-            .distinctBy { it.coverUrl }
+    LaunchedEffect(heroItems, categories) {
+        (heroItems.map { it.imageUrl } + categories.flatMap { it.videos }.map { it.coverUrl })
+            .distinctBy { it }
             .take(PREFETCH_COVER_COUNT)
-            .forEach { video ->
-                val url = video.coverUrl
+            .forEach { url ->
                 if (url.isNotBlank()) {
                     runCatching {
                         imageLoader.enqueue(
@@ -113,13 +115,14 @@ fun HomePageContent(
     ) {
         item(key = "banner", contentType = "banner") {
             BannerCarousel(
-                banners = banners,
-                onBannerClick = { videoCode ->
+                items = heroItems,
+                onItemClick = { videoCode ->
                     videoCode?.let {
                         onEvent(HomeUiEvent.OpenVideo(it))
                     }
                 },
-                modifier = Modifier.padding(horizontal = margin, vertical = 6.dp)
+                pagerState = heroPagerState,
+                modifier = Modifier.padding(horizontal = margin, vertical = 6.dp),
             )
         }
         if (updateInfo != null) {
@@ -175,9 +178,6 @@ fun HomePageContent(
                     },
                     onVideoClick = { code ->
                         onEvent(HomeUiEvent.OpenVideo(code))
-                    },
-                    onVideoLongClick = { _, _ ->
-                       // onEvent(HomeUiEvent.LongPressVideoCopy(code, title))
                     },
                     modifier = Modifier.padding(vertical = 4.dp)
                 )

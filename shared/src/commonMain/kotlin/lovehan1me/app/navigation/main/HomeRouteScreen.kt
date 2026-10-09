@@ -17,11 +17,9 @@ import lovehan1me.cancel
 import lovehan1me.checkout_exit
 import lovehan1me.confirm_exit_message
 import lovehan1me.confirm_to_exit
-import lovehan1me.copy_to_clipboard
 import lovehan1me.do_more
 import lovehan1me.exit
 import lovehan1me.finished_masturbating
-import lovehan1me.data.getHanimeShareText
 import lovehan1me.data.DatabaseRepo
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.entity.CheckInType
@@ -38,7 +36,6 @@ import lovehan1me.feature.home.homepage.component.AnnouncementDialog
 import lovehan1me.feature.home.CheckInCalendarViewModel
 import lovehan1me.update_link_open_failed
 import lovehan1me.core.util.AppToast
-import lovehan1me.core.util.rememberCopyTextToClipboard
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.datetime.LocalDate
@@ -76,7 +73,6 @@ fun SharedHomeRouteScreen(
         if (checkInEnabled) {
             sharedViewModel(::CheckInCalendarViewModel)
         } else null
-    val copyTextToClipboard = rememberCopyTextToClipboard()
     val uriHandler = LocalUriHandler.current
     val confirmToExit = stringResource(Res.string.confirm_to_exit)
     val confirmExitMessage = stringResource(Res.string.confirm_exit_message)
@@ -98,10 +94,6 @@ fun SharedHomeRouteScreen(
                     is HomeUiEvent.OpenSearchPage -> onNavigateToSearch(event.query)
                     is HomeUiEvent.NavigateToSearchAdvanced -> onNavigateToSearchAdvanced(event.params)
                     is HomeUiEvent.OpenVideo -> onNavigateToVideo(event.videoCode)
-                    is HomeUiEvent.LongPressVideoCopy -> {
-                        copyTextToClipboard(getHanimeShareText(event.videoTitle, event.videoCode))
-                        scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
-                    }
                     is HomeUiEvent.ShowAnnouncementDialog -> { announcement = event.announcement }
                     is HomeUiEvent.ShowExitDialog -> { showExitDialog = true }
                     is HomeUiEvent.OpenUpdatePage -> {
