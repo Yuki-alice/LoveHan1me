@@ -97,6 +97,9 @@ fun PlayerSettingsRouteScreen(
         onAutoPlayNextChange = { enabled ->
             coroutineScope.launch { SettingsRepository.setAutoPlayNext(enabled) }
         },
+        onLoopSingleChange = { enabled ->
+            coroutineScope.launch { SettingsRepository.setLoopSingle(enabled) }
+        },
         onOpenMpvSettings = onNavigateToMpvSettings,
         onPictureBrightnessChange = { value ->
             coroutineScope.launch { SettingsRepository.setPictureBrightness(value.toFloat()) }
@@ -197,6 +200,7 @@ private fun buildPlayerSettingsUiState(
         longPressSpeedTimes = currentLongPressSpeed.toString(),
         longPressSpeedTimesLabel = longPressDisplay,
         autoPlayNext = SettingsRepository.autoPlayNext,
+        loopSingle = SettingsRepository.loopSingle,
         // G2-3b：画面调节 —— 按平台能力（有没有 mpv）决定是否列出，并如实标注"仅 mpv 生效"
         showPictureAdjust = capabilities.mpvAdvancedSettings,
         pictureBrightness = SettingsRepository.pictureAdjust.brightness.toInt(),

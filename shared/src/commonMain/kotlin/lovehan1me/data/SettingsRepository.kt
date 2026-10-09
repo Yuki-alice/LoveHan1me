@@ -230,6 +230,8 @@ object SettingsRepository : SettingsStore {
     val autoPlayOnEnter get() = current.autoPlayOnEnter
     /** 系列视频播完是否自动连播下一集（默认开，仅系列有效）。 */
     val autoPlayNext get() = current.autoPlayNext
+    /** 单集播完是否重播本集（默认关，开时优先于连播）。 */
+    val loopSingle get() = current.loopSingle
     val searchArtistIgnoreVideoType get() = current.searchArtistIgnoreVideoType
     val disableMobileDataWarning get() = current.disableMobileDataWarning
     val navBarStyle get() = current.navBarStyle
@@ -292,6 +294,9 @@ object SettingsRepository : SettingsStore {
 
     /** 系列视频播完是否自动连播下一集（默认开）。 */
     suspend fun setAutoPlayNext(value: Boolean) = update { it.copy(autoPlayNext = value) }
+
+    /** 单集播完是否重播本集（默认关）。 */
+    suspend fun setLoopSingle(value: Boolean) = update { it.copy(loopSingle = value) }
 
     /** G2-3b：画面比例偏好（存"用户选的"，不管引擎能否生效）。 */
     suspend fun setVideoAspect(value: VideoAspectMode) = update { it.copy(videoAspect = value) }

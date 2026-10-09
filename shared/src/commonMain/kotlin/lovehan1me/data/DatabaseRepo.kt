@@ -95,6 +95,9 @@ object DatabaseRepo {
         suspend fun update(entity: HanimeDownloadEntity) =
             hanimeDownloadDao.update(entity)
 
+        suspend fun updateDownloadedLength(videoCode: String, quality: String, downloaded: Long) =
+            hanimeDownloadDao.updateDownloadedLength(videoCode, quality, downloaded)
+
         suspend fun find(videoCode: String, quality: String) =
             hanimeDownloadDao.find(videoCode, quality)
 

@@ -441,7 +441,7 @@ object IosDownloadWorkController : DownloadWorkController {
                         if (now - lastFlush >= 1_000) {
                             lastFlush = now
                             fflush(fp)
-                            dao.update(entity.copy(downloadedLength = downloaded, state = DownloadState.Downloading))
+                            dao.updateDownloadedLength(entity.videoCode, entity.quality, downloaded)
                         }
                     }
                     fflush(fp)

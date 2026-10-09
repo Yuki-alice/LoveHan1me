@@ -46,6 +46,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import lovehan1me.Res
 import lovehan1me.core.domain.model.NavBarStyle
 import lovehan1me.data.SettingsRepository
@@ -113,9 +115,10 @@ fun MainScaffold(
     val onSelectTab: (MainTab) -> Unit = { backStack.addTopLevel(it.route) }
     val onOpenSettings: () -> Unit = { backStack.add(HomeSettingsRoute) }
     // 底栏形态走 settings flow（而非 `SettingsRepository.navBarStyle` 的快照 getter），
-    // 否则改完设置要重启才生效。
-    val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
-    val navBarStyle = settings.navBarStyle
+    // 否则改完设置要重启才生效。只取 navBarStyle 一键并去重：其它设置写入不再重组整壳。
+    val navBarStyle by SettingsRepository.settings.map { it.navBarStyle }
+        .distinctUntilChanged()
+        .collectAsStateWithLifecycle(NavBarStyle.Standard)
 
     val page: @Composable () -> Unit = {
         ProvideContentWidth {

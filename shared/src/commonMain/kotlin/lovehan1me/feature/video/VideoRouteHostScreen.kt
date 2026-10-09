@@ -87,7 +87,9 @@ import lovehan1me.feature.player.PlayerDefaults
 import lovehan1me.feature.player.PlayerKernel
 import lovehan1me.feature.player.createPlaybackEngine
 import lovehan1me.feature.player.isActiveNetworkMetered
-import lovehan1me.feature.player.shouldAutoPlayNext
+import lovehan1me.feature.player.resolveEndedAction
+import lovehan1me.feature.player.EndedAction
+import lovehan1me.quality_auto_fallback
 import lovehan1me.video.contract.VideoEnhancementLevels
 import lovehan1me.feature.danmaku.DanmakuLayer
 import lovehan1me.feature.danmaku.DanmakuControls
@@ -109,6 +111,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jetbrains.compose.resources.getString
@@ -739,6 +743,22 @@ fun VideoRouteHostScreen(
         if (!engineError.isNullOrBlank()) PlayerTrace.event("error", engineError)
     }
 
+    // 播放失败自动降档：各档是分离 mp4（无真 ABR），当前档播不动就低一档重试，
+    // 只向下、不回升；到最低档仍失败则留错误卡给手动重试。
+    // 每档只自动降一次：键含 selectedQualityIndex，降档即换键重挂，自然终止，
+    // 不会与用户手动切档打架（手动切档同样换键，只重挂一次）。
+    val fallbackIndex = (uiState.selectedQualityIndex + 1)
+        .takeIf { uiState.phase == PlaybackPhase.Error && it in uiState.qualities.indices }
+    LaunchedEffect(uiState.phase, uiState.selectedQualityIndex) {
+        if (fallbackIndex != null) {
+            val label = uiState.qualities[fallbackIndex].label
+            PlayerTrace.event("quality-fallback", label)
+            AppToast.warning(getString(Res.string.quality_auto_fallback, label))
+            // selectQuality 从引擎当前位置续播（保面切换），不回片头。
+            playbackController.selectQuality(fallbackIndex)
+        }
+    }
+
     // B 站风底栏「下一集」：系列视频当前播放项的后一项；
     // 没有系列/已是最后一集则为 null，底栏不显示入口（窄屏不受影响）。
     val nextPlaylistItem = remember(video) {
@@ -749,16 +769,26 @@ fun VideoRouteHostScreen(
 
     // 系列自动连播：播完（Ended 跃迁）+ 开关开 + 有下一集 → 走与手动「下一集」
     // 同一条导航。新页面 phase 从头开始，不会连环触发；单片/尾集/开关关闭
-    // 时 shouldAutoPlayNext 为 false，原地停在结束态（行为与之前一致）。
-    val autoPlayNext = SettingsRepository.settings.collectAsStateWithLifecycle().value.autoPlayNext
-    LaunchedEffect(uiState.phase, autoPlayNext, nextPlaylistItem) {
-        if (shouldAutoPlayNext(
+    // 时原地停在结束态（行为与之前一致）。
+    // 单集循环优先于连播：开时同一集无限重播（页面调 replay，三端一致），
+    // 不再进下一集。判定收在 `resolveEndedAction`（纯函数，单测覆盖）。
+    // 只取两开关并去重：其它设置写入不重进这个 effect（它只读键，不读整份）。
+    val endBehavior by SettingsRepository.settings.map { it.autoPlayNext to it.loopSingle }
+        .distinctUntilChanged()
+        .collectAsStateWithLifecycle(false to false)
+    val (autoPlayNext, loopSingle) = endBehavior
+    LaunchedEffect(uiState.phase, autoPlayNext, loopSingle, nextPlaylistItem) {
+        when (
+            resolveEndedAction(
                 uiState.phase,
+                loopSingle,
                 autoPlayNext,
                 nextPlaylistItem != null,
             )
         ) {
-            nextPlaylistItem?.let { onNavigateToVideo(it.videoCode) }
+            EndedAction.ReplayCurrent -> playbackController.replay()
+            EndedAction.AdvanceNext -> nextPlaylistItem?.let { onNavigateToVideo(it.videoCode) }
+            EndedAction.Stay -> Unit
         }
     }
 

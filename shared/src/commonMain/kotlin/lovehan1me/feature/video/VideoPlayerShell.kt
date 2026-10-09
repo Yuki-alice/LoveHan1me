@@ -235,13 +235,14 @@ fun VideoPlayerShell(
     // 控件恒为深色场景：亮色主题下 onBackground 是深色，压在画面上等于隐形。
     // 只覆盖配色，不走 HanimeTheme(darkTheme = true) —— 那个会顺带重设系统栏样式，
     // 而系统栏归页面管（全屏进出由宿主改），播放器无权改它。
-    val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
+    // 只订主题四量（themeConfigFlow 已去重）：改弹幕字号之类无关写操作不再重组播放器。
+    val theme by SettingsRepository.themeConfigFlow.collectAsStateWithLifecycle()
     val playerColorScheme = boardColorScheme(
-        board = ThemeBoard.fromId(settings.themeId),
+        board = ThemeBoard.fromId(theme.themeId),
         // 深色 + 用户选的板子；预生成表查一次，不现场算调色板。
         isDark = true,
-        contrastLevel = settings.contrastLevel.spec,
-    ).let { if (settings.amoled) it.amoled() else it }
+        contrastLevel = theme.contrastLevel.spec,
+    ).let { if (theme.amoled) it.amoled() else it }
 
     HanimeTheme(colorScheme = playerColorScheme) {
         VideoScaffold(

@@ -516,6 +516,10 @@
     <string name="super_resolution_off">關閉</string>
     <string name="super_resolution_performance">效能優先</string>
     <string name="super_resolution_quality">品質優先</string>
+    <string name="loop_single_title">單集循環</string>
+    <string name="loop_single_summary">播完重播本集，開啟後優先於系列連播</string>
+    <string name="quality_auto_fallback">該清晰度播放失敗，已自動切換至%1$s</string>
+    <string name="super_resolution_cross_engine_note">超分是否可用取決於本機：桌面端（MPV）與安卓（ExoPlayer）支援，iOS 不支援。檔位選擇會保留，實際生效以本機播放器選單為準。</string>
     <string name="advanced_search_combination">進階搜尋組合</string>
     <string name="download_complete">下載完成</string>
     <string name="download_progress_size">%1$s / %2$s</string>

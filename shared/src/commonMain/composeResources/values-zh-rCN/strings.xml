@@ -523,6 +523,10 @@
     <string name="auto_play_on_enter_summary">打开影片页后立即开始播放。默认关闭：会先加载并停在首帧，点播放键才开始</string>
     <string name="auto_play_next_title">系列自动连播</string>
     <string name="auto_play_next_summary">本集播完自动播放下一集，仅系列视频有效，单片不受影响</string>
+    <string name="loop_single_title">单集循环</string>
+    <string name="loop_single_summary">播完重播本集，开启后优先于系列连播</string>
+    <string name="quality_auto_fallback">该清晰度播放失败，已自动切换至%1$s</string>
+    <string name="super_resolution_cross_engine_note">超分是否可用取决于本机：桌面端（MPV）与安卓（ExoPlayer）支持，iOS 不支持。档位选择会保留，实际生效以本机播放器菜单为准。</string>
     <string name="resume_playback_summary">如有播放记录，将自动跳转到上次退出时的位置</string>
     <string name="saved">已保存</string>
     <string name="i_understand">我明白了</string>

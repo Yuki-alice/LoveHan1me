@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -40,6 +41,10 @@ import lovehan1me.danmaku_speed
 import lovehan1me.danmaku_percent_value
 import lovehan1me.auto_play_next_title
 import lovehan1me.auto_play_next_summary
+import lovehan1me.loop_single_title
+import lovehan1me.loop_single_summary
+import lovehan1me.super_resolution_cross_engine_note
+import lovehan1me.ic_refresh
 import lovehan1me.ic_skip
 import lovehan1me.data.danmaku.asValidBaseUrl
 import lovehan1me.mpv_settings_disabled_summary
@@ -86,6 +91,7 @@ import lovehan1me.ui.component.SettingSwitchItem
 import lovehan1me.ui.component.segmentedGroup
 import lovehan1me.ui.component.segmentedSection
 import lovehan1me.ui.component.lazy.LazyColumn
+import lovehan1me.ui.theme.HanimeDefaults
 
 data class PlayerSettingsUiState(
     /** 本平台是否可能让「MPV 高级设置」生效（Android/iOS 无 mpv，整项不展示）。 */
@@ -99,6 +105,8 @@ data class PlayerSettingsUiState(
     val longPressSpeedTimesLabel: String,
     /** 系列自动连播（播完播下一集，仅系列有效）。 */
     val autoPlayNext: Boolean,
+    /** 单集循环（播完重播本集，开时优先于连播）。 */
+    val loopSingle: Boolean,
     // ── G2-3b：画面调节（仅 mpv 内核真的生效）────────────────────
     /**
      * 是否列出「画面调节」。
@@ -154,6 +162,7 @@ fun PlayerSettingsScreen(
     onPlayerSpeedChange: (String) -> Unit,
     onLongPressSpeedChange: (String) -> Unit,
     onAutoPlayNextChange: (Boolean) -> Unit = {},
+    onLoopSingleChange: (Boolean) -> Unit = {},
     onOpenMpvSettings: () -> Unit,
     // G2-3b：画面调节
     onPictureBrightnessChange: (Int) -> Unit = {},
@@ -289,6 +298,13 @@ fun PlayerSettingsScreen(
                     iconRes = Res.drawable.ic_skip,
                     onCheckedChange = onAutoPlayNextChange,
                 )
+                SettingSwitchItem(
+                    title = stringResource(Res.string.loop_single_title),
+                    summary = stringResource(Res.string.loop_single_summary),
+                    checked = state.loopSingle,
+                    iconRes = Res.drawable.ic_refresh,
+                    onCheckedChange = onLoopSingleChange,
+                )
                 // ── G2-3b：画面调节（亮度 / 对比度 / 饱和度）──────────
                 // 区间与 mpv 的属性范围一致（-100~100，0 = 原始），步进 5 是"肉眼
                 // 分得出差别"的最小粒度 —— 再细就只有数字在动。
@@ -325,6 +341,20 @@ fun PlayerSettingsScreen(
                         onClick = onPictureAdjustReset,
                     )
                 }
+            }
+            // 超分跨端说明：播放器菜单按本机引擎能力显隐（桌面 MPV / 安卓 Exo 有，
+            // iOS 无），设置里不另设开关 —— 摆假开关才是"设置丢了"的体感来源。
+            // 纯文本脚注，无点击，避免无意义的波纹。
+            item {
+                Text(
+                    text = stringResource(Res.string.super_resolution_cross_engine_note),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(
+                        horizontal = HanimeDefaults.Spacing.contentHorizontal,
+                        vertical = HanimeDefaults.Spacing.small,
+                    ),
+                )
             }
         }
 

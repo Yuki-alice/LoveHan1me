@@ -16,3 +16,33 @@ fun shouldAutoPlayNext(
     autoPlayNextEnabled: Boolean,
     hasNext: Boolean,
 ): Boolean = phase == PlaybackPhase.Ended && autoPlayNextEnabled && hasNext
+
+/**
+ * Ended 到达时的页面动作（纯函数，可单测）。
+ *
+ * 循环优先于连播：单集循环开时同一集无限重播，不再进下一集
+ * （与 misaka 的引擎级 `loop-file` 同语义；本仓 mediamp 0.5.0 无循环语义，
+ * 由页面调 `replay()` 实现，三端一致）。
+ */
+enum class EndedAction {
+    /** 重播本集（单集循环开）。 */
+    ReplayCurrent,
+
+    /** 进下一集（连播开且有下一集）。 */
+    AdvanceNext,
+
+    /** 原地停在结束态。 */
+    Stay,
+}
+
+fun resolveEndedAction(
+    phase: PlaybackPhase,
+    loopSingle: Boolean,
+    autoPlayNextEnabled: Boolean,
+    hasNext: Boolean,
+): EndedAction = when {
+    phase != PlaybackPhase.Ended -> EndedAction.Stay
+    loopSingle -> EndedAction.ReplayCurrent
+    autoPlayNextEnabled && hasNext -> EndedAction.AdvanceNext
+    else -> EndedAction.Stay
+}

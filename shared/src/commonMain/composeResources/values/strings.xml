@@ -522,6 +522,10 @@ Recommendations are as follows:\n
     <string name="auto_play_on_enter_summary">Start playing as soon as a video page opens. Off by default: the video loads and shows its first frame but stays paused until you tap play.</string>
     <string name="auto_play_next_title">Auto-play next episode</string>
     <string name="auto_play_next_summary">Automatically play the next episode when this one ends. Series only, single videos unaffected.</string>
+    <string name="loop_single_title">Loop single video</string>
+    <string name="loop_single_summary">Replay the current video when it ends. Takes precedence over auto-play next.</string>
+    <string name="quality_auto_fallback">This quality failed to play, switched to %1$s automatically</string>
+    <string name="super_resolution_cross_engine_note">Super-resolution depends on this device: desktop (MPV) and Android (ExoPlayer) support it, iOS does not. Your choice is kept when switching devices; what actually applies is shown in this device\'s player menu.</string>
     <string name="resume_playback_summary">Automatically jump to the last playback position if there is play history</string>
     <string name="saved">Saved</string>
     <string name="i_understand">I understand</string>

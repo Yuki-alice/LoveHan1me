@@ -84,6 +84,17 @@ abstract class HanimeDownloadDao {
     @Update(onConflict = OnConflictStrategy.REPLACE)
     abstract suspend fun update(entity: HanimeDownloadEntity): Int
 
+    /**
+     * 进度高频落盘专用偏更新：只写已下字节数。
+     *
+     * 三端下载循环每秒调一次 —— 全行 `@Update` 要先读整行再整行写回，
+     * 还会把循环开始时快照里的旧 `state` 盖回去（暂停/失败竞态）。
+     * 状态流转（Queued/Downloading/Paused/Failed/Finished）走各自的整行写入，
+     * 这里**故意不碰 state**。
+     */
+    @Query("UPDATE HanimeDownloadEntity SET downloadedLength = :downloaded WHERE videoCode = :videoCode AND quality = :quality")
+    abstract suspend fun updateDownloadedLength(videoCode: String, quality: String, downloaded: Long): Int
+
     @Query("SELECT * FROM HanimeDownloadEntity WHERE (`videoCode` = :videoCode AND `quality` = :quality) LIMIT 1")
     abstract suspend fun find(videoCode: String, quality: String): HanimeDownloadEntity?
 

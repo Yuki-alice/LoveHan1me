@@ -261,6 +261,15 @@ data class AppSettings(
     val autoPlayNext: Boolean = true,
 
     /**
+     * 单集是否**播完重播本集**。
+     *
+     * 默认 **false**。页面级实现（Ended 到达即 `replay()`，三端引擎行为一致；
+     * mediamp 0.5.0 无循环语义，不做引擎级循环）：开时优先于 [autoPlayNext]
+     * （同一集无限重播，不再进下一集）。
+     */
+    val loopSingle: Boolean = false,
+
+    /**
      * 弹幕总开关。默认 **true**：接入方式由构建内置（见 [DanmakuBuildCredentials]），
      * 不再需要用户先配凭据，所以没有理由默认关。
      *

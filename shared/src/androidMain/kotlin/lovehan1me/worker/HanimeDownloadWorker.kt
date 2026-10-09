@@ -439,10 +439,8 @@ class HanimeDownloadWorker(
                                 val progress = (downloadedLength * 100 / entity.length).coerceAtMost(100)
                                 setProgress(workDataOf(PROGRESS to progress.toInt()))
                                 updateDownloadNotification(progress.toInt())
-                                DatabaseRepo.HanimeDownload.update(
-                                    entity.copy(downloadedLength = downloadedLength,
-                                        state = DownloadState.Downloading
-                                    )
+                                DatabaseRepo.HanimeDownload.updateDownloadedLength(
+                                    entity.videoCode, entity.quality, downloadedLength
                                 )
                                 delayTime = System.currentTimeMillis()
                             }
