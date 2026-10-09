@@ -5,6 +5,10 @@
 <full-backup-content>
    <include domain="sharedpref" path="."/>
    <include domain="database" path="." />
+   <!-- 文件域必须先 include 被排除项所在目录，否则 exclude 无意义
+   （lint FullBackupContent 会直接报错；data_extraction_rules 那份无此要求）。
+   普通设置漫游、仅登录态文件除外 —— 与 data_extraction_rules 口径一致。 -->
+   <include domain="file" path="datastore/"/>
    <!-- 登录态独立文件不漫游（与手动备份 AUTH_KEYS 同口径）。 -->
    <exclude domain="file" path="datastore/auth.preferences_pb" />
 </full-backup-content>

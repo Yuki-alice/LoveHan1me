@@ -62,7 +62,8 @@ dependencyResolutionManagement {
 }
 rootProject.name = "LoveHan1me"
 
-// 原 Android 单平台应用模块，迁移期间保持可编译，全部页面下沉到 :shared 后再移除
+// Android 应用壳（永久）：只放 manifest/权限/服务级宿主代码
+// （MainActivity、崩溃处理、应用类、ECH 进程内起服器），页面与业务全在 :shared。
 include(":app")
 
 // KMP 共享模块与新增平台入口

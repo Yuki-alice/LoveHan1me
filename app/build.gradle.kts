@@ -66,6 +66,9 @@ android {
                 "proguard-rules.pro"
             )
             manifestPlaceholders["appIcon"] = "@mipmap/ic_launcher_new"
+            // 无正式 keystore 前用 debug 签名：包可安装，release 行为可测
+            // （性能测量、Baseline Profile 生成都要装 release 包；签谁的名不影响测量）。
+            signingConfig = signingConfigs.getByName("debug")
         }
 
         debug {
@@ -164,20 +167,12 @@ dependencies {
 
     implementation(libs.datetime)
     implementation(libs.serialization.json)
-    implementation(libs.jsoup)
 
-    // P3：网络层已迁至 :shared（ServiceCreator/拦截器链 → jvmMain，5 个 Service → commonMain Ktor）。
-    // :app 移除 retrofit/converter-serialization/okhttp-dns-over-https。
-    //
-    // ⚠️ okhttp **不是残留、必须保留**：HanimeDownloadWorker 的断点续传下载链路直接使用
-    // okhttp3.Request/Response/ResponseBody（Range 请求、续传、closeQuietly），改用 Ktor
-    // 是另一个量级的改造。okhttp-dns-over-https 确实已不需要（HanimeDns 已下沉 shared jvmMain）。
-    // :app 侧代码引用 Ktor HttpResponse/bodyAsText 等类型，补 ktor-client-core。
-    implementation(libs.okhttp)
-    implementation(libs.ktor.client.core)
-
-    implementation(libs.media3.exoplayer)
-    implementation(libs.media3.exoplayer.hls)
+    // 网络与播放归 :shared / :video:engine 所有（Ktor + OkHttp 链在 shared jvmMain，
+    // HanimeDownloadWorker 的 okhttp 断点续传、mediamp-exo 的 media3 都在那边声明）。
+    // :app 源码对 jsoup / okhttp / ktor / media3 零引用（2026-10-09 全仓 grep），
+    // 故不重复声明：运行时经 :shared 传递，media3 版本由 media3-effect 1.10.1 链锁定，
+    // 与此前直引版本一致。需要直引时再加回，不要加"以防万一"的依赖。
     // Gate3-P6：`libs.mpv.lib` 已随 Android mpv 内核移除（HanimeApplication 不再调 MPVLib）
 
     ksp(libs.room.compiler)
@@ -188,4 +183,15 @@ dependencies {
     // Gate4-2：instrumented runner 本体（只声明 ext.junit 会导致 APK 里没有
     // AndroidJUnitRunner，connectedAndroidTest 起不来，模拟器实测）。
     androidTestImplementation(libs.test.runner)
+}
+
+// Compose Compiler 报告（稳定性诊断用）：默认关闭，`-PcomposeCompilerReports=true` 开启。
+// 必须读 release 产物 —— debug 的 Live Literals 会把常量变成 getter，报告全是误报。
+// 用法：./gradlew :app:assembleRelease -PcomposeCompilerReports=true
+// （:app 自身几乎无组合函数，屏的报告看 :shared 同名开关）。
+if (providers.gradleProperty("composeCompilerReports").orNull == "true") {
+    composeCompiler {
+        reportsDestination = layout.buildDirectory.dir("compose_compiler")
+        metricsDestination = layout.buildDirectory.dir("compose_compiler")
+    }
 }

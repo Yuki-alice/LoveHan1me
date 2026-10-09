@@ -19,8 +19,9 @@ dependencies {
     implementation(libs.coil.compose.core)
     implementation(libs.coil.network.ktor3)
     // coil-compose-core 的 AsyncImage 必须显式传 imageLoader；带默认 imageLoader / 单例注册的
-    // API 在 coil-compose 完整构件里（desktop 需 setSingletonImageLoaderFactory 才能用网络组件）
-    implementation("io.coil-kt.coil3:coil-compose:3.6.1")
+    // API 在 coil-compose 完整构件里（desktop 需 setSingletonImageLoaderFactory 才能用网络组件）。
+    // 版本跟 coil3Kmp 走版本目录（勿用 libs.coil.compose，那是 :app 的 3.4.0），升降级只改一处。
+    implementation(libs.coil.compose.full)
     // P4：ksoup 统一走版本目录（P3a 曾硬编码同坐标）
     implementation(libs.ksoup)
 }

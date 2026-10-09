@@ -214,6 +214,9 @@ kotlin {
             implementation(libs.okio)
             // GIF 录制等用例用到 runBlocking
             implementation(libs.coroutines.core)
+            // P0-1：Parser 语料门禁用例需在 commonTest 里 Ksoup.parse 合成 HTML
+            // 行元素（resolveHomeSections 入参即 ksoup Elements）。
+            implementation(libs.ksoup)
         }
 
         // M7-4：iOS 播放引擎真实验证（iosSimulatorArm64Test 跑在模拟器上）
@@ -319,4 +322,15 @@ val generateDanmakuCredentials = tasks.register("generateDanmakuCredentials") {
 
 kotlin.sourceSets.named("commonMain") {
     kotlin.srcDir(generateDanmakuCredentials)
+}
+
+// Compose Compiler 报告（稳定性诊断用）：默认关闭，`-PcomposeCompilerReports=true` 开启。
+// 必须读 release 产物 —— debug 的 Live Literals 会把常量变成 getter，报告全是误报。
+// 用法：./gradlew :shared:assembleRelease -PcomposeCompilerReports=true
+// （所有屏都在 :shared，诊断先看这里的 shared_release-composables.txt）。
+if (providers.gradleProperty("composeCompilerReports").orNull == "true") {
+    composeCompiler {
+        reportsDestination = layout.buildDirectory.dir("compose_compiler")
+        metricsDestination = layout.buildDirectory.dir("compose_compiler")
+    }
 }
