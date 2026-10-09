@@ -29,6 +29,10 @@ import androidx.compose.ui.platform.LocalFocusManager
 import lovehan1me.video.player.ui.support.LocalPlatform
 import lovehan1me.video.player.ui.support.ifThen
 import lovehan1me.video.player.ui.support.isDesktop
+import lovehan1me.video.ui.PlayerTooltipBox
+import lovehan1me.video.ui.Res
+import lovehan1me.video.ui.player_back
+import org.jetbrains.compose.resources.stringResource
 
 /**
  * 播放器顶部导航栏。
@@ -54,19 +58,22 @@ fun PlayerTopBar(
             .fillMaxWidth(),
         navigationIcon = {
             val back by rememberUpdatedState(onBackClick)
+            val backLabel = stringResource(Res.string.player_back)
             CompositionLocalProvider(LocalContentColor provides color) {
                 val focusManager by rememberUpdatedState(LocalFocusManager.current)
-                IconButton(
-                    onClick = { back() },
-                    Modifier.ifThen(needWorkaroundForFocusManager) {
-                        onFocusEvent {
-                            if (it.hasFocus) {
-                                focusManager.clearFocus()
+                PlayerTooltipBox(text = backLabel) {
+                    IconButton(
+                        onClick = { back() },
+                        Modifier.ifThen(needWorkaroundForFocusManager) {
+                            onFocusEvent {
+                                if (it.hasFocus) {
+                                    focusManager.clearFocus()
+                                }
                             }
-                        }
-                    },
-                ) {
-                    Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = "Back")
+                        },
+                    ) {
+                        Icon(Icons.AutoMirrored.Rounded.ArrowBack, contentDescription = backLabel)
+                    }
                 }
             }
         },

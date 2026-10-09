@@ -8,8 +8,7 @@ package lovehan1me.video.player.ui
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ContainedLoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -27,7 +26,10 @@ fun VideoLoadingIndicator(
 ) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         if (showProgress) {
-            CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 3.dp)
+            // P1 #11：缓冲浮层是"叠在内容上"的加载语义（over other content）——
+            // 用 contained 档：38dp 容器给指示器一个稳定对比底座，亮画面帧上不再糊掉。
+            // 规格依据：M3 loading indicator —— 容器用于叠在内容上的场景 / 下拉刷新。
+            ContainedLoadingIndicator()
         }
 
         Row(Modifier.padding(top = 8.dp)) {

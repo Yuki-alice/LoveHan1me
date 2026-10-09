@@ -132,6 +132,9 @@ fun DownloadedScreen(
                 bottom = if (uiState.multiSelectMode) 72.dp else 8.dp
             ),
             verticalArrangement = Arrangement.spacedBy(12.dp),
+            // M3E 空间连续性：删除 / 批量移动 / 分组折叠后的列表重排（项与组头一视同仁），
+            // 动画由 wrapper 挂在 item 根节点上（手写在内容里的 animateItem 嵌套过深会静默失效）。
+            enableItemPlacementAnimation = true,
         ) {
             items(uiState.downloadedNodes, key = {
                 when (it) {

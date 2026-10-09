@@ -63,4 +63,8 @@
     <string name="player_quality">Quality</string>
     <string name="player_video_aspect">Aspect ratio</string>
     <string name="player_danmaku_settings">Danmaku settings</string>
+    <string name="player_play">Play</string>
+    <string name="player_pause">Pause</string>
+    <string name="player_enter_fullscreen">Enter fullscreen</string>
+    <string name="player_exit_fullscreen">Exit fullscreen</string>
 </resources>

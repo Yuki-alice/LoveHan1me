@@ -67,6 +67,9 @@ fun DownloadingScreen(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
+            // M3E 空间连续性：暂停 / 恢复 / 删除 / 完成后列表增删重排交给 wrapper 的
+            // item 根节点 animateItem（与 VideoGridContent 同一口径）。
+            enableItemPlacementAnimation = true,
         ) {
             items(uiState.downloadingItems, key = { it.id }) { item ->
                 DownloadingItemCard(

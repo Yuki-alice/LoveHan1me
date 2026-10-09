@@ -24,8 +24,8 @@ import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.ShortNavigationBar
+import androidx.compose.material3.ShortNavigationBarItem
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -300,13 +300,19 @@ private fun FloatingNavBarItem(
     }
 }
 
-/** Compact：贴底导航栏。设置**不**进底栏 —— 它由「我的」顶栏齿轮进入。 */
+/**
+ * Compact：贴底导航栏（M3E `ShortNavigationBar`）。
+ *
+ * 设置**不**进底栏 —— 它由「我的」顶栏齿轮进入。2026-10-09 起从常规 `NavigationBar`
+ * 切换到 M3E 紧凑档新规范（项更矮、指示器更紧凑）；自研悬浮胶囊（`NavBarStyle.Floating`）
+ * 保留为品牌档，本函数只服务 Standard 档。
+ */
 @Composable
-private fun MainNavigationBar(
+internal fun MainNavigationBar(
     selectedTab: MainTab,
     onSelectTab: (MainTab) -> Unit,
 ) {
-    NavigationBar(
+    ShortNavigationBar(
         // 底色必须延到屏幕底（盖住手势区）：M3 默认只吃 navigationBars，
         // iOS 上这个值不可靠（手势区漏底色、露出身后的黑窗底），改吃 safeDrawing。
         // 单点应用（不另包 wrapper），天然防叠加；Android 上 safeDrawing 与
@@ -316,7 +322,7 @@ private fun MainNavigationBar(
         ),
     ) {
         MainTab.entries.forEach { tab ->
-            NavigationBarItem(
+            ShortNavigationBarItem(
                 selected = tab == selectedTab,
                 onClick = { onSelectTab(tab) },
                 icon = {

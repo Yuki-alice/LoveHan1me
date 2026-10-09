@@ -323,6 +323,8 @@
     <string name="thumb_up_success">点赞成功！</string>
     <string name="cancel_thumb_down_success">取消点踩成功！</string>
     <string name="thumb_down_success">点踩成功！</string>
+    <string name="rate_like">点赞</string>
+    <string name="rate_dislike">点踩</string>
     <string name="load_reply_failed">加载回复失败了捏</string>
     <string name="send_failed">发送失败！</string>
     <string name="sending_reply">发表回复中</string>

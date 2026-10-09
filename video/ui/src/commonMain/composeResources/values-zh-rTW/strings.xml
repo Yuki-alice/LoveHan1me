@@ -63,4 +63,8 @@
     <string name="player_quality">畫質</string>
     <string name="player_video_aspect">畫面比例</string>
     <string name="player_danmaku_settings">彈幕設置</string>
+    <string name="player_play">播放</string>
+    <string name="player_pause">暫停</string>
+    <string name="player_enter_fullscreen">進入全螢幕</string>
+    <string name="player_exit_fullscreen">退出全螢幕</string>
 </resources>

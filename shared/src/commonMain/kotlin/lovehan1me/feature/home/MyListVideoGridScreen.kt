@@ -12,6 +12,8 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
+import androidx.compose.material3.rememberTopAppBarState
+import androidx.compose.material3.TopAppBarDefaults.exitUntilCollapsedScrollBehavior
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -21,6 +23,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -47,6 +50,7 @@ import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.ui.component.HanimePullRefreshBox
 import lovehan1me.ui.component.PageContent
+import lovehan1me.ui.component.appbar.HanimeMediumFlexibleTopAppBar
 import lovehan1me.ui.component.appbar.HanimeScaffold
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.content.ErrorContent
@@ -169,25 +173,35 @@ fun VideoGridScreen(
         isEmpty = isEmpty,
     )
 
+    // P1 #9：大标题随滚动收起（exitUntilCollapsed）——折叠后是紧凑单行 + 副标题；
+    // behavior 实例同时接到 Scaffold 的 nestedScroll 与顶栏，两处共用一个状态。
+    val scrollBehavior = exitUntilCollapsedScrollBehavior(rememberTopAppBarState())
+
     HanimeScaffold(
-        topBarWindowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
-        title = stringResource(titleRes),
-        subtitle = {
-            Text(
-                text = stringResource(Res.string.video_count, items.size),
-                style = MaterialTheme.typography.labelLarge,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+        topBar = {
+            HanimeMediumFlexibleTopAppBar(
+                title = stringResource(titleRes),
+                subtitle = {
+                    Text(
+                        text = stringResource(Res.string.video_count, items.size),
+                        style = MaterialTheme.typography.labelLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                },
+                onBack = onBack,
+                actions = {
+                    IconButton(onClick = { showHelpDialog = true }) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_help),
+                            contentDescription = stringResource(Res.string.help),
+                        )
+                    }
+                },
+                windowInsets = WindowInsets(0.dp, 0.dp, 0.dp, 0.dp),
+                scrollBehavior = scrollBehavior,
             )
         },
-        onBack = onBack,
-        actions = {
-            IconButton(onClick = { showHelpDialog = true }) {
-                Icon(
-                    painter = painterResource(Res.drawable.ic_help),
-                    contentDescription = stringResource(Res.string.help),
-                )
-            }
-        },
+        modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         snackbarHost = { SnackbarHost(snackbarHostState) },
     ) { paddingValues ->
         HanimePullRefreshBox(

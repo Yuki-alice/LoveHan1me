@@ -90,6 +90,7 @@ import lovehan1me.video.player.ui.support.LocalPlatform
 import lovehan1me.video.player.ui.support.isMobile
 import lovehan1me.video.player.ui.top.PlayerTopBar
 import lovehan1me.video.player.ui.top.SystemTime
+import lovehan1me.video.ui.PlayerTooltipBox
 import lovehan1me.video.ui.Res as PlayerRes
 import lovehan1me.video.ui.gif_capture
 import lovehan1me.video.ui.ic_panel_close
@@ -522,18 +523,21 @@ private fun RowScope.PlayerTopBarActions(
     onOpenGifCapture: () -> Unit,
 ) {
     val dropdownRequester = rememberAlwaysOnRequester(controllerState, "topBarActions")
-    IconButton(
-        onClick = {
-            if (isFavVideo) dropdownRequester.cancelRequest()
-            onToggleFavoriteVideo()
-        },
-    ) {
-        Icon(
-            imageVector = if (isFavVideo) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
-            contentDescription = stringResource(
-                if (isFavVideo) PlayerRes.string.player_favorited else PlayerRes.string.player_favorite,
-            ),
-        )
+    val favoriteLabel = stringResource(
+        if (isFavVideo) PlayerRes.string.player_favorited else PlayerRes.string.player_favorite,
+    )
+    PlayerTooltipBox(text = favoriteLabel) {
+        IconButton(
+            onClick = {
+                if (isFavVideo) dropdownRequester.cancelRequest()
+                onToggleFavoriteVideo()
+            },
+        ) {
+            Icon(
+                imageVector = if (isFavVideo) Icons.Rounded.Favorite else Icons.Rounded.FavoriteBorder,
+                contentDescription = favoriteLabel,
+            )
+        }
     }
     // 低频动作收进「更多」：截图 / 录 GIF / 播放统计 三件事同屏并列，
     // 会把顶栏变成一排同权重图标，读不出主次。收进菜单后顶栏只剩四个：
@@ -545,12 +549,15 @@ private fun RowScope.PlayerTopBarActions(
         LaunchedEffect(moreOpen) {
             if (moreOpen) moreRequester.request() else moreRequester.cancelRequest()
         }
+        val moreLabel = stringResource(PlayerRes.string.player_more_options)
         Box {
-            IconButton(onClick = { moreOpen = true }) {
-                Icon(
-                    Icons.Rounded.MoreVert,
-                    contentDescription = stringResource(PlayerRes.string.player_more_options),
-                )
+            PlayerTooltipBox(text = moreLabel) {
+                IconButton(onClick = { moreOpen = true }) {
+                    Icon(
+                        Icons.Rounded.MoreVert,
+                        contentDescription = moreLabel,
+                    )
+                }
             }
             DropdownMenu(
                 expanded = moreOpen,
@@ -600,24 +607,30 @@ private fun RowScope.PlayerTopBarActions(
     if (showSidebarToggle) {
         // 抽屉按钮用"面板 + 箭头"的专用图形，而不是裸 Chevron：裸箭头只说方向，
         // 说不清点它动的是什么；侧栏在画面的右侧，所以开/关各有一张镜像图。
-        IconButton(onClick = { onToggleSidebar(!sidebarVisible) }) {
-            Icon(
-                painter = painterResource(
-                    if (sidebarVisible) PlayerRes.drawable.ic_panel_close
-                    else PlayerRes.drawable.ic_panel_open,
-                ),
-                contentDescription = stringResource(
-                    if (sidebarVisible) {
-                        PlayerRes.string.player_collapse_sidebar
-                    } else {
-                        PlayerRes.string.player_expand_sidebar
-                    },
-                ),
-            )
+        val sidebarLabel = stringResource(
+            if (sidebarVisible) {
+                PlayerRes.string.player_collapse_sidebar
+            } else {
+                PlayerRes.string.player_expand_sidebar
+            },
+        )
+        PlayerTooltipBox(text = sidebarLabel) {
+            IconButton(onClick = { onToggleSidebar(!sidebarVisible) }) {
+                Icon(
+                    painter = painterResource(
+                        if (sidebarVisible) PlayerRes.drawable.ic_panel_close
+                        else PlayerRes.drawable.ic_panel_open,
+                    ),
+                    contentDescription = sidebarLabel,
+                )
+            }
         }
     }
-    IconButton(onClick = onHomeClick) {
-        Icon(Icons.Rounded.Home, contentDescription = stringResource(PlayerRes.string.player_home))
+    val homeLabel = stringResource(PlayerRes.string.player_home)
+    PlayerTooltipBox(text = homeLabel) {
+        IconButton(onClick = onHomeClick) {
+            Icon(Icons.Rounded.Home, contentDescription = homeLabel)
+        }
     }
 }
 

@@ -34,7 +34,6 @@ import androidx.compose.ui.draw.clip
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
@@ -362,8 +361,7 @@ internal fun PlaylistSection(
             ) {
                 Text(
                     text = stringResource(Res.string.series_video),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.titleMediumEmphasized,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
                 if (!playlist.playlistName.isNullOrBlank()) {
@@ -493,9 +491,8 @@ internal fun SectionHeader(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleLarge,
+                    style = MaterialTheme.typography.titleLargeEmphasized,
                     color = MaterialTheme.colorScheme.onSurface,
-                    fontWeight = FontWeight.Bold,
                 )
                 subtitle?.takeIf { it.isNotBlank() }?.let {
                     Text(

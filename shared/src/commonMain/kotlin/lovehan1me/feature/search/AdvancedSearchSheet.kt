@@ -19,12 +19,14 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import lovehan1me.ui.component.FilledIconButton
-import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.PrimaryScrollableTabRow
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Tab
@@ -833,23 +835,13 @@ private fun AdvancedSearchReleaseDateDialog(
         title = { Text(stringResource(Res.string.release_date)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Row(
-                    modifier = Modifier.align(Alignment.CenterHorizontally),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp)
-                ) {
-                    FilledTonalButton(
-                        modifier = Modifier.weight(1f),
-                        onClick = { selectedTab = 0 }
-                    ) {
-                        Text(stringResource(Res.string.specific_y_m))
-                    }
-                    FilledTonalButton(
-                        modifier = Modifier.weight(1f),
-                        onClick = { selectedTab = 1 }
-                    ) {
-                        Text(stringResource(Res.string.approximate_range))
-                    }
-                }
+                // P1 #10：旧实现两个 FilledTonalButton 完全同貌 —— 选中态无任何视觉反馈
+                //（连"当前在哪一档"都要靠下半区内容反推）。换单选取舍分段：
+                // 选中段有 container 填充，当前档一眼可辨。
+                ReleaseDateModeSelector(
+                    selectedTab = selectedTab,
+                    onSelectTab = { selectedTab = it },
+                )
                 if (selectedTab == 0) {
                     TextButton(
                         modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -928,6 +920,44 @@ private fun AdvancedSearchReleaseDateDialog(
             )
         },
     )
+}
+
+/**
+ * 「具体年月 / 大致范围」单选取舍（P1 #10 接线）。
+ *
+ * 从 [AdvancedSearchReleaseDateDialog] 里抽出：一是给渲染测试一个可直接渲的入口，
+ * 二是把"模式切换"与"模式内容"在代码上分开，读起来不用滚一屏。
+ */
+@Composable
+internal fun ReleaseDateModeSelector(
+    selectedTab: Int,
+    onSelectTab: (Int) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    SingleChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
+        SegmentedButton(
+            selected = selectedTab == 0,
+            onClick = { onSelectTab(0) },
+            shape = SegmentedButtonDefaults.itemShape(
+                index = 0,
+                count = 2,
+                baseShape = SegmentedButtonDefaults.baseShape,
+            ),
+            modifier = Modifier.weight(1f),
+            label = { Text(stringResource(Res.string.specific_y_m)) },
+        )
+        SegmentedButton(
+            selected = selectedTab == 1,
+            onClick = { onSelectTab(1) },
+            shape = SegmentedButtonDefaults.itemShape(
+                index = 1,
+                count = 2,
+                baseShape = SegmentedButtonDefaults.baseShape,
+            ),
+            modifier = Modifier.weight(1f),
+            label = { Text(stringResource(Res.string.approximate_range)) },
+        )
+    }
 }
 
 @Composable

@@ -317,6 +317,8 @@
     <string name="thumb_up_success">按讚成功！</string>
     <string name="cancel_thumb_down_success">取消倒讚成功！</string>
     <string name="thumb_down_success">倒讚成功！</string>
+    <string name="rate_like">按讚</string>
+    <string name="rate_dislike">倒讚</string>
     <string name="load_reply_failed">載入回覆失敗了捏</string>
     <string name="send_failed">發送失敗！</string>
     <string name="sending_reply">正在發表回覆</string>

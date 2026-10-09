@@ -8,8 +8,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.FilterChip
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MultiChoiceSegmentedButtonRow
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -56,7 +58,7 @@ import lovehan1me.data.SettingsRepository
  * 这里压成单页四段，因为我们本来就没有那两样：
  *  - **状况**：当前关联/评论数 + 关联/换一集/取消关联入口（状态条的功能搬进来）
  *  - **外观**：字号 / 不透明度 / 显示区域 / 速度四滑杆（与设置页同一批区间）
- *  - **类型**：滚动 / 顶部 / 底部三 chips（Kazumi `hideScroll/hideTop/hideBottom` 对齐）
+ *  - **类型**：滚动 / 顶部 / 底部三段式多选（Kazumi `hideScroll/hideTop/hideBottom` 对齐）
  *  - 两个总开关：弹幕总开关 + 评论投影开关
  *
  * 时间校准与屏蔽规则没有（前者要 tracker 加偏移，后者要过滤管线），
@@ -169,29 +171,14 @@ fun DanmakuSettingsDialog(
 
                 // ── 类型 ──
                 SectionLabel(stringResource(Res.string.danmaku_dialog_type))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    FilterChip(
-                        selected = settings.danmakuShowScroll,
-                        onClick = {
-                            update { it.copy(danmakuShowScroll = !settings.danmakuShowScroll) }
-                        },
-                        label = { Text(stringResource(Res.string.danmaku_type_scroll)) },
-                    )
-                    FilterChip(
-                        selected = settings.danmakuShowTop,
-                        onClick = {
-                            update { it.copy(danmakuShowTop = !settings.danmakuShowTop) }
-                        },
-                        label = { Text(stringResource(Res.string.danmaku_type_top)) },
-                    )
-                    FilterChip(
-                        selected = settings.danmakuShowBottom,
-                        onClick = {
-                            update { it.copy(danmakuShowBottom = !settings.danmakuShowBottom) }
-                        },
-                        label = { Text(stringResource(Res.string.danmaku_type_bottom)) },
-                    )
-                }
+                DanmakuTypeSelector(
+                    showScroll = settings.danmakuShowScroll,
+                    onShowScrollChange = { v -> update { it.copy(danmakuShowScroll = v) } },
+                    showTop = settings.danmakuShowTop,
+                    onShowTopChange = { v -> update { it.copy(danmakuShowTop = v) } },
+                    showBottom = settings.danmakuShowBottom,
+                    onShowBottomChange = { v -> update { it.copy(danmakuShowBottom = v) } },
+                )
 
                 // ── 总开关 ×2（复用设置页同一文案） ──
                 SwitchRow(
@@ -286,6 +273,60 @@ private fun DanmakuSliderRow(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 4.dp),
+        )
+    }
+}
+
+/**
+ * 弹幕类型多选（P1 #10 接线）：滚动 / 顶部 / 底部。
+ *
+ * 三个开关互相独立（不是三选一），所以走多选题分段（`MultiChoiceSegmentedButtonRow`）——
+ * 每段独立开合，选中段带勾选标记。从 [DanmakuSettingsDialog] 抽出：dialog 依赖
+ * `SettingsRepository` 流、没法直接渲染，本选择器是纯状态组件，可被渲染测试独立覆盖。
+ */
+@Composable
+internal fun DanmakuTypeSelector(
+    showScroll: Boolean,
+    onShowScrollChange: (Boolean) -> Unit,
+    showTop: Boolean,
+    onShowTopChange: (Boolean) -> Unit,
+    showBottom: Boolean,
+    onShowBottomChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    MultiChoiceSegmentedButtonRow(modifier = modifier.fillMaxWidth()) {
+        SegmentedButton(
+            checked = showScroll,
+            onCheckedChange = onShowScrollChange,
+            shape = SegmentedButtonDefaults.itemShape(
+                index = 0,
+                count = 3,
+                baseShape = SegmentedButtonDefaults.baseShape,
+            ),
+            modifier = Modifier.weight(1f),
+            label = { Text(stringResource(Res.string.danmaku_type_scroll)) },
+        )
+        SegmentedButton(
+            checked = showTop,
+            onCheckedChange = onShowTopChange,
+            shape = SegmentedButtonDefaults.itemShape(
+                index = 1,
+                count = 3,
+                baseShape = SegmentedButtonDefaults.baseShape,
+            ),
+            modifier = Modifier.weight(1f),
+            label = { Text(stringResource(Res.string.danmaku_type_top)) },
+        )
+        SegmentedButton(
+            checked = showBottom,
+            onCheckedChange = onShowBottomChange,
+            shape = SegmentedButtonDefaults.itemShape(
+                index = 2,
+                count = 3,
+                baseShape = SegmentedButtonDefaults.baseShape,
+            ),
+            modifier = Modifier.weight(1f),
+            label = { Text(stringResource(Res.string.danmaku_type_bottom)) },
         )
     }
 }

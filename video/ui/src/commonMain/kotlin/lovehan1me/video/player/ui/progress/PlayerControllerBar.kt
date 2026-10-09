@@ -84,13 +84,18 @@ import lovehan1me.video.player.ui.support.ifThen
 import lovehan1me.video.player.ui.support.keepLayoutWhenHidden
 import lovehan1me.video.player.ui.toggle
 import lovehan1me.video.player.ui.top.needWorkaroundForFocusManager
+import lovehan1me.video.ui.PlayerTooltipBox
 import lovehan1me.video.ui.Res
 import lovehan1me.video.ui.cancel
 import lovehan1me.video.ui.player_disable_danmaku
 import lovehan1me.video.ui.player_enable_danmaku
+import lovehan1me.video.ui.player_enter_fullscreen
+import lovehan1me.video.ui.player_exit_fullscreen
 import lovehan1me.video.ui.player_gesture_volume
 import lovehan1me.video.ui.player_mute
 import lovehan1me.video.ui.player_next_episode
+import lovehan1me.video.ui.player_pause
+import lovehan1me.video.ui.player_play
 import lovehan1me.video.ui.player_select_episode
 import lovehan1me.video.ui.speed
 import org.jetbrains.compose.resources.stringResource
@@ -110,7 +115,8 @@ const val TAG_FULL_SCREEN_BUTTON = "FullScreenButton"
 @Stable
 object PlayerControllerDefaults {
     /**
-     * 播放 / 暂停。
+     * 播放 / 暂停。P1 #7：桌面悬停出提示；文案兼作 contentDescription
+     * （原先写死的 "Pause"/"Play" 不随语言走，顺手资源化）。
      */
     @Composable
     fun PlaybackIcon(
@@ -118,14 +124,16 @@ object PlayerControllerDefaults {
         onClick: () -> Unit,
         modifier: Modifier = Modifier,
     ) {
-        IconButton(
-            onClick = onClick,
-            modifier,
-        ) {
-            if (isPlaying()) {
-                Icon(Icons.Rounded.Pause, contentDescription = "Pause", Modifier.size(36.dp))
-            } else {
-                Icon(Icons.Rounded.PlayArrow, contentDescription = "Play", Modifier.size(36.dp))
+        val label = stringResource(
+            if (isPlaying()) Res.string.player_pause else Res.string.player_play,
+        )
+        PlayerTooltipBox(text = label, modifier = modifier) {
+            IconButton(onClick = onClick) {
+                if (isPlaying()) {
+                    Icon(Icons.Rounded.Pause, contentDescription = label, Modifier.size(36.dp))
+                } else {
+                    Icon(Icons.Rounded.PlayArrow, contentDescription = label, Modifier.size(36.dp))
+                }
             }
         }
     }
@@ -139,14 +147,23 @@ object PlayerControllerDefaults {
         onClick: () -> Unit,
         modifier: Modifier = Modifier,
     ) {
-        IconButton(
-            onClick = onClick,
-            modifier.testTag(TAG_DANMAKU_ICON_BUTTON),
-        ) {
+        val label = stringResource(
             if (danmakuEnabled) {
-                Icon(Icons.Rounded.Subtitles, contentDescription = stringResource(Res.string.player_disable_danmaku))
+                Res.string.player_disable_danmaku
             } else {
-                Icon(Icons.Rounded.SubtitlesOff, contentDescription = stringResource(Res.string.player_enable_danmaku))
+                Res.string.player_enable_danmaku
+            },
+        )
+        PlayerTooltipBox(text = label, modifier = modifier) {
+            IconButton(
+                onClick = onClick,
+                modifier = Modifier.testTag(TAG_DANMAKU_ICON_BUTTON),
+            ) {
+                if (danmakuEnabled) {
+                    Icon(Icons.Rounded.Subtitles, contentDescription = label)
+                } else {
+                    Icon(Icons.Rounded.SubtitlesOff, contentDescription = label)
+                }
             }
         }
     }
@@ -275,11 +292,11 @@ object PlayerControllerDefaults {
         onClick: () -> Unit,
         modifier: Modifier = Modifier,
     ) {
-        IconButton(
-            onClick,
-            modifier,
-        ) {
-            Icon(Icons.Rounded.SkipNext, stringResource(Res.string.player_next_episode), Modifier.size(36.dp))
+        val label = stringResource(Res.string.player_next_episode)
+        PlayerTooltipBox(text = label, modifier = modifier) {
+            IconButton(onClick = onClick) {
+                Icon(Icons.Rounded.SkipNext, label, Modifier.size(36.dp))
+            }
         }
     }
 
@@ -303,6 +320,7 @@ object PlayerControllerDefaults {
      * 进入 / 退出全屏。
      *
      * 图标方向和点击行为读同一个 [fullscreenState]，不可能对不上。
+     * P1 #7：桌面悬停出提示；文案兼作 contentDescription（原为写死的英文）。
      */
     @Composable
     fun FullscreenIcon(
@@ -310,21 +328,30 @@ object PlayerControllerDefaults {
         modifier: Modifier = Modifier,
     ) {
         val isFullscreen = fullscreenState.isFullscreen
-        val focusManager by rememberUpdatedState(LocalFocusManager.current)
-        IconButton(
-            onClick = remember(fullscreenState) { { fullscreenState.toggle() } },
-            modifier.ifThen(needWorkaroundForFocusManager) {
-                onFocusEvent {
-                    if (it.hasFocus) {
-                        focusManager.clearFocus()
-                    }
-                }
-            }.testTag(TAG_FULL_SCREEN_BUTTON),
-        ) {
+        val label = stringResource(
             if (isFullscreen) {
-                Icon(Icons.Rounded.FullscreenExit, contentDescription = "Exit Fullscreen", Modifier.size(32.dp))
+                Res.string.player_exit_fullscreen
             } else {
-                Icon(Icons.Rounded.Fullscreen, contentDescription = "Enter Fullscreen", Modifier.size(32.dp))
+                Res.string.player_enter_fullscreen
+            },
+        )
+        val focusManager by rememberUpdatedState(LocalFocusManager.current)
+        PlayerTooltipBox(text = label, modifier = modifier) {
+            IconButton(
+                onClick = remember(fullscreenState) { { fullscreenState.toggle() } },
+                Modifier.ifThen(needWorkaroundForFocusManager) {
+                    onFocusEvent {
+                        if (it.hasFocus) {
+                            focusManager.clearFocus()
+                        }
+                    }
+                }.testTag(TAG_FULL_SCREEN_BUTTON),
+            ) {
+                if (isFullscreen) {
+                    Icon(Icons.Rounded.FullscreenExit, contentDescription = label, Modifier.size(32.dp))
+                } else {
+                    Icon(Icons.Rounded.Fullscreen, contentDescription = label, Modifier.size(32.dp))
+                }
             }
         }
     }

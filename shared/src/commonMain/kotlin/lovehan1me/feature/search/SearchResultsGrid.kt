@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyGridState
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -219,7 +218,8 @@ fun SearchResultsGrid(
                             .padding(16.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        CircularProgressIndicator(Modifier.size(24.dp), strokeWidth = 2.dp)
+                        // M3E 形变加载指示器（P1 #11）：与 LoadMoreFooter / 加载页同语言。
+                        LoadingIndicator(Modifier.size(24.dp))
                     }
                 }
             }

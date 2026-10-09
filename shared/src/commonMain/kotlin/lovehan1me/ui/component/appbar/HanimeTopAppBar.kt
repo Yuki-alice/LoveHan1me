@@ -9,6 +9,7 @@ import lovehan1me.ui.component.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.MediumFlexibleTopAppBar
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarColors
@@ -134,6 +135,66 @@ fun HanimeTopAppBar(
         title = title,
         navigationIcon = navigationIcon,
         actions = actions,
+        scrollBehavior = scrollBehavior,
+        windowInsets = windowInsets,
+    )
+}
+
+/**
+ * 二级页大标题顶栏（M3E `MediumFlexibleTopAppBar`）。
+ *
+ * 与 [HanimeTopAppBar] 的 small 变体同约定（返回按钮样式 / 页面底色 / 滚动后容器色），
+ * 但用 M3E Flexible 档：**大标题随滚动收起**为紧凑行，且自带 `subtitle` 槽 ——
+ * 页面副标题（如视频计数）不再手写 Column 叠在 title 内部。
+ *
+ * @param scrollBehavior 传 `TopAppBarDefaults.exitUntilCollapsedScrollBehavior(...)`
+ *   并把它接到滚动容器的 `nestedScroll` 上才会随滚动收起；null 时保持展开静态。
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HanimeMediumFlexibleTopAppBar(
+    title: String,
+    onBack: (() -> Unit)?,
+    modifier: Modifier = Modifier,
+    subtitle: (@Composable () -> Unit)? = null,
+    actions: @Composable RowScope.() -> Unit = {},
+    scrollBehavior: TopAppBarScrollBehavior? = null,
+    colors: TopAppBarColors? = null,
+    windowInsets: WindowInsets = TopAppBarDefaults.windowInsets,
+) {
+    MediumFlexibleTopAppBar(
+        title = {
+            Text(
+                text = title,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        },
+        modifier = modifier,
+        subtitle = subtitle,
+        navigationIcon = {
+            if (onBack != null) {
+                FilledIconButton(
+                    modifier = Modifier.padding(start = 12.dp, end = 8.dp),
+                    onClick = onBack,
+                    colors = IconButtonDefaults.filledIconButtonColors(
+                        containerColor = MaterialTheme.colorScheme.surfaceContainerHighest,
+                    ),
+                    shapes = IconButtonDefaults.shapes(),
+                ) {
+                    Icon(
+                        painter = painterResource(Res.drawable.ic_arrow_back),
+                        contentDescription = stringResource(Res.string.back),
+                    )
+                }
+            }
+        },
+        actions = actions,
+        colors = colors ?: topAppBarColors(
+            containerColor = HanimeDefaults.Colors.pageSurface,
+            scrolledContainerColor = MaterialTheme.colorScheme.surfaceContainerHigh,
+            titleContentColor = MaterialTheme.colorScheme.onSurface,
+        ),
         scrollBehavior = scrollBehavior,
         windowInsets = windowInsets,
     )

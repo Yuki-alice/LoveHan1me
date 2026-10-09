@@ -120,7 +120,10 @@ fun SubscriptionContent(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(vertical = HanimeDefaults.Spacing.medium),
             horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
-            verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium)
+            verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
+            // M3E 空间连续性：增删 / 重排动画必须由 wrapper 挂在 item 根节点上 ——
+            // 原先手写在内容 Box 上的 animateItem 嵌套过深，实为静默 no-op（逐帧实测），已迁移。
+            enableItemPlacementAnimation = true,
         ) {
             item(span = { GridItemSpan(videoColumns) }) {
                 // transitionSpec 的 lambda 不是 @Composable 上下文，spec 要在外面取。
@@ -160,18 +163,14 @@ fun SubscriptionContent(
                 // 复用会丢弃已缓存的组合、每次都重建。
                 contentType = { "subscription_video" },
             ) { video ->
-                Box(
-                    modifier = Modifier.animateItem()
-                ) {
-                    VideoCardItem(
-                        videoItem = video,
-                        onClickVideosItem = {
-                            onEvent(
-                                SubscriptionEvent.OnClickVideo(video.videoCode)
-                            )
-                        },
-                    )
-                }
+                VideoCardItem(
+                    videoItem = video,
+                    onClickVideosItem = {
+                        onEvent(
+                            SubscriptionEvent.OnClickVideo(video.videoCode)
+                        )
+                    },
+                )
             }
             if (uiState.videos.isNotEmpty()) {
                 item(span = { GridItemSpan(videoColumns) }) {

@@ -5,15 +5,16 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -194,9 +195,12 @@ fun FormLoginScreen(
                     modifier = Modifier.fillMaxWidth(),
                 ) {
                     if (isLoggingIn) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.padding(end = 8.dp),
-                            strokeWidth = 2.dp,
+                        // M3E 形变加载指示器 + 顺手修两处旧账：
+                        // ① 原 CircularProgressIndicator 默认 40dp，出现时会把按钮撑高（布局跳动）——
+                        //    20dp 与 40dp 按钮行高相容；
+                        // ② 加载语言与全站（加载页 / 加载更多）的 LoadingIndicator 统一。
+                        LoadingIndicator(
+                            modifier = Modifier.padding(end = 8.dp).size(20.dp),
                         )
                     }
                     Text(stringResource(Res.string.login))

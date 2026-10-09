@@ -43,7 +43,10 @@ fun VideoGridContent(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(vertical = HanimeDefaults.Spacing.medium),
         horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
-        verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium)
+        verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
+        // M3E 空间连续性：长按删除后列表重排 / 进出场走 wrapper 的 item 根节点 animateItem
+        // （规格必须挂根节点，嵌套在卡片上会静默失效 —— 见 AnimatedLazy 文件头）。
+        enableItemPlacementAnimation = true,
     ) {
         items(uiState.items, key = { it.videoCode }) { item ->
             VideoCardItem(

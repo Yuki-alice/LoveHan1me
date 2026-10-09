@@ -281,6 +281,8 @@ private fun WatchHistoryListContent(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp),
+            // M3E 空间连续性：删除单条 / 清空后的列表重排与进出场（wrapper 挂根节点）。
+            enableItemPlacementAnimation = true,
         ) {
             items(histories, key = { it.id }) { history ->
                 WatchHistoryCard(
@@ -534,6 +536,8 @@ private fun OnlineWatchHistoryGrid(
             horizontalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
             verticalArrangement = Arrangement.spacedBy(HanimeDefaults.Spacing.medium),
             enableItemAnimation = false,
+            // 在线模式网格：删除单条后同样走 M3E 空间连续性（wrapper 挂根节点）。
+            enableItemPlacementAnimation = true,
         ) {
             item(
                 key = "online_history_count",

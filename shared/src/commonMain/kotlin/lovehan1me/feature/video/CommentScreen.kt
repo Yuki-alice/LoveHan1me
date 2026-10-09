@@ -20,12 +20,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.rememberLazyListState
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilledTonalButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LoadingIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Scaffold
@@ -332,10 +332,10 @@ fun CommentScreen(
                         enabled = !refreshing,
                     ) {
                         // 刷新中把图标换成转圈：位置不动，动画本身即刷新状态。
+                        // M3E 形变加载指示器（P1 #11 家族对齐）：与全站加载语言统一。
                         if (refreshing) {
-                            CircularProgressIndicator(
+                            LoadingIndicator(
                                 modifier = Modifier.size(20.dp),
-                                strokeWidth = 2.5.dp,
                                 color = MaterialTheme.colorScheme.onSecondaryContainer,
                             )
                         } else {
@@ -365,6 +365,9 @@ fun CommentScreen(
                         modifier = Modifier.fillMaxSize(),
                         contentPadding = listContentPadding,
                         verticalArrangement = Arrangement.spacedBy(8.dp),
+                        // M3E 空间连续性：评论增删 / 刷新换榜时的重排与进出场
+                        //（动画由 wrapper 挂在 item 根节点上）。
+                        enableItemPlacementAnimation = true,
                     ) {
                         // 刷新失败但列表还在：留一条横幅，而不是把错误悄悄吞掉。
                         if (state is WebsiteState.Error && sortedComments.isNotEmpty()) {

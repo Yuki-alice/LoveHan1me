@@ -89,15 +89,17 @@ fun VideoCardItem(
     onClickVideosItem: (String) -> Unit,
     // 非 null 时长按弹出删除菜单（历史/收藏/播单等管理页）；null = 无长按行为。
     onDeleteItem: ((videoCode: String, title: String) -> Unit)? = null,
+    // 可外部注入（渲染测试据此发 HoverInteraction 摆出 hover 态）；null = 自持。
+    interactionSource: MutableInteractionSource? = null,
 ) {
     // P6d-4F：原 R.dimen（12sp/14dp）常量化——CMP 资源体系不支持 dimen
     val textFontSize = 12.sp
     val iconSize = 14.dp
     val imageAspectRatio = if (isHorizontalCard) 16f / 9f else 3f / 4f
     val haptic = rememberHapticFeedback()
-    val interactionSource = remember { MutableInteractionSource() }
+    val source = interactionSource ?: remember { MutableInteractionSource() }
     val indication = LocalIndication.current
-    val pressed by interactionSource.collectIsPressedAsState()
+    val pressed by source.collectIsPressedAsState()
     var showDeleteMenu by remember { mutableStateOf(false) }
     val currentArtist = videoItem.currentArtist?.takeIf { it.isNotBlank() }
     val cardShape = shapeByInteraction(
@@ -105,16 +107,23 @@ fun VideoCardItem(
         pressed = pressed,
         animationSpec = HanimeDefaults.shapesDefaultAnimationSpec,
     )
+    // P1 #7 核验结论（2026-10-09）：桌面 hover 反馈**不需要自绘** ——
+    // `indication`（LocalIndication 默认值 = M3 `ripple()`）本就画 hover 状态层
+    // （`internal.ripple.RippleNode` 订阅 HoverInteraction，hoveredAlpha ≈ 8% onSurface），
+    // 全仓可点击表面在桌面上天然具备悬停反馈；自绘 overlay 只会与其叠加成 ~16%
+    // 的双重状态层，违反"单层状态层"规范，故不引入。
+    // 悬停反馈存在性由 `VideoCardHoverRenderTest` 守卫（经上方 interactionSource 参数注入）。
+    val resolvedContainerColor = containerColor ?: if (isHomePage) {
+        HanimeDefaults.Colors.homeVideoCard
+    } else {
+        HanimeDefaults.Colors.card
+    }
     CardContainerSurface(
         modifier = modifier
             .fillMaxWidth()
             .animateContentSize(),
         shape = cardShape,
-        color = containerColor ?: if (isHomePage) {
-            HanimeDefaults.Colors.homeVideoCard
-        } else {
-            HanimeDefaults.Colors.card
-        },
+        color = resolvedContainerColor,
     ) {
         Box {
             Column(
@@ -123,7 +132,7 @@ fun VideoCardItem(
                     .fillMaxWidth()
                     .combinedClickable(
                         enabled = !isPlaying,
-                        interactionSource = interactionSource,
+                        interactionSource = source,
                         indication = indication,
                         onClick = {
                             haptic()

@@ -323,6 +323,8 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="thumb_up_success">Thumb Up Successful!</string>
     <string name="cancel_thumb_down_success">Thumb Down Cancelled Successfully!</string>
     <string name="thumb_down_success">Thumb Down Successful!</string>
+    <string name="rate_like">Like</string>
+    <string name="rate_dislike">Dislike</string>
     <string name="load_reply_failed">Failed to load replies</string>
     <string name="send_failed">Send Failed!</string>
     <string name="sending_reply">Sending Reply</string>

@@ -1,15 +1,14 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package lovehan1me.feature.video
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.LocalIndication
-import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
@@ -19,7 +18,10 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.shape.CornerSize
+import androidx.compose.material3.ButtonGroupDefaults
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
+import androidx.compose.material3.ToggleButton
+import androidx.compose.material3.ToggleButtonDefaults
 import androidx.compose.foundation.text.selection.SelectionContainer
 import lovehan1me.ui.component.HapticButton as Button
 import androidx.compose.material3.ButtonDefaults
@@ -44,6 +46,8 @@ import lovehan1me.ui.component.HanimeAsyncImage
 import lovehan1me.Res
 import lovehan1me.subscribed
 import lovehan1me.subscribe
+import lovehan1me.rate_like
+import lovehan1me.rate_dislike
 import lovehan1me.s_view_times
 import lovehan1me.ic_thumb_up_off_alt
 import lovehan1me.ic_thumb_up_alt
@@ -259,8 +263,7 @@ internal fun TitleSection(video: HanimeVideo) {
         SelectionContainer {
             Text(
                 text = primaryTitle,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.headlineSmallEmphasized,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.combinedClickable(
                     onClick = {},
@@ -356,101 +359,84 @@ internal fun MetaInfoItem(
     }
 }
 
+/**
+ * 赞 / 踩操作组（P1 接线 #5）：M3E `ToggleButton` + 官方"连接"形状体系。
+ *
+ * 为什么不用 `ButtonGroup` 容器：锁定的 1.12.0-alpha03 里容器溢出机件与本场景冲突 ——
+ * 空 `overflowIndicator` 在测量时抛非法参数（ButtonGroup.kt:725），官方指示器则常驻一个
+ * 点不动的"空菜单"按钮（两者均有渲染实测）。本组只有两个固定项、外层 FlowRow 保证整行
+ * 宽度，容器机件无施展空间，故用 `Row` 直接组合官方连接形状（间距取官方
+ * `ConnectedSpaceBetween`）：选中变形（checked → CornerFull 全圆）与按压弹簧全部保留。
+ *
+ * 颜色仍是本页语义（赞 = primary、踩 = error），由 `toggleButtonColors` 逐参定制 ——
+ * 组件默认键位是 Filled 填色式（未选中即实心），与本行 32dp 静默 chip 的语境不符。
+ * 尺寸压到 32dp 与同排的 [MetaInfoItem] 同高。
+ */
 @Composable
 internal fun VideoRatingButtons(
     video: HanimeVideo,
     onRateVideo: (Boolean) -> Unit,
 ) {
     val haptic = rememberHapticFeedback()
-    val likeContentColor by animateColorAsState(
-        targetValue = if (video.isFav) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
-        label = "LikeColor"
-    )
-    val likeContainerColor by animateColorAsState(
-        targetValue = if (video.isFav) {
-            MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f)
-        } else {
-            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.72f)
-        },
-        label = "LikeContainer"
-    )
-
-    val dislikeContentColor by animateColorAsState(
-        targetValue = if (video.isUnlike) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
-        label = "DislikeColor"
-    )
-    val dislikeContainerColor by animateColorAsState(
-        targetValue = if (video.isUnlike) {
-            MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
-        } else {
-            MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.72f)
-        },
-        label = "DislikeContainer"
-    )
+    val likeLabel = stringResource(Res.string.rate_like)
+    val dislikeLabel = stringResource(Res.string.rate_dislike)
 
     Row(
-        modifier = Modifier
-            .height(32.dp)
-            .clip(MaterialTheme.shapes.large),
-        verticalAlignment = Alignment.CenterVertically,
+        modifier = Modifier.height(32.dp),
+        horizontalArrangement = Arrangement.spacedBy(ButtonGroupDefaults.ConnectedSpaceBetween),
     ) {
-        Row(
-            modifier = Modifier
-                .height(32.dp)
-                .clip(MaterialTheme.shapes.large.copy(topEnd = CornerSize(0.dp), bottomEnd = CornerSize(0.dp)))
-                .background(likeContainerColor)
-                .combinedClickable(
-                    onClick = {
-                        haptic()
-                        onRateVideo(true)
-                    },
-                )
-                .padding(start = 10.dp, end = 8.dp, top = 6.dp, bottom = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        ToggleButton(
+            checked = video.isFav,
+            onCheckedChange = {
+                haptic()
+                onRateVideo(true)
+            },
+            modifier = Modifier.height(32.dp),
+            shapes = ButtonGroupDefaults.connectedLeadingButtonShapes(),
+            colors = ToggleButtonDefaults.toggleButtonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.72f),
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                checkedContainerColor = MaterialTheme.colorScheme.primaryContainer.copy(alpha = 0.5f),
+                checkedContentColor = MaterialTheme.colorScheme.primary,
+            ),
+            contentPadding = PaddingValues(horizontal = 10.dp),
         ) {
             Icon(
                 painter =
                     if (video.isFav) painterResource(Res.drawable.ic_thumb_up_alt)
                     else painterResource(Res.drawable.ic_thumb_up_off_alt),
-                contentDescription = null,
+                contentDescription = likeLabel,
                 modifier = Modifier.size(16.dp),
-                tint = likeContentColor,
             )
             Spacer(modifier = Modifier.width(4.dp))
             Text(
                 text = "${video.likeRatio ?: 0}% (${video.ratingCount ?: 0})",
                 style = MaterialTheme.typography.labelMedium,
-                color = likeContentColor,
             )
         }
 
-        Box(
-            modifier = Modifier
-                .width(1.dp)
-                .height(32.dp)
-                .background(MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f))
-        )
-
-        Box(
-            modifier = Modifier
-                .size(width = 34.dp, height = 32.dp)
-                .clip(MaterialTheme.shapes.large.copy(topStart = CornerSize(0.dp), bottomStart = CornerSize(0.dp)))
-                .background(dislikeContainerColor)
-                .combinedClickable(
-                    onClick = {
-                        haptic()
-                        onRateVideo(false)
-                    },
-                ),
-            contentAlignment = Alignment.Center,
+        ToggleButton(
+            checked = video.isUnlike,
+            onCheckedChange = {
+                haptic()
+                onRateVideo(false)
+            },
+            modifier = Modifier.height(32.dp),
+            shapes = ButtonGroupDefaults.connectedTrailingButtonShapes(),
+            colors = ToggleButtonDefaults.toggleButtonColors(
+                containerColor = MaterialTheme.colorScheme.surfaceContainerHigh.copy(alpha = 0.72f),
+                contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                checkedContainerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
+                checkedContentColor = MaterialTheme.colorScheme.error,
+            ),
+            contentPadding = PaddingValues(horizontal = 10.dp),
         ) {
             Icon(
                 painter =
                     if (video.isUnlike) painterResource(Res.drawable.ic_thumb_down_alt)
                     else painterResource(Res.drawable.ic_thumb_down_off_alt),
-                contentDescription = null,
+                contentDescription = dislikeLabel,
                 modifier = Modifier.size(16.dp),
-                tint = dislikeContentColor
             )
         }
     }
