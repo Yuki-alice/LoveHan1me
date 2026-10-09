@@ -76,6 +76,85 @@ object Parser {
         return if (!userHomePageLink.contains("/login") && !username.isNullOrBlank()) username else null
     }
 
+    /**
+     * P0-1：首页栏目语义规格（索引 + 标题关键词双锚）。
+     *
+     * 背景：`homePageVer2` 曾只认 `home-rows-wrapper > div` 的硬索引（0,1,2,3,5,6,7,8,10…），
+     * 站点加一行即全错位。关键词是开放输入（站点随时改文案），故匹配走"包含即命中 +
+     * 找不到回落索引"的显式 else，不做穷举断言。索引仍保留作兜底，老快照零漂移。
+     */
+    internal data class HomeSectionSpec(
+        val key: String,
+        val index: Int,
+        val headingKeywords: List<String>,
+    )
+
+    internal val homeSectionSpecs: List<HomeSectionSpec> = listOf(
+        HomeSectionSpec("latestRelease", 0, listOf("最新上市", "最新上架", "latest release")),
+        HomeSectionSpec("latestUpload", 1, listOf("最新上傳", "最新上传", "latest upload")),
+        HomeSectionSpec("ecchi", 2, listOf("里番", "裏番", "ecchi")),
+        HomeSectionSpec("shortEpisode", 3, listOf("泡麵", "泡面", "short")),
+        HomeSectionSpec("motion", 5, listOf("motion")),
+        HomeSectionSpec("threeDCG", 6, listOf("3dcg", "3d")),
+        HomeSectionSpec("twoPointFiveD", 7, listOf("2.5d")),
+        HomeSectionSpec("twoD", 8, listOf("2d")),
+        HomeSectionSpec("aiGenerated", 10, listOf("ai")),
+        HomeSectionSpec("mmd", 11, listOf("mmd")),
+        HomeSectionSpec("cosplay", 12, listOf("cosplay", "cos")),
+        HomeSectionSpec("watchingNow", 13, listOf("在看", "watching")),
+    )
+
+    /**
+     * P0-1：按"标题语义优先、索引兜底"解析首页栏目。
+     *
+     * 纯函数（可单测）：输入行列表，输出 key→行（缺失为 null，由调用方按空列表处理，
+     * 与旧 `getOrNull()?.extractHanimeInfo()` 空安全语义一致）。
+     * 漂移只打 debug 日志，不抛错——首页要 stale-while-revalidate 秒开，不能因改版白屏。
+     */
+    internal fun resolveHomeSections(rows: Elements): Map<String, Element?> {
+        fun headingOf(row: Element): String = buildString {
+            append(row.selectFirst("h2, h3, h4")?.text().orEmpty())
+            append(" ")
+            append(row.selectFirst("[class*=home-rows-title], [class*=home-row-title], [class*=row-title]")?.text().orEmpty())
+            append(" ")
+            append(row.attr("id"))
+            append(" ")
+            append(row.className())
+        }.lowercase()
+
+        val byKey = mutableMapOf<String, Element?>()
+        for (spec in homeSectionSpecs) {
+            val indexed = rows.getOrNull(spec.index)
+            val indexedHeading = indexed?.let(::headingOf).orEmpty()
+            // 索引位标题吻合（或该行无标题可验，如旧 markup）→ 零漂移，直接采用。
+            if (indexed != null && (indexedHeading.isBlank() ||
+                    spec.headingKeywords.any { it.lowercase() in indexedHeading })
+            ) {
+                byKey[spec.key] = indexed
+                continue
+            }
+            // 标题在别处：全表扫描找语义位。
+            val found = rows.firstOrNull { row ->
+                val h = headingOf(row)
+                spec.headingKeywords.any { it.lowercase() in h }
+            }
+            if (found != null) {
+                LogUtil.d(
+                    "Parse::homePageVer2",
+                    "[${spec.key}] drift index ${spec.index} -> ${rows.indexOf(found)}",
+                )
+                byKey[spec.key] = found
+            } else {
+                // 语义、索引双双落空：保留索引位（可能为 null），行为与旧版逐字一致。
+                if (indexed == null) {
+                    LogUtil.d("Parse::homePageVer2", "[${spec.key}] missing, keep null")
+                }
+                byKey[spec.key] = indexed
+            }
+        }
+        return byKey
+    }
+
     suspend fun homePageVer2(body: String): WebsiteState<HomePage> {
         val isAVSite = SiteIdentity.isAvSite
         val parseBody = Ksoup.parse(body).body()
@@ -130,40 +209,36 @@ object Parser {
             )
         } else null
 
-        // 主页模块
-        val latestReleaseClass = homePageParse.getOrNull(0) // 最新上市
-        val latestUploadClass = homePageParse.getOrNull(1)  //最新上传
-        val ecchiAnimeClass = homePageParse.getOrNull(2)  //里番
-        val shortEpisodeAnimeClass = homePageParse.getOrNull(3)  // 泡面番
-        val motionAnimeClass = homePageParse.getOrNull(5)  // Motion Anime
-        val threeDCGClass = homePageParse.getOrNull(6)  //3DCG
-        val twoPointFiveDAnimeClass = homePageParse.getOrNull(7)  // 2.5D
-        val twoDAnimeClass = homePageParse.getOrNull(8)  // 2D
-        val aiGeneratedClass = homePageParse.getOrNull(10)  // AI生成
-        val mmdClass = homePageParse.getOrNull(11)  //  MMD
-        val cosplayClass = homePageParse.getOrNull(12)  // Cosplay
-        val watchingNowClass = homePageParse.getOrNull(13)  // 他们在看
+        // 主页模块：语义优先、索引兜底（见 resolveHomeSections）。
+        // 结构性自检：行数偏离 14 即可能改版，记一笔供线上观测对齐（不阻断 stale 秒开）。
+        if (homePageParse.size !in 12..16) {
+            LogUtil.d("Parse::homePageVer2", "[layout] rows=${homePageParse.size}, expect 12..16")
+        }
+        val sections = resolveHomeSections(homePageParse)
+        val latestReleaseClass = sections["latestRelease"]
+        val latestUploadClass = sections["latestUpload"]
+        val ecchiAnimeClass = sections["ecchi"]
+        val shortEpisodeAnimeClass = sections["shortEpisode"]
+        val motionAnimeClass = sections["motion"]
+        val threeDCGClass = sections["threeDCG"]
+        val twoPointFiveDAnimeClass = sections["twoPointFiveD"]
+        val twoDAnimeClass = sections["twoD"]
+        val aiGeneratedClass = sections["aiGenerated"]
+        val mmdClass = sections["mmd"]
+        val cosplayClass = sections["cosplay"]
+        val watchingNowClass = sections["watchingNow"]
 
         val newAnimeTrailerClass = homePageParse.getOrNull(if (isAVSite) 13 else 12)
 
         val latestReleaseList = latestReleaseClass.extractHanimeInfo()
-        val latestHanimeList = mutableListOf<HanimeInfo>()
-        if (isAVSite){
-            latestHanimeList.addAll(latestUploadClass.extractHanimeInfo())
-        } else {
-            latestHanimeList.addAll(latestUploadClass.extractHanimeInfo())
-        }
+        // P0-1：AV/番剧双分支曾逐字相同（死分支），收敛为单路径。
+        val latestHanimeList = latestUploadClass.extractHanimeInfo().toMutableList()
         val ecchiAnimeList = ecchiAnimeClass.extractHanimeInfo()
         val shortEpisodeAnimeList = shortEpisodeAnimeClass.extractHanimeInfo()
         val motionAnimeList = motionAnimeClass.extractHanimeInfo()
         val threeDCGList = threeDCGClass.extractHanimeInfo()
         val twoPointFiveDAnimeList = twoPointFiveDAnimeClass.extractHanimeInfo()
-        val twoDAnimeList = mutableListOf<HanimeInfo>()
-        if (isAVSite){
-            twoDAnimeList.addAll(twoDAnimeClass.extractHanimeInfo())
-        } else {
-            twoDAnimeList.addAll(twoDAnimeClass.extractHanimeInfo())
-        }
+        val twoDAnimeList = twoDAnimeClass.extractHanimeInfo().toMutableList()
 
         val aiGeneratedList = aiGeneratedClass.extractHanimeInfo()
         val mmdList = mmdClass.extractHanimeInfo()
@@ -595,23 +670,39 @@ object Parser {
         val videos = videoClass?.children()
         if (!videos.isNullOrEmpty()) {
             videos.forEach { source ->
-                val resolution = source.attr("size") + "P"
-                val sourceUrl = source.absUrl("src")
-                val videoType = source.attr("type")
+                // P0-2：size 缺失/小写/已带 P 全归一化（空即 null → Unknown 槽），
+                // 空 src 直接跳过（此前 absUrl("") 会进 map 占掉 Unknown 槽）。
+                val rawSize = source.attr("size").ifBlank {
+                    source.attr("data-size").ifBlank { source.attr("resolution") }
+                }
+                val resolution = rawSize.ifBlank { null }
+                val sourceUrl = source.absUrl("src").ifBlank { source.attr("src") }
+                if (sourceUrl.isBlank()) return@forEach
+                val videoType = source.attr("type").ifBlank { null }
                 hanimeResolution.parseResolution(resolution, sourceUrl, videoType)
             }
         } else {
             val playerDivWrapper = parseBody.selectFirst("div[id=player-div-wrapper]")
             playerDivWrapper?.select("script")?.let { scripts ->
+                var hits = 0
                 for (script in scripts) {
                     val data = script.data()
                     if (data.isBlank()) continue
                     val result =
                         Regex.videoSource.find(data)?.groups?.get(1)?.value ?: continue
+                    hits++
                     hanimeResolution.parseResolution(null, result)
-                    break
+                    // P0-2：此前见首个即 break，同一页多 script 各带一条源时会丢画质。
+                    // 首个仍优先（保序），余下进 extras，不覆盖。
+                    if (hits >= 4) break
                 }
             }
+        }
+        // P0-2：双通道全空即明确失败。调用方 VideoRouteHostScreen 已对空 qualities
+        // 做 toast+外跳，但 Parser 侧仍应记一笔可观测的 drift（空播放是 P0 事故）。
+        val resolvedLinks = hanimeResolution.toResolutionLinkMap()
+        if (resolvedLinks.isEmpty()) {
+            LogUtil.d("Parse::hanimeVideoVer2", "[videoUrls] empty: videoTag=${videoClass != null}")
         }
 
         val artistAvatarUrl = parseBody
@@ -656,7 +747,7 @@ object Parser {
                     Parser::hanimeVideoVer2.name,
                     "introduction"
                 ),
-                videoUrls = hanimeResolution.toResolutionLinkMap(),
+                videoUrls = resolvedLinks,
                 tags = tagList,
                 myList = myList,
                 playlist = playlist,
