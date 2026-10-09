@@ -251,7 +251,6 @@ private fun PlaylistGrid(
                     videoItem = SitePlaylistCard(video),
                     isPlaying = video.isPlaying,
                     onClickVideosItem = { onNavigateToVideo(video.videoCode) },
-                    onLongClickVideosItem = { _, _ -> },
                 )
             }
         }

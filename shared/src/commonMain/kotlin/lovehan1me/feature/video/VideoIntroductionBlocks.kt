@@ -416,7 +416,6 @@ internal fun PlaylistSection(
                         isPlaying = item.isPlaying,
                         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
                         onClickVideosItem = { onOpenVideo(item) },
-                        onLongClickVideosItem = { _, _ -> },
                     )
                 }
             }
@@ -472,7 +471,6 @@ internal fun RelatedVideoCard(
         isHorizontalCard = item.itemType == HanimeInfo.NORMAL,
         containerColor = MaterialTheme.colorScheme.surfaceContainerLow,
         onClickVideosItem = { onOpenVideo(item) },
-        onLongClickVideosItem = { _, _ -> },
     )
 }
 

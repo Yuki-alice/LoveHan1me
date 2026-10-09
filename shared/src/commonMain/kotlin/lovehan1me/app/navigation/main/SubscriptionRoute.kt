@@ -6,7 +6,6 @@ import lovehan1me.Res
 import lovehan1me.app.sharedViewModel
 import lovehan1me.copy_to_clipboard
 import lovehan1me.data.getHanimeSearchShareText
-import lovehan1me.data.getHanimeShareText
 import lovehan1me.feature.home.SubscriptionScreen
 import lovehan1me.feature.library.MySubscriptionsViewModel
 import lovehan1me.core.util.rememberCopyTextToClipboard
@@ -39,9 +38,5 @@ fun SubscriptionRouteScreen(
             scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
         },
         onClickVideosItem = onNavigateToVideo,
-        onLongClickVideosItem = { videoCode, title ->
-            copyTextToClipboard(getHanimeShareText(title, videoCode))
-            scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
-        },
     )
 }

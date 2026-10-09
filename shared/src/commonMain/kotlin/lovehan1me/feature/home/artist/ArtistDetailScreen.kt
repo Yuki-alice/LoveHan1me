@@ -213,7 +213,6 @@ fun ArtistDetailScreen(
                         VideoCardItem(
                             videoItem = video,
                             onClickVideosItem = { onNavigateToVideo(video.videoCode) },
-                            onLongClickVideosItem = { _, _ -> },
                         )
                     }
                     if (homePlaylists.isNotEmpty()) {
@@ -251,7 +250,6 @@ fun ArtistDetailScreen(
                         VideoCardItem(
                             videoItem = video,
                             onClickVideosItem = { onNavigateToVideo(video.videoCode) },
-                            onLongClickVideosItem = { _, _ -> },
                         )
                     }
                 }

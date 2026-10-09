@@ -2,20 +2,12 @@ package lovehan1me.app.navigation.main
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import lovehan1me.Res
 import lovehan1me.app.sharedViewModel
-import lovehan1me.copy_to_clipboard
 import lovehan1me.data.SettingsRepository
-import lovehan1me.data.getHanimeShareText
 import lovehan1me.feature.home.myplaylist.PlaylistScreen
 import lovehan1me.feature.library.LocalPlayListViewModel
 import lovehan1me.feature.library.MyPlayListViewModel
-import lovehan1me.core.util.rememberCopyTextToClipboard
-import lovehan1me.core.util.AppToast
-import kotlinx.coroutines.launch
-import org.jetbrains.compose.resources.getString
 
 @Composable
 fun MyPlaylistRouteScreen(
@@ -23,19 +15,12 @@ fun MyPlaylistRouteScreen(
     onNavigateToVideo: (String) -> Unit,
 ) {
     val isLoggedIn by SettingsRepository.loginStateFlow.collectAsStateWithLifecycle()
-    val copyTextToClipboard = rememberCopyTextToClipboard()
-    // P6d-3-C3：回调内 toast 转 suspend getString，经 scope 桥接
-    val scope = rememberCoroutineScope()
     if (isLoggedIn) {
         val viewModel: MyPlayListViewModel = sharedViewModel(::MyPlayListViewModel, key = "online_playlist")
         PlaylistScreen(
             viewModel = viewModel,
             navigateBack = onBack,
             onClickItem = onNavigateToVideo,
-            onLongClickItem = { videoCode, title ->
-                copyTextToClipboard(getHanimeShareText(title, videoCode))
-                scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
-            },
         )
     } else {
         val viewModel: LocalPlayListViewModel = sharedViewModel(::LocalPlayListViewModel, key = "local_playlist")
@@ -43,10 +28,6 @@ fun MyPlaylistRouteScreen(
             viewModel = viewModel,
             navigateBack = onBack,
             onClickItem = onNavigateToVideo,
-            onLongClickItem = { videoCode, title ->
-                copyTextToClipboard(getHanimeShareText(title, videoCode))
-                scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
-            },
         )
     }
 }

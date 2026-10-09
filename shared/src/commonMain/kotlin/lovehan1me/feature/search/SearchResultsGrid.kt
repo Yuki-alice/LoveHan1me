@@ -209,7 +209,6 @@ fun SearchResultsGrid(
                     // 与详情页封面配对：点卡片时封面形变着飞过去
                     sharedElementKey = coverSharedElementKey(it.videoCode),
                     onClickVideosItem = onVideoClick,
-                    onLongClickVideosItem = { _, _ -> }
                 )
             }
             if (canLoadMore && state is PageLoadingState.Loading) {

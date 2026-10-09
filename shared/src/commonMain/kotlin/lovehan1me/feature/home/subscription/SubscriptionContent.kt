@@ -170,7 +170,6 @@ fun SubscriptionContent(
                                 SubscriptionEvent.OnClickVideo(video.videoCode)
                             )
                         },
-                        onLongClickVideosItem = { _, _ -> },
                     )
                 }
             }

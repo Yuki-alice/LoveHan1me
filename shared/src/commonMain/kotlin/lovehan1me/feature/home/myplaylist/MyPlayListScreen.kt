@@ -56,7 +56,6 @@ import lovehan1me.core.util.AppToast
  * @param viewModel 播放列表 ViewModel
  * @param navigateBack 返回回调
  * @param onClickItem 点击视频项回调
- * @param onLongClickItem 长按视频项回调
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -64,7 +63,6 @@ fun PlaylistScreen(
     viewModel: PlaylistController,
     navigateBack: () -> Unit,
     onClickItem: (String) -> Unit,
-    onLongClickItem: (String, String) -> Unit,
 ) {
     val state by viewModel.myPlaylistsFlow.collectAsStateWithLifecycle()
     val uiState by viewModel.mainUiState.collectAsStateWithLifecycle()
@@ -203,7 +201,6 @@ fun PlaylistScreen(
                         temporarilyHideSheetForNavigation = true
                         onClickItem(item)
                     },
-                    onLongClickItem = onLongClickItem,
                     vm = viewModel,
                 )
             }

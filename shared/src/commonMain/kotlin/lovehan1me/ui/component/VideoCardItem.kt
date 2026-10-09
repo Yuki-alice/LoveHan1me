@@ -27,7 +27,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -35,14 +34,12 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import org.jetbrains.compose.resources.painterResource
-import org.jetbrains.compose.resources.getString
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import lovehan1me.Res
-import lovehan1me.copy_to_clipboard
 import lovehan1me.played
 import lovehan1me.now_playing
 import lovehan1me.delete
@@ -51,20 +48,13 @@ import lovehan1me.h_chan_loading
 import lovehan1me.ic_access_time
 import lovehan1me.ic_play_circle
 import lovehan1me.ic_thumb_up_off_alt
-import lovehan1me.data.getHanimeShareText
 import lovehan1me.core.domain.model.VideoItemType
 import lovehan1me.ui.component.rememberHapticFeedback
-import lovehan1me.app.navigation.main.SearchRoute
-import lovehan1me.app.navigation.main.navigateToArtistSearch
-import lovehan1me.feature.preview.fakeVideosItem
 import lovehan1me.ui.component.RetryableImage
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction
 import lovehan1me.ui.transition.sharedCoverElement
-import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.core.util.DisplayTextLocalizer
-import lovehan1me.core.util.AppToast
-import kotlinx.coroutines.launch
 
 /**
  * 封面底部遮罩的渐变。
@@ -82,11 +72,10 @@ private val CoverScrimBrush = Brush.verticalGradient(
  * 标准视频卡片项组件。
  *
  * 展示视频封面、标题等信息，支持水平和垂直两种布局。
- * 长按会弹出上下文菜单。
+ * 长按仅在管理列表中弹出删除菜单（传入 [onDeleteItem] 时）；其余场景无长按行为。
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
-@Suppress("UNUSED_PARAMETER")
 fun VideoCardItem(
     modifier: Modifier = Modifier,
     videoItem: VideoItemType,
@@ -94,25 +83,22 @@ fun VideoCardItem(
     isHomePage: Boolean = false,
     isWatched: Boolean = false,
     isPlaying: Boolean = false,
-    showDeleteAction: Boolean = false,
     containerColor: Color? = null,
     // 传了就与详情页封面做共享元素过渡（两侧同 key 才配对）；null = 退化成普通卡片。
     sharedElementKey: String? = null,
     onClickVideosItem: (String) -> Unit,
-    onLongClickVideosItem: (String, String) -> Unit,
+    // 非 null 时长按弹出删除菜单（历史/收藏/播单等管理页）；null = 无长按行为。
+    onDeleteItem: ((videoCode: String, title: String) -> Unit)? = null,
 ) {
     // P6d-4F：原 R.dimen（12sp/14dp）常量化——CMP 资源体系不支持 dimen
     val textFontSize = 12.sp
     val iconSize = 14.dp
     val imageAspectRatio = if (isHorizontalCard) 16f / 9f else 3f / 4f
     val haptic = rememberHapticFeedback()
-    val copyTextToClipboard = rememberCopyTextToClipboard()
-    // P6d-3-C3：回调内 toast 转 suspend getString，经 scope 桥接
-    val scope = rememberCoroutineScope()
     val interactionSource = remember { MutableInteractionSource() }
     val indication = LocalIndication.current
     val pressed by interactionSource.collectIsPressedAsState()
-    var showContextMenu by remember { mutableStateOf(false) }
+    var showDeleteMenu by remember { mutableStateOf(false) }
     val currentArtist = videoItem.currentArtist?.takeIf { it.isNotBlank() }
     val cardShape = shapeByInteraction(
         shapes = HanimeDefaults.cardShapes(),
@@ -143,10 +129,12 @@ fun VideoCardItem(
                             haptic()
                             onClickVideosItem(videoItem.videoCode)
                         },
-                        onLongClick = {
-                            haptic()
-                            showContextMenu = true
-                        },
+                        onLongClick = if (onDeleteItem != null) {
+                            {
+                                haptic()
+                                showDeleteMenu = true
+                            }
+                        } else null,
                     ),
             ) {
                 Box(
@@ -320,40 +308,16 @@ fun VideoCardItem(
                 }
             }
             DropdownMenu(
-                expanded = showContextMenu,
-                onDismissRequest = { showContextMenu = false },
+                expanded = showDeleteMenu && onDeleteItem != null,
+                onDismissRequest = { showDeleteMenu = false },
             ) {
                 DropdownMenuItem(
-                    text = { Text("复制视频信息") },
+                    text = { Text(stringResource(Res.string.delete)) },
                     onClick = {
-                        showContextMenu = false
-                        copyTextToClipboard(
-                            getHanimeShareText(
-                                videoItem.title,
-                                videoItem.videoCode
-                            )
-                        )
-                        scope.launch { AppToast.success(getString(Res.string.copy_to_clipboard)) }
+                        showDeleteMenu = false
+                        onDeleteItem?.invoke(videoItem.videoCode, videoItem.title)
                     },
                 )
-                if (currentArtist != null) {
-                    DropdownMenuItem(
-                        text = { Text("搜索该作者所有作品") },
-                        onClick = {
-                            showContextMenu = false
-                            navigateToArtistSearch(currentArtist)
-                        },
-                    )
-                }
-                if (showDeleteAction) {
-                    DropdownMenuItem(
-                        text = { Text(stringResource(Res.string.delete)) },
-                        onClick = {
-                            showContextMenu = false
-                            onLongClickVideosItem(videoItem.videoCode, videoItem.title)
-                        },
-                    )
-                }
             }
         }
     }

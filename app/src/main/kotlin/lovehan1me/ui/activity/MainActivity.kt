@@ -27,8 +27,6 @@ import lovehan1me.app.navigation.main.AccountRoute
 import lovehan1me.app.navigation.main.HanimeScreen
 import lovehan1me.app.navigation.main.LoginRoute
 import lovehan1me.app.navigation.main.TopLevelBackStack
-import lovehan1me.app.navigation.main.SearchRoute
-import lovehan1me.app.navigation.main.registerArtistSearchNavigator
 import lovehan1me.app.navigation.main.VideoRoute
 import lovehan1me.app.main.ACTION_TOGGLE_PLAY
 import lovehan1me.app.main.MainActivityHost
@@ -110,9 +108,6 @@ class MainActivity : BaseActivity(), MainActivityHost {
     }
 
     override fun onActivityCreated(savedInstanceState: Bundle?) {
-        // P6d-4F：注册跨平台导航（VideoCardItem「搜索该作者」）
-        registerArtistSearchNavigator { query -> mainBackStack.add(SearchRoute(query = query)) }
-
         initData()
         pendingNavigationRequests.tryEmit(intent)
     }

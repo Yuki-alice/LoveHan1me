@@ -93,7 +93,6 @@ import kotlinx.coroutines.flow.distinctUntilChanged
  * @param onDismiss 关闭回调
  * @param playListTitle 播放列表标题
  * @param onClickItem 点击视频项回调
- * @param onLongClickItem 长按视频项回调
  * @param vm 播放列表 ViewModel（弹窗内需要直接观察 ViewModel StateFlow）
  */
 @OptIn(ExperimentalMaterial3Api::class)
@@ -103,7 +102,6 @@ fun PlaylistBottomSheet(
     onDismiss: () -> Unit,
     playListTitle: String,
     onClickItem: (String) -> Unit,
-    onLongClickItem: (String, String) -> Unit,
     vm: PlaylistController,
 ) {
     val playlistState by vm.playlistStateFlow.collectAsStateWithLifecycle()
@@ -363,11 +361,11 @@ private fun PlaylistSheetContent(
                     VideoCardItem(
                         videoItem = item,
                         isHorizontalCard = true,
-                        showDeleteAction = true,
-                        onClickVideosItem = onClickItem
-                    ) { videoCode, _ ->
-                        showDeleteItemConfirm = Triple(listCode, videoCode, index)
-                    }
+                        onClickVideosItem = onClickItem,
+                        onDeleteItem = { videoCode, _ ->
+                            showDeleteItemConfirm = Triple(listCode, videoCode, index)
+                        },
+                    )
                 }
 
                 item(span = { GridItemSpan(columns) }) {

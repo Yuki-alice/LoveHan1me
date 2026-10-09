@@ -61,7 +61,6 @@ import kotlinx.coroutines.launch
  * @param onClickArtist 点击作者 → 有 artistId 直连作者页，否则回退搜索
  * @param onLongClickArtist 长按作者 → 复制分享文本
  * @param onClickVideosItem 点击视频 → 跳转详情
- * @param onLongClickVideosItem 长按视频 → 复制分享文本
  */
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -71,7 +70,6 @@ fun SubscriptionScreen(
     onClickArtist: (artistName: String, artistId: String) -> Unit,
     onLongClickArtist: (String) -> Unit,
     onClickVideosItem: (String) -> Unit,
-    onLongClickVideosItem: (String, String) -> Unit,
 ) {
     val state by viewModel.subscriptionsState.collectAsStateWithLifecycle()
     val settings by SettingsRepository.settings.collectAsStateWithLifecycle()
@@ -140,10 +138,6 @@ fun SubscriptionScreen(
             is SubscriptionEvent.OnClickArtist -> onClickArtist(event.artistName, event.artistId)
             is SubscriptionEvent.OnLongClickArtist -> onLongClickArtist(event.artistName)
             is SubscriptionEvent.OnClickVideo -> onClickVideosItem(event.videoCode)
-            is SubscriptionEvent.OnLongClickVideo -> onLongClickVideosItem(
-                event.videoCode,
-                event.title
-            )
 
             SubscriptionEvent.OnRefresh -> {
                 isRefreshing = true

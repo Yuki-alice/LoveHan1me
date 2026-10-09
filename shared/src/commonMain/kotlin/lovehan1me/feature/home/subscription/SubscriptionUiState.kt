@@ -42,9 +42,6 @@ sealed interface SubscriptionEvent {
     /** 点击视频 */
     data class OnClickVideo(val videoCode: String) : SubscriptionEvent
 
-    /** 长按视频 */
-    data class OnLongClickVideo(val videoCode: String, val title: String) : SubscriptionEvent
-
     /** 下拉刷新 */
     data object OnRefresh : SubscriptionEvent
 
