@@ -15,7 +15,6 @@ import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -141,7 +140,7 @@ fun ArtistDetailScreen(
                     HanimeAsyncImage(
                         model = displayAvatar,
                         contentDescription = displayName,
-                        modifier = Modifier.size(96.dp).clip(RoundedCornerShape(20.dp)),
+                        modifier = Modifier.size(96.dp).clip(MaterialTheme.shapes.largeIncreased),
                         contentScale = ContentScale.Crop,
                     )
                     Column(
@@ -322,7 +321,7 @@ private fun SectionHeader(title: String, actionLabel: String, onAction: () -> Un
         Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         OutlinedButton(
             onClick = onAction,
-            shape = RoundedCornerShape(50),
+            shape = HanimeDefaults.Corners.pill,
             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 2.dp),
         ) { Text(actionLabel, style = MaterialTheme.typography.labelLarge) }
     }
@@ -346,7 +345,7 @@ private fun PlaylistCard(summary: SitePlaylistSummary, onClick: () -> Unit) {
             HanimeAsyncImage(
                 model = summary.coverUrl,
                 contentDescription = summary.name,
-                modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(12.dp)),
+                modifier = Modifier.fillMaxWidth().clip(MaterialTheme.shapes.medium),
                 contentScale = ContentScale.Crop,
             )
             // 站内同款中央播放 overlay（圆形暗底 + 箭头）。
@@ -367,7 +366,7 @@ private fun PlaylistCard(summary: SitePlaylistSummary, onClick: () -> Unit) {
             if (summary.videoCountText.isNotBlank()) {
                 Surface(
                     modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = MaterialTheme.shapes.small,
                     color = MaterialTheme.colorScheme.scrim.copy(alpha = 0.65f),
                 ) {
                     Text(

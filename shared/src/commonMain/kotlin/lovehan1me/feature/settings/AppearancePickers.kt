@@ -274,7 +274,7 @@ private fun DarkModeItem(
         Box(
             modifier = Modifier
                 .size(width = 96.dp, height = 140.dp)
-                .clip(RoundedCornerShape(12.dp)),
+                .clip(MaterialTheme.shapes.medium),
         ) {
             when (option.value) {
                 "follow_system" -> {

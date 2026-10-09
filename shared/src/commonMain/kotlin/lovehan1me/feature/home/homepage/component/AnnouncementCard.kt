@@ -16,11 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import lovehan1me.Res
 import lovehan1me.close
 import lovehan1me.ic_close
@@ -75,13 +73,12 @@ fun AnnouncementCard(
                 Text(
                     text = announcement.title,
                     style = MaterialTheme.typography.labelLarge,
-                    fontWeight = FontWeight.Medium,
                     color = onContainer,
                 )
             }
             Text(
                 text = announcement.content,
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 12.sp),
+                style = MaterialTheme.typography.bodySmall,
                 color = onContainer,
             )
         }

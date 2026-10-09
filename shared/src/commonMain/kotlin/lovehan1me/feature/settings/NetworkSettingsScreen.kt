@@ -27,8 +27,8 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import org.jetbrains.compose.resources.stringResource
+import lovehan1me.ui.theme.HanimeDefaults
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
 import lovehan1me.auto_built_in_hosts
@@ -569,12 +569,14 @@ private fun DelayTestDialog(
                             Text(item.ip)
                             Text(
                                 text = if (item.delay >= 0) "${item.delay} ms" else stringResource(Res.string.network_timeout_text),
-                                // 延迟三档是数据语义色（快/中/慢，图表色性质），刻意不跟主题：
-                                // 跟主题走（primary/tertiary/error）会丢掉"绿=快"的直觉。
+                                // 延迟三档是数据语义色（快/中/慢，图表色性质），不跟 primary/tertiary 走
+                                // —— 那会丢掉"绿=快"的直觉。取值收进语义 token（P0 一致性收敛）：快/中为
+                                // 补充色 HanimeDefaults.Colors.success / warning（双档对比度由
+                                // SemanticColorsTest 钉住），慢档复用语义角色 error。
                                 color = when (item.delay) {
-                                    in 0 until 100 -> Color(0xFF4CAF50)
-                                    in 100..500 -> Color(0xFFFFC107)
-                                    else -> Color(0xFFF44336)
+                                    in 0 until 100 -> HanimeDefaults.Colors.success
+                                    in 100..500 -> HanimeDefaults.Colors.warning
+                                    else -> MaterialTheme.colorScheme.error
                                 },
                             )
                         }
@@ -622,11 +624,11 @@ private fun DohTestDialog(
                                         stringResource(Res.string.network_timeout_text)
                                     }
                                 },
-                                // 同上：数据语义色，保持与上处一致。
+                                // 同上：数据语义色，与上处的 token 保持一致（success / warning / error）。
                                 color = when (item.delay) {
-                                    in 0 until 100 -> Color(0xFF4CAF50)
-                                    in 100..500 -> Color(0xFFFFC107)
-                                    else -> Color(0xFFF44336)
+                                    in 0 until 100 -> HanimeDefaults.Colors.success
+                                    in 100..500 -> HanimeDefaults.Colors.warning
+                                    else -> MaterialTheme.colorScheme.error
                                 },
                             )
                             if (item.ips.isNotEmpty()) {

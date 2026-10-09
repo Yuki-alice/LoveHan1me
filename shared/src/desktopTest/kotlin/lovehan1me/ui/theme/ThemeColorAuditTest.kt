@@ -170,6 +170,21 @@ class ThemeColorAuditTest {
             }
         }
 
+        out.appendLine()
+        out.appendLine("===== 6. 补充语义色（固定常量，不随槽位色算）=====")
+        out.appendLine("延迟指示用 success / warning；硬断言在 SemanticColorsTest（这里只打印实测值）。")
+        val semanticChecks = listOf(
+            "successLight vs 浅底锚" to (HanimeDefaults.Colors.successLight to Color(0xFFE6E0E9)),
+            "warningLight vs 浅底锚" to (HanimeDefaults.Colors.warningLight to Color(0xFFE6E0E9)),
+            "successDark vs 深底锚" to (HanimeDefaults.Colors.successDark to Color(0xFF2B2930)),
+            "warningDark vs 深底锚" to (HanimeDefaults.Colors.warningDark to Color(0xFF2B2930)),
+        )
+        for ((label, pair) in semanticChecks) {
+            out.appendLine(
+                "  %-24s %s  对比率=%5.2f".format(label, hex(pair.first), ratio(pair.first, pair.second)),
+            )
+        }
+
         val file = File(System.getProperty("java.io.tmpdir"), "theme-audit.txt")
         file.writeText(out.toString())
         println("theme audit written to ${file.absolutePath}")

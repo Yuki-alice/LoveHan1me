@@ -27,7 +27,6 @@ import androidx.compose.ui.draw.clip
 import org.jetbrains.compose.resources.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import lovehan1me.Res
 import lovehan1me.ic_check
 import lovehan1me.ic_check_circle
@@ -130,7 +129,7 @@ private fun SettingRow(
                 text = title,
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
-                style = MaterialTheme.typography.titleMedium.copy(fontSize = 18.sp),
+                style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = contentAlpha),
             )
             if (!summary.isNullOrBlank()) {

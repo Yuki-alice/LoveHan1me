@@ -12,9 +12,11 @@ import androidx.compose.ui.unit.sp
  * 1. **CJK 行高修正**：M3 基准行高按拉丁字形设计（约 1.2–1.5 倍字号）。中文方块字
  *    占位更高，同样行距下明显拥挤 —— 正文两档（bodyMedium / bodySmall）行高 +2sp。
  *    标题 / label 行高保持：短文本 + 加粗字形的实际行盒更宽松，不必加。
- * 2. **强调字阶（Expressive 资产）**：`bodyMediumEmphasized` / `bodySmallEmphasized`
- *    默认只比常规重半档（w500），而中文 w500 与 w400 的区分度很低 —— 「强调」名存实亡。
- *    提到 SemiBold，让同一语义层级下的强调真正可辨。
+ * 2. **强调字阶（Expressive 资产）**：M3E 的强调档字重是**逐档指定**的（已核验
+ *    1.12.0-alpha03：body 三档 / titleLarge / headlineSmall 为 w500，titleMedium /
+ *    labelLarge 为 w700）—— w500 对中文与常规档区分度很低，w700 又偏黑、与全局强调
+ *    取值不成体系。凡项目**实际消费**的强调档统一收敛到 SemiBold：body 两档 + title
+ *    两档 + headlineSmall 一档；新增消费时按同一策略补一行（别照英文习惯直接取 M3E 默认字重）。
  * 3. **不引入自定义字体**：全项目零 `FontFamily` 资源。字体的引入（许可 / 体积 / 三端
  *    加载）是独立决策，字阶不等它。
  *
@@ -36,4 +38,7 @@ val AppTypography: Typography = Base.copy(
     // —— Expressive 强调字阶 ——
     bodyMediumEmphasized = Base.bodyMediumEmphasized.copy(fontWeight = FontWeight.SemiBold),
     bodySmallEmphasized = Base.bodySmallEmphasized.copy(fontWeight = FontWeight.SemiBold),
+    titleLargeEmphasized = Base.titleLargeEmphasized.copy(fontWeight = FontWeight.SemiBold),
+    titleMediumEmphasized = Base.titleMediumEmphasized.copy(fontWeight = FontWeight.SemiBold),
+    headlineSmallEmphasized = Base.headlineSmallEmphasized.copy(fontWeight = FontWeight.SemiBold),
 )

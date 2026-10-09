@@ -9,6 +9,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.dp
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
@@ -158,6 +159,47 @@ object HanimeDefaults {
         /** 首页视频卡填充 —— `surfaceContainerLow`（比 [card] 浅一档，密集列表里更透气）。 */
         val homeVideoCard: Color
             @Composable get() = MaterialTheme.colorScheme.surfaceContainerLow
+
+        /**
+         * 延迟指示的"快 / 慢"档 —— 项目级补充语义色（M3 色板没有 success / warning 角色）。
+         *
+         * 为什么固定双档、不参与槽位色算：延迟色阶是**数据语义色**（"绿 = 快"跨主题成立），
+         * 跟 primary / tertiary 走会把这个直觉洗掉（见 `NetworkSettingsScreen` 换用点注释）。
+         * 慢档不在这里 —— 直接复用语义角色 `colorScheme.error`。
+         *
+         * 取值保证 ≥4.5:1（WCAG AA 正文）且**可断言**：手挑常量对固定锚底色的对比度是
+         * 纯函数，不随 materialkolor 版本漂移 —— 由 `SemanticColorsTest` 钉住（区别于
+         * `ThemeColorAuditTest` 的"只打印"：那边比的是生成色，断言会 flaky）。
+         */
+        val success: Color
+            @Composable get() = if (isDarkScheme()) successDark else successLight
+
+        val warning: Color
+            @Composable get() = if (isDarkScheme()) warningDark else warningLight
+
+        /** 浅色档（对浅底最坏情况 ≥4.5:1）。 */
+        internal val successLight = Color(0xFF1B5E20)
+
+        /** 深色档（对深底最坏情况 ≥4.5:1）。 */
+        internal val successDark = Color(0xFF81C784)
+
+        /** 浅色档（对浅底最坏情况 ≥4.5:1）。 */
+        internal val warningLight = Color(0xFF7A5900)
+
+        /** 深色档（对深底最坏情况 ≥4.5:1）。 */
+        internal val warningDark = Color(0xFFFFCA28)
+
+        /**
+         * 当前主题是否为深色 —— 用页面底色（`surfaceContainerLowest`：浅 T100 / 深 T4）
+         * 的相对亮度判定。
+         *
+         * 不走 CompositionLocal 转发深浅标记：装配层 `HanimeTheme(colorScheme)`（播放器壳
+         * 走的就是这条路，它强制深色方案）拿不到标记；本判定只看"最终配色长什么样"，
+         * 12 槽位 × AMOLED × 播放器全部自动正确。
+         */
+        @Composable
+        private fun isDarkScheme(): Boolean =
+            MaterialTheme.colorScheme.surfaceContainerLowest.luminance() < 0.5f
     }
 
     /**
