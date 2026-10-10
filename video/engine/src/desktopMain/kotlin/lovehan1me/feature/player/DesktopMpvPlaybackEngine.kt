@@ -75,12 +75,7 @@ class DesktopMpvPlaybackEngine(
 
     override suspend fun acquireMediampPlayer(): MediampPlayer = awaitPlayer()
 
-    init {
-        startObserving()
-        // G2-3b：Stretch 档看门狗（默认 Fit 档下完全不碰 mpv，不会提前触发原生初始化）。
-        startAspectWatch()
-        startEnhancementObserver()
-    }
+    // ⚠️ init 块在文件末尾（companion object 之前）—— 不能挪回这里，原因见那里的注释。
 
     // ── 加载：ECH 网关改写 + 失败回退直连（桌面独有）───────────────
 
@@ -626,6 +621,27 @@ class DesktopMpvPlaybackEngine(
     }.onFailure {
         LogUtil.w(TAG, "无法获取 mpv 句柄：${it.message}")
     }.getOrNull()
+
+    /**
+     * ⚠️ 必须留在**所有属性初始化之后**（Kotlin/JVM 按声明顺序执行属性初始化与 init 块）。
+     *
+     * 三个观察者都是 `scope.launch`，会立刻被调度到 `Dispatchers.Default`：若本块留在类顶部
+     * （此前就是），协程可能在构造线程还没执行到 `requestedLevel` / `viewportSize` 的初始化
+     * 语句时就读取它们 —— 字段仍是 JVM 默认值 `null`，传进 `safeCombine` 直接被非空形参
+     * 检查拦下：
+     * ```
+     * NullPointerException: Parameter specified as non-null is null:
+     *     method ...FlowCombineExtKt.safeCombine, parameter flow
+     *     at DesktopMpvPlaybackEngine$startEnhancementObserver$1.invokeSuspend(...)
+     * ```
+     * 这是构造期竞态：窗口极小但真实（崩溃栈已捕获过一次），与"可空 Flow 未兜底"无关。
+     */
+    init {
+        startObserving()
+        // G2-3b：Stretch 档看门狗（默认 Fit 档下完全不碰 mpv，不会提前触发原生初始化）。
+        startAspectWatch()
+        startEnhancementObserver()
+    }
 
     companion object {
         private const val TAG = "DesktopMpv"

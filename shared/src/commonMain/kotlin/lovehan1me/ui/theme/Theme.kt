@@ -71,9 +71,9 @@ fun HanimeTheme(
     }
     // 切槽位 / 深浅 / 对比度 / AMOLED 时平滑过渡（不再硬切）。
     //
-    // 注意：这 48 个 animateColorAsState 的 .value 都在本作用域读，所以过渡的每一帧
-    // 本函数都会重组一次、并向下分发一个新的 ColorScheme —— 这是"整棵子树跟着渐变"
-    // 的既定代价，改不了；上面两步做的是把这一帧里能省的（色算 / 实例分配 / 子项跳过）省掉。
+    // 注意：过渡的每一帧本函数都会重组一次、并向下分发一个新的 ColorScheme —— 这是
+    // "整棵子树跟着渐变"的既定代价，改不了；上面两步做的是把这一帧里能省的
+    // （色算 / 实例分配 / 子项跳过）省掉。动画本体 = animateColorScheme 的单进度动画 + lerp。
     val animatedColorScheme = animateColorScheme(targetColorScheme)
     ConfigureSystemBars(
         colorScheme = targetColorScheme,

@@ -63,10 +63,7 @@ class MediampExoPlaybackEngine(
 
     private val exoPlayer: ExoPlayer get() = mediampPlayer.impl as ExoPlayer
 
-    init {
-        startObserving()
-        startEnhancementObserver()
-    }
+    // ⚠️ init 块在文件末尾（companion object 之前）—— 不能挪回这里，原因见那里的注释。
 
     // ── 网络：ECH 逐请求改写（复用 P1 的 EchGateDataSource） ──
 
@@ -200,6 +197,19 @@ class MediampExoPlaybackEngine(
 
     override fun setVolume(volume: Float) {
         exoPlayer.volume = volume.coerceIn(0f, 1f)
+    }
+
+    /**
+     * ⚠️ 必须留在**所有属性初始化之后**（Kotlin/JVM 按声明顺序执行属性初始化与 init 块）。
+     *
+     * 与桌面引擎同一根因：观察者是 `scope.launch`，可能在构造线程还没执行到
+     * `requestedLevel` / `surfaceSize` 的初始化语句时就读取它们 —— 字段仍是 JVM 默认值
+     * `null`，传进 `safeCombine` 直接被非空形参检查拦下（桌面已因此复现过一次闪退，
+     * 见 `DesktopMpvPlaybackEngine` 同位置注释）。
+     */
+    init {
+        startObserving()
+        startEnhancementObserver()
     }
 
     private companion object {
