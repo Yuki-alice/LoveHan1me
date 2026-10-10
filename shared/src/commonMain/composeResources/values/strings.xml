@@ -247,6 +247,10 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="proxy_mode_rules_summary">Only the site and getchu use the proxy; third-party requests stay direct. To bypass the proxy entirely, pick Direct under "Proxy" above</string>
     <string name="proxy_mode_hit_hosts">Matches: %1$s</string>
     <string name="proxy_mode_shadowed">"Manual routing" is set to %1$s, so this has no effect for now</string>
+    <string name="proxy_rule_custom">Custom rules</string>
+    <string name="proxy_rule_custom_empty">None yet — built-in rules only</string>
+    <string name="proxy_rule_custom_count">%1$d added (applies in "Restricted domains only")</string>
+    <string name="proxy_rule_custom_hint">One per line; a domain or a suffix. Lines starting with # are comments. example.com also covers all its subdomains</string>
     <string name="egress_diagnostics">Connection diagnostics</string>
     <string name="egress_diagnostics_empty">No egress events yet</string>
     <string name="egress_copy">Copy</string>

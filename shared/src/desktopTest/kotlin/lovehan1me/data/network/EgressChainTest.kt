@@ -60,12 +60,19 @@ private fun withProxy(
     ip: String = "",
     port: Int = -1,
     mode: ProxyMode = ProxyMode.Global,
+    ruleHosts: String = "",
     block: () -> Unit,
 ) {
     ensureStoreInstalled()
     runBlocking {
         SettingsRepository.update {
-            it.copy(proxyType = type, proxyIp = ip, proxyPort = port, proxyMode = mode)
+            it.copy(
+                proxyType = type,
+                proxyIp = ip,
+                proxyPort = port,
+                proxyMode = mode,
+                proxyRuleHosts = ruleHosts,
+            )
         }
     }
     try {
@@ -73,7 +80,13 @@ private fun withProxy(
     } finally {
         runBlocking {
             SettingsRepository.update {
-                it.copy(proxyType = ProxyType.System, proxyIp = "", proxyPort = -1, proxyMode = ProxyMode.Global)
+                it.copy(
+                    proxyType = ProxyType.System,
+                    proxyIp = "",
+                    proxyPort = -1,
+                    proxyMode = ProxyMode.Global,
+                    proxyRuleHosts = "",
+                )
             }
         }
     }
@@ -156,6 +169,26 @@ class HanimeProxySelectorTest {
         // 两个维度叠加时不能编造出代理：这是删档后最容易回归错的地方。
         assertEquals(listOf(Proxy.NO_PROXY), selector.select(uri))
     }
+
+    @Test
+    fun `用户追加的域在 Rules 档走代理且立即生效`() =
+        withProxy(ProxyType.Http, "203.0.113.7", 7890, ProxyMode.Rules, "my.cdn.example") {
+            // B2-3 的验收标准：加一条域名并立即生效（无需重启、无需 rebuild）。
+            assertEquals(
+                Proxy.Type.HTTP,
+                selector.select(URI("https://my.cdn.example/x.mp4")).first().type(),
+            )
+            assertEquals(
+                Proxy.Type.HTTP,
+                selector.select(URI("https://a.my.cdn.example/x.mp4")).first().type(),
+                "后缀语义要连带子域",
+            )
+            // "看起来像"的域不误判
+            assertEquals(
+                listOf(Proxy.NO_PROXY),
+                selector.select(URI("https://notmy.cdn.example/x.mp4")),
+            )
+        }
 
     @Test
     fun `Global 模式保持历史行为`() = withProxy(ProxyType.Http, "203.0.113.7", 7890, ProxyMode.Global) {

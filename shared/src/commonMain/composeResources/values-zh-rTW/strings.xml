@@ -261,6 +261,10 @@
     <string name="proxy_mode_rules_summary">僅站台與 getchu 走代理，第三方介面保持直連；要全部不走代理，請在上方的「代理」選直連</string>
     <string name="proxy_mode_hit_hosts">命中：%1$s</string>
     <string name="proxy_mode_shadowed">「手動強制選路」目前為%1$s，此項暫不生效</string>
+    <string name="proxy_rule_custom">自訂規則</string>
+    <string name="proxy_rule_custom_empty">尚未新增，僅內建規則生效</string>
+    <string name="proxy_rule_custom_count">已新增 %1$d 條（在「僅受限網域」檔生效）</string>
+    <string name="proxy_rule_custom_hint">一行一條，網域或後綴；# 開頭為註釋。example.com 會連帶它的所有子網域</string>
     <string name="egress_diagnostics">連接診斷</string>
     <string name="egress_diagnostics_empty">暫無出站事件</string>
     <string name="egress_copy">複製</string>

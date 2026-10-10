@@ -97,6 +97,10 @@ import lovehan1me.proxy_mode_hit_hosts
 import lovehan1me.proxy_mode_rules
 import lovehan1me.proxy_mode_rules_summary
 import lovehan1me.proxy_mode_shadowed
+import lovehan1me.proxy_rule_custom
+import lovehan1me.proxy_rule_custom_count
+import lovehan1me.proxy_rule_custom_empty
+import lovehan1me.proxy_rule_custom_hint
 import lovehan1me.egress_force_direct_warning
 import lovehan1me.egress_diagnostics
 import lovehan1me.egress_diagnostics_empty
@@ -120,6 +124,7 @@ import lovehan1me.core.domain.model.ProxyMode
 import lovehan1me.data.network.egress.ForceMode
 import lovehan1me.data.network.egress.ProxyRuleScope
 import lovehan1me.data.network.egress.ProxyRuleSummary
+import lovehan1me.data.network.egress.parseProxyRuleHosts
 import lovehan1me.ui.component.ChoiceDialog
 import lovehan1me.ui.component.SettingNavigationItem
 import lovehan1me.ui.component.SettingSwitchItem
@@ -235,6 +240,9 @@ fun NetworkSettingsScreen(
      * 判定在 commonMain `proxyRuleSummary`，这里只渲染 —— 三端共用同一份判据。
      */
     proxyRule: ProxyRuleSummary = ProxyRuleSummary(ProxyRuleScope.All),
+    /** B2-3：用户追加的代理规则原文（空 = 只用内置规则）。 */
+    proxyRuleHosts: String = "",
+    onSaveProxyRuleHosts: (String) -> Unit = {},
     egressEvents: List<EgressEventUi> = emptyList(),
     egressExportText: String = "",
     /** B4-4：诊断窗顶部的「结论层」文本（commonMain `EgressDiagnosis.formatReport` 产出）。 */
@@ -247,6 +255,7 @@ fun NetworkSettingsScreen(
     var showCustomMirrorSiteDialog by rememberSaveable { mutableStateOf(false) }
     var showForceModeDialog by rememberSaveable { mutableStateOf(false) }
     var showProxyModeDialog by rememberSaveable { mutableStateOf(false) }
+    var showProxyRuleDialog by rememberSaveable { mutableStateOf(false) }
     var showEgressDiagnostics by rememberSaveable { mutableStateOf(false) }
     val copyText = rememberCopyTextToClipboard()
     val forceModeName = when (forceMode) {
@@ -385,6 +394,17 @@ fun NetworkSettingsScreen(
         )
     }
 
+    if (showProxyRuleDialog) {
+        ProxyRuleDialog(
+            currentText = proxyRuleHosts,
+            onDismiss = { showProxyRuleDialog = false },
+            onConfirm = {
+                showProxyRuleDialog = false
+                onSaveProxyRuleHosts(it)
+            },
+        )
+    }
+
     if (showEgressDiagnostics) {
         EgressDiagnosticsDialog(
             events = egressEvents,
@@ -441,6 +461,18 @@ fun NetworkSettingsScreen(
                     summary = proxyModeSummary,
                     iconRes = Res.drawable.ic_vpn,
                     onClick = { showProxyModeDialog = true },
+                )
+                // B2-3：用户追加的域名/后缀。常驻显示（哪怕当前是 Global 档）并在文案里写明
+                // 「在仅受限域档生效」—— 换成"非 Rules 档就隐藏"会让用户以为规则丢了。
+                SettingNavigationItem(
+                    title = stringResource(Res.string.proxy_rule_custom),
+                    summary = if (proxyRuleHosts.isBlank()) {
+                        stringResource(Res.string.proxy_rule_custom_empty)
+                    } else {
+                        stringResource(Res.string.proxy_rule_custom_count, parseProxyRuleHosts(proxyRuleHosts).size)
+                    },
+                    iconRes = Res.drawable.ic_edit_square,
+                    onClick = { showProxyRuleDialog = true },
                 )
             }
 
@@ -939,6 +971,36 @@ private fun DohDialog(
             TextButton(onClick = onDismiss) {
                 Text(stringResource(Res.string.cancel))
             }
+        },
+    )
+}
+
+/** B2-3：自定义代理规则编辑。存**原文**，解析交给 commonMain 的 [parseProxyRuleHosts]。 */
+@Composable
+private fun ProxyRuleDialog(
+    currentText: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var text by rememberSaveable(currentText) { mutableStateOf(currentText) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.proxy_rule_custom)) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                modifier = Modifier.fillMaxWidth(),
+                minLines = 8,
+                supportingText = { Text(stringResource(Res.string.proxy_rule_custom_hint)) },
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(text) }) { Text(stringResource(Res.string.confirm)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
         },
     )
 }

@@ -222,6 +222,16 @@ data class AppSettings(
     /** 代理作用范围（F5 规则分流，见 [ProxyMode]）；默认 `Global` = 旧行为。 */
     val proxyMode: ProxyMode = ProxyMode.Global,
     /**
+     * B2-3：用户追加的代理规则**原文**（一行一条，域名或后缀，`#` 开头为注释）。
+     *
+     * 存原文而不是解析后的列表：用户要能回来继续编辑，而解析是每次读取时的事 ——
+     * 沿用本仓"存储 + 每请求热读"的约定，**不引入 rebuild**。
+     * 空文本 = 只用内置规则。
+     *
+     * 只在 [ProxyMode.Rules] 档生效：Global 档本就全部走代理，加了没有意义。
+     */
+    val proxyRuleHosts: String = "",
+    /**
      * 桌面专用：CF 验证浏览器**自报的真实 UA**（空 = 尚未采集）。
      *
      * 为什么不直接用常量：cf_clearance 绑定 UA，而浏览器 UA 又**不能伪造**

@@ -40,25 +40,73 @@ data class ProxyRuleSummary(
  * 这里的判定因此只做一件事：诚实地标出"本项当前被盖住"，**不改变任何一方的行为**。
  *
  * @param siteHost 当前站点域名（自定义镜像不在内置表里，但必须与站点同出口）。
+ * @param userRules 用户追加的规则（B2-3），已由 [parseProxyRuleHosts] 归一化。
  */
 fun proxyRuleSummary(
     mode: ProxyMode,
     force: ForceMode,
     siteHost: String?,
+    userRules: List<String> = emptyList(),
 ): ProxyRuleSummary {
     val scope = if (mode == ProxyMode.Rules) ProxyRuleScope.RestrictedOnly else ProxyRuleScope.All
     val hosts = if (scope == ProxyRuleScope.RestrictedOnly) {
-        // 与 jvmMain `HanimeProxySelector.restrictedForProxy` 同口径：内置受限域 + 当前站点。
-        // 判据本体是 [isRestrictedHost]；这里只把它"展开"成人能读的清单。
+        // 与 jvmMain `HanimeProxySelector.restrictedForProxy` 同口径：
+        // 内置受限域 + 当前站点 + 用户追加。判据本体是 [isRestrictedHost] / [matchesProxyRule]，
+        // 这里只把它们"展开"成人能读的清单。
         buildList {
             HanimeConstants.HANIME_HOSTNAME.forEach { add(it) }
             add(GETCHU_HOST)
             if (!siteHost.isNullOrBlank() && !contains(siteHost)) add(siteHost)
+            userRules.forEach { if (!contains(it)) add(it) }
         }.distinct()
     } else {
         emptyList()
     }
     return ProxyRuleSummary(scope = scope, hosts = hosts, shadowedBy = shadowingForceMode(force))
+}
+
+/**
+ * 解析用户规则文本（B2-3）→ 归一化后的规则列表。
+ *
+ * 容忍用户常见的粘贴形态，因为"用户从浏览器地址栏复制一整条 URL 粘进来"是最典型的动作：
+ * 去注释（`#` 之后）、去空白行、去 scheme / 路径 / 端口、去首尾点、
+ * 把 `*.example.com` 与 `.example.com` 统一成 `example.com`，最后去重。
+ *
+ * 解析失败**不会抛异常** —— 一条写坏了最多是这条不生效，其余规则照常工作。
+ */
+fun parseProxyRuleHosts(text: String): List<String> =
+    text.lineSequence()
+        .map { it.substringBefore('#').trim() }
+        .filter { it.isNotEmpty() }
+        .map(::normalizeProxyRuleHost)
+        .filter { it.isNotEmpty() }
+        .distinct()
+        .toList()
+
+/**
+ * 归一化单条规则 / 单个 host：小写、去 scheme / 路径 / 端口 / 首尾点、去通配前缀。
+ *
+ * 供解析与匹配**共用**同一份，避免"存进去的样子"和"匹配时的样子"不一致。
+ */
+fun normalizeProxyRuleHost(raw: String): String {
+    var host = raw.trim().lowercase()
+    val schemeEnd = host.indexOf("//")
+    if (schemeEnd >= 0) host = host.substring(schemeEnd + 2)
+    host = host.substringBefore('/').substringBefore('?').substringBefore(':')
+    return host.trimEnd('.').removePrefix("*").trimStart('.')
+}
+
+/**
+ * [host] 是否命中规则列表（B2-3）。
+ *
+ * 后缀语义：`example.com` 命中 `example.com` 及其**任意层级子域**（`a.example.com`、
+ * `a.b.example.com`），但**不**命中 `notexample.com` —— 后者是"看起来像"的陷阱，
+ * 用简单的 `contains` 或 `endsWith(rule)` 都会误判，故用 `endsWith(".$rule")`。
+ */
+fun matchesProxyRule(host: String, rules: List<String>): Boolean {
+    val normalized = normalizeProxyRuleHost(host)
+    if (normalized.isEmpty()) return false
+    return rules.any { rule -> normalized == rule || normalized.endsWith(".$rule") }
 }
 
 /**

@@ -4,6 +4,7 @@ import lovehan1me.core.constant.HanimeConstants
 import lovehan1me.core.domain.model.ProxyMode
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
@@ -73,5 +74,61 @@ class ProxyRulesTest {
         ProxyMode.entries.forEach { mode ->
             assertNull(proxyRuleSummary(mode, ForceMode.Auto, null).shadowedBy)
         }
+    }
+
+    @Test
+    fun `解析规则去注释空行与重复`() {
+        val rules = parseProxyRuleHosts(
+            """
+            # 这是一条注释
+            example.com
+
+            EXAMPLE.COM
+              a.example.com
+            """.trimIndent(),
+        )
+        assertEquals(listOf("example.com", "a.example.com"), rules)
+    }
+
+    @Test
+    fun `粘贴完整 URL 也能用`() {
+        // 用户从地址栏复制一整条 URL 粘进来是最典型的动作，不该要求他手工剥出域名。
+        assertEquals(listOf("example.com"), parseProxyRuleHosts("https://example.com:8443/path?q=1"))
+    }
+
+    @Test
+    fun `通配前缀归一化成同一条`() {
+        assertEquals(listOf("example.com"), parseProxyRuleHosts("*.example.com"))
+        assertEquals(listOf("example.com"), parseProxyRuleHosts(".example.com"))
+    }
+
+    @Test
+    fun `后缀匹配连带任意层级子域`() {
+        val rules = listOf("example.com")
+        assertTrue(matchesProxyRule("example.com", rules))
+        assertTrue(matchesProxyRule("a.example.com", rules))
+        assertTrue(matchesProxyRule("a.b.example.com", rules))
+    }
+
+    @Test
+    fun `看起来像的域名不误判`() {
+        // 用 contains 或者裸 endsWith(rule) 写都会命中 —— 这正是本函数存在的理由。
+        assertFalse(matchesProxyRule("notexample.com", listOf("example.com")))
+        assertFalse(matchesProxyRule("myexample.com", listOf("example.com")))
+    }
+
+    @Test
+    fun `空规则与空 host 都不命中`() {
+        assertFalse(matchesProxyRule("example.com", emptyList()))
+        assertFalse(matchesProxyRule("", listOf("example.com")))
+        assertFalse(matchesProxyRule("   ", listOf("example.com")))
+    }
+
+    @Test
+    fun `用户追加的规则进得了命中清单`() {
+        val summary = proxyRuleSummary(ProxyMode.Rules, ForceMode.Auto, null, listOf("my.cdn.example"))
+        assertTrue(summary.hosts.contains("my.cdn.example"))
+        // Global 档不列举 —— 那档下所有流量都走代理，列清单没有意义
+        assertTrue(proxyRuleSummary(ProxyMode.Global, ForceMode.Auto, null, listOf("x.com")).hosts.isEmpty())
     }
 }

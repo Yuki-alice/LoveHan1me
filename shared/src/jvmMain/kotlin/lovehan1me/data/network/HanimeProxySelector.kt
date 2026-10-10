@@ -3,6 +3,8 @@ package lovehan1me.data.network
 import lovehan1me.core.domain.model.ProxyMode
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.egress.isRestrictedHost
+import lovehan1me.data.network.egress.matchesProxyRule
+import lovehan1me.data.network.egress.parseProxyRuleHosts
 import okhttp3.internal.proxy.NullProxySelector
 import java.io.IOException
 import java.net.Proxy
@@ -230,7 +232,10 @@ class HanimeProxySelector : ProxySelector() {
         if (host.isNullOrBlank()) return false
         if (isRestrictedHost(host)) return true
         val siteHost = runCatching { URI(SettingsRepository.baseUrl).host }.getOrNull()
-        return siteHost != null && siteHost.equals(host, ignoreCase = true)
+        if (siteHost != null && siteHost.equals(host, ignoreCase = true)) return true
+        // B2-3：用户追加的规则。原文**每次现解析** —— 与 proxyMode 一样是"每请求热读"，
+        // 不引入 rebuild，于是"加一条域名并立即生效"才成立（否则用户还得重启）。
+        return matchesProxyRule(host, parseProxyRuleHosts(SettingsRepository.proxyRuleHosts))
     }
 
     /**
