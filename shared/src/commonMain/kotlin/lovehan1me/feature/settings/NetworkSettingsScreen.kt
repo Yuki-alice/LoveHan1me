@@ -27,6 +27,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import org.jetbrains.compose.resources.stringResource
 import lovehan1me.ui.theme.HanimeDefaults
 import androidx.compose.ui.unit.dp
@@ -218,6 +219,8 @@ fun NetworkSettingsScreen(
     onForceModeChange: (String) -> Unit = {},
     egressEvents: List<EgressEventUi> = emptyList(),
     egressExportText: String = "",
+    /** B4-4：诊断窗顶部的「结论层」文本（commonMain `EgressDiagnosis.formatReport` 产出）。 */
+    egressReport: String = "",
 ) {
     var showDomainDialog by rememberSaveable { mutableStateOf(false) }
     var showProxyDialog by rememberSaveable { mutableStateOf(false) }
@@ -323,6 +326,7 @@ fun NetworkSettingsScreen(
     if (showEgressDiagnostics) {
         EgressDiagnosticsDialog(
             events = egressEvents,
+            report = egressReport,
             onCopy = { copyText(egressExportText) },
             onDismiss = { showEgressDiagnostics = false },
         )
@@ -713,6 +717,7 @@ private fun DohTestDialog(
 @Composable
 private fun EgressDiagnosticsDialog(
     events: List<EgressEventUi>,
+    report: String,
     onCopy: () -> Unit,
     onDismiss: () -> Unit,
 ) {
@@ -720,22 +725,32 @@ private fun EgressDiagnosticsDialog(
         onDismissRequest = onDismiss,
         title = { Text(stringResource(Res.string.egress_diagnostics)) },
         text = {
-            if (events.isEmpty()) {
-                Text(stringResource(Res.string.egress_diagnostics_empty))
-            } else {
-                LazyColumn(
-                    modifier = Modifier.heightIn(max = 320.dp),
-                    enableItemAnimation = false,
-                    verticalArrangement = Arrangement.spacedBy(8.dp),
-                ) {
-                    items(events, key = { it.title + it.detail }) { item ->
-                        Column(modifier = Modifier.fillMaxWidth()) {
-                            Text(item.title, style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                text = item.detail,
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            )
+            // B4-4：先给结论（问题出在哪 + 下一步），再列原始事件流。
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (report.isNotBlank()) {
+                    Text(
+                        text = report,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                if (events.isEmpty()) {
+                    Text(stringResource(Res.string.egress_diagnostics_empty))
+                } else {
+                    LazyColumn(
+                        modifier = Modifier.heightIn(max = 320.dp),
+                        enableItemAnimation = false,
+                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        items(events, key = { it.title + it.detail }) { item ->
+                            Column(modifier = Modifier.fillMaxWidth()) {
+                                Text(item.title, style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    text = item.detail,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
                         }
                     }
                 }

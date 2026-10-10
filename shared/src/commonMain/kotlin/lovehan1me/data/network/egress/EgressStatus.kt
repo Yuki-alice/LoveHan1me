@@ -277,6 +277,179 @@ fun EgressOutlet.formatLine(texts: EgressOutletTexts): String {
         .replace("%3\$d", gateAttempts.toString())
 }
 
+// ---------------------------------------------------------------------------
+// B4-4 · 诊断报告结论层（F16）
+//
+// 数据源全是现成的（[egressStatusSnapshot] + [egressOutlet] + [EchGate.status]），
+// 本层只做"**从数字到结论**"：把四步链路各判一个状态，再给出一句"问题出在哪 +
+// 下一步做什么"。判定全在 commonMain（三端同源、可离线断言），文案由各端传模板进来。
+// ---------------------------------------------------------------------------
+
+/** 诊断报告的四个步骤（按请求实际链路顺序，从"网关能不能用"到"哪个域出了问题"）。 */
+enum class DiagnosisStepKind { Gateway, Route, Quality, Domain }
+
+/** 单步结论：够用就好，不引入"严重度分级"这种没人会读的维度。 */
+enum class DiagnosisStatus { Ok, Warn, Fail, Unknown }
+
+/** 一步的结论：判定结果 + 证据（数字/枚举名，不做本地化）。 */
+data class DiagnosisStep(
+    val kind: DiagnosisStepKind,
+    val status: DiagnosisStatus,
+    /** 人类可读证据（端口 / 原因 / 计数）；空串 = 该步没有可报的数字。 */
+    val evidence: String,
+)
+
+/**
+ * 报告结论：**单一**结论而非"每步各给一句建议"。
+ *
+ * 多结论会让用户面对"网关失败 + 无出口 + 域熔断"三句话不知从哪下手；这里按
+ * 因果优先级取**最上游**那个（网关坏了就别谈出口质量），只给一条下一步动作。
+ */
+enum class DiagnosisVerdict { Healthy, GatewayFailed, NoRoute, DomainsMelted, Unstable, NoData }
+
+/** 一次诊断：四步结论 + 一条总结论。 */
+data class EgressDiagnosis(
+    val steps: List<DiagnosisStep>,
+    val verdict: DiagnosisVerdict,
+)
+
+/**
+ * 从现成观测数据得出诊断结论（纯函数，全部输入可注入）。
+ *
+ * 与设置页三态、B1-6「当前出口」共用同一批数据源 —— 三处口径不会打架。
+ *
+ * @param gate 网关状态，默认读进程级 [EchGate.status]。
+ */
+fun egressDiagnosis(
+    nowMs: Long = currentEpochMillis(),
+    windowMs: Long = EGRESS_OUTLET_WINDOW_MS,
+    useEchGate: Boolean = runCatching { SettingsRepository.useEchGate }.getOrDefault(false),
+    proxyUsable: Boolean = runCatching { currentProxyState() }.getOrDefault(ProxyState.None).isUsable,
+    healthOf: (DomainClass) -> RouteHealth = { RouteRegistry.healthOf(it) },
+    gate: EchGateStatus = EchGate.status,
+    events: List<EgressEvent> = EgressEvents.recent(),
+): EgressDiagnosis {
+    val snapshot = egressStatusSnapshot(nowMs, useEchGate, proxyUsable, healthOf)
+    val outlet = egressOutlet(nowMs, windowMs, events)
+
+    // 步 1 · 网关：能不能把受限域交给 ECH。
+    val gateway = when (gate) {
+        is EchGateStatus.Running -> DiagnosisStep(DiagnosisStepKind.Gateway, DiagnosisStatus.Ok, gate.port.toString())
+        is EchGateStatus.Starting -> DiagnosisStep(DiagnosisStepKind.Gateway, DiagnosisStatus.Warn, "")
+        is EchGateStatus.Failed -> DiagnosisStep(DiagnosisStepKind.Gateway, DiagnosisStatus.Fail, gate.reason)
+        is EchGateStatus.Exited -> DiagnosisStep(DiagnosisStepKind.Gateway, DiagnosisStatus.Fail, gate.lastError.orEmpty())
+        is EchGateStatus.Stopped -> DiagnosisStep(DiagnosisStepKind.Gateway, DiagnosisStatus.Unknown, "")
+        is EchGateStatus.Idle -> DiagnosisStep(DiagnosisStepKind.Gateway, DiagnosisStatus.Unknown, "")
+    }
+
+    // 步 2 · 出口：这次走的是网关还是当前网络出口。
+    val dominant = outlet.dominant
+    val route = when {
+        snapshot.noRoute -> DiagnosisStep(DiagnosisStepKind.Route, DiagnosisStatus.Fail, "")
+        dominant != null -> DiagnosisStep(DiagnosisStepKind.Route, DiagnosisStatus.Ok, dominant.displayName())
+        outlet.hasRouteSample -> DiagnosisStep(DiagnosisStepKind.Route, DiagnosisStatus.Warn, "")
+        else -> DiagnosisStep(DiagnosisStepKind.Route, DiagnosisStatus.Unknown, "")
+    }
+
+    // 步 3 · 质量：近窗口的成败与耗时。
+    val quality = when {
+        outlet.attempts == 0 -> DiagnosisStep(DiagnosisStepKind.Quality, DiagnosisStatus.Unknown, "")
+        outlet.failures > 0 -> DiagnosisStep(DiagnosisStepKind.Quality, DiagnosisStatus.Warn, qualityEvidence(outlet))
+        else -> DiagnosisStep(DiagnosisStepKind.Quality, DiagnosisStatus.Ok, qualityEvidence(outlet))
+    }
+
+    // 步 4 · 域健康：哪些域的网关出口被摘掉 / 在抖动。
+    val domain = when {
+        snapshot.meltedDomains.isNotEmpty() ->
+            DiagnosisStep(DiagnosisStepKind.Domain, DiagnosisStatus.Fail, snapshot.meltedDomains.joinToString { it.name })
+
+        snapshot.unstableDomains.isNotEmpty() ->
+            DiagnosisStep(DiagnosisStepKind.Domain, DiagnosisStatus.Warn, snapshot.unstableDomains.joinToString { it.name })
+
+        else -> DiagnosisStep(DiagnosisStepKind.Domain, DiagnosisStatus.Ok, "")
+    }
+
+    // 结论按因果优先级取最上游那个：网关坏了 → 无出口 → 域熔断 → 抖动 → 无样本 → 健康。
+    val verdict = when {
+        gate is EchGateStatus.Failed || gate is EchGateStatus.Exited -> DiagnosisVerdict.GatewayFailed
+        snapshot.noRoute -> DiagnosisVerdict.NoRoute
+        snapshot.meltedDomains.isNotEmpty() -> DiagnosisVerdict.DomainsMelted
+        snapshot.unstableDomains.isNotEmpty() -> DiagnosisVerdict.Unstable
+        outlet.attempts == 0 -> DiagnosisVerdict.NoData
+        else -> DiagnosisVerdict.Healthy
+    }
+
+    return EgressDiagnosis(listOf(gateway, route, quality, domain), verdict)
+}
+
+/** 质量步的证据串：次数 / 失败 / 均值 RTT / 网关成功率（有样本才附 RTT 与成功率）。 */
+private fun qualityEvidence(outlet: EgressOutlet): String = buildString {
+    append("${outlet.attempts} · fail ${outlet.failures}")
+    if (outlet.avgRttMs >= 0) append(" · rtt ${outlet.avgRttMs}ms")
+    outlet.gateSuccessRate?.let { append(" · gate ${(it * 100).toInt()}%") }
+}
+
+/**
+ * 诊断报告的本地化模板（各端从自己的 `strings.xml` 取好后传进来）。
+ *
+ * 步标题、状态词、结论句都要本地化；**证据串不本地化**（数字与枚举名，见 [DiagnosisStep.evidence]）。
+ */
+data class EgressDiagnosisTexts(
+    val stepGateway: String,
+    val stepRoute: String,
+    val stepQuality: String,
+    val stepDomain: String,
+    val statusOk: String,
+    val statusWarn: String,
+    val statusFail: String,
+    val statusUnknown: String,
+    /** `一切正常，无需处理` */
+    val verdictHealthy: String,
+    /** `网关未运行，受限域会走兜底；点「重试网关」重新拉起` */
+    val verdictGatewayFailed: String,
+    /** `网关开着却没有可用出口；请开启网关或配置代理 / hosts` */
+    val verdictNoRoute: String,
+    /** `部分域的网关出口被熔断；等待冷却或切换镜像后重试` */
+    val verdictDomainsMelted: String,
+    /** `出口有失败但未熔断；若持续失败可临时用「强制选路」换条路` */
+    val verdictUnstable: String,
+    /** `近窗口没有出口样本（可能全命中缓存）；正常使用一会再看` */
+    val verdictNoData: String,
+)
+
+/**
+ * 排成诊断窗顶部的报告文本：第一行是结论（问题出在哪 + 下一步），其后四步逐行给出状态与证据。
+ *
+ * 与 [formatLines] 同款：只产出结构，标题词由调用方本地化。
+ */
+fun EgressDiagnosis.formatReport(texts: EgressDiagnosisTexts): String {
+    val verdictLine = when (verdict) {
+        DiagnosisVerdict.Healthy -> texts.verdictHealthy
+        DiagnosisVerdict.GatewayFailed -> texts.verdictGatewayFailed
+        DiagnosisVerdict.NoRoute -> texts.verdictNoRoute
+        DiagnosisVerdict.DomainsMelted -> texts.verdictDomainsMelted
+        DiagnosisVerdict.Unstable -> texts.verdictUnstable
+        DiagnosisVerdict.NoData -> texts.verdictNoData
+    }
+    val stepLines = steps.joinToString("\n") { step ->
+        val title = when (step.kind) {
+            DiagnosisStepKind.Gateway -> texts.stepGateway
+            DiagnosisStepKind.Route -> texts.stepRoute
+            DiagnosisStepKind.Quality -> texts.stepQuality
+            DiagnosisStepKind.Domain -> texts.stepDomain
+        }
+        val status = when (step.status) {
+            DiagnosisStatus.Ok -> texts.statusOk
+            DiagnosisStatus.Warn -> texts.statusWarn
+            DiagnosisStatus.Fail -> texts.statusFail
+            DiagnosisStatus.Unknown -> texts.statusUnknown
+        }
+        val head = "$title · $status"
+        if (step.evidence.isBlank()) head else "$head · ${step.evidence}"
+    }
+    return verdictLine + "\n" + stepLines
+}
+
 /** 最近 [limit] 条事件的导出文本（与诊断窗同源，一键复制用）。 */
 fun recentEgressExport(limit: Int = 50): String =
     buildEgressExport(EgressEvents.recent().takeLast(limit))

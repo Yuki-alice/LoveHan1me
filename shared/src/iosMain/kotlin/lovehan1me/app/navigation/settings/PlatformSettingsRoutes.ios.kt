@@ -38,15 +38,18 @@ import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.core.util.AppToast
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.data.SettingsRepository
+import lovehan1me.data.network.egress.EgressDiagnosisTexts
 import lovehan1me.data.network.egress.EgressOutletTexts
 import lovehan1me.data.network.egress.EgressStatusTexts
 import lovehan1me.data.network.egress.ForceMode
 import lovehan1me.data.network.egress.RouteRegistry
 import lovehan1me.data.network.egress.detail
+import lovehan1me.data.network.egress.egressDiagnosis
 import lovehan1me.data.network.egress.egressOutlet
 import lovehan1me.data.network.egress.egressStatusSnapshot
 import lovehan1me.data.network.egress.formatLine
 import lovehan1me.data.network.egress.formatLines
+import lovehan1me.data.network.egress.formatReport
 import lovehan1me.data.network.egress.recentEgressExport
 import lovehan1me.data.network.egress.recentEgressRows
 import lovehan1me.data.network.egress.title
@@ -62,6 +65,20 @@ import lovehan1me.egress_copy
 import lovehan1me.egress_diagnostics
 import lovehan1me.egress_diagnostics_empty
 import lovehan1me.egress_ech_acceptance
+import lovehan1me.egress_report_status_fail
+import lovehan1me.egress_report_status_ok
+import lovehan1me.egress_report_status_unknown
+import lovehan1me.egress_report_status_warn
+import lovehan1me.egress_report_step_domain
+import lovehan1me.egress_report_step_gateway
+import lovehan1me.egress_report_step_quality
+import lovehan1me.egress_report_step_route
+import lovehan1me.egress_report_verdict_domains_melted
+import lovehan1me.egress_report_verdict_gateway_failed
+import lovehan1me.egress_report_verdict_healthy
+import lovehan1me.egress_report_verdict_no_data
+import lovehan1me.egress_report_verdict_no_route
+import lovehan1me.egress_report_verdict_unstable
 import lovehan1me.egress_force_auto
 import lovehan1me.egress_force_direct
 import lovehan1me.egress_force_direct_warning
@@ -144,6 +161,26 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
         acceptance = stringResource(Res.string.egress_ech_acceptance),
     )
     val outletLine = remember(tick, outletTexts) { egressOutlet(currentEpochMillis()).formatLine(outletTexts) }
+    // B4-4：与 jvm 同源的诊断结论层（四步判定 + 结论全在 commonMain，iOS 只取本地化模板）。
+    val diagnosisTexts = EgressDiagnosisTexts(
+        stepGateway = stringResource(Res.string.egress_report_step_gateway),
+        stepRoute = stringResource(Res.string.egress_report_step_route),
+        stepQuality = stringResource(Res.string.egress_report_step_quality),
+        stepDomain = stringResource(Res.string.egress_report_step_domain),
+        statusOk = stringResource(Res.string.egress_report_status_ok),
+        statusWarn = stringResource(Res.string.egress_report_status_warn),
+        statusFail = stringResource(Res.string.egress_report_status_fail),
+        statusUnknown = stringResource(Res.string.egress_report_status_unknown),
+        verdictHealthy = stringResource(Res.string.egress_report_verdict_healthy),
+        verdictGatewayFailed = stringResource(Res.string.egress_report_verdict_gateway_failed),
+        verdictNoRoute = stringResource(Res.string.egress_report_verdict_no_route),
+        verdictDomainsMelted = stringResource(Res.string.egress_report_verdict_domains_melted),
+        verdictUnstable = stringResource(Res.string.egress_report_verdict_unstable),
+        verdictNoData = stringResource(Res.string.egress_report_verdict_no_data),
+    )
+    val report = remember(tick, diagnosisTexts) {
+        egressDiagnosis(currentEpochMillis()).formatReport(diagnosisTexts)
+    }
 
     var showForceDialog by remember { mutableStateOf(false) }
     var showDiagnostics by remember { mutableStateOf(false) }
@@ -275,18 +312,28 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             onDismissRequest = { showDiagnostics = false },
             title = { Text(stringResource(Res.string.egress_diagnostics)) },
             text = {
-                if (rows.isEmpty()) {
-                    Text(stringResource(Res.string.egress_diagnostics_empty))
-                } else {
-                    LazyColumn {
-                        items(rows) { row ->
-                            Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
-                                Text(row.title(), style = MaterialTheme.typography.bodySmall)
-                                Text(
-                                    row.detail(),
-                                    style = MaterialTheme.typography.labelSmall,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                )
+                // B4-4：先给结论（问题出在哪 + 下一步），再列原始事件流。
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (report.isNotBlank()) {
+                        Text(
+                            report,
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                    }
+                    if (rows.isEmpty()) {
+                        Text(stringResource(Res.string.egress_diagnostics_empty))
+                    } else {
+                        LazyColumn {
+                            items(rows) { row ->
+                                Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+                                    Text(row.title(), style = MaterialTheme.typography.bodySmall)
+                                    Text(
+                                        row.detail(),
+                                        style = MaterialTheme.typography.labelSmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    )
+                                }
                             }
                         }
                     }

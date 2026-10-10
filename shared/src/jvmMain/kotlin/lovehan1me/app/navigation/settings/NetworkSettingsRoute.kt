@@ -52,6 +52,20 @@ import lovehan1me.egress_outlet_via_default
 import lovehan1me.egress_outlet_mixed
 import lovehan1me.egress_outlet_none
 import lovehan1me.egress_ech_acceptance
+import lovehan1me.egress_report_status_fail
+import lovehan1me.egress_report_status_ok
+import lovehan1me.egress_report_status_unknown
+import lovehan1me.egress_report_status_warn
+import lovehan1me.egress_report_step_domain
+import lovehan1me.egress_report_step_gateway
+import lovehan1me.egress_report_step_quality
+import lovehan1me.egress_report_step_route
+import lovehan1me.egress_report_verdict_domains_melted
+import lovehan1me.egress_report_verdict_gateway_failed
+import lovehan1me.egress_report_verdict_healthy
+import lovehan1me.egress_report_verdict_no_data
+import lovehan1me.egress_report_verdict_no_route
+import lovehan1me.egress_report_verdict_unstable
 import lovehan1me.network_timeout_text
 import lovehan1me.mpv_socks5_warning
 import lovehan1me.domain_change_tips
@@ -80,9 +94,12 @@ import lovehan1me.core.platform.rememberBackupImportLauncher
 import lovehan1me.data.network.ServiceCreator
 import lovehan1me.data.network.egress.RouteRegistry
 import lovehan1me.data.network.egress.EgressEvents
+import lovehan1me.data.network.egress.EgressDiagnosisTexts
 import lovehan1me.data.network.egress.EgressStatusTexts
 import lovehan1me.data.network.egress.EgressOutletTexts
 import lovehan1me.data.network.egress.buildEgressExport
+import lovehan1me.data.network.egress.egressDiagnosis
+import lovehan1me.data.network.egress.formatReport
 import lovehan1me.data.network.egress.detail
 import lovehan1me.data.network.egress.egressOutlet
 import lovehan1me.data.network.egress.egressStatusSnapshot
@@ -238,6 +255,27 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
     }
     val egressExportText = remember(gateStatusTick) {
         buildEgressExport(EgressEvents.recent().takeLast(50))
+    }
+    // B4-4 诊断报告结论层：结论与四步判定全由 commonMain `egressDiagnosis`/`formatReport` 给出，
+    // 这里只把本地化模板取好；与三态/出口行共用同一数据源与 2s tick。
+    val diagnosisTexts = EgressDiagnosisTexts(
+        stepGateway = stringResource(Res.string.egress_report_step_gateway),
+        stepRoute = stringResource(Res.string.egress_report_step_route),
+        stepQuality = stringResource(Res.string.egress_report_step_quality),
+        stepDomain = stringResource(Res.string.egress_report_step_domain),
+        statusOk = stringResource(Res.string.egress_report_status_ok),
+        statusWarn = stringResource(Res.string.egress_report_status_warn),
+        statusFail = stringResource(Res.string.egress_report_status_fail),
+        statusUnknown = stringResource(Res.string.egress_report_status_unknown),
+        verdictHealthy = stringResource(Res.string.egress_report_verdict_healthy),
+        verdictGatewayFailed = stringResource(Res.string.egress_report_verdict_gateway_failed),
+        verdictNoRoute = stringResource(Res.string.egress_report_verdict_no_route),
+        verdictDomainsMelted = stringResource(Res.string.egress_report_verdict_domains_melted),
+        verdictUnstable = stringResource(Res.string.egress_report_verdict_unstable),
+        verdictNoData = stringResource(Res.string.egress_report_verdict_no_data),
+    )
+    val egressReport = remember(gateStatusTick, diagnosisTexts) {
+        egressDiagnosis(currentEpochMillis()).formatReport(diagnosisTexts)
     }
     val uiState = remember(
         settings, unknownText, domainDefaultText, domainAlternativeText, directText,
@@ -550,6 +588,7 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
         },
         egressEvents = egressEvents,
         egressExportText = egressExportText,
+        egressReport = egressReport,
     )
 
     ConfirmDialog(
