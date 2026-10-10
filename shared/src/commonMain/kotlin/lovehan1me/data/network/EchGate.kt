@@ -55,6 +55,15 @@ sealed interface EchGateStatus {
         Exited -> "网关进程已退出"
         else -> null
     }
+
+    /**
+     * 处于"用户可一键重试"的失败态（B1-7）。
+     *
+     * 只有 [Failed] / [Exited] 是"还值得再拉一次"的态：前者是启动/监听失败（多半是端口被占、
+     * 产物缺失等可恢复问题），后者是进程意外退出（自愈逻辑节流后仍可手动催一次）。
+     * [Stopped] 是用户主动关（重试没有意义），[Starting] / [Running] 更不必说。
+     */
+    val canRetry: Boolean get() = this is Failed || this is Exited
 }
 
 /**

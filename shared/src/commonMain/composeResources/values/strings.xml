@@ -244,6 +244,14 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="egress_diagnostics_empty">No egress events yet</string>
     <string name="egress_copy">Copy</string>
     <string name="egress_close">Close</string>
+    <string name="egress_outlet_title">Current egress</string>
+    <string name="egress_outlet_via_gate">Gateway (last %1$d min, %2$d attempts)</string>
+    <string name="egress_outlet_via_default">Current network egress (last %1$d min, %2$d attempts)</string>
+    <string name="egress_outlet_mixed">Gateway %1$d · current egress %2$d</string>
+    <string name="egress_outlet_none">No egress attempts yet (likely cache hits)</string>
+    <string name="egress_ech_acceptance">ECH acceptance %1$s (gateway ok %2$d/%3$d)</string>
+    <string name="egress_gate_retry">Retry gateway</string>
+    <string name="egress_gate_retry_summary">Gateway failed to start; tap to retry</string>
     <string name="network_platform_limits_title">Not configurable on this platform</string>
     <string name="network_platform_limits_ios">Custom DNS, HTTP/SOCKS proxy and custom hosts follow the system settings here and cannot be set in the app. The ECH gateway, route override and diagnostics below are fully available.</string>
     <string name="network_gate_section">ECH gateway</string>

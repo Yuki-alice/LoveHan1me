@@ -47,6 +47,11 @@ import lovehan1me.ech_gate_status_stopped
 import lovehan1me.egress_tri_melted
 import lovehan1me.egress_tri_unstable
 import lovehan1me.egress_tri_no_route
+import lovehan1me.egress_outlet_via_gate
+import lovehan1me.egress_outlet_via_default
+import lovehan1me.egress_outlet_mixed
+import lovehan1me.egress_outlet_none
+import lovehan1me.egress_ech_acceptance
 import lovehan1me.network_timeout_text
 import lovehan1me.mpv_socks5_warning
 import lovehan1me.domain_change_tips
@@ -76,9 +81,12 @@ import lovehan1me.data.network.ServiceCreator
 import lovehan1me.data.network.egress.RouteRegistry
 import lovehan1me.data.network.egress.EgressEvents
 import lovehan1me.data.network.egress.EgressStatusTexts
+import lovehan1me.data.network.egress.EgressOutletTexts
 import lovehan1me.data.network.egress.buildEgressExport
 import lovehan1me.data.network.egress.detail
+import lovehan1me.data.network.egress.egressOutlet
 import lovehan1me.data.network.egress.egressStatusSnapshot
+import lovehan1me.data.network.egress.formatLine
 import lovehan1me.data.network.egress.formatLines
 import lovehan1me.data.network.egress.recentEgressRows
 import lovehan1me.data.network.egress.title
@@ -212,6 +220,18 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             )
         )
     }
+    // B1-6「当前出口」：近 10 分钟窗口的出口分布 + 网关口径成功率。
+    // 与三态同源（都读 commonMain 的 EgressEvents / 判定），随同一个 2s tick 刷新。
+    val outletTexts = EgressOutletTexts(
+        viaGate = stringResource(Res.string.egress_outlet_via_gate),
+        viaDefault = stringResource(Res.string.egress_outlet_via_default),
+        mixed = stringResource(Res.string.egress_outlet_mixed),
+        none = stringResource(Res.string.egress_outlet_none),
+        acceptance = stringResource(Res.string.egress_ech_acceptance),
+    )
+    val egressOutletLine = remember(gateStatusTick, outletTexts) {
+        egressOutlet(currentEpochMillis()).formatLine(outletTexts)
+    }
     // 诊断事件（2s tick 刷新，近 50 条）与导出文本同源；时间口径由 commonMain 统一给出。
     val egressEvents = remember(gateStatusTick) {
         recentEgressRows(50).map { row -> EgressEventUi(title = row.title(), detail = row.detail()) }
@@ -223,11 +243,13 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
         settings, unknownText, domainDefaultText, domainAlternativeText, directText,
         systemProxyText, httpProxyTemplate, socksProxyTemplate, nodeLatencyText,
         dohDisabledText, dohConflictText, customText, echGateStatus,
+        egressOutletLine, snapshot,
     ) {
         buildNetworkSettingsUiState(
             domainDefaultText, domainAlternativeText, directText, systemProxyText,
             httpProxyTemplate, socksProxyTemplate, nodeLatencyText,
             dohDisabledText, dohConflictText, customText, echGateStatus,
+            egressOutletLine, snapshot.gateRetryable,
         )
     }
     val customMirrorInvalidText = stringResource(Res.string.custom_mirror_site_invalid)
@@ -441,6 +463,15 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
                 if (value) EchGateRuntime.start() else EchGateRuntime.stop()
             }
         },
+        // B1-7：一键重试。与"重开开关"同语义 —— 先把各域健康度归零（刚被熔断过的网关
+        // 会在冷却期内"重试了也不管事"），再让门面重新拉起。start() 对 Failed/Exited
+        // 不会短路（只有 port>0 / starting 才短路），所以这里无需先 stop()。
+        onRetryEchGate = {
+            coroutineScope.launch {
+                RouteRegistry.reset()
+                EchGateRuntime.start()
+            }
+        },
         onSaveCustomHosts = { data ->
             val errors = HanimeDns.validateCustomHosts(data)
             if (errors.isNotEmpty()) {
@@ -643,6 +674,8 @@ private fun buildNetworkSettingsUiState(
     dohConflict: String,
     custom: String,
     echGateStatus: String,
+    egressOutlet: String,
+    gateRetryable: Boolean,
 ): NetworkSettingsUiState {
     return NetworkSettingsUiState(
         domainName = SettingsRepository.baseUrl,
@@ -665,6 +698,8 @@ private fun buildNetworkSettingsUiState(
         autoBuiltInHosts = SettingsRepository.autoBuiltInHosts,
         useEchGate = SettingsRepository.useEchGate,
         echGateStatus = echGateStatus,
+        egressOutlet = egressOutlet,
+        gateRetryable = gateRetryable,
         useCustomMirrorSite = SettingsRepository.useCustomMirrorSite,
         customMirrorSite = SettingsRepository.customMirrorSite,
         appendCustomMirrorPath = SettingsRepository.appendCustomMirrorPath,

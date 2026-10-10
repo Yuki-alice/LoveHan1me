@@ -258,6 +258,14 @@
     <string name="egress_diagnostics_empty">暫無出站事件</string>
     <string name="egress_copy">複製</string>
     <string name="egress_close">關閉</string>
+    <string name="egress_outlet_title">目前出口</string>
+    <string name="egress_outlet_via_gate">閘道（近 %1$d 分鐘 %2$d 次）</string>
+    <string name="egress_outlet_via_default">目前網路出口（近 %1$d 分鐘 %2$d 次）</string>
+    <string name="egress_outlet_mixed">閘道 %1$d 次 · 目前網路出口 %2$d 次</string>
+    <string name="egress_outlet_none">尚無出口紀錄（可能命中快取）</string>
+    <string name="egress_ech_acceptance">ECH 接受率 %1$s（閘道成功 %2$d/%3$d）</string>
+    <string name="egress_gate_retry">重試閘道</string>
+    <string name="egress_gate_retry_summary">閘道啟動失敗，點擊重新拉起</string>
     <string name="network_platform_limits_title">本端不可設定</string>
     <string name="network_platform_limits_ios">自訂 DNS、HTTP/SOCKS Proxy 與自訂 Hosts 在本端跟隨系統設定，無法在 App 內設定。下方的 ECH 閘道、強制選路與診斷功能皆完整可用。</string>
     <string name="network_gate_section">ECH 閘道</string>

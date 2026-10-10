@@ -244,6 +244,14 @@
     <string name="egress_diagnostics_empty">暂无出站事件</string>
     <string name="egress_copy">复制</string>
     <string name="egress_close">关闭</string>
+    <string name="egress_outlet_title">当前出口</string>
+    <string name="egress_outlet_via_gate">网关（近 %1$d 分钟 %2$d 次）</string>
+    <string name="egress_outlet_via_default">当前网络出口（近 %1$d 分钟 %2$d 次）</string>
+    <string name="egress_outlet_mixed">网关 %1$d 次 · 当前网络出口 %2$d 次</string>
+    <string name="egress_outlet_none">尚无出口记录（可能命中缓存）</string>
+    <string name="egress_ech_acceptance">ECH 接受率 %1$s（网关成功 %2$d/%3$d）</string>
+    <string name="egress_gate_retry">重试网关</string>
+    <string name="egress_gate_retry_summary">网关启动失败，点击重新拉起</string>
     <string name="network_platform_limits_title">本端不可配置</string>
     <string name="network_platform_limits_ios">自定义 DNS、HTTP/SOCKS 代理与自定义 Hosts 在本端跟随系统设置，无法在应用内配置。下面的 ECH 网关、强制选路与诊断功能均完整可用。</string>
     <string name="network_gate_section">ECH 网关</string>

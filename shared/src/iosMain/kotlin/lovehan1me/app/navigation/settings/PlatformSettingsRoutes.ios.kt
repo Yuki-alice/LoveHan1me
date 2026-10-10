@@ -38,11 +38,14 @@ import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.core.util.AppToast
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.data.SettingsRepository
+import lovehan1me.data.network.egress.EgressOutletTexts
 import lovehan1me.data.network.egress.EgressStatusTexts
 import lovehan1me.data.network.egress.ForceMode
 import lovehan1me.data.network.egress.RouteRegistry
 import lovehan1me.data.network.egress.detail
+import lovehan1me.data.network.egress.egressOutlet
 import lovehan1me.data.network.egress.egressStatusSnapshot
+import lovehan1me.data.network.egress.formatLine
 import lovehan1me.data.network.egress.formatLines
 import lovehan1me.data.network.egress.recentEgressExport
 import lovehan1me.data.network.egress.recentEgressRows
@@ -58,12 +61,18 @@ import lovehan1me.egress_close
 import lovehan1me.egress_copy
 import lovehan1me.egress_diagnostics
 import lovehan1me.egress_diagnostics_empty
+import lovehan1me.egress_ech_acceptance
 import lovehan1me.egress_force_auto
 import lovehan1me.egress_force_direct
 import lovehan1me.egress_force_direct_warning
 import lovehan1me.egress_force_gate
 import lovehan1me.egress_force_mode
 import lovehan1me.egress_force_proxy
+import lovehan1me.egress_outlet_mixed
+import lovehan1me.egress_outlet_none
+import lovehan1me.egress_outlet_title
+import lovehan1me.egress_outlet_via_default
+import lovehan1me.egress_outlet_via_gate
 import lovehan1me.egress_tri_melted
 import lovehan1me.egress_tri_no_route
 import lovehan1me.egress_tri_unstable
@@ -125,6 +134,16 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
         noRoute = stringResource(Res.string.egress_tri_no_route),
     )
     val statusLine = remember(snapshot, texts) { snapshot.formatLines(texts) }
+    // B1-6：与 jvm 侧同源的「当前出口」行（判定/排版都在 commonMain `egressOutlet`/`formatLine`，
+    // iOS 只负责取本地化模板并贴结果，保证两端算出来一致）。
+    val outletTexts = EgressOutletTexts(
+        viaGate = stringResource(Res.string.egress_outlet_via_gate),
+        viaDefault = stringResource(Res.string.egress_outlet_via_default),
+        mixed = stringResource(Res.string.egress_outlet_mixed),
+        none = stringResource(Res.string.egress_outlet_none),
+        acceptance = stringResource(Res.string.egress_ech_acceptance),
+    )
+    val outletLine = remember(tick, outletTexts) { egressOutlet(currentEpochMillis()).formatLine(outletTexts) }
 
     var showForceDialog by remember { mutableStateOf(false) }
     var showDiagnostics by remember { mutableStateOf(false) }
@@ -188,6 +207,20 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
                                 }
                             },
                         )
+                    }
+                    // B1-6：用户能回答"这次走的是网关还是直连"。空串（无样本）时不占位。
+                    if (outletLine.isNotBlank()) {
+                        Column(modifier = Modifier.fillMaxWidth().padding(top = 8.dp)) {
+                            Text(
+                                text = stringResource(Res.string.egress_outlet_title),
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            Text(
+                                text = outletLine,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                        }
                     }
                     HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
                     Text(

@@ -94,6 +94,9 @@ import lovehan1me.egress_diagnostics
 import lovehan1me.egress_diagnostics_empty
 import lovehan1me.egress_copy
 import lovehan1me.egress_close
+import lovehan1me.egress_outlet_title
+import lovehan1me.egress_gate_retry
+import lovehan1me.egress_gate_retry_summary
 import lovehan1me.ic_delay
 import lovehan1me.ic_dns
 import lovehan1me.ic_domain
@@ -109,6 +112,7 @@ import lovehan1me.data.network.egress.ForceMode
 import lovehan1me.ui.component.ChoiceDialog
 import lovehan1me.ui.component.SettingNavigationItem
 import lovehan1me.ui.component.SettingSwitchItem
+import lovehan1me.ui.component.SettingInfoItem
 import lovehan1me.ui.component.SettingsSectionTitle
 import lovehan1me.ui.component.SettingsSegmentedGroup
 import lovehan1me.ui.component.lazy.LazyColumn
@@ -130,6 +134,13 @@ data class NetworkSettingsUiState(
     val useEchGate: Boolean,
     /** 网关运行时状态行（jvmMain Route 拼接好的本地化文案，iOS 传空）。 */
     val echGateStatus: String,
+    /**
+     * 「当前出口」行（B1-6）：近窗口内主导出口 + 网关口径成功率。
+     * Route 用 `EgressOutlet.formatLine(...)` 拼好；空串 = 不显示该行。
+     */
+    val egressOutlet: String = "",
+    /** 网关失败且可一键重试（B1-7）。 */
+    val gateRetryable: Boolean = false,
     val useCustomMirrorSite: Boolean,
     val customMirrorSite: String,
     val appendCustomMirrorPath: Boolean,
@@ -192,6 +203,7 @@ fun NetworkSettingsScreen(
     onAutoBuiltInHostsChange: (Boolean) -> Unit,
     onUseEchGateChange: (Boolean) -> Unit,
     onSaveCustomHosts: (String) -> Unit,
+    onRetryEchGate: () -> Unit = {},
     onImportHosts: () -> Unit,
     onExportNetworkConfig: () -> Unit,
     onSaveDohSettings: (Boolean, String, String, String, Int) -> Unit,
@@ -382,6 +394,25 @@ fun NetworkSettingsScreen(
                     iconRes = Res.drawable.ic_hosts,
                     onCheckedChange = onUseEchGateChange,
                 )
+                // B1-6：用户能不能回答"这次走的是网关还是直连"。判定与文案由 commonMain
+                // `egressOutlet` / `formatLine` 给出（与 iOS 同源），这里只贴结果。
+                if (state.egressOutlet.isNotBlank()) {
+                    SettingInfoItem(
+                        title = stringResource(Res.string.egress_outlet_title),
+                        summary = state.egressOutlet,
+                        iconRes = Res.drawable.ic_router,
+                    )
+                }
+                // B1-7：网关失败态下的"可读原因"已在网关状态行里（echGateStatus），
+                // 这里只补一键重试；非失败态不出现，避免无谓打扰。
+                if (state.gateRetryable) {
+                    SettingNavigationItem(
+                        title = stringResource(Res.string.egress_gate_retry),
+                        summary = stringResource(Res.string.egress_gate_retry_summary),
+                        iconRes = Res.drawable.ic_router,
+                        onClick = onRetryEchGate,
+                    )
+                }
                 SettingNavigationItem(
                     title = stringResource(Res.string.egress_force_mode),
                     summary = if (forceMode == ForceMode.ForceDirect.name) {

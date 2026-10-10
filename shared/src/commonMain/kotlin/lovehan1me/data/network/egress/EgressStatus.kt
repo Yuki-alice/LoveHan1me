@@ -3,6 +3,7 @@ package lovehan1me.data.network.egress
 import kotlinx.datetime.Instant
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
+import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.EchGate
 import lovehan1me.data.network.EchGateStatus
@@ -47,6 +48,9 @@ data class EgressStatusSnapshot(
 ) {
     val isClean: Boolean
         get() = meltedDomains.isEmpty() && unstableDomains.isEmpty() && !noRoute
+
+    /** 网关处于可一键重试的失败态（[EchGateStatus.canRetry]，B1-7）。 */
+    val gateRetryable: Boolean get() = gate.canRetry
 }
 
 /**
@@ -127,6 +131,150 @@ fun EgressStatusSnapshot.formatLines(texts: EgressStatusTexts): String {
         if (noRoute) add(texts.noRoute)
     }
     return if (extra.isEmpty()) base else base + "\n" + extra.joinToString("\n")
+}
+
+/**
+ * 「当前出口」的统计窗口：近 10 分钟（B1-6）。
+ *
+ * 为什么是滚动窗口而不是"自启动以来"：设置页每 2s 刷新，用户要看的是"现在走哪条路"；
+ * 自启动累计会被很久以前的一次失败长期带偏（"明明早恢复了还显示走备用出口"）。
+ */
+const val EGRESS_OUTLET_WINDOW_MS: Long = 10 * 60 * 1000L
+
+/**
+ * 近窗口内的出口分布（B1-6「当前出口」行）。
+ *
+ * ## 命名口径
+ * [RouteId.Default] 折叠后可能就是代理，所以这里叫"当前网络出口"而不是"直连"
+ * ——与 [RouteId] / [displayName] 同一口径，不谎称直连。
+ *
+ * ## [gateSuccessRate] 的诚实边界
+ * 它是"**网关口径成功率**"，即网关这一步有多少次拿到成功结局。
+ * 这**不等于**服务端接受了 ECH（网关 ECH 未被接受时会降级普通 TLS，仍可能成功）——
+ * 但受限域上普通 TLS 的明文 SNI 会被 RST，于是"网关成功"在本项目的主要场景里
+ * 就是"ECH 生效"的可观测代理。设置页的措辞据此写成
+ * `ECH 接受率 N%（网关成功 a/b）`，把口径摆在明面上，不假装它测的是握手细节。
+ */
+data class EgressOutlet(
+    /** 统计窗口（毫秒）；文案里的"近 N 分钟"由它折算。 */
+    val windowMs: Long,
+    val attempts: Int,
+    val gateAttempts: Int,
+    /** [gateAttempts] 里成功的次数。 */
+    val gateSuccess: Int,
+    val defaultAttempts: Int,
+    val failures: Int,
+    /** 均值 RTT；-1 = 无样本（与 [EgressEvent] 口径一致）。 */
+    val avgRttMs: Long,
+) {
+    /** 窗口内是否有过实际的 HTTP 出口尝试（兼顾两条路由）。 */
+    val hasRouteSample: Boolean get() = gateAttempts + defaultAttempts > 0
+
+    /** 主导出口：窗口内尝试更多的那条路；并列或只有隧道事件时为 null（= 混合）。 */
+    val dominant: RouteId?
+        get() = when {
+            gateAttempts > defaultAttempts -> RouteId.Gate
+            defaultAttempts > gateAttempts -> RouteId.Default
+            else -> null
+        }
+
+    /** 网关口径成功率（见类 KDoc 的边界说明）；无网关样本为 null。 */
+    val gateSuccessRate: Double?
+        get() = if (gateAttempts == 0) null else gateSuccess.toDouble() / gateAttempts
+}
+
+/**
+ * 近 [windowMs] 的出口分布。读进程级 [EgressEvents]（与诊断页同源），判定全纯。
+ *
+ * [nowMs] / [windowMs] / [events] 都可注入，便于离线断言（测试传手造事件与固定时刻）。
+ */
+fun egressOutlet(
+    nowMs: Long = currentEpochMillis(),
+    windowMs: Long = EGRESS_OUTLET_WINDOW_MS,
+    events: List<EgressEvent> = EgressEvents.recent(),
+): EgressOutlet {
+    val since = nowMs - windowMs
+    var attempts = 0
+    var gate = 0
+    var gateOk = 0
+    var fallback = 0
+    var failures = 0
+    var rttSum = 0L
+    var rttSamples = 0L
+    for (event in events) {
+        if (event.atMs < since || event.atMs > nowMs) continue
+        attempts++
+        when (event.route) {
+            RouteId.Gate -> {
+                gate++
+                if (event.outcome == AttemptOutcome.Success) gateOk++
+            }
+
+            RouteId.Default -> fallback++
+            // HTTP 执行层不产生隧道步（隧道是播放器 / CF 验证窗的事）；真出现了只计入 attempts。
+            RouteId.GateTunnel -> Unit
+        }
+        if (event.outcome != AttemptOutcome.Success) failures++
+        if (event.rttMs >= 0) {
+            rttSum += event.rttMs
+            rttSamples++
+        }
+    }
+    return EgressOutlet(
+        windowMs = windowMs,
+        attempts = attempts,
+        gateAttempts = gate,
+        gateSuccess = gateOk,
+        defaultAttempts = fallback,
+        failures = failures,
+        avgRttMs = if (rttSamples > 0) rttSum / rttSamples else -1L,
+    )
+}
+
+/**
+ * 「当前出口」行的本地化模板（各端从自己的 `strings.xml` 取好后传进来）。
+ *
+ * 占位符沿用 `strings.xml` 口径：`%1$d` / `%1$s` / `%2$d`。注意 [acceptance] 的百分号
+ * 由调用方拼进 `%1$s`（形如 `93%`），**不要在资源里写裸 `%`**（会被当成格式符）。
+ */
+data class EgressOutletTexts(
+    /** `网关（近 %1$d 分钟 %2$d 次）` */
+    val viaGate: String,
+    /** `当前网络出口（近 %1$d 分钟 %2$d 次）` */
+    val viaDefault: String,
+    /** `网关 %1$d 次 · 当前网络出口 %2$d 次` */
+    val mixed: String,
+    /** 无样本 */
+    val none: String,
+    /** `ECH 接受率 %1$s（网关成功 %2$d/%3$d）` */
+    val acceptance: String,
+)
+
+/**
+ * 排成设置页那一行：主导出口 +（有网关样本时）接受率。
+ * 无出口样本时只回 [EgressOutletTexts.none]，不硬凑"0 次"。
+ */
+fun EgressOutlet.formatLine(texts: EgressOutletTexts): String {
+    val minutes = (windowMs / 60_000L).toInt().coerceAtLeast(1)
+    val head = when {
+        !hasRouteSample -> texts.none
+        dominant == RouteId.Gate -> texts.viaGate
+            .replace("%1\$d", minutes.toString())
+            .replace("%2\$d", gateAttempts.toString())
+
+        dominant == RouteId.Default -> texts.viaDefault
+            .replace("%1\$d", minutes.toString())
+            .replace("%2\$d", defaultAttempts.toString())
+
+        else -> texts.mixed
+            .replace("%1\$d", gateAttempts.toString())
+            .replace("%2\$d", defaultAttempts.toString())
+    }
+    val rate = gateSuccessRate ?: return head
+    return head + "\n" + texts.acceptance
+        .replace("%1\$s", "${(rate * 100).toInt()}%")
+        .replace("%2\$d", gateSuccess.toString())
+        .replace("%3\$d", gateAttempts.toString())
 }
 
 /** 最近 [limit] 条事件的导出文本（与诊断窗同源，一键复制用）。 */
