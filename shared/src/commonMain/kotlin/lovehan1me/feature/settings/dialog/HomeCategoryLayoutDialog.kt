@@ -1,8 +1,8 @@
+@file:OptIn(ExperimentalMaterial3ExpressiveApi::class)
+
 package lovehan1me.feature.settings.dialog
 
-import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
 import androidx.compose.foundation.gestures.detectDragGesturesAfterLongPress
 import androidx.compose.foundation.gestures.scrollBy
 import androidx.compose.foundation.layout.Arrangement
@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -97,8 +98,10 @@ internal fun HomeCategoryLayoutDialog(
                 ) { key ->
                     val item = itemByKey[key] ?: return@items
                     val isDragging = draggedKey == key
+                    // 拖拽中的缩放是即时反馈，走 fast spatial 档（此前用默认 spring，裸值）。
                     val scale by animateFloatAsState(
                         targetValue = if (isDragging) 1.03f else 1f,
+                        animationSpec = MaterialTheme.motionScheme.fastSpatialSpec(),
                         label = "drag-scale"
                     )
                     val titleRes = if (state.useAvHomeCategoryTitles) {
@@ -111,10 +114,8 @@ internal fun HomeCategoryLayoutDialog(
                         modifier = Modifier
                             .fillMaxWidth()
                             .animateItem(
-                                placementSpec = spring(
-                                    stiffness = Spring.StiffnessMediumLow,
-                                    dampingRatio = Spring.DampingRatioNoBouncy,
-                                )
+                                // 列表项换位：M3E 里属 spatial 属性，走 defaultSpatial 弹簧档。
+                                placementSpec = MaterialTheme.motionScheme.defaultSpatialSpec()
                             )
                             .graphicsLayer {
                                 translationY = if (isDragging) dragAccumulatedOffset else 0f

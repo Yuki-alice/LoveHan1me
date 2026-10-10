@@ -4,6 +4,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.runtime.Stable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.composed
@@ -26,7 +27,9 @@ fun Modifier.verticalBounce(
     if (!enabled) return@composed this
 
     val scope = rememberCoroutineScope()
-    val offsetY = Animatable(0f)
+    // 必须 remember：不加的话每次重组都会新建一个 Animatable(0f)，
+    // 既让进行中的回弹动画被丢弃重置，也每帧多一次对象分配。
+    val offsetY = remember { Animatable(0f) }
     val connection = object : NestedScrollConnection {
         override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
             if (source != NestedScrollSource.UserInput || offsetY.value == 0f) return Offset.Zero
