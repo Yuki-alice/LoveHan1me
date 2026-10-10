@@ -104,6 +104,8 @@ internal suspend fun <R> runEgress(
     engine: EgressEngine<R>,
 ): R {
     val domain = classifyDomain(url, purpose)
+    // F12/B3-2：镜像档案只**旁路记一份**，不参与排表 —— 主链路的熔断仍按域（切站即清）。
+    val mirror = mirrorHostFor(hostOfUrl(url))
     val intent = EgressRequest(url, method, purpose, currentForceMode())
     val plan = EgressScheduler.plan(intent, currentEgressState(), RouteRegistry.healthOf(domain), currentEpochMillis())
     if (plan.isEmpty) throw NoRouteException(domain, describeEmptyPlan(plan))
@@ -118,7 +120,7 @@ internal suspend fun <R> runEgress(
         // （多半是 CF 挑战，NetworkRepo 要靠它触发验证窗）。
         val hasLaterRoute = plan.attempts.drop(index + 1).any { it.route != RouteId.Gate }
         when (attempt.route) {
-            RouteId.Gate -> when (val step = runGateStep(engine, attempt, domain, intent.isIdempotent, hasLaterRoute)) {
+            RouteId.Gate -> when (val step = runGateStep(engine, attempt, domain, intent.isIdempotent, hasLaterRoute, mirror)) {
                 is GateStep.Done -> return step.response
                 is GateStep.Blocked -> {
                     blockedCode = step.code
@@ -138,10 +140,10 @@ internal suspend fun <R> runEgress(
                     if (engine.isCancellation(e)) throw e
                     if (!engine.isTransportFailure(e)) throw e
                     // 本步记传输失败；挂起的网关指控按普通失败记（非阻断口径）。
-                    reportRouteOutcome(attempt.route, domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
+                    reportRouteOutcome(attempt.route, domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs, mirror)
                     if (gateBlamePending) {
                         gateBlamePending = false
-                        reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, blockedBudgetMs)
+                        reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, blockedBudgetMs, mirror)
                     }
                     // 非幂等方法禁止让位（换一条路重发有双提交风险）：失败即止，抛出真实异常 ——
                     // 身后还有 Gate 也**不能**谎称"候选出口全部不可用"：那是我们主动不走，
@@ -159,11 +161,11 @@ internal suspend fun <R> runEgress(
                     }
                     continue
                 }
-                reportRouteOutcome(attempt.route, domain, AttemptOutcome.Success, via.rttMs, attempt.budgetMs)
+                reportRouteOutcome(attempt.route, domain, AttemptOutcome.Success, via.rttMs, attempt.budgetMs, mirror)
                 if (gateBlamePending) {
                     gateBlamePending = false
                     if (gateBlameAfterYield(engine.statusCode(via.response), blockedCode)) {
-                        reportGateOutcome(domain, AttemptOutcome.Blocked, -1L, blockedBudgetMs)
+                        reportGateOutcome(domain, AttemptOutcome.Blocked, -1L, blockedBudgetMs, mirror)
                         engine.logWarn("代理路径可用（${engine.statusCode(via.response)}），网关退出接管")
                     } else {
                         engine.logDebug("代理路径同样 $blockedCode，网关无责")
@@ -181,7 +183,7 @@ internal suspend fun <R> runEgress(
         // 防御分支：网关在末位、身后无后路时上游已直接 Done，正常到不了这里。
         // 真到了说明判定与执行脱节，按阻断记并打日志，避免静默漏记。
         engine.logWarn("网关阻断后无后路可比对，按有责记账")
-        reportGateOutcome(domain, AttemptOutcome.Blocked, -1L, blockedBudgetMs)
+        reportGateOutcome(domain, AttemptOutcome.Blocked, -1L, blockedBudgetMs, mirror)
     }
     // 走到这里只有一条原因：候选全是网关步且都返回 Next（502 两次 / 异常），
     // 计划里没有可让位的非网关后路。受限域上不再撞直连，诚实失败。
@@ -203,6 +205,8 @@ private suspend fun <R> runGateStep(
     domain: DomainClass,
     idempotent: Boolean,
     hasLaterRoute: Boolean,
+    /** 镜像维度（F12/B3-2）：随 [domain] 一起往下传，记账才与排表的读数同源。 */
+    mirror: String? = null,
 ): GateStep<R> {
     // 计划里 Gate 步必带改写；不带即本引擎不适用（防御，等同旧实现的 `rewrite ?: Next`）。
     if (attempt.rewrite == null) return GateStep.Next
@@ -214,7 +218,7 @@ private suspend fun <R> runGateStep(
     } catch (e: Throwable) {
         if (engine.isCancellation(e)) throw e
         if (!engine.isTransportFailure(e)) throw e
-        reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
+        reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs, mirror)
         engine.logWarn("网关异常，回退下一出口 (${e.message})")
         return GateStep.Next
     }
@@ -225,14 +229,14 @@ private suspend fun <R> runGateStep(
         if (!idempotent) {
             // 非幂等方法既不能重试也不能让位（重发有双提交风险）：把网关这份原样交出去，
             // 但记一次失败 —— 否则"POST 一直撞 502"永远攒不到熔断。
-            reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
+            reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs, mirror)
             return GateStep.Done(engine.finish(gate))
         }
         engine.discard(gate)
         // 两道预算门：外层 RetryInterceptor 下传的总预算（仅 OkHttp），以及本步的单步预算。
         // 单步预算在此处执行 —— 超支即停，不再重试网关。
         if (engine.budgetExhausted(start, attempt.budgetMs)) {
-            reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
+            reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs, mirror)
             engine.logWarn("重试预算已耗尽，不再重试网关")
             return GateStep.Next
         }
@@ -242,17 +246,17 @@ private suspend fun <R> runGateStep(
         } catch (e: Throwable) {
             if (engine.isCancellation(e)) throw e
             if (!engine.isTransportFailure(e)) throw e
-            reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
+            reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs, mirror)
             engine.logWarn("网关重试异常，回退下一出口 (${e.message})")
             return GateStep.Next
         }
         if (retried == null || engine.isGatewayErrorPage(retried)) {
             retried?.let { engine.discard(it) }
-            reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
+            reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs, mirror)
             engine.logWarn("网关重试仍失败，回退下一出口")
             return GateStep.Next
         }
-        reportGateOutcome(domain, AttemptOutcome.Success, engine.elapsedMs(start), attempt.budgetMs)
+        reportGateOutcome(domain, AttemptOutcome.Success, engine.elapsedMs(start), attempt.budgetMs, mirror)
         return GateStep.Done(engine.finish(retried))
     }
 
@@ -263,6 +267,6 @@ private suspend fun <R> runGateStep(
         return GateStep.Blocked(engine.statusCode(gate))
     }
 
-    reportGateOutcome(domain, AttemptOutcome.Success, engine.elapsedMs(start), attempt.budgetMs)
+    reportGateOutcome(domain, AttemptOutcome.Success, engine.elapsedMs(start), attempt.budgetMs, mirror)
     return GateStep.Done(engine.finish(gate))
 }

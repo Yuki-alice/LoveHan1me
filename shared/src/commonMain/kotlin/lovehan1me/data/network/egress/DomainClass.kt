@@ -2,6 +2,7 @@ package lovehan1me.data.network.egress
 
 import io.ktor.http.Url
 import lovehan1me.core.constant.HanimeConstants
+import lovehan1me.data.SettingsRepository
 
 /**
  * 出站域分类：决定"直连要不要试"。
@@ -58,3 +59,26 @@ fun isRestrictedHost(host: String): Boolean {
     val h = host.lowercase()
     return h == GETCHU_HOST || HanimeConstants.HANIME_HOSTNAME.any { it.equals(h, ignoreCase = true) }
 }
+
+/** 当前站点 host（含自定义镜像）；设置未就绪或解析不出一律 null。 */
+fun currentSiteHost(): String? =
+    runCatching { Url(SettingsRepository.baseUrl).host.takeIf { it.isNotBlank() } }.getOrNull()
+
+/**
+ * 镜像维度的记账键（F12/B3-2）：命中**站点镜像**时返回小写 host，否则 null（按域聚合）。
+ *
+ * 只对站点镜像按 host 细分健康账本 —— "换一个镜像"正是本维度要区分的事，
+ * 而且它们数量有限（内置四个 + 自定义一个），账本天然有界。
+ *
+ * 图床 / CDN 的 host 千变万化，**绝不**按 host 记账：那会让账本无限膨胀。
+ * 本仓在 `HCookieJar` 上已经栽过一次（无界累积最终全站 400），同样的坑不踩第二遍。
+ */
+fun mirrorHostFor(host: String?): String? {
+    if (host.isNullOrBlank()) return null
+    val normalized = host.lowercase()
+    if (HanimeConstants.HANIME_HOSTNAME.any { it.equals(normalized, ignoreCase = true) }) return normalized
+    return currentSiteHost()?.lowercase()?.takeIf { it == normalized }
+}
+
+/** 从 URL 取 host；解析不出返回 null（分类器永远不能成为请求失败的原因）。 */
+fun hostOfUrl(rawUrl: String): String? = runCatching { Url(rawUrl).host }.getOrNull()

@@ -26,7 +26,8 @@ internal fun reportGateOutcome(
     outcome: AttemptOutcome,
     rttMs: Long,
     budgetMs: Long = -1L,
-) = EgressReporter.report(domain, RouteId.Gate, outcome, rttMs, budgetMs = budgetMs)
+    mirror: String? = null,
+) = EgressReporter.report(domain, RouteId.Gate, outcome, rttMs, budgetMs = budgetMs, mirror = mirror)
 
 /** 单步上报（任意路由）。 */
 internal fun reportRouteOutcome(
@@ -35,7 +36,8 @@ internal fun reportRouteOutcome(
     outcome: AttemptOutcome,
     rttMs: Long,
     budgetMs: Long = -1L,
-) = EgressReporter.report(domain, route, outcome, rttMs, budgetMs = budgetMs)
+    mirror: String? = null,
+) = EgressReporter.report(domain, route, outcome, rttMs, budgetMs = budgetMs, mirror = mirror)
 
 /**
  * 表空的原因人话（抛给上层前组装，见 [NoRouteException]）。

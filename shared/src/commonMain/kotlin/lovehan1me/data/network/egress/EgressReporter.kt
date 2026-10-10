@@ -54,10 +54,17 @@ object EgressReporter {
         rttMs: Long,
         nowMs: Long = currentEpochMillis(),
         budgetMs: Long = -1L,
+        /** 镜像维度（F12/B3-2）：站点镜像按 host 分别记账，null = 按域聚合。 */
+        mirror: String? = null,
     ) {
         val before = RouteRegistry.healthOf(domain)
         val after = before.onResult(route, outcome, rttMs, nowMs)
         RouteRegistry.update(domain) { after }
+        // F12/B3-2：镜像档案旁路再记一份（只有站点域名有镜像维度）。
+        // 它是**档案**不是熔断依据 —— 主链路的排表仍读按域的那份，切站即清。
+        if (mirror != null) {
+            MirrorRegistry.update(mirror) { it.onResult(route, outcome, rttMs, nowMs) }
+        }
         EgressEvents.emit(EgressEvent(nowMs, domain, route, outcome, rttMs, budgetMs))
         // 熔断/恢复跳变打一行：自动化验收（tools/phase5）与人工排障都靠它断言，
         // UI 三态读不到的地方（iOS 占位页、后台）也有据可查。只看 Gate 步。
