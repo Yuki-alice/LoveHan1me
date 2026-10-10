@@ -120,9 +120,10 @@ class HanimeProxySelector : ProxySelector() {
         fun rebuildNetwork() {
             val properties = System.getProperties()
             val mode = runCatching { SettingsRepository.proxyMode }.getOrDefault(ProxyMode.Global)
-            // Direct 档 = 全局也不代理：WebView / CDP / HttpURLConnection 走系统属性，
-            // 不一起关掉就是绕过本轮设置的"暗出口"（配置仍保留在设置里，随时可切回）。
-            val type = if (mode == ProxyMode.Direct) TYPE_DIRECT else SettingsRepository.proxyType
+            // "完全不走代理"由 ProxyType.Direct 表达（本类不做这层覆盖）——
+            // 曾经这里有个 ProxyMode.Direct 分支把它再关一次，已删：那是第二个叫"直连"的开关，
+            // 且与本行读取的 ProxyType 语义重合（见 AppSettings.ProxyMode 的 KDoc）。
+            val type = SettingsRepository.proxyType
             // legacy 键（兼容）
             when (type) {
                 TYPE_HTTP, TYPE_SOCKS -> {
@@ -196,12 +197,13 @@ class HanimeProxySelector : ProxySelector() {
             return mutableListOf(Proxy.NO_PROXY)
         }
 
-        // F5 规则分流：Direct 全直连；Rules 只让受限域走代理（第三方恒直连）。
+        // F5 规则分流：Rules 档只让受限域走代理（第三方恒直连）。
         // 默认 Global，保证未显式开启的用户行为零变化。
-        when (runCatching { SettingsRepository.proxyMode }.getOrDefault(ProxyMode.Global)) {
-            ProxyMode.Direct -> return mutableListOf(Proxy.NO_PROXY)
-            ProxyMode.Rules -> if (!restrictedForProxy(host)) return mutableListOf(Proxy.NO_PROXY)
-            ProxyMode.Global -> Unit
+        // （"全直连"不在这里 —— 那是 ProxyType.Direct 的事，见 AppSettings.ProxyMode 的 KDoc。）
+        if (runCatching { SettingsRepository.proxyMode }.getOrDefault(ProxyMode.Global) == ProxyMode.Rules &&
+            !restrictedForProxy(host)
+        ) {
+            return mutableListOf(Proxy.NO_PROXY)
         }
 
         val type = runCatching { SettingsRepository.proxyType }.getOrDefault(TYPE_SYSTEM)

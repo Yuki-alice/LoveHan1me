@@ -91,8 +91,6 @@ import lovehan1me.egress_force_gate
 import lovehan1me.egress_force_direct
 import lovehan1me.egress_force_proxy
 import lovehan1me.proxy_mode
-import lovehan1me.proxy_mode_direct
-import lovehan1me.proxy_mode_direct_summary
 import lovehan1me.proxy_mode_global
 import lovehan1me.proxy_mode_global_summary
 import lovehan1me.proxy_mode_hit_hosts
@@ -260,7 +258,6 @@ fun NetworkSettingsScreen(
     val proxyModeName = when (proxyMode) {
         ProxyMode.Global -> stringResource(Res.string.proxy_mode_global)
         ProxyMode.Rules -> stringResource(Res.string.proxy_mode_rules)
-        ProxyMode.Direct -> stringResource(Res.string.proxy_mode_direct)
     }
     val proxyModeSummary = buildString {
         append(proxyModeName)
@@ -269,7 +266,6 @@ fun NetworkSettingsScreen(
             when (proxyRule.scope) {
                 ProxyRuleScope.All -> stringResource(Res.string.proxy_mode_global_summary)
                 ProxyRuleScope.RestrictedOnly -> stringResource(Res.string.proxy_mode_rules_summary)
-                ProxyRuleScope.None -> stringResource(Res.string.proxy_mode_direct_summary)
             }
         )
         // F8 规则可见：Rules 档把命中的域列出来 —— "开了规则却不知道哪条生效"正是本项要消灭的。
@@ -379,7 +375,6 @@ fun NetworkSettingsScreen(
             options = listOf(
                 ProxyMode.Global.name to stringResource(Res.string.proxy_mode_global),
                 ProxyMode.Rules.name to stringResource(Res.string.proxy_mode_rules),
-                ProxyMode.Direct.name to stringResource(Res.string.proxy_mode_direct),
             ),
             onDismiss = { showProxyModeDialog = false },
             onSelect = { name ->

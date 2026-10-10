@@ -243,10 +243,8 @@
     <string name="proxy_mode">代理作用范围</string>
     <string name="proxy_mode_global">全部流量</string>
     <string name="proxy_mode_rules">仅受限域</string>
-    <string name="proxy_mode_direct">全部直连</string>
     <string name="proxy_mode_global_summary">所有请求都按上面的代理设置走</string>
-    <string name="proxy_mode_rules_summary">仅站点与 getchu 走代理，第三方接口保持直连</string>
-    <string name="proxy_mode_direct_summary">完全不走代理（配置保留，可随时切回）</string>
+    <string name="proxy_mode_rules_summary">仅站点与 getchu 走代理，第三方接口保持直连；要全部不走代理，请在上面的「代理」里选直连</string>
     <string name="proxy_mode_hit_hosts">命中：%1$s</string>
     <string name="proxy_mode_shadowed">「手动强制选路」当前为%1$s，此项暂不生效</string>
     <string name="egress_diagnostics">连接诊断</string>

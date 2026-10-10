@@ -14,9 +14,6 @@ enum class ProxyRuleScope {
 
     /** 仅受限域走代理，第三方恒直连。 */
     RestrictedOnly,
-
-    /** 全部直连。 */
-    None,
 }
 
 /**
@@ -49,11 +46,7 @@ fun proxyRuleSummary(
     force: ForceMode,
     siteHost: String?,
 ): ProxyRuleSummary {
-    val scope = when (mode) {
-        ProxyMode.Global -> ProxyRuleScope.All
-        ProxyMode.Rules -> ProxyRuleScope.RestrictedOnly
-        ProxyMode.Direct -> ProxyRuleScope.None
-    }
+    val scope = if (mode == ProxyMode.Rules) ProxyRuleScope.RestrictedOnly else ProxyRuleScope.All
     val hosts = if (scope == ProxyRuleScope.RestrictedOnly) {
         // 与 jvmMain `HanimeProxySelector.restrictedForProxy` 同口径：内置受限域 + 当前站点。
         // 判据本体是 [isRestrictedHost]；这里只把它"展开"成人能读的清单。
@@ -65,21 +58,20 @@ fun proxyRuleSummary(
     } else {
         emptyList()
     }
-    return ProxyRuleSummary(scope = scope, hosts = hosts, shadowedBy = shadowingForceMode(mode, force))
+    return ProxyRuleSummary(scope = scope, hosts = hosts, shadowedBy = shadowingForceMode(force))
 }
 
 /**
- * [mode] 是否被 [force] 盖住。
+ * 代理档位是否被 [force] 盖住。
  *
- * 只标**语义明确冲突**的组合，宁可漏标也不误标 —— 误标会让用户以为设置坏了：
- * - `ForceDirect`：调度器强制直连，代理档位无论选什么都无从生效；
- * - `ForceGate`：强制走网关，代理不参与；
- * - `ForceProxy`：强制走代理，只与"全部直连"直接矛盾；与 Rules 档不矛盾
- *   （Rules 决定的是**谁**走代理，不是走不走）。
+ * 只标**语义明确**的组合，宁可漏标也不误标 —— 误标会让用户以为设置坏了，而其实没坏：
+ * - `ForceDirect` / `ForceGate`：调度器分别强制直连与强制走网关，**代理不参与**，
+ *   代理档位无论选什么都无从生效 ⇒ 标出来；
+ * - `ForceProxy`：强制走代理。它与"仅受限域"的叠加结果是"调度器要代理、而选择器对
+ *   第三方不给代理"，最终行为取决于调度器对"无代理可用"的回退 —— **这一层尚未厘清**，
+ *   属 §6.2 待定的优先级范围。在定论之前不标，免得给出一句不准确的"暂不生效"。
  */
-internal fun shadowingForceMode(mode: ProxyMode, force: ForceMode): ForceMode? = when (force) {
-    ForceMode.Auto -> null
-    ForceMode.ForceDirect -> force
-    ForceMode.ForceGate -> force
-    ForceMode.ForceProxy -> if (mode == ProxyMode.Direct) force else null
+internal fun shadowingForceMode(force: ForceMode): ForceMode? = when (force) {
+    ForceMode.Auto, ForceMode.ForceProxy -> null
+    ForceMode.ForceDirect, ForceMode.ForceGate -> force
 }

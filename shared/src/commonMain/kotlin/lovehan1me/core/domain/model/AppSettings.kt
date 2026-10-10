@@ -64,11 +64,17 @@ enum class ProxyType(val id: Int) {
  *
  * - [Global]：全部出站按 [ProxyType] 处理（历史行为，**默认**，保证老用户零变化）；
  * - [Rules]：仅受限域（Hanime 四站 / getchu / 当前站点）走代理，第三方（弹弹play、
- *   更新/公告 CDN）恒直连 —— 省带宽、不拖慢图床；
- * - [Direct]：全部直连，但**保留** [ProxyType]/IP/端口配置，便于随时切回。
+ *   更新/公告 CDN）恒直连 —— 省带宽、不拖慢图床。
+ *
+ * **为什么没有 `Direct` 档**（2026-10-10 删除，见规划文档 §6.2）：
+ * 曾经有一个"全部直连但保留代理配置"的档，但 [ProxyType.Direct] 本来就是这个语义 ——
+ * 而且 `proxyIp` / `proxyPort` 是**独立字段**，把类型切到 [ProxyType.Direct] 再切回来，
+ * 地址与端口原样还在。也就是说那个档唯一的卖点（"保留配置便于切回"）[ProxyType] 本就具备，
+ * 它只是一个**第二个叫"直连"的开关**。留着它就等于要求用户记住两个开关的区别，
+ * 而它们其实指向同一件事。想全直连：[ProxyType] 选直连。
  */
 enum class ProxyMode(val id: Int) {
-    Global(0), Rules(1), Direct(2);
+    Global(0), Rules(1);
 
     companion object {
         fun fromId(id: Int): ProxyMode = entries.firstOrNull { it.id == id } ?: Global

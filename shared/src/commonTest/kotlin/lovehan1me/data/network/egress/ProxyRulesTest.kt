@@ -22,13 +22,6 @@ class ProxyRulesTest {
     }
 
     @Test
-    fun `Direct 档是全直连且不逐域列举`() {
-        val summary = proxyRuleSummary(ProxyMode.Direct, ForceMode.Auto, "hanime1.me")
-        assertEquals(ProxyRuleScope.None, summary.scope)
-        assertTrue(summary.hosts.isEmpty())
-    }
-
-    @Test
     fun `Rules 档列出内置受限域与当前站点`() {
         val summary = proxyRuleSummary(ProxyMode.Rules, ForceMode.Auto, "my.mirror.example")
         assertEquals(ProxyRuleScope.RestrictedOnly, summary.scope)
@@ -66,16 +59,13 @@ class ProxyRulesTest {
     }
 
     @Test
-    fun `强制走代理只与全部直连矛盾`() {
-        assertEquals(
-            ForceMode.ForceProxy,
-            proxyRuleSummary(ProxyMode.Direct, ForceMode.ForceProxy, null).shadowedBy,
-        )
-        assertNull(
-            proxyRuleSummary(ProxyMode.Rules, ForceMode.ForceProxy, null).shadowedBy,
-            "Rules 决定的是「谁」走代理，不是走不走 —— 与强制代理不矛盾，误标会让用户以为设置坏了",
-        )
-        assertNull(proxyRuleSummary(ProxyMode.Global, ForceMode.ForceProxy, null).shadowedBy)
+    fun `强制走代理不盖任何档`() {
+        // 与 ForceDirect / ForceGate 不同：强制代理下代理**是**参与出站的，
+        // 代理档位没有被架空。它与 Rules 叠加后的实际行为取决于调度器对"第三方拿不到代理"的
+        // 回退 —— 那一层尚未厘清（§6.2），在定论之前宁可不标，也不给一句不准确的"暂不生效"。
+        ProxyMode.entries.forEach { mode ->
+            assertNull(proxyRuleSummary(mode, ForceMode.ForceProxy, null).shadowedBy)
+        }
     }
 
     @Test

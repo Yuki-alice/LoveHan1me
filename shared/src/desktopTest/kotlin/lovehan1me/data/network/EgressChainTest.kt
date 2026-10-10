@@ -151,7 +151,9 @@ class HanimeProxySelectorTest {
     }
 
     @Test
-    fun `Direct 模式即便配了代理也全直连`() = withProxy(ProxyType.Http, "203.0.113.7", 7890, ProxyMode.Direct) {
+    fun `直连档叠上 Rules 档仍然全直连`() = withProxy(ProxyType.Direct, "", -1, ProxyMode.Rules) {
+        // "全部不走代理"由 ProxyType.Direct 表达 —— ProxyMode 已无 Direct 档（见其 KDoc）。
+        // 两个维度叠加时不能编造出代理：这是删档后最容易回归错的地方。
         assertEquals(listOf(Proxy.NO_PROXY), selector.select(uri))
     }
 
