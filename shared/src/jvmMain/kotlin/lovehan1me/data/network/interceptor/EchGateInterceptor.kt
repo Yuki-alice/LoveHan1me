@@ -11,16 +11,17 @@ import lovehan1me.data.network.egress.AttemptOutcome
 import lovehan1me.data.network.egress.DomainClass
 import lovehan1me.data.network.egress.EgressBudgets
 import lovehan1me.data.network.egress.EgressPurpose
-import lovehan1me.data.network.egress.EgressReporter
 import lovehan1me.data.network.egress.EgressRequest
 import lovehan1me.data.network.egress.EgressScheduler
-import lovehan1me.data.network.egress.GateSkipReason
 import lovehan1me.data.network.egress.NoRouteException
 import lovehan1me.data.network.egress.RouteId
 import lovehan1me.data.network.egress.RouteAttempt
 import lovehan1me.data.network.egress.RouteRegistry
-import lovehan1me.data.network.egress.ScheduledPlan
+import lovehan1me.data.network.egress.allCandidatesFailedReason
 import lovehan1me.data.network.egress.classifyDomain
+import lovehan1me.data.network.egress.describeEmptyPlan
+import lovehan1me.data.network.egress.reportGateOutcome
+import lovehan1me.data.network.egress.reportRouteOutcome
 import lovehan1me.data.network.egress.currentEgressState
 import lovehan1me.data.network.egress.currentForceMode
 import lovehan1me.data.network.egress.gateBlameAfterYield
@@ -88,7 +89,7 @@ class EchGateInterceptor(
         val now = currentEpochMillis()
         val intent = EgressRequest(url, request.method, purpose, currentForceMode())
         val plan = EgressScheduler.plan(intent, currentEgressState(), RouteRegistry.healthOf(domain), now)
-        if (plan.isEmpty) throw NoRouteException(domain, describeEmpty(plan))
+        if (plan.isEmpty) throw NoRouteException(domain, describeEmptyPlan(plan))
         val jar = HCookieJar()
 
         // 网关那次拿到的"出口被封"状态码；有后路时拿它跟后路结果比对定责。
@@ -121,10 +122,10 @@ class EchGateInterceptor(
                         // 下一个请求诚实失败 —— 2026-10-04 桌面崩溃的完整链条。
                         if (isCallCanceled(chain)) throw e
                         // 本步记传输失败；挂起的网关指控按普通失败记（非阻断口径）。
-                        report(attempt.route, domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
+                        reportRouteOutcome(attempt.route, domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
                         if (gateBlamePending) {
                             gateBlamePending = false
-                            reportGate(domain, AttemptOutcome.TransportError, -1L, blockedBudgetMs)
+                            reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, blockedBudgetMs)
                         }
                         // 非幂等方法禁止让位（换一条路重发有双提交风险）：失败即止，抛出真实异常 ——
                         // 身后还有 Gate 也**不能**谎称"候选出口全部不可用"：那是我们主动不走，
@@ -134,7 +135,7 @@ class EchGateInterceptor(
                         // 唯一还能让位的形态是 Default 被粘滞锁定置顶时（[Default, Gate]）。
                         if (index == plan.attempts.lastIndex) {
                             if (plan.attempts.any { it.route == RouteId.Gate }) {
-                                throw NoRouteException(domain, "候选出口全部不可用（${plan.domain}）")
+                                throw NoRouteException(domain, allCandidatesFailedReason(plan))
                             }
                             // 纯默认出口计划（关网关 / 第三方 / 强制定向）保持旧语义：
                             // 原异常交外层 Retry 按幂等规则处理。
@@ -143,11 +144,11 @@ class EchGateInterceptor(
                         continue
                     }
                     val rttMs = (System.nanoTime() - startNs) / 1_000_000
-                    report(attempt.route, domain, AttemptOutcome.Success, rttMs, attempt.budgetMs)
+                    reportRouteOutcome(attempt.route, domain, AttemptOutcome.Success, rttMs, attempt.budgetMs)
                     if (gateBlamePending) {
                         gateBlamePending = false
                         if (gateBlameAfterYield(via.code, blockedCode)) {
-                            reportGate(domain, AttemptOutcome.Blocked, -1L, blockedBudgetMs)
+                            reportGateOutcome(domain, AttemptOutcome.Blocked, -1L, blockedBudgetMs)
                             LogUtil.w(TAG, "代理路径可用（${via.code}），网关退出接管")
                         } else {
                             LogUtil.d(TAG, "代理路径同样 $blockedCode，网关无责 ${request.url.host}")
@@ -165,14 +166,14 @@ class EchGateInterceptor(
             // 防御分支：网关在末位、身后无后路时上游已直接 Done，正常到不了这里。
             // 真到了说明判定与执行脱节，按阻断记并打日志，避免静默漏记。
             LogUtil.w(TAG, "网关阻断后无后路可比对，按有责记账 ${request.url.host}")
-            reportGate(domain, AttemptOutcome.Blocked, -1L, blockedBudgetMs)
+            reportGateOutcome(domain, AttemptOutcome.Blocked, -1L, blockedBudgetMs)
         }
         // 走到这里只有一条原因：候选全是网关步且都返回 Next（502 两次 / 异常），
         // 计划里没有可让位的非网关后路。受限域上不再撞直连，诚实失败。
         // 非网关步失败的两种收尾已在上面的 catch 里分流（见那段注释）：
         // 网关参与过 ⇒ 这里同款 NoRoute；纯直通 ⇒ 原异常交外层 Retry。
         // NoRoute 不是 Retry 认得的连接类异常（见 `NoRouteException`），不重跑，直达 UI。
-        throw NoRouteException(domain, "候选出口全部不可用（${plan.domain}）")
+        throw NoRouteException(domain, allCandidatesFailedReason(plan))
     }
 
     /** 单个候选出口的结局。 */
@@ -219,7 +220,7 @@ class EchGateInterceptor(
         } catch (e: IOException) {
             // 同上：取消不喂熔断。
             if (isCallCanceled(chain)) throw e
-            reportGate(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
+            reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
             LogUtil.w(TAG, "网关异常，回退下一出口 ${originUrl.host} (${e.message})")
             return GateStep.Next
         }
@@ -229,14 +230,14 @@ class EchGateInterceptor(
             if (!intent.isIdempotent) {
                 // 非幂等方法既不能重试也不能让位（重发有双提交风险）：把网关这份原样交出去，
                 // 但记一次失败 —— 否则"POST 一直撞 502"永远攒不到熔断。
-                reportGate(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
+                reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
                 return GateStep.Done(finishGateResponse(gateResponse, originUrl, jar))
             }
             gateResponse.close()
             // 两道预算门：外层 RetryInterceptor 下传的总预算，以及本步的单步预算。
             // 单步预算在此处执行 —— 超支即停，不再重试网关。
             if (budgetExhausted(request) || stepBudgetExhausted(startNs, attempt.budgetMs)) {
-                reportGate(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
+                reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
                 LogUtil.w(TAG, "重试预算已耗尽，不再重试网关 ${originUrl.host}")
                 return GateStep.Next
             }
@@ -245,17 +246,17 @@ class EchGateInterceptor(
                 chain.proceed(builder.header(RETRY_HEADER, "1").build())
             } catch (e: IOException) {
                 if (isCallCanceled(chain)) throw e
-                reportGate(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
+                reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
                 LogUtil.w(TAG, "网关重试异常，回退下一出口 ${originUrl.host} (${e.message})")
                 return GateStep.Next
             }
             if (isGatewayErrorPage(retried)) {
                 retried.close()
-                reportGate(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
+                reportGateOutcome(domain, AttemptOutcome.TransportError, -1L, attempt.budgetMs)
                 LogUtil.w(TAG, "网关重试仍失败，回退下一出口 ${originUrl.host}")
                 return GateStep.Next
             }
-            reportGate(domain, AttemptOutcome.Success, elapsedMs(startNs), attempt.budgetMs)
+            reportGateOutcome(domain, AttemptOutcome.Success, elapsedMs(startNs), attempt.budgetMs)
             return GateStep.Done(finishGateResponse(retried, originUrl, jar))
         }
 
@@ -266,7 +267,7 @@ class EchGateInterceptor(
             return GateStep.Blocked(gateResponse.code)
         }
 
-        reportGate(domain, AttemptOutcome.Success, elapsedMs(startNs), attempt.budgetMs)
+        reportGateOutcome(domain, AttemptOutcome.Success, elapsedMs(startNs), attempt.budgetMs)
         return GateStep.Done(finishGateResponse(gateResponse, originUrl, jar))
     }
 
@@ -274,33 +275,11 @@ class EchGateInterceptor(
     private fun isCallCanceled(chain: Interceptor.Chain): Boolean =
         runCatching { chain.call().isCanceled() }.getOrDefault(false)
 
-    /** 本步上报：新注册表（按域）是唯一的记账处（旧全局熔断器已随旧 planner 删除）。 */
-    private fun reportGate(domain: DomainClass, outcome: AttemptOutcome, rttMs: Long, budgetMs: Long = -1L) {
-        report(RouteId.Gate, domain, outcome, rttMs, budgetMs)
-    }
-
-    private fun report(route: RouteId, domain: DomainClass, outcome: AttemptOutcome, rttMs: Long, budgetMs: Long = -1L) {
-        EgressReporter.report(domain, route, outcome, rttMs, budgetMs = budgetMs)
-    }
-
     private fun elapsedMs(startNs: Long): Long = (System.nanoTime() - startNs) / 1_000_000
 
     private fun stepBudgetExhausted(startNs: Long, budgetMs: Long): Boolean {
         if (budgetMs == EgressBudgets.UNLIMITED) return false
         return elapsedMs(startNs) >= budgetMs
-    }
-
-    /** 表空的原因人话（抛给上层前组装，见 [NoRouteException]）。 */
-    private fun describeEmpty(plan: ScheduledPlan): String {
-        val gatePart = when (plan.skipped) {
-            GateSkipReason.Disabled -> "网关已关闭"
-            GateSkipReason.NotRunning -> "网关未运行"
-            GateSkipReason.CircuitOpen -> "网关熔断中"
-            GateSkipReason.NotHttps, GateSkipReason.LoopbackOrLiteral, GateSkipReason.InvalidUrl ->
-                "该 URL 不适用网关"
-            null -> "网关不可用"
-        }
-        return "$gatePart，且未配置可用代理（${plan.domain}）"
     }
 
     /** 网关响应的收尾：Set-Cookie 按原域名存回（见类 KDoc 第二个洞）。 */

@@ -2,6 +2,7 @@ package lovehan1me.core.platform
 
 import lovehan1me.core.util.LogUtil
 import lovehan1me.core.util.DownloadedVideoName
+import lovehan1me.core.util.DownloadThrottle
 import lovehan1me.core.constant.EMPTY_STRING
 import lovehan1me.core.constant.USER_AGENT
 import lovehan1me.data.SettingsRepository
@@ -393,6 +394,9 @@ object IosDownloadWorkController : DownloadWorkController {
         var downloaded = entity.downloadedLength
         if (downloaded < 0 || (entity.length in 1 until downloaded)) downloaded = 0
 
+        // B5-0：按当前设置快照限速（0 = 不限速，await 直接返回）。
+        val throttle = DownloadThrottle(SettingsRepository.downloadSpeedLimitBytes)
+
         try {
             httpClient.prepareGet {
                 url(entity.videoUrl)
@@ -437,6 +441,7 @@ object IosDownloadWorkController : DownloadWorkController {
                             fwrite(pinned.addressOf(0), 1UL, n.toULong(), fp)
                         }
                         downloaded += n
+                        throttle.await(n)
                         val now = Clock.System.now().toEpochMilliseconds()
                         if (now - lastFlush >= 1_000) {
                             lastFlush = now

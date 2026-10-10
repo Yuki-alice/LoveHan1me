@@ -14,6 +14,7 @@ import lovehan1me.core.platform.DesktopDownloadWorkController
 import lovehan1me.core.platform.desktopDownloadWorkController
 import lovehan1me.core.util.AppToast
 import lovehan1me.data.SettingsRepository
+import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
 import lovehan1me.default_path_restored
 import lovehan1me.directory_saved
 import lovehan1me.feature.settings.DownloadSettingsScreen
@@ -57,13 +58,18 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
     val pathSummary = remember(settings.safDownloadPath) {
         DesktopDownloadWorkController.currentDownloadDir().absolutePath
     }
-    val uiState = remember(settings.downloadCountLimit, pathSummary) {
+    val uiState = remember(settings.downloadCountLimit, settings.downloadSpeedLimitIndex, pathSummary) {
         DownloadSettingsUiState(
             downloadPathSummary = pathSummary,
             downloadCountLimit = settings.downloadCountLimit,
             downloadCountLimitSummary = toDownloadCountLimitPrettyString(
                 noLimitText,
                 settings.downloadCountLimit,
+            ),
+            downloadSpeedLimitIndex = settings.downloadSpeedLimitIndex,
+            downloadSpeedLimitSummary = toDownloadSpeedPrettyString(
+                noLimitText,
+                SettingsRepository.downloadSpeedLimitBytes,
             ),
         )
     }
@@ -94,6 +100,7 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
     DownloadSettingsScreen(
         state = uiState,
         maxDownloadCountLimit = 10,
+        maxDownloadSpeedLimitIndex = DOWNLOAD_SPEED_BYTES.lastIndex,
         onOpenDownloadPath = { showPathDialog = true },
         onRestoreDefaultPath = {
             scope.launch { SettingsRepository.setDownloadStorage(false, null) }
@@ -104,6 +111,9 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
                 SettingsRepository.setDownloadCountLimit(value)
                 desktopDownloadWorkController().updateDownloadLimit(value)
             }
+        },
+        onDownloadSpeedLimitChange = { value ->
+            scope.launch { SettingsRepository.setDownloadSpeedLimitIndex(value) }
         },
         embedded = embedded,
     )

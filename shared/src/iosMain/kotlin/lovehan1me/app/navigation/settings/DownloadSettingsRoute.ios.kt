@@ -16,9 +16,12 @@ import lovehan1me.download
 import lovehan1me.core.platform.IosDownloadWorkController
 import lovehan1me.core.platform.iosDownloadWorkController
 import lovehan1me.data.SettingsRepository
+import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
 import lovehan1me.download_count_limit
 import lovehan1me.download_path
+import lovehan1me.download_speed_limit
 import lovehan1me.ic_count
+import lovehan1me.ic_speed
 import lovehan1me.no_limit
 import lovehan1me.ui.component.SettingSliderItem
 import lovehan1me.ui.component.SettingsSectionTitle
@@ -64,6 +67,19 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
                             SettingsRepository.setDownloadCountLimit(value)
                             iosDownloadWorkController().updateDownloadLimit(value)
                         }
+                    },
+                )
+                SettingSliderItem(
+                    title = stringResource(Res.string.download_speed_limit),
+                    summary = toDownloadSpeedPrettyString(
+                        noLimitText,
+                        SettingsRepository.downloadSpeedLimitBytes,
+                    ),
+                    value = settings.downloadSpeedLimitIndex,
+                    valueRange = 0..DOWNLOAD_SPEED_BYTES.lastIndex,
+                    iconRes = Res.drawable.ic_speed,
+                    onValueChange = { value ->
+                        scope.launch { SettingsRepository.setDownloadSpeedLimitIndex(value) }
                     },
                 )
             }

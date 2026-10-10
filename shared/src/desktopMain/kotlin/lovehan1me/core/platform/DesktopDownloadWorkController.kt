@@ -4,6 +4,7 @@ import lovehan1me.core.util.LogUtil
 import lovehan1me.core.constant.DESKTOP_USER_AGENT
 import lovehan1me.core.constant.EMPTY_STRING
 import lovehan1me.core.util.DownloadedVideoName
+import lovehan1me.core.util.DownloadThrottle
 import lovehan1me.core.constant.USER_AGENT
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.database.dao.Han1meDatabases
@@ -294,6 +295,9 @@ object DesktopDownloadWorkController : DownloadWorkController {
         var downloaded = entity.downloadedLength
         if (downloaded < 0 || (entity.length in 1 until downloaded)) downloaded = 0
 
+        // B5-0：按当前设置快照限速（0 = 不限速，await 直接返回）。
+        val throttle = DownloadThrottle(SettingsRepository.downloadSpeedLimitBytes)
+
         val request = Request.Builder()
             .url(entity.videoUrl)
             .header("User-Agent", USER_AGENT)
@@ -330,6 +334,7 @@ object DesktopDownloadWorkController : DownloadWorkController {
                             if (n == -1) break
                             raf.write(buffer, 0, n)
                             downloaded += n
+                            throttle.await(n)
                             val now = System.currentTimeMillis()
                             if (now - lastFlush >= 1_000) {
                                 lastFlush = now

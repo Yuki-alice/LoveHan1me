@@ -17,7 +17,6 @@ import androidx.compose.runtime.setValue
 import kotlinx.coroutines.delay
 import org.jetbrains.compose.resources.stringResource
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import lovehan1me.core.constant.EMPTY_STRING
 import lovehan1me.data.SettingsRepository
 import lovehan1me.Res
 import lovehan1me.alternative
@@ -41,7 +40,6 @@ import lovehan1me.socks_proxy
 import lovehan1me.system_proxy
 import lovehan1me.unknow
 import lovehan1me.warning
-import lovehan1me.restart_or_not_working
 import lovehan1me.ech_gate_status_failed
 import lovehan1me.ech_gate_status_running
 import lovehan1me.ech_gate_status_starting
@@ -92,7 +90,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import lovehan1me.core.platform.currentEpochMillis
-import lovehan1me.core.platform.restartApp
 import org.jetbrains.compose.resources.getString
 import kotlinx.coroutines.runBlocking
 
@@ -111,7 +108,6 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
     var isCustomMirrorTesting by remember { mutableStateOf(false) }
     var customMirrorTestResult by remember { mutableStateOf<String?>(null) }
     var showDomainRestartConfirm by remember { mutableStateOf(false) }
-    var showHostsRestartConfirm by remember { mutableStateOf(false) }
     var showCustomHostsValidationError by remember { mutableStateOf<List<String>?>(null) }
     var showCustomMirrorValidationError by remember { mutableStateOf(false) }
     var showCustomMirrorWarningConfirm by remember { mutableStateOf(false) }
@@ -378,7 +374,18 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             }
             coroutineScope.launch {
                 SettingsRepository.update { it.copy(useBuiltInHosts = value) }
-                showHostsRestartConfirm = true
+                // F21：这里**不再杀进程**。该开关的读取路径本就是每请求的
+                //（`HanimeDns.lookup` 每次读设置；`resolveStaticIps` 走 raw 比对缓存），
+                // 所以"热生效"本就成立 —— 从上游继承来的"重启才生效"从未必要。
+                //
+                // 真正需要刷新的是**网关的 seed IP 列表**：`echGateSeedIps` 只在启动时收一次，
+                // 网关会把它按域缓进 plan 里（`plans` 是包级 map，失效只走 upstream error）。
+                // 所以重启的是**网关**，不是整个应用 —— 用户不会看到应用重启，只是网关换一批种子。
+                CdnIpProbe.invalidate()
+                if (SettingsRepository.useEchGate) {
+                    EchGateRuntime.stop()
+                    EchGateRuntime.start()
+                }
             }
         },
         onAutoBuiltInHostsChange = { value ->
@@ -521,17 +528,6 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             },
         )
     }
-
-    ConfirmDialog(
-        visible = showHostsRestartConfirm,
-        title = stringResource(Res.string.attention),
-        message = stringResource(Res.string.restart_or_not_working, EMPTY_STRING),
-        confirmText = stringResource(Res.string.confirm),
-        dismissText = stringResource(Res.string.cancel),
-        cancelable = false,
-        onConfirm = { restartApp(killProcess = true) },
-        onDismiss = { showHostsRestartConfirm = false },
-    )
 
     val validationErrors = showCustomHostsValidationError
     if (validationErrors != null) {

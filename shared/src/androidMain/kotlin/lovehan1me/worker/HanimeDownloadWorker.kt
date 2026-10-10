@@ -39,6 +39,8 @@ import lovehan1me.download_task_retrying_s_reason_s
 import lovehan1me.downloading_s
 import lovehan1me.unknown_download_error
 import lovehan1me.data.DatabaseRepo
+import lovehan1me.data.SettingsRepository
+import lovehan1me.core.util.DownloadThrottle
 import lovehan1me.data.database.entity.download.DownloadGroupEntity
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import lovehan1me.data.network.ServiceCreator
@@ -386,6 +388,8 @@ class HanimeDownloadWorker(
                     if (needRange) raf.seek(downloadedLength)
                 }
                 val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+                // B5-0：按当前设置快照限速（0 = 不限速，await 直接返回）。
+                val throttle = DownloadThrottle(SettingsRepository.downloadSpeedLimitBytes)
                 var delayTime = 0L
                 var retryCount = 0
 
@@ -434,6 +438,7 @@ class HanimeDownloadWorker(
                                 safChannel.writeFully(buffer, len)
                             }
                             downloadedLength += len
+                            throttle.await(len)
 
                             if (System.currentTimeMillis() - delayTime > RESPONSE_INTERVAL) {
                                 val progress = (downloadedLength * 100 / entity.length).coerceAtMost(100)

@@ -43,6 +43,7 @@ import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.core.platform.isSslHandshakeException
 import lovehan1me.core.platform.sslHandshakeException
@@ -688,8 +689,13 @@ object NetworkRepo {
         action: (String) -> VideoLoadingState<T>,
     ) = flow {
         PlayerTrace.mark("video-request-start")
+        // 出口归因的窗口起点：与 EgressEvent.atMs 同源（都是 currentEpochMillis），
+        // 取一次即可，不需要自己做时间换算。
+        val netStartedAt = currentEpochMillis()
         val requestResult = ioRequest(request)
         PlayerTrace.mark("video-request-end")
+        // "什么时候到"（mark）+ "走的哪条路"（egress）合起来才拆得开起播耗时。
+        PlayerTrace.egress("video-request", netStartedAt)
         PlayerTrace.mark("video-parse-start")
         val parsed = action.invoke(requestResult.bodyAsText())
         PlayerTrace.mark("video-parse-end")

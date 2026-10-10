@@ -4,6 +4,7 @@ import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.core.util.LogUtil
 import lovehan1me.core.util.PlatformLock
 import lovehan1me.core.util.withLock
+import lovehan1me.data.network.egress.EgressTraceLink
 
 /**
  * 播放器埋点（M5 体验打磨：**状态反馈 / 手势**两个方向的可观测性）。
@@ -105,6 +106,24 @@ object PlayerTrace {
             currentEpochMillis() - from
         }
         LogUtil.d(TAG, "[$sessionKey] $name ${elapsed}ms")
+    }
+
+    /**
+     * 打一条**出口归因**：`[sinceMs, now]` 这段网络实际走了哪条路（网关 / 当前出口）、
+     * 失败几次、平均 RTT 多少。
+     *
+     * [mark] 回答"什么时候到"，本方法回答"走的哪条路"——两者合起来才能把起播拆成
+     * "网络 X ms（走 Gate/Default）+ 解析 Y + 渲染 Z"。
+     *
+     * 与 `EgressEvents` 是**旁路拉取**关系：本对象不订阅，`EgressReporter` 也不反向调用这里，
+     * 埋点不渗进判定与记账那条热路径（见 [EgressTraceLink] 的 KDoc）。
+     *
+     * 窗口内没有出口尝试时**静默**（命中缓存的路径不该刷屏）。
+     */
+    fun egress(label: String, sinceMs: Long) {
+        val window = EgressTraceLink.since(sinceMs)
+        if (window.isEmpty) return
+        LogUtil.d(TAG, "[$sessionKey] $label 出口归因：${window.summary()}")
     }
 
     /** 一行汇总（离开播放页时打）。 */

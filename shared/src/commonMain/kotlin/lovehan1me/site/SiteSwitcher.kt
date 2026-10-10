@@ -115,9 +115,10 @@ object SiteSwitcher {
             )
         }
 
-        // 2) 刷新代理系统属性（JVM 系统属性，供 WebView/HttpURLConnection 走同一出口）
-        //    + 确保 ECH 网关在运行（开着开关但进程死了，借切换复活；
-        //    探测缓存的失效在 jvmMain rebuildSystemProxy 内，见该函数注释）。
+        // 2) 复位"出口现实变了"的全部状态：[rebuildSystemProxy] 现在分两层——
+        //    common 层归零各域熔断/择优健康度（跨平台，iOS 同样生效），
+        //    平台层管 JVM 系统代理属性 + CDN 探测缓存 + DoH 冷却（见各自 KDoc）。
+        //    + 确保 ECH 网关在运行（开着开关但进程死了，借切换复活）。
         //    站点地址由 service 每请求实时解析，切换不需要重建任何实例。
         rebuildSystemProxy()
         ensureEchGateway()

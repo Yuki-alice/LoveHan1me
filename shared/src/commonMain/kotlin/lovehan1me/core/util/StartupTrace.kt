@@ -1,6 +1,7 @@
 package lovehan1me.core.util
 
 import lovehan1me.core.platform.currentEpochMillis
+import lovehan1me.data.network.egress.EgressTraceLink
 
 /**
  * 冷启动分段埋点（M5-2）。
@@ -92,6 +93,24 @@ object StartupTrace {
      */
     fun logExternal(label: String, elapsedMillis: Long) {
         LogUtil.i(TAG, "$label ${elapsedMillis}ms（基准非本对象起点）")
+    }
+
+    /**
+     * 打一条**出口归因**：`[sinceMs, now]` 这段网络实际走了哪条路（网关 / 当前出口）、
+     * 失败几次、平均 RTT 多少。
+     *
+     * 冷启动里它的用途是把首屏拆开：`home-fetch-start` 到 `home-content-ready` 之间
+     * 到底花在网络上的哪条路上，而不是只看到一个总毫秒数。
+     *
+     * 与 `EgressEvents` 是**旁路拉取**关系（见 [EgressTraceLink] 的 KDoc）：
+     * 本对象不订阅，`EgressReporter` 也不反向调用这里，埋点不渗进判定与记账那条热路径。
+     *
+     * 窗口内没有出口尝试时**静默**（命中缓存的路径不该刷屏）。
+     */
+    fun egress(label: String, sinceMs: Long) {
+        val window = EgressTraceLink.since(sinceMs)
+        if (window.isEmpty) return
+        LogUtil.i(TAG, "$label 出口归因：${window.summary()}")
     }
 
     /** 距 [begin] 的毫秒数（未 begin 返回 0）。 */

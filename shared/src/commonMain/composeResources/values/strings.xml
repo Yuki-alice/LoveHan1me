@@ -401,6 +401,7 @@ Recommendations are as follows:\n
     <string name="action_not_support">This device does not support this action</string>
     <string name="download_settings">Download Settings</string>
     <string name="download_count_limit">Download Count Limit</string>
+    <string name="download_speed_limit">Download Speed Limit</string>
     <string name="no_limit">No Limit</string>
     <string name="check_video_exists_in_download">I noticed you seem to have downloaded the video with resolution %1$s</string>
     <string name="retry">Retry</string>

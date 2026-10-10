@@ -116,7 +116,13 @@ data class NetworkSettingsUiState(
     val useBuiltInHosts: Boolean,
     /** 自动档：站点域名优先走内置 IP，全部不可连时自动回退（默认开，见 AppSettings）。 */
     val autoBuiltInHosts: Boolean,
-    /** ECH 网关：加密 SNI 以避免握手被重置（默认关，目前仅桌面 Windows 可用）。 */
+    /**
+     * ECH 网关：加密 SNI 以避免握手被重置。
+     *
+     * **默认开，三端均可用**（Android 走 gomobile 进程内起服、桌面拉起各 OS 二进制、
+     * iOS 由 Swift 壳起服）。网关不可用时所有改写层自动放行直连，行为与关闭一致，
+     * 故默认开是安全的 —— 见 `AppSettings.useEchGate`。
+     */
     val useEchGate: Boolean,
     /** 网关运行时状态行（jvmMain Route 拼接好的本地化文案，iOS 传空）。 */
     val echGateStatus: String,

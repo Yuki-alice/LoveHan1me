@@ -30,6 +30,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.documentfile.provider.DocumentFile
 import lovehan1me.data.SettingsRepository
+import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
 import lovehan1me.Res
 import lovehan1me.directory_saved
 import lovehan1me.no_directory_selected
@@ -101,6 +102,7 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
     DownloadSettingsScreen(
         state = uiState,
         maxDownloadCountLimit = 10,
+        maxDownloadSpeedLimitIndex = DOWNLOAD_SPEED_BYTES.lastIndex,
         onOpenDownloadPath = { showDownloadPathDialog = true },
         onRestoreDefaultPath = { },
         onImportDownloadedFiles = {
@@ -117,6 +119,11 @@ fun DownloadSettingsRouteScreen(embedded: Boolean = false) {
             coroutineScope.launch {
                 SettingsRepository.setDownloadCountLimit(value)
                 HanimeDownloadManager.maxConcurrentDownloadCount = value
+            }
+        },
+        onDownloadSpeedLimitChange = { value ->
+            coroutineScope.launch {
+                SettingsRepository.setDownloadSpeedLimitIndex(value)
             }
         },
         embedded = embedded,
@@ -305,6 +312,11 @@ private fun buildDownloadSettingsUiState(context: Context, unknownError: String,
                     noLimit,
                     SettingsRepository.downloadCountLimit
                 ),
+                downloadSpeedLimitIndex = SettingsRepository.current.downloadSpeedLimitIndex,
+                downloadSpeedLimitSummary = toDownloadSpeedPrettyString(
+                    noLimit,
+                    SettingsRepository.downloadSpeedLimitBytes
+                ),
             )
         )?.name ?: uri.toString()
     }
@@ -314,6 +326,11 @@ private fun buildDownloadSettingsUiState(context: Context, unknownError: String,
         downloadCountLimitSummary = toDownloadCountLimitPrettyString(
             noLimit,
             SettingsRepository.downloadCountLimit
+        ),
+        downloadSpeedLimitIndex = SettingsRepository.current.downloadSpeedLimitIndex,
+        downloadSpeedLimitSummary = toDownloadSpeedPrettyString(
+            noLimit,
+            SettingsRepository.downloadSpeedLimitBytes
         ),
     )
 }

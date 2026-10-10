@@ -9,6 +9,24 @@ import lovehan1me.video.contract.VideoEnhancementLevels
  */
 fun normalizeLongPressSpeed(storedValue: Float): Float = storedValue.coerceIn(2f, 5f)
 
+/**
+ * 下载限速档位表（字节/秒）。首档 `0` = 不限速，对齐参考项目 `DOWNLOAD_SPEED_BYTES`。
+ *
+ * 存档里存的是**索引**而非字节数：将来增删档位，老存档只会落到"相邻的档"，
+ * 而不是一个表里不存在的速率值（读侧仍按索引回退到首档兜底）。
+ */
+val DOWNLOAD_SPEED_BYTES = longArrayOf(
+    0L,
+    128L * 1024,
+    256L * 1024,
+    512L * 1024,
+    1024L * 1024,
+    2 * 1024L * 1024,
+    4 * 1024L * 1024,
+    8 * 1024L * 1024,
+    10 * 1024L * 1024,
+)
+
 enum class ThemeMode(val value: String) {
     Light("always_off"),
     Dark("always_on"),
@@ -206,6 +224,8 @@ data class AppSettings(
     val readAnnouncementKeys: List<String> = emptyList(),
     val ignoredVersionCode: Int = -1,
     val downloadCountLimit: Int = 2,
+    /** 下载限速档位索引（指向 [DOWNLOAD_SPEED_BYTES]，`0` = 不限速）。 */
+    val downloadSpeedLimitIndex: Int = 0,
     val usePrivateStorage: Boolean = true,
     val safDownloadPath: String? = null,
     val collapseDownloadedGroup: Boolean = false,

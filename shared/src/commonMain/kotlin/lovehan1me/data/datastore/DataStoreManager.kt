@@ -14,6 +14,7 @@ import androidx.datastore.preferences.core.longPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import lovehan1me.core.domain.model.AppLanguage
 import lovehan1me.core.domain.model.AppSettings
+import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
 import lovehan1me.core.domain.model.DisplayDensity
 import lovehan1me.core.domain.model.NavBarStyle
 import lovehan1me.core.domain.model.ContrastLevel
@@ -201,6 +202,7 @@ object DataStoreManager : SettingsStore {
         cachedAnnouncementJson = nullableString("announcement_cached_json"),
         readAnnouncementKeys = nullableString("announcement_read_keys")?.split(',')?.filter(String::isNotBlank).orEmpty(),
         downloadCountLimit = int("download_count_limit", defaults.downloadCountLimit),
+        downloadSpeedLimitIndex = intInRange("download_speed_limit", defaults.downloadSpeedLimitIndex, DOWNLOAD_SPEED_BYTES.indices),
         usePrivateStorage = bool("use_private_storage", defaults.usePrivateStorage), safDownloadPath = nullableString("saf_download_path"), collapseDownloadedGroup = bool("collapse_downloaded_group", defaults.collapseDownloadedGroup),
         playerKernel = PlayerKernel.fromValue(string("switch_player_kernel", defaults.playerKernel.value)),
         playerSpeed = floatString("player_speed", defaults.playerSpeed), longPressSpeedTime = normalizeLongPressSpeed(floatString("long_press_speed_times", defaults.longPressSpeedTime)),
@@ -250,7 +252,7 @@ object DataStoreManager : SettingsStore {
         put("usage_notice_accepted_v2", usageNoticeAccepted); put("already_login", isAlreadyLogin); put("local_list_notice_dismissed", localListNoticeDismissed); put("saved_user_id", savedUserId); put("cookie", loginCookie); put(KEY_CF_COOKIES, encodeCfCookies(cfCookies)); put("desktop_browser_user_agent", desktopBrowserUserAgent)
         put("domain_name", domainName); put("selectedBaseUrl", selectedBaseUrl); put("use_custom_mirror_site", useCustomMirrorSite); put("custom_mirror_site", customMirrorSite); put("append_custom_mirror_path", appendCustomMirrorPath); put("use_built_in_hosts", useBuiltInHosts); put("auto_built_in_hosts", autoBuiltInHosts); put("use_ech_gate", useEchGate); put("egress_force_mode", egressForceMode); put("custom_hosts_data", customHostsData); put("use_doh", useDoH); put("doh_preset", dohPreset); put("doh_custom_url", dohCustomUrl); put("doh_bootstrap_ips", dohBootstrapIps); put("doh_timeout_seconds", dohTimeoutSeconds); put("proxy_type", proxyType.id); put("proxy_ip", proxyIp); put("proxy_port", proxyPort)
         cachedUpdateJson?.let { put("app_update_cached_json", it) }; put("app_update_ignored_version_code", ignoredVersionCode); put("update_checked_at_ms", updateCheckedAtMs)
-        cachedAnnouncementJson?.let { put("announcement_cached_json", it) }; put("announcement_read_keys", readAnnouncementKeys.joinToString(",")); put("download_count_limit", downloadCountLimit); put("use_private_storage", usePrivateStorage); safDownloadPath?.let { put("saf_download_path", it) }; put("collapse_downloaded_group", collapseDownloadedGroup)
+        cachedAnnouncementJson?.let { put("announcement_cached_json", it) }; put("announcement_read_keys", readAnnouncementKeys.joinToString(",")); put("download_count_limit", downloadCountLimit); put("download_speed_limit", downloadSpeedLimitIndex); put("use_private_storage", usePrivateStorage); safDownloadPath?.let { put("saf_download_path", it) }; put("collapse_downloaded_group", collapseDownloadedGroup)
         put("switch_player_kernel", playerKernel.value); put("player_speed", playerSpeed.toString()); put("long_press_speed_times", longPressSpeedTime.toString()); put("video_language", videoLanguage); put("default_video_quality", videoQuality); put("show_played_indicator", showPlayedIndicator); put("allow_resume_playback", allowResumePlayback); put("auto_play_on_enter", autoPlayOnEnter); put("auto_play_next", autoPlayNext); put("loop_single", loopSingle)
         put("video_aspect", videoAspect.value); put("super_resolution", superResolutionLevel); put("picture_brightness", pictureBrightness.toString()); put("picture_contrast", pictureContrast.toString()); put("picture_saturation", pictureSaturation.toString())
         put("danmaku_enabled", danmakuEnabled); put("danmaku_comment_enabled", danmakuCommentEnabled); put("danmaku_proxy_base", danmakuProxyBase)

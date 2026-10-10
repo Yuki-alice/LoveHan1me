@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import lovehan1me.data.AnnouncementRepository
 import lovehan1me.data.SettingsRepository
 import lovehan1me.core.platform.ioDispatcher
+import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.Res
 import lovehan1me.login_state_expired
 import org.jetbrains.compose.resources.StringResource
@@ -153,6 +154,9 @@ class HomePageViewModel: ViewModel() {
                 }
             }
             StartupTrace.mark("home-fetch-start")
+            // 出口归因的窗口起点：与 EgressEvent.atMs 同源（都是 currentEpochMillis），
+            // 取一次即可，不需要自己做时间换算。
+            val homeFetchStartedAt = currentEpochMillis()
             NetworkRepo.getHomePage().collect { networkState ->
                 when (networkState){
                     is WebsiteState.Error -> {
@@ -177,6 +181,9 @@ class HomePageViewModel: ViewModel() {
                         _homePageFlow.value = PageState.Success(info = homeData, isRefreshing = false)
                         // 首屏内容到达（mark 首写胜出，刷新不覆盖冷启动值）。
                         StartupTrace.mark("home-content-ready")
+                        // 首屏网络的出口归因：这一屏实际走了网关还是当前出口、失败几次。
+                        // 只在网络分支打（上面那条缓存分支没有网络活动，打了只会是"无出口尝试"）。
+                        StartupTrace.egress("home-fetch", homeFetchStartedAt)
                         // 只有用户主动刷新才重拉公告：初次进页时 initializeHomePage 已经拉过一次，
                         // 在这里再拉一次就是同一次启动发两倍请求。
                         if (isRefresh) refreshAnnouncements()

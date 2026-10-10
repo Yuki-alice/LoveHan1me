@@ -199,9 +199,14 @@ class PlayerControlsVisibilityInteractionTest {
      * 两件事都省不掉：进/出场动画只认帧时钟；而画面单击的 `onTap` 要被双击窗口
      * （300ms）延后才派发，那个窗口走的是真实时间。所以不预设"要等多久"，
      * 只轮询到"看得见"为止 —— 阈值一旦写死，用例就变成对时钟的赌注。
+     *
+     * 阈值因此只是**安全上限**，得给足：全量跑时同一台机器上并行着别的 test task
+     * （含 `:app` 编译），CPU 争用会把"推帧 + 真实 300ms 派发"拉长。此前写 1.5s，
+     * D11 的第二次 `awaitCondition` 偶发在 deadline 前条件还没翻转（flaky）。
+     * 抬到 [AWAIT_TIMEOUT_MILLIS] 覆盖争用，条件本身仍是唯一判据。
      */
     private fun ImageComposeScene.awaitCondition(
-        timeoutMillis: Long = 1_500L,
+        timeoutMillis: Long = AWAIT_TIMEOUT_MILLIS,
         condition: () -> Boolean,
     ): Boolean {
         val deadline = System.nanoTime() + timeoutMillis * 1_000_000L
@@ -249,5 +254,11 @@ class PlayerControlsVisibilityInteractionTest {
         const val FIRST_FRAME_NANOS = 1_000_000_000L
         const val FRAME_STEP_NANOS = 16_666_666L
         const val TAP_INTERVAL_MILLIS = 500L
+
+        /**
+         * [awaitCondition] 的默认安全上限：正常几百毫秒就能满足条件，留 5s 是为
+         * 全量构建时的 CPU 争用兜底（见该函数的 KDoc），不是"预期要等这么久"。
+         */
+        const val AWAIT_TIMEOUT_MILLIS = 5_000L
     }
 }

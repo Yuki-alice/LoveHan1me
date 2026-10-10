@@ -4,6 +4,7 @@ import com.sun.net.httpserver.HttpServer
 import lovehan1me.core.domain.model.AppSettings
 import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.core.platform.currentEpochMillis
+import lovehan1me.core.platform.rebuildSystemProxy
 import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.egress.AttemptOutcome
 import lovehan1me.data.network.egress.DomainClass
@@ -71,6 +72,29 @@ class NetworkChangeReactionsTest {
             RouteHealth(),
             RouteRegistry.healthOf(DomainClass.Hanime),
             "切网后旧的熔断结论不该继续挡着网关（用户会以为'换了网还是打不开'）",
+        )
+    }
+
+    @Test
+    fun `重建入口本身也复位熔断健康度_不依赖平台实现`() {
+        ensureStoreInstalled()
+        val now = currentEpochMillis()
+        RouteRegistry.update(DomainClass.Hanime) {
+            it.onResult(RouteId.Gate, AttemptOutcome.Blocked, 100L, now)
+        }
+        assertTrue(
+            RouteRegistry.healthOf(DomainClass.Hanime).isOpen(RouteId.Gate, now),
+            "前置条件：阻断类失败应一次即熔断",
+        )
+
+        rebuildSystemProxy()
+
+        assertEquals(
+            RouteHealth(),
+            RouteRegistry.healthOf(DomainClass.Hanime),
+            "切站走的就是这个入口。" +
+                "它必须复位各域健康度 —— 此前这条复位写在 jvm 的 actual 里，" +
+                "于是 iOS（actual 为空实现）切站不复位，旧站的熔断结论会带到新站（F22）。",
         )
     }
 

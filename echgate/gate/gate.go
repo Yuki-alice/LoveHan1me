@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -32,8 +33,24 @@ import (
 const (
 	qtypeA     = 1
 	qtypeCNAME = 5
+	qtypeAAAA  = 28
 	qtypeHTTPS = 65
 )
+
+// 出站 ALPN：h2 优先，回退 HTTP/1.1。
+//
+// ⚠️ 与 Transport.ForceAttemptHTTP2 **必须配套**：
+//   - 只挂 h2 而 ForceAttemptHTTP2=false → Transport 用 HTTP/1.1 去解析服务端发来的 h2 帧，
+//     拿到 "malformed HTTP response"（实测踩过，见原先的注释）；
+//   - 在"自定义 DialTLSContext"下，ForceAttemptHTTP2=true 正是 Go 自动装配 h2 的必要条件。
+//
+// 为什么值得开 h2：HTTP/1.1 下首屏几十个静态资源要建几十条独立连接，
+// 每条各做一次 TCP+TLS+ECH 握手且各自慢启动、在受限链路上互相竞争；
+// h2 把它们多路复用到一条连接上。
+//
+// 探测（probePlan）与真实拨号（dialOne）共用本表，避免两边 ALPN 不一致
+// 导致"探测通过、真实连接失败"。
+var upstreamALPN = []string{"h2", "http/1.1"}
 
 // plan 是某个目标域名"该怎么连"的结论。
 type plan struct {
@@ -99,12 +116,30 @@ var (
 	echCachePath string
 )
 
-// ECH 公钥配置的缓存有效期。
+// ECH 公钥配置的磁盘缓存 TTL 上下界。
 //
-// CF 会轮换密钥，缓存太久会拿到被服务端拒绝的过期配置（实测症状是
-// `tls: server rejected ECH`）。一小时是"启动够快"与"不会用到过期密钥"的折中；
+// 缓存时长**跟随 DNS 记录的 TTL**（钳到本区间），不再用固定的 1 小时（缺陷 F24）。
+// 理由：CF 会轮换密钥，缓存太久会拿到被服务端拒绝的过期配置（实测症状是
+// `tls: server rejected ECH`）；而实测 cloudflare-ech.com 的 HTTPS 记录 TTL 仅 190s，
+// 用固定 1h 等于把"最长 3 分钟有效"的东西当一小时用。
+//
+// 下界 10min：网关越早就绪，主页那批图片越可能赶上网关，别每次冷启动都白等一次 DoH 往返；
+// 上界 1h：与旧行为的上界对齐，防止异常大的 TTL 把可能过期的配置钉死一整天。
 // 真过期了也不致命——探测阶段会发现握手失败，把该域名退回普通路径。
-const echCacheTTL = time.Hour
+const (
+	echCacheTTLMin = 10 * time.Minute
+	echCacheTTLMax = time.Hour
+)
+
+func clampECHCacheTTL(ttl time.Duration) time.Duration {
+	if ttl < echCacheTTLMin {
+		return echCacheTTLMin
+	}
+	if ttl > echCacheTTLMax {
+		return echCacheTTLMax
+	}
+	return ttl
+}
 
 // Start 按 [Config] 启动网关并立即返回（服务跑在后台 goroutine）。
 //
@@ -139,8 +174,9 @@ func Start(cfg Config) (*Server, error) {
 	// 复用要成立还要求 IdleConnTimeout 长过一次浏览的间隔，30s 太短——
 	// 用户看完一屏再滑，连接已经回收，下一屏又回到冷启动。
 	//
-	// ForceAttemptHTTP2 保持 false：出站 Transport 只会 HTTP/1.1（见 dialOne 里
-	// 关于 NextProtos 的说明），协商出 h2 会拿到 "malformed HTTP response"。
+	// ForceAttemptHTTP2 必须为 true：我们的 DialTLSContext 是自定义的，
+	// Go 在此情况下**默认不装配 h2**，于是 dialOne 里协商出 h2 也没人处理。
+	// 这一项与 upstreamALPN 是一对，缺一即 "malformed HTTP response"。
 	proxy := &httputil.ReverseProxy{
 		Director: director,
 		Transport: &http.Transport{
@@ -150,7 +186,7 @@ func Start(cfg Config) (*Server, error) {
 			IdleConnTimeout:       90 * time.Second,
 			TLSHandshakeTimeout:   10 * time.Second,
 			ExpectContinueTimeout: 1 * time.Second,
-			ForceAttemptHTTP2:     false,
+			ForceAttemptHTTP2:     true,
 		},
 		ErrorHandler: onUpstreamError,
 	}
@@ -393,9 +429,9 @@ func dialOne(
 	base := &tls.Config{
 		ServerName: sni,
 		MinVersion: tls.VersionTLS12,
-		// 注意不要加 NextProtos h2：上游 ReverseProxy 的 Transport 只会 HTTP/1.1，
-		// 协商出 h2 会导致 "malformed HTTP response"（实测踩过）。
-		// 参考实现加 h2 是因为它的出站 client 配了 ForceAttemptHTTP2 + h2 传输。
+		// ALPN 与 Transport.ForceAttemptHTTP2 是一对，缺一即 "malformed HTTP response"。
+		// 理由见 upstreamALPN 的说明。
+		NextProtos: upstreamALPN,
 	}
 	dialTCP := func() (net.Conn, error) {
 		return d.DialContext(ctx, "tcp", net.JoinHostPort(ip, port))
@@ -435,7 +471,8 @@ func dialOne(
 		if errors.As(err, &rej) && len(rej.RetryConfigList) > 0 {
 			// 服务端给了新配置：缓存并对同一 IP 重握一次。
 			setECH(rej.RetryConfigList)
-			writeECHCache(rej.RetryConfigList)
+			// retry_configs 直接来自服务端、最新鲜，没有 TTL 可跟，取上界。
+			writeECHCache(rej.RetryConfigList, echCacheTTLMax)
 			raw.Close()
 			if raw2, err2 := dialTCP(); err2 == nil {
 				retryCfg := base.Clone()
@@ -598,7 +635,7 @@ func probeCandidates(ips []string, sni string, useECH bool) []string {
 
 // handshakeLatency 做一次 TLS 握手并返回耗时（失败返回 error）。
 func handshakeLatency(ip, sni string, useECH bool) (int64, error) {
-	cfg := &tls.Config{ServerName: sni, MinVersion: tls.VersionTLS12}
+	cfg := &tls.Config{ServerName: sni, MinVersion: tls.VersionTLS12, NextProtos: upstreamALPN}
 	if useECH {
 		cfg.MinVersion = tls.VersionTLS13
 		cfg.EncryptedClientHelloConfigList = currentECH()
@@ -670,6 +707,31 @@ func setECH(b []byte) {
 	echMu.Unlock()
 }
 
+// ECHConfigList 的兜底 DoH 端点，按顺序尝试。
+//
+// 为什么需要多端点（缺陷 F1）：ECHConfigList 是整条链上**唯一没有本地兜底**的一环 ——
+// 配置的那个 DoH 不可达时，只剩写死在二进制里的 fallbackECHB64，
+// 而那份实测会因 CF 轮换密钥而被服务端拒绝（`server rejected ECH`）。
+// 多端点让"某一个 DoH 抽风"不再等于"ECH 用不了"。
+//
+// 为什么用**域名形式**而不是纯 IP：本项目别处的 DoH 走纯 IP 是为了绕开被污染的
+// 系统 DNS；但这里的失败场景是"端点不可达"，而这些端点域名本身不在阻断名单上、
+// 解析没有问题。反过来用纯 IP 会撞上证书 SAN 校验（多数 DoH 证书不覆盖 IP 字面量）。
+var echDohFallbacks = []string{
+	"https://dns.alidns.com/resolve",
+	"https://doh.pub/dns-query",
+	"https://cloudflare-dns.com/dns-query",
+}
+
+// echDohEndpoints 返回查 ECHConfigList 时依次尝试的端点：调用方配置的排第一，去重。
+func echDohEndpoints(configured string) []string {
+	out := make([]string, 0, len(echDohFallbacks)+1)
+	if c := strings.TrimRight(configured, "?&"); c != "" {
+		out = append(out, c)
+	}
+	return dedupe(append(out, echDohFallbacks...))
+}
+
 func resolveECHConfig(flagB64, doh, domain string) ([]byte, string) {
 	if flagB64 != "" {
 		if b, err := base64.StdEncoding.DecodeString(strings.TrimSpace(flagB64)); err == nil {
@@ -686,13 +748,24 @@ func resolveECHConfig(flagB64, doh, domain string) ([]byte, string) {
 	}
 
 	// 只查 DNS、不访问该域名本身——cloudflare-ech.com 在国内不可达，但查它的记录不受影响。
-	for _, rec := range lookupHTTPS(doh, domain) {
-		if b64 := extractECHParam(rec); b64 != "" {
-			if b, err := base64.StdEncoding.DecodeString(b64); err == nil {
-				setECH(b)
-				writeECHCache(b)
-				return b, "doh:" + domain
+	//
+	// 多端点依次尝试（缺陷 F1）：单端点失败时不再直接掉到会过期失效的内置兜底。
+	for _, endpoint := range echDohEndpoints(doh) {
+		for _, rec := range lookupHTTPS(endpoint, domain) {
+			b64 := extractECHParam(rec.data)
+			if b64 == "" {
+				continue
 			}
+			b, err := base64.StdEncoding.DecodeString(b64)
+			if err != nil {
+				continue
+			}
+			setECH(b)
+			// TTL 取自记录本身（钳到 [10min, 1h]）—— 不再是固定 1h（缺陷 F24）。
+			writeECHCache(b, rec.ttl)
+			// 记下是哪个端点给的：多端点之后"配置的那个在不在工作"必须能从日志看出来。
+			log.Printf("echgate: ECH 配置取自 %s（%d 字节）", endpoint, len(b))
+			return b, "doh:" + domain
 		}
 	}
 
@@ -709,7 +782,7 @@ func readECHCache() ([]byte, bool) {
 		return nil, false
 	}
 	info, err := os.Stat(echCachePath)
-	if err != nil || time.Since(info.ModTime()) > echCacheTTL {
+	if err != nil || time.Since(info.ModTime()) > readECHCacheTTL() {
 		return nil, false
 	}
 	b, err := os.ReadFile(echCachePath)
@@ -719,11 +792,32 @@ func readECHCache() ([]byte, bool) {
 	return b, true
 }
 
-func writeECHCache(b []byte) {
+// readECHCacheTTL 读落盘时记下的 TTL（侧车文件 `<cache>.ttl`，单位秒）。
+//
+// 缺失或损坏时退回上界：宁可用可能偏旧的配置，也不要每次冷启动都白等一次 DoH 往返
+// （"先吃缓存"的理由见 resolveECHConfig）。
+func readECHCacheTTL() time.Duration {
+	b, err := os.ReadFile(echCachePath + ".ttl")
+	if err != nil {
+		return echCacheTTLMax
+	}
+	secs, err := strconv.ParseInt(strings.TrimSpace(string(b)), 10, 64)
+	if err != nil || secs <= 0 {
+		return echCacheTTLMax
+	}
+	return clampECHCacheTTL(time.Duration(secs) * time.Second)
+}
+
+// writeECHCache 落盘配置与它的 TTL。
+//
+// TTL 另存侧车文件：主文件必须保持**裸字节**——它会被原样交给 setECH 当 ECHConfigList。
+func writeECHCache(b []byte, ttl time.Duration) {
 	if echCachePath == "" {
 		return
 	}
 	_ = os.WriteFile(echCachePath, b, 0o644)
+	secs := int64(clampECHCacheTTL(ttl) / time.Second)
+	_ = os.WriteFile(echCachePath+".ttl", []byte(strconv.FormatInt(secs, 10)), 0o644)
 }
 
 // 内置兜底：cloudflare-ech.com 的 HTTPS 记录实测值。公钥会轮换，
@@ -749,7 +843,11 @@ func extractECHParam(rec string) string {
 // ── DoH（JSON 格式） ────────────────────────────────────
 
 type dohAnswer struct {
-	Type int    `json:"type"`
+	Type int `json:"type"`
+	// 记录的 TTL（秒）。ECH 配置的磁盘缓存时长跟随它，不再用固定的 1 小时（缺陷 F24）——
+	// 实测 CF 的 cloudflare-ech.com HTTPS 记录 TTL 仅 190s，固定 1h 会在配置已轮换后
+	// 仍继续使用（症状即 tls: server rejected ECH）。
+	TTL  int    `json:"TTL"`
 	Data string `json:"data"`
 }
 
@@ -792,14 +890,29 @@ func dohQuery(name string, qtype int) ([]dohAnswer, error) {
 	return out.Answer, nil
 }
 
-// lookupAWithCNAME 一次 A 查询同时取回 IP 与 CNAME 目标。
+// lookupAWithCNAME 取该名字的 IP 与 CNAME 目标。
 //
-// 为什么不单独查 CNAME：阿里云等解析端对 `type=CNAME` 只在"该名字本身就是
-// CNAME 且未被展开"时才回，实测会漏；而 A 查询的应答里本来就带着整条 CNAME 链。
+// 为什么不单独查 CNAME：阿里云等解析端对 `type=CNAME` 只在"该名字本身就是 CNAME
+// 且未被展开"时才回，实测会漏；而 A 查询的应答里本来就带着整条 CNAME 链。
 //
-// 注意 IP 可能是被污染的假地址——调用方必须用 tryHandshake 验证，不能盲信。
+// A 与 AAAA 各查一次（缺陷 F3）：v6 边缘往往更近，此前只取 A 等于把它整条路漏掉。
+// DoH JSON 端点一次只能问一个 qtype，所以这里是两次查询，不是一次拿两类。
+//
+// 注意 IP 可能是被污染的假地址——调用方必须用握手验证，不能盲信。
 func lookupAWithCNAME(host string) ([]string, string) {
-	ans, err := dohQuery(host, qtypeA)
+	ips, cname := lookupAddrs(host, qtypeA)
+	if v6, cname6 := lookupAddrs(host, qtypeAAAA); len(v6) > 0 {
+		ips = append(ips, v6...)
+		if cname == "" {
+			cname = cname6
+		}
+	}
+	return ips, cname
+}
+
+// lookupAddrs 查一次 DoH，取 [qtype] 类型的地址与（可能出现的）CNAME 目标。
+func lookupAddrs(host string, qtype int) ([]string, string) {
+	ans, err := dohQuery(host, qtype)
 	if err != nil {
 		return nil, ""
 	}
@@ -809,14 +922,23 @@ func lookupAWithCNAME(host string) ([]string, string) {
 		switch {
 		case a.Type == qtypeCNAME && cname == "":
 			cname = strings.TrimSuffix(a.Data, ".")
-		case a.Type == qtypeA && net.ParseIP(a.Data) != nil:
+		case a.Type == qtype && net.ParseIP(a.Data) != nil:
 			ips = append(ips, a.Data)
 		}
 	}
 	return ips, cname
 }
 
-func lookupHTTPS(doh, host string) []string {
+// httpsRecord 一条 HTTPS 记录：文本形式 + 它的 TTL。
+//
+// TTL 必须一起带出来 —— ECH 配置的磁盘缓存时长跟随它（缺陷 F24），
+// 只在函数里丢掉就等于又退回固定值。
+type httpsRecord struct {
+	data string
+	ttl  time.Duration
+}
+
+func lookupHTTPS(doh, host string) []httpsRecord {
 	saved := dohURL
 	dohURL = strings.TrimRight(doh, "?&")
 	defer func() { dohURL = saved }()
@@ -825,10 +947,10 @@ func lookupHTTPS(doh, host string) []string {
 	if err != nil {
 		return nil
 	}
-	var out []string
+	var out []httpsRecord
 	for _, a := range ans {
 		if a.Type == qtypeHTTPS {
-			out = append(out, a.Data)
+			out = append(out, httpsRecord{data: a.Data, ttl: time.Duration(a.TTL) * time.Second})
 		}
 	}
 	return out

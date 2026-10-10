@@ -31,3 +31,8 @@ suspend fun generateClearCacheSummary(size: Long): String {
 fun toDownloadCountLimitPrettyString(noLimitText: String, value: Int): String {
     return if (value == 0) noLimitText else value.toString()
 }
+
+/** 下载限速摘要：`0` = 不限速，否则按 SI 单位加 `/s`（如 `1 MB/s`）。 */
+fun toDownloadSpeedPrettyString(noLimitText: String, bytesPerSecond: Long): String {
+    return if (bytesPerSecond <= 0L) noLimitText else bytesPerSecond.formatFileSize() + "/s"
+}

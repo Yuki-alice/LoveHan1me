@@ -3,6 +3,7 @@ package lovehan1me.data
 import lovehan1me.ui.model.SearchGridColumnsConfig
 import lovehan1me.core.domain.model.AppLanguage
 import lovehan1me.core.domain.model.AppSettings
+import lovehan1me.core.domain.model.DOWNLOAD_SPEED_BYTES
 import lovehan1me.core.domain.model.DisplayDensity
 import lovehan1me.core.domain.model.NavBarStyle
 import lovehan1me.core.domain.model.ContrastLevel
@@ -221,6 +222,9 @@ object SettingsRepository : SettingsStore {
     val proxyIp get() = current.proxyIp
     val proxyPort get() = current.proxyPort
     val downloadCountLimit get() = current.downloadCountLimit
+    /** 下载限速（字节/秒）；`0` = 不限速。越界索引回落到首档。 */
+    val downloadSpeedLimitBytes get() =
+        DOWNLOAD_SPEED_BYTES.getOrElse(current.downloadSpeedLimitIndex) { 0L }
     val collapseDownloadedGroup get() = current.collapseDownloadedGroup
     val isUsePrivateStorage get() = current.usePrivateStorage
     val safDownloadPath get() = current.safDownloadPath
@@ -338,6 +342,8 @@ object SettingsRepository : SettingsStore {
     suspend fun setUsePrivateStorage(value: Boolean) = update { it.copy(usePrivateStorage = value) }
     suspend fun setDownloadStorage(usePrivate: Boolean, path: String?) = update { it.copy(usePrivateStorage = usePrivate, safDownloadPath = path) }
     suspend fun setDownloadCountLimit(value: Int) = update { it.copy(downloadCountLimit = value) }
+    suspend fun setDownloadSpeedLimitIndex(value: Int) =
+        update { it.copy(downloadSpeedLimitIndex = value.coerceIn(DOWNLOAD_SPEED_BYTES.indices)) }
     suspend fun setSubscriptionArtistRows(value: Int) = update { it.copy(subscriptionArtistRows = value.coerceIn(1, 3)) }
     suspend fun setHomeCategories(order: List<String>, hidden: Set<String>) = update { it.copy(homeCategoryOrder = order, hiddenHomeCategoryKeys = hidden) }
     suspend fun setCachedUpdateJson(value: String?) = update { it.copy(cachedUpdateJson = value) }

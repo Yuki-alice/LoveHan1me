@@ -10,10 +10,12 @@ import lovehan1me.pref_export_downloads_title
 import lovehan1me.pref_export_downloads_summary
 import lovehan1me.download_path
 import lovehan1me.download_count_limit
+import lovehan1me.download_speed_limit
 import lovehan1me.download
 import lovehan1me.ic_count
 import lovehan1me.ic_export
 import lovehan1me.ic_file_path
+import lovehan1me.ic_speed
 import lovehan1me.ui.component.SettingNavigationItem
 import lovehan1me.ui.component.SettingSliderItem
 import lovehan1me.ui.component.SettingsSectionTitle
@@ -24,16 +26,20 @@ data class DownloadSettingsUiState(
     val downloadPathSummary: String,
     val downloadCountLimit: Int,
     val downloadCountLimitSummary: String,
+    val downloadSpeedLimitIndex: Int,
+    val downloadSpeedLimitSummary: String,
 )
 
 @Composable
 fun DownloadSettingsScreen(
     state: DownloadSettingsUiState,
     maxDownloadCountLimit: Int,
+    maxDownloadSpeedLimitIndex: Int,
     onOpenDownloadPath: () -> Unit,
     onRestoreDefaultPath: () -> Unit,
     onImportDownloadedFiles: () -> Unit,
     onDownloadCountLimitChange: (Int) -> Unit,
+    onDownloadSpeedLimitChange: (Int) -> Unit,
     embedded: Boolean = false,
 ) {
     val content: @Composable () -> Unit = {
@@ -61,6 +67,14 @@ fun DownloadSettingsScreen(
                     valueRange = 0..maxDownloadCountLimit,
                     iconRes = Res.drawable.ic_count,
                     onValueChange = onDownloadCountLimitChange,
+                )
+                SettingSliderItem(
+                    title = stringResource(Res.string.download_speed_limit),
+                    summary = state.downloadSpeedLimitSummary,
+                    value = state.downloadSpeedLimitIndex,
+                    valueRange = 0..maxDownloadSpeedLimitIndex,
+                    iconRes = Res.drawable.ic_speed,
+                    onValueChange = onDownloadSpeedLimitChange,
                 )
             }
         }
