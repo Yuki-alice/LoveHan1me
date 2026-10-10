@@ -228,6 +228,16 @@
     <string name="custom_hosts">自訂 Hosts</string>
     <string name="custom_hosts_format">多個 IP 位址以逗號分隔，例如 1.2.3.4,5.6.7.8</string>
     <string name="custom_hosts_empty_summary">未設定（使用內建對應）</string>
+    <string name="network_hosts_import">匯入 Hosts</string>
+    <string name="network_hosts_import_summary">選擇 hosts 檔案或貼上文字，僅擷取其中的 IP 位址</string>
+    <string name="network_config_export">匯出網路設定</string>
+    <string name="network_config_export_summary">將 DNS、閘道、代理與鏡像設定儲存為 JSON 檔案</string>
+    <string name="network_hosts_import_success">已匯入 %d 個 IP</string>
+    <string name="network_config_export_success">網路設定已匯出</string>
+    <string name="network_config_export_failed">匯出失敗</string>
+    <string name="network_config_import_config_applied">網路設定已匯入</string>
+    <string name="network_config_import_failed">匯入失敗</string>
+    <string name="network_config_import_invalid">無法辨識的檔案：既不是 hosts 文字也不是網路設定</string>
     <string name="use_doh">使用 DoH</string>
     <string name="doh_settings">DoH 設定</string>
     <string name="doh_preset">DoH 預設</string>

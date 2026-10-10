@@ -251,6 +251,16 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="custom_hosts">Custom Hosts</string>
     <string name="custom_hosts_format">Multiple IPs separated by commas, e.g. 1.2.3.4,5.6.7.8</string>
     <string name="custom_hosts_empty_summary">Not set (using built-in mapping)</string>
+    <string name="network_hosts_import">Import Hosts</string>
+    <string name="network_hosts_import_summary">Pick a hosts file or paste text; only IP literals are imported</string>
+    <string name="network_config_export">Export Network Config</string>
+    <string name="network_config_export_summary">Save DNS, gateway, proxy and mirror settings to a JSON file</string>
+    <string name="network_hosts_import_success">Imported %d IP(s)</string>
+    <string name="network_config_export_success">Network config exported</string>
+    <string name="network_config_export_failed">Export failed</string>
+    <string name="network_config_import_config_applied">Network config imported</string>
+    <string name="network_config_import_failed">Import failed</string>
+    <string name="network_config_import_invalid">Unrecognized file: neither hosts text nor network config</string>
     <string name="use_doh">Use DoH</string>
     <string name="doh_settings">DoH Settings</string>
     <string name="doh_preset">DoH Preset</string>

@@ -54,6 +54,12 @@ import lovehan1me.doh_conflict_message
 import lovehan1me.custom_mirror_site_warning
 import lovehan1me.custom_mirror_site_testing
 import lovehan1me.custom_mirror_site_invalid
+import lovehan1me.network_hosts_import_success
+import lovehan1me.network_config_export_success
+import lovehan1me.network_config_export_failed
+import lovehan1me.network_config_import_config_applied
+import lovehan1me.network_config_import_failed
+import lovehan1me.network_config_import_invalid
 import lovehan1me.confirm
 import lovehan1me.cancel
 import lovehan1me.attention
@@ -63,6 +69,9 @@ import lovehan1me.data.network.EchGateRuntime
 import lovehan1me.data.network.DohConfig
 import lovehan1me.data.network.HanimeDns
 import lovehan1me.data.network.HanimeProxySelector
+import lovehan1me.data.network.NetworkConfigManager
+import lovehan1me.core.platform.rememberBackupExportLauncher
+import lovehan1me.core.platform.rememberBackupImportLauncher
 import lovehan1me.data.network.ServiceCreator
 import lovehan1me.data.network.egress.RouteRegistry
 import lovehan1me.data.network.egress.EgressEvents
@@ -123,6 +132,32 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
     var pendingDohCustomUrl by remember { mutableStateOf(SettingsRepository.dohCustomUrl) }
     var pendingDohBootstrapIps by remember { mutableStateOf(SettingsRepository.dohBootstrapIps) }
     var pendingDohTimeoutSeconds by remember { mutableIntStateOf(SettingsRepository.dohTimeoutSeconds) }
+    // B4-1 / F13：网络配置导入导出复用全量备份的同一套文件通道（SAF / File / 分享）。
+    val exportNetworkConfigLauncher = rememberBackupExportLauncher { uri ->
+        uri ?: return@rememberBackupExportLauncher
+        coroutineScope.launch(Dispatchers.IO) {
+            runCatching { NetworkConfigManager.exportTo(uri) }
+                .onSuccess { AppToast.success(getString(Res.string.network_config_export_success)) }
+                .onFailure { AppToast.error(getString(Res.string.network_config_export_failed)) }
+        }
+    }
+    val importNetworkConfigLauncher = rememberBackupImportLauncher { uri ->
+        uri ?: return@rememberBackupImportLauncher
+        coroutineScope.launch(Dispatchers.IO) {
+            when (val outcome = runCatching { NetworkConfigManager.importFrom(uri) }.getOrNull()) {
+                NetworkConfigManager.ImportOutcome.ConfigApplied ->
+                    AppToast.success(getString(Res.string.network_config_import_config_applied))
+                is NetworkConfigManager.ImportOutcome.HostsImported ->
+                    AppToast.success(getString(Res.string.network_hosts_import_success, outcome.count))
+                NetworkConfigManager.ImportOutcome.Invalid ->
+                    AppToast.warning(getString(Res.string.network_config_import_invalid))
+                null ->
+                    AppToast.error(getString(Res.string.network_config_import_failed))
+            }
+            // 导入可能改了站点/出口，刷新本页展示的当前地址。
+            currentHost = SettingsRepository.baseUrl
+        }
+    }
     val delayResults = remember { mutableStateListOf<DelayResultUi>() }
     val dohTestResults = remember { mutableStateListOf<DohTestResultUi>() }
     val networkTimeoutText = stringResource(Res.string.network_timeout_text)
@@ -417,6 +452,8 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             }
         },
         customHostsData = SettingsRepository.customHostsData,
+        onImportHosts = { importNetworkConfigLauncher() },
+        onExportNetworkConfig = { exportNetworkConfigLauncher(NetworkConfigManager.SUGGESTED_FILE_NAME) },
         onSaveDohSettings = { enabled, preset, url, bootstrapIps, timeoutSeconds ->
             pendingDohEnabled = enabled
             pendingDohPreset = preset

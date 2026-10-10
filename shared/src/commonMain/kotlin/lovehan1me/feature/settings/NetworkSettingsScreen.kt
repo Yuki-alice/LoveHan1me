@@ -70,6 +70,10 @@ import lovehan1me.custom_mirror_api_path_follow_home
 import lovehan1me.custom_hosts_format
 import lovehan1me.custom_hosts_empty_summary
 import lovehan1me.custom_hosts
+import lovehan1me.network_hosts_import
+import lovehan1me.network_hosts_import_summary
+import lovehan1me.network_config_export
+import lovehan1me.network_config_export_summary
 import lovehan1me.custom
 import lovehan1me.current_node_latency
 import lovehan1me.confirm
@@ -188,6 +192,8 @@ fun NetworkSettingsScreen(
     onAutoBuiltInHostsChange: (Boolean) -> Unit,
     onUseEchGateChange: (Boolean) -> Unit,
     onSaveCustomHosts: (String) -> Unit,
+    onImportHosts: () -> Unit,
+    onExportNetworkConfig: () -> Unit,
     onSaveDohSettings: (Boolean, String, String, String, Int) -> Unit,
     onOpenDelayTest: () -> Unit,
     customHostsData: String,
@@ -391,6 +397,18 @@ fun NetworkSettingsScreen(
                     summary = if (customHostsData.isBlank()) stringResource(Res.string.custom_hosts_empty_summary) else customHostsData.take(60),
                     iconRes = Res.drawable.ic_edit_square,
                     onClick = { showCustomHostsDialog = true },
+                )
+                SettingNavigationItem(
+                    title = stringResource(Res.string.network_hosts_import),
+                    summary = stringResource(Res.string.network_hosts_import_summary),
+                    iconRes = Res.drawable.ic_hosts,
+                    onClick = onImportHosts,
+                )
+                SettingNavigationItem(
+                    title = stringResource(Res.string.network_config_export),
+                    summary = stringResource(Res.string.network_config_export_summary),
+                    iconRes = Res.drawable.ic_edit_square,
+                    onClick = onExportNetworkConfig,
                 )
                 SettingNavigationItem(
                     title = stringResource(Res.string.use_doh),

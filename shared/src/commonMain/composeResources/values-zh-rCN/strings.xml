@@ -251,6 +251,16 @@
     <string name="custom_hosts">自定义 Hosts</string>
     <string name="custom_hosts_format">多个 IP 以逗号分隔，如 1.2.3.4,5.6.7.8</string>
     <string name="custom_hosts_empty_summary">未设定（使用内置映射）</string>
+    <string name="network_hosts_import">导入 Hosts</string>
+    <string name="network_hosts_import_summary">选择 hosts 文件或粘贴文本，仅提取其中的 IP 地址</string>
+    <string name="network_config_export">导出网络配置</string>
+    <string name="network_config_export_summary">将 DNS、网关、代理与镜像设置保存为 JSON 文件</string>
+    <string name="network_hosts_import_success">已导入 %d 个 IP</string>
+    <string name="network_config_export_success">网络配置已导出</string>
+    <string name="network_config_export_failed">导出失败</string>
+    <string name="network_config_import_config_applied">网络配置已导入</string>
+    <string name="network_config_import_failed">导入失败</string>
+    <string name="network_config_import_invalid">无法识别的文件：既不是 hosts 文本也不是网络配置</string>
     <string name="use_doh">使用 DoH</string>
     <string name="doh_settings">DoH 设置</string>
     <string name="doh_preset">DoH 预设</string>
