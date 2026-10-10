@@ -92,6 +92,9 @@ import lovehan1me.data.network.NetworkConfigManager
 import lovehan1me.core.platform.rememberBackupExportLauncher
 import lovehan1me.core.platform.rememberBackupImportLauncher
 import lovehan1me.data.network.ServiceCreator
+import lovehan1me.core.domain.model.ProxyMode
+import lovehan1me.data.network.egress.ForceMode
+import lovehan1me.data.network.egress.proxyRuleSummary
 import lovehan1me.data.network.egress.RouteRegistry
 import lovehan1me.data.network.egress.EgressEvents
 import lovehan1me.data.network.egress.EgressDiagnosisTexts
@@ -383,6 +386,15 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
         }
     }
 
+    // F8/B2-2：规则摘要的判据在 commonMain（三端共用同一份），这里只把当前设置喂进去。
+    // 读不到/解析不出一律回退到最保守的档，绝不让设置页因为一个坏值崩掉。
+    val proxyMode = SettingsRepository.proxyMode
+    val proxyRule = proxyRuleSummary(
+        mode = proxyMode,
+        force = runCatching { SettingsRepository.egressForceMode }.getOrDefault(ForceMode.Auto),
+        siteHost = runCatching { SimpleUri(SettingsRepository.baseUrl).host }.getOrNull(),
+    )
+
     NetworkSettingsScreen(
         state = uiState,
         domainOptions = buildDomainOptions(domainDefaultText, domainAlternativeText),
@@ -578,6 +590,16 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             }
         },
         embedded = embedded,
+        proxyMode = proxyMode,
+        proxyRule = proxyRule,
+        onProxyModeChange = { mode ->
+            coroutineScope.launch {
+                SettingsRepository.update { it.copy(proxyMode = mode) }
+                // nonProxyHosts 与全局代理属性都由 rebuildNetwork 写：不重建就会沿用旧口径，
+                // 表现为"切了档但 WebView / CDP 仍按老规矩走"。
+                HanimeProxySelector.rebuildNetwork()
+            }
+        },
         forceMode = SettingsRepository.egressForceMode.name,
         onForceModeChange = { name ->
             coroutineScope.launch {

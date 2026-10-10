@@ -254,6 +254,15 @@
     <string name="egress_force_direct">強制直連</string>
     <string name="egress_force_proxy">強制走代理</string>
     <string name="egress_force_direct_warning">受限網路下直連會被阻斷，可能打不開</string>
+    <string name="proxy_mode">代理作用範圍</string>
+    <string name="proxy_mode_global">全部流量</string>
+    <string name="proxy_mode_rules">僅受限網域</string>
+    <string name="proxy_mode_direct">全部直連</string>
+    <string name="proxy_mode_global_summary">所有請求都依照上方的代理設定走</string>
+    <string name="proxy_mode_rules_summary">僅站台與 getchu 走代理，第三方介面保持直連</string>
+    <string name="proxy_mode_direct_summary">完全不走代理（設定保留，可隨時切回）</string>
+    <string name="proxy_mode_hit_hosts">命中：%1$s</string>
+    <string name="proxy_mode_shadowed">「手動強制選路」目前為%1$s，此項暫不生效</string>
     <string name="egress_diagnostics">連接診斷</string>
     <string name="egress_diagnostics_empty">暫無出站事件</string>
     <string name="egress_copy">複製</string>

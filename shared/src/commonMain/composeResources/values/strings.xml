@@ -240,6 +240,15 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="egress_force_direct">Force direct</string>
     <string name="egress_force_proxy">Force proxy</string>
     <string name="egress_force_direct_warning">Direct is blocked on restricted networks; expect failures</string>
+    <string name="proxy_mode">Proxy scope</string>
+    <string name="proxy_mode_global">All traffic</string>
+    <string name="proxy_mode_rules">Restricted domains only</string>
+    <string name="proxy_mode_direct">Direct for all</string>
+    <string name="proxy_mode_global_summary">Every request follows the proxy setting above</string>
+    <string name="proxy_mode_rules_summary">Only the site and getchu use the proxy; third-party requests stay direct</string>
+    <string name="proxy_mode_direct_summary">Bypass the proxy entirely (settings are kept, so you can switch back anytime)</string>
+    <string name="proxy_mode_hit_hosts">Matches: %1$s</string>
+    <string name="proxy_mode_shadowed">"Manual routing" is set to %1$s, so this has no effect for now</string>
     <string name="egress_diagnostics">Connection diagnostics</string>
     <string name="egress_diagnostics_empty">No egress events yet</string>
     <string name="egress_copy">Copy</string>

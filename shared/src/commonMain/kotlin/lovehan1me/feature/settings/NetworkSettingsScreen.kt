@@ -90,6 +90,15 @@ import lovehan1me.egress_force_auto
 import lovehan1me.egress_force_gate
 import lovehan1me.egress_force_direct
 import lovehan1me.egress_force_proxy
+import lovehan1me.proxy_mode
+import lovehan1me.proxy_mode_direct
+import lovehan1me.proxy_mode_direct_summary
+import lovehan1me.proxy_mode_global
+import lovehan1me.proxy_mode_global_summary
+import lovehan1me.proxy_mode_hit_hosts
+import lovehan1me.proxy_mode_rules
+import lovehan1me.proxy_mode_rules_summary
+import lovehan1me.proxy_mode_shadowed
 import lovehan1me.egress_force_direct_warning
 import lovehan1me.egress_diagnostics
 import lovehan1me.egress_diagnostics_empty
@@ -109,7 +118,10 @@ import lovehan1me.core.util.isDebugBuild
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.data.network.DohConfig
 import lovehan1me.data.network.HProxyTypes
+import lovehan1me.core.domain.model.ProxyMode
 import lovehan1me.data.network.egress.ForceMode
+import lovehan1me.data.network.egress.ProxyRuleScope
+import lovehan1me.data.network.egress.ProxyRuleSummary
 import lovehan1me.ui.component.ChoiceDialog
 import lovehan1me.ui.component.SettingNavigationItem
 import lovehan1me.ui.component.SettingSwitchItem
@@ -217,6 +229,14 @@ fun NetworkSettingsScreen(
     embedded: Boolean = false,
     forceMode: String = ForceMode.Auto.name,
     onForceModeChange: (String) -> Unit = {},
+    /** F5/B2-2：代理作用范围（[ProxyMode]）。 */
+    proxyMode: ProxyMode = ProxyMode.Global,
+    onProxyModeChange: (ProxyMode) -> Unit = {},
+    /**
+     * F8/B2-2：当前档位的规则摘要（含"被哪项强制选路盖住"）。
+     * 判定在 commonMain `proxyRuleSummary`，这里只渲染 —— 三端共用同一份判据。
+     */
+    proxyRule: ProxyRuleSummary = ProxyRuleSummary(ProxyRuleScope.All),
     egressEvents: List<EgressEventUi> = emptyList(),
     egressExportText: String = "",
     /** B4-4：诊断窗顶部的「结论层」文本（commonMain `EgressDiagnosis.formatReport` 产出）。 */
@@ -228,6 +248,7 @@ fun NetworkSettingsScreen(
     var showCustomHostsDialog by rememberSaveable { mutableStateOf(false) }
     var showCustomMirrorSiteDialog by rememberSaveable { mutableStateOf(false) }
     var showForceModeDialog by rememberSaveable { mutableStateOf(false) }
+    var showProxyModeDialog by rememberSaveable { mutableStateOf(false) }
     var showEgressDiagnostics by rememberSaveable { mutableStateOf(false) }
     val copyText = rememberCopyTextToClipboard()
     val forceModeName = when (forceMode) {
@@ -235,6 +256,34 @@ fun NetworkSettingsScreen(
         ForceMode.ForceDirect.name -> stringResource(Res.string.egress_force_direct)
         ForceMode.ForceProxy.name -> stringResource(Res.string.egress_force_proxy)
         else -> stringResource(Res.string.egress_force_auto)
+    }
+    val proxyModeName = when (proxyMode) {
+        ProxyMode.Global -> stringResource(Res.string.proxy_mode_global)
+        ProxyMode.Rules -> stringResource(Res.string.proxy_mode_rules)
+        ProxyMode.Direct -> stringResource(Res.string.proxy_mode_direct)
+    }
+    val proxyModeSummary = buildString {
+        append(proxyModeName)
+        append('\n')
+        append(
+            when (proxyRule.scope) {
+                ProxyRuleScope.All -> stringResource(Res.string.proxy_mode_global_summary)
+                ProxyRuleScope.RestrictedOnly -> stringResource(Res.string.proxy_mode_rules_summary)
+                ProxyRuleScope.None -> stringResource(Res.string.proxy_mode_direct_summary)
+            }
+        )
+        // F8 规则可见：Rules 档把命中的域列出来 —— "开了规则却不知道哪条生效"正是本项要消灭的。
+        if (proxyRule.scope == ProxyRuleScope.RestrictedOnly && proxyRule.hosts.isNotEmpty()) {
+            append('\n')
+            val shown = proxyRule.hosts.take(3).joinToString("、") + if (proxyRule.hosts.size > 3) "…" else ""
+            append(stringResource(Res.string.proxy_mode_hit_hosts, shown))
+        }
+        // §6.2：三个出口开关互不感知，优先级定死之前至少要让用户**看见**谁盖住了谁 ——
+        // 静默失效会让用户报"我明明开了直连却还在走代理"，而三处代码各自都没写错。
+        if (proxyRule.shadowedBy != null) {
+            append('\n')
+            append(stringResource(Res.string.proxy_mode_shadowed, forceModeName))
+        }
     }
 
     if (showDomainDialog) {
@@ -323,6 +372,24 @@ fun NetworkSettingsScreen(
         )
     }
 
+    if (showProxyModeDialog) {
+        NetworkChoiceDialog(
+            title = stringResource(Res.string.proxy_mode),
+            selectedValue = proxyMode.name,
+            options = listOf(
+                ProxyMode.Global.name to stringResource(Res.string.proxy_mode_global),
+                ProxyMode.Rules.name to stringResource(Res.string.proxy_mode_rules),
+                ProxyMode.Direct.name to stringResource(Res.string.proxy_mode_direct),
+            ),
+            onDismiss = { showProxyModeDialog = false },
+            onSelect = { name ->
+                showProxyModeDialog = false
+                // 取值失败回退默认档而不是抛异常：设置页永远不该因为一个坏值崩掉。
+                onProxyModeChange(ProxyMode.entries.firstOrNull { it.name == name } ?: ProxyMode.Global)
+            },
+        )
+    }
+
     if (showEgressDiagnostics) {
         EgressDiagnosticsDialog(
             events = egressEvents,
@@ -371,6 +438,14 @@ fun NetworkSettingsScreen(
                     summary = state.proxySummary,
                     iconRes = Res.drawable.ic_vpn,
                     onClick = { showProxyDialog = true },
+                )
+                // F5/B2-2：代理作用范围。没有这一行，ProxyMode 三档就只是个没人能改的默认值 ——
+                // B2-1 落地后功能之所以"不可达"，缺的就是这里。
+                SettingNavigationItem(
+                    title = stringResource(Res.string.proxy_mode),
+                    summary = proxyModeSummary,
+                    iconRes = Res.drawable.ic_vpn,
+                    onClick = { showProxyModeDialog = true },
                 )
             }
 
