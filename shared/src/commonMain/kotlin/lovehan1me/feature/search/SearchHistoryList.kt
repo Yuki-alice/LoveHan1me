@@ -1,3 +1,4 @@
+@file:OptIn(androidx.compose.material3.ExperimentalMaterial3ExpressiveApi::class)
 package lovehan1me.feature.search
 
 import androidx.compose.animation.AnimatedVisibility
@@ -138,8 +139,11 @@ fun SearchHistoryList(
 ) {
     AnimatedVisibility(
         visible = histories.isNotEmpty(),
-        enter = fadeIn() + slideInVertically { -it / 2 },
-        exit = fadeOut() + slideOutVertically { -it / 2 }) {
+        // 动效统一：走 motionScheme，不用默认 tween（P6）。
+        enter = fadeIn(MaterialTheme.motionScheme.fastEffectsSpec()) +
+            slideInVertically(MaterialTheme.motionScheme.fastSpatialSpec()) { -it / 2 },
+        exit = fadeOut(MaterialTheme.motionScheme.fastEffectsSpec()) +
+            slideOutVertically(MaterialTheme.motionScheme.fastSpatialSpec()) { -it / 2 }) {
         Column(
             modifier = modifier
                 .background(

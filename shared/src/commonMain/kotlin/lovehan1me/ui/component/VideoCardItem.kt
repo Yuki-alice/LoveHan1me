@@ -35,10 +35,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import lovehan1me.Res
 import lovehan1me.played
 import lovehan1me.now_playing
@@ -93,8 +91,6 @@ fun VideoCardItem(
     // 可外部注入（渲染测试据此发 HoverInteraction 摆出 hover 态）；null = 自持。
     interactionSource: MutableInteractionSource? = null,
 ) {
-    // P6d-4F：原 R.dimen（12sp/14dp）常量化——CMP 资源体系不支持 dimen
-    val textFontSize = 12.sp
     val iconSize = 14.dp
     val imageAspectRatio = if (isHorizontalCard) 16f / 9f else 3f / 4f
     val haptic = rememberHapticFeedback()
@@ -135,6 +131,9 @@ fun VideoCardItem(
                         enabled = !isPlaying,
                         interactionSource = source,
                         indication = indication,
+                        onClickLabel = videoItem.title,
+                        onLongClickLabel = if (onDeleteItem != null) "删除" else null,
+                        role = androidx.compose.ui.semantics.Role.Button,
                         onClick = {
                             haptic()
                             onClickVideosItem(videoItem.videoCode)
@@ -176,14 +175,13 @@ fun VideoCardItem(
                             Text(
                                 text = stringResource(Res.string.played),
                                 color = Color.White,
-                                fontSize = 10.sp,
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.labelSmall
+                                // 10sp 低于 M3 label 最小档（11sp），收敛到 labelSmallEmphasized（11sp Bold）。
+                                style = MaterialTheme.typography.labelSmallEmphasized
                             )
                         }
                     }
 
-                    // 底部半透明遮罩（播放量和时长）
+                    // 底部半透明遮罩（播放量和时长）：叠层文字走 labelMedium（12sp），不再手写 fontSize。
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
@@ -203,7 +201,7 @@ fun VideoCardItem(
                                 modifier = Modifier.padding(horizontal = 1.dp),
                                 text = DisplayTextLocalizer.localizeViews(it),
                                 color = Color.White,
-                                fontSize = textFontSize,
+                                style = MaterialTheme.typography.labelMedium,
                             )
                         }
 
@@ -219,7 +217,7 @@ fun VideoCardItem(
                                 modifier = Modifier.padding(horizontal = 1.dp),
                                 text = it,
                                 color = Color.White,
-                                fontSize = textFontSize,
+                                style = MaterialTheme.typography.labelMedium,
                             )
                         }
                     }
@@ -250,9 +248,7 @@ fun VideoCardItem(
                                 Text(
                                     text = stringResource(Res.string.now_playing),
                                     color = MaterialTheme.colorScheme.onPrimary,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    style = MaterialTheme.typography.labelMedium
+                                    style = MaterialTheme.typography.labelMediumEmphasized
                                 )
                             }
                         }
@@ -300,7 +296,7 @@ fun VideoCardItem(
                         Spacer(modifier = Modifier.width(2.dp))
                         Text(
                             text = reviewsText,
-                            fontSize = 11.sp,
+                            style = MaterialTheme.typography.labelSmall,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -310,7 +306,7 @@ fun VideoCardItem(
                     if (!videoItem.uploadTime.isNullOrEmpty()) {
                         Text(
                             text = DisplayTextLocalizer.localizeRelativeTime(videoItem.uploadTime!!),
-                            fontSize = 11.sp,
+                            style = MaterialTheme.typography.labelSmall,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                             color = MaterialTheme.colorScheme.onSurface,

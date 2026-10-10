@@ -115,7 +115,7 @@ fun PlaylistItem(
                 ) {
                     Text(
                         text = stringResource(Res.string.video_count, playlist.total),
-                        style = MaterialTheme.typography.bodySmall.copy(color = Color.White),
+                        style = MaterialTheme.typography.bodySmall.copy(color = HanimeDefaults.Overlay.onScrim),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

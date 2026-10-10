@@ -1,6 +1,7 @@
 package lovehan1me.desktop
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,8 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -32,6 +35,7 @@ import androidx.compose.ui.window.Window
 import androidx.compose.ui.window.application
 import androidx.compose.ui.window.rememberWindowState
 import lovehan1me.app.App
+import lovehan1me.ui.theme.HanimeTheme
 import lovehan1me.ui.refresh.PageRefreshHub
 import lovehan1me.ui.refresh.isPageRefreshShortcut
 import lovehan1me.app.crash.installCrashHandler
@@ -363,14 +367,30 @@ private suspend fun initializeDesktop() {
 }
 
 /**
+ * 启动失败前兜底主题：纯装配 `HanimeTheme(colorScheme)`，只装配形状/字阶/
+ * Expressive 组件族，**不读 `SettingsRepository`**（运行时重载才读）。
+ *
+ * 设置尚未就绪时跟随系统深浅，静态配色即可——启动页不需要 12 槽位/对比度/AMOLED。
+ */
+@Composable
+private fun StartupFallbackTheme(content: @Composable () -> Unit) {
+    HanimeTheme(
+        colorScheme = if (isSystemInDarkTheme()) darkColorScheme() else lightColorScheme(),
+        content = content,
+    )
+}
+
+/**
  * 初始化进行中的内容：替代黑窗/白窗。
  *
- * ⚠️ 这里**不能用 `HanimeTheme`** —— 它要读 SettingsRepository，而设置恰恰是
- * "还没初始化完"的那一环；用它就是拿失败去渲染失败页。故用 M3 默认主题。
+ * 用 [StartupFallbackTheme] 而非裸 `MaterialTheme`：后者是 M3 默认形状/字阶，
+ * 与应用内（`AppShapes` 8 档圆角、CJK 行高修正字阶、Expressive 组件族）两套语言。
+ * 注意不能用运行时重载 `HanimeTheme()`（无参那版要读 SettingsRepository，
+ * 而设置恰恰是"还没初始化完"的那一环）。
  */
 @Composable
 private fun StartupWaitingContent() {
-    MaterialTheme {
+    StartupFallbackTheme {
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -385,9 +405,9 @@ private fun StartupWaitingContent() {
 /**
  * 初始化失败/超时页（M5-2）。
  *
- * 此前失败路径是：`runBlocking` 里抛 `UninitializedPropertyAccessException` → 窗口还没建 → 
+ * 此前失败路径是：`runBlocking` 里抛 `UninitializedPropertyAccessException` → 窗口还没建 →
  * 用户面对黑窗或闪退，**拿不到任何可反馈的信息**。这里把话说清楚并给两条出路：
- * 重试（往往是磁盘/权限的瞬时问题）或退出。同样不用 `HanimeTheme`（见上）。
+ * 重试（往往是磁盘/权限的瞬时问题）或退出。主题同上走 [StartupFallbackTheme]。
  */
 @Composable
 private fun StartupFailureContent(
@@ -395,7 +415,7 @@ private fun StartupFailureContent(
     onRetry: () -> Unit,
     onExit: () -> Unit,
 ) {
-    MaterialTheme {
+    StartupFallbackTheme {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -403,7 +423,7 @@ private fun StartupFailureContent(
                 .padding(32.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            Text("启动失败", style = MaterialTheme.typography.titleLarge)
+            Text("启动失败", style = MaterialTheme.typography.titleLargeEmphasized)
             Text(
                 "应用初始化没能完成。可以先重试；若反复失败，请把下面这行信息反馈给开发者。",
                 style = MaterialTheme.typography.bodyMedium,

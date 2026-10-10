@@ -51,22 +51,22 @@ private val rawSubtitle: (String?, String?, String?) -> String? = { a, v, t ->
 }
 
 /**
- * Hero 1+6 合成门禁（移植 misaka 语义，纯函数）。
+ * Hero 5 项合成门禁（移植 misaka 语义，纯函数）。
  *
- * 钉住：运营位首位 / 在看优先 / 去重运营位 / 上限6+1 / 空字段不拼出"·"。
+ * 钉住：运营位首位 / 在看优先 / 去重运营位 / 总上限 5（含运营位）/ 空字段不拼出"·"。
  */
 class HomeHeroItemsTest {
 
     @Test
-    fun `运营位首位_视频补足_上限6加1`() {
+    fun `运营位首位_视频补足_上限5`() {
         val banner = HomePage.Banner("官", "述", "https://cdn/banner.jpg", "b0")
         val watching = cat(HOME_CATEGORY_WATCHING_NOW, "w1", "w2")
         val latest = cat(HOME_CATEGORY_LATEST_UPLOAD, "l1", "l2", "l3", "l4", "l5", "l6")
         val items = buildHomeHeroItems(emptyPage(banner), listOf(latest, watching), rawSubtitle)
         assertEquals("b0", items.first().videoCode)
-        assertEquals(1 + HERO_VIDEO_ITEM_COUNT, items.size)
-        // 在看优先：b0 之后是 w1 w2，再是 l 系。
-        assertEquals(listOf("b0", "w1", "w2", "l1", "l2", "l3", "l4"), items.map { it.videoCode })
+        assertEquals(HERO_MAX_ITEM_COUNT, items.size)
+        // 在看优先：b0 之后是 w1 w2，再是 l 系；总数 5（含运营位）。
+        assertEquals(listOf("b0", "w1", "w2", "l1", "l2"), items.map { it.videoCode })
     }
 
     @Test

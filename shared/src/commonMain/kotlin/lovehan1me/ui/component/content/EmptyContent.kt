@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import lovehan1me.Res
 import lovehan1me.h_chan_speechless
 import lovehan1me.here_is_empty
+import lovehan1me.ui.theme.HanimeDefaults
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
@@ -39,7 +40,7 @@ fun EmptyContent(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .padding(10.dp),
+            .padding(HanimeDefaults.Spacing.contentHorizontal),
         contentAlignment = Alignment.Center,
     ) {
         Column(
@@ -48,7 +49,7 @@ fun EmptyContent(
         ) {
             Image(
                 modifier = Modifier
-                    .padding(16.dp)
+                    .padding(HanimeDefaults.Spacing.contentHorizontal)
                     .width(150.dp),
                 painter = painterResource(picRes),
                 contentDescription = stringResource(Res.string.here_is_empty),
@@ -56,11 +57,13 @@ fun EmptyContent(
             Text(
                 text = hint,
                 style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center,
             )
             Text(
                 text = subHint,
                 style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
         }

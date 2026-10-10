@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.Label
 import androidx.compose.material3.MaterialTheme
@@ -170,7 +169,8 @@ fun TooltipScope.SliderValueIndicator(
 ) {
     Surface(
         modifier = modifier.size(48.dp, 44.dp),
-        shape = RoundedCornerShape(22.dp),
+        // 气泡半高 22dp 的全圆角 = CircleShape（percent=50 的 pill），不再手写 22.dp。
+        shape = androidx.compose.foundation.shape.CircleShape,
         color = TooltipDefaults.plainTooltipContainerColor,
         contentColor = TooltipDefaults.plainTooltipContentColor,
     ) {

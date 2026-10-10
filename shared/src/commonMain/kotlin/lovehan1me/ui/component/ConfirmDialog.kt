@@ -1,9 +1,12 @@
 package lovehan1me.ui.component
 
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import lovehan1me.ui.component.HapticTextButton as TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.vector.ImageVector
 
 /**
  * 确认对话框组件。
@@ -30,13 +33,27 @@ fun ConfirmDialog(
     onDismiss: () -> Unit,
     cancelable: Boolean = true,
     onDismissButtonClick: () -> Unit = onDismiss,
+    icon: ImageVector? = null,
 ) {
     if (!visible) return
 
     AlertDialog(
         onDismissRequest = { if (cancelable) onDismiss() },
-        title = { Text(text = title) },
-        text = { Text(text = message) },
+        icon = icon?.let { { Icon(imageVector = it, contentDescription = null) } },
+        // M3E 规范：Dialog 标题必须强调。走 headlineSmallEmphasized（= AppEmphasis.dialogTitle）。
+        title = {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.headlineSmallEmphasized,
+            )
+        },
+        text = {
+            Text(
+                text = message,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+        },
         confirmButton = {
             TextButton(onClick = onConfirm) {
                 Text(confirmText)

@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -59,7 +58,8 @@ fun PlayerStatsOverlay(
         modifier,
         color = Color.Black.copy(alpha = 0.72f),
         contentColor = Color.White,
-        shape = RoundedCornerShape(10.dp),
+        // 10dp 就近归档 medium（12dp），收敛到形状 token。
+        shape = MaterialTheme.shapes.medium,
         shadowElevation = 4.dp,
     ) {
         Column(

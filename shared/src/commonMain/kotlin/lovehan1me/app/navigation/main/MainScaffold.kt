@@ -237,6 +237,8 @@ private fun MainFloatingNavBar(
             .padding(bottom = 16.dp),
         shape = HanimeDefaults.Corners.pill,
         color = MaterialTheme.colorScheme.surfaceContainer,
+        // 悬浮胶囊浮于滚动内容之上（封面图 = busy 背景），tonal + shadow 双开是 M3 允许的例外，
+        // 非无理由双 elevation（对比 AdvancedSearchChip 已收敛为纯 tonal）。
         tonalElevation = 3.dp,
         shadowElevation = 3.dp,
     ) {

@@ -312,40 +312,6 @@ fun CommentScreen(
                     )
             ) {
                 val refreshing = state is WebsiteState.Loading && !isPreviewCommentPrefetched
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 4.dp, vertical = 2.dp),
-                    horizontalArrangement = Arrangement.spacedBy(
-                        8.dp,
-                        Alignment.End,
-                    ),
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    if (sortedComments.size >= 3) {
-                        FilledTonalButton(onClick = { showSortSheet = true }) {
-                            Text(sortText(sortType))
-                        }
-                    }
-                    FilledTonalIconButton(
-                        onClick = onRefresh,
-                        enabled = !refreshing,
-                    ) {
-                        // 刷新中把图标换成转圈：位置不动，动画本身即刷新状态。
-                        // M3E 形变加载指示器（P1 #11 家族对齐）：与全站加载语言统一。
-                        if (refreshing) {
-                            LoadingIndicator(
-                                modifier = Modifier.size(20.dp),
-                                color = MaterialTheme.colorScheme.onSecondaryContainer,
-                            )
-                        } else {
-                            Icon(
-                                painter = painterResource(Res.drawable.ic_refresh),
-                                contentDescription = stringResource(Res.string.refresh_comments),
-                            )
-                        }
-                    }
-                }
                 PageContent(
                     isLoading = refreshing,
                     isError = state is WebsiteState.Error && sortedComments.isEmpty(),
@@ -369,6 +335,49 @@ fun CommentScreen(
                         //（动画由 wrapper 挂在 item 根节点上）。
                         enableItemPlacementAnimation = true,
                     ) {
+                        // 工具条（排序 + 刷新）是列表的第一个普通 item，随列表滚走，不钉顶。
+                        //
+                        // 两点代价均可接受：
+                        // 1. loading/empty/error 态下工具条不可见（PageContent 只渲染其一）——
+                        //    刷新进行中本来就没有可点的东西（按钮 disabled），空列表上排序无意义；
+                        // 2. 评论项 index 整体 +1：调用方按视频存滚动位置（setCommentScrollState），
+                        //    升级前存的位置恢复时会偏一项，一次性、下次滚动即自愈。
+                        item(key = "comment_toolbar", contentType = "toolbar") {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 4.dp, vertical = 2.dp),
+                                horizontalArrangement = Arrangement.spacedBy(
+                                    8.dp,
+                                    Alignment.End,
+                                ),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                if (sortedComments.size >= 3) {
+                                    FilledTonalButton(onClick = { showSortSheet = true }) {
+                                        Text(sortText(sortType))
+                                    }
+                                }
+                                FilledTonalIconButton(
+                                    onClick = onRefresh,
+                                    enabled = !refreshing,
+                                ) {
+                                    // 刷新中把图标换成转圈：位置不动，动画本身即刷新状态。
+                                    // M3E 形变加载指示器（P1 #11 家族对齐）：与全站加载语言统一。
+                                    if (refreshing) {
+                                        LoadingIndicator(
+                                            modifier = Modifier.size(20.dp),
+                                            color = MaterialTheme.colorScheme.onSecondaryContainer,
+                                        )
+                                    } else {
+                                        Icon(
+                                            painter = painterResource(Res.drawable.ic_refresh),
+                                            contentDescription = stringResource(Res.string.refresh_comments),
+                                        )
+                                    }
+                                }
+                            }
+                        }
                         // 刷新失败但列表还在：留一条横幅，而不是把错误悄悄吞掉。
                         if (state is WebsiteState.Error && sortedComments.isNotEmpty()) {
                             item(key = "refresh_failed") {

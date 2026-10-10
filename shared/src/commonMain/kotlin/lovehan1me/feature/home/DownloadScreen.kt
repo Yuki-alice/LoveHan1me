@@ -13,15 +13,13 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
-import androidx.compose.material3.FilledIconButton
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.FloatingActionButtonMenu
 import androidx.compose.material3.FloatingActionButtonMenuItem
 import androidx.compose.material3.Icon
+import androidx.compose.material3.ToggleFloatingActionButton
 import androidx.compose.material3.PrimaryTabRow
 import androidx.compose.material3.Tab
 import androidx.compose.material3.Text
@@ -359,33 +357,29 @@ private fun DownloadFabMenu(
         FloatingActionButtonMenu(
             expanded = expanded,
             button = {
-                if (expanded) {
-                    FilledIconButton(
-                        onClick = {
-                            hapticFeedback()
-                            expanded = !expanded
-                        },
-                        modifier = Modifier.size(HanimeDefaults.Sizes.controlM),
-                    ) {
+                // M3E ToggleFAB：图标语义冻结（☰ 菜单 ⇄ ✕ 关闭，沿用既有图标与文案），
+                // 只把"两个按钮生硬互换"换成"同一按钮 morph + 图标淡入淡出"。
+                // 收起态容器/图标与旧 FAB 默认一致（primaryContainer/☰），视觉零变化；
+                // 展开态 morph 到 checked 形（更圆 + checked 配色）是有意的高光。
+                ToggleFloatingActionButton(
+                    checked = expanded,
+                    onCheckedChange = {
+                        hapticFeedback()
+                        expanded = !expanded
+                    },
+                ) {
+                    if (checkedProgress < 0.5f) {
+                        Icon(
+                            painter = painterResource(Res.drawable.ic_menu),
+                            contentDescription = stringResource(Res.string.download),
+                        )
+                    } else {
                         Icon(
                             painter = painterResource(Res.drawable.ic_close),
                             contentDescription = stringResource(Res.string.close),
                         )
                     }
-                } else {
-                    FloatingActionButton(
-                        onClick = {
-                            hapticFeedback()
-                            expanded = !expanded
-                        },
-                    ) {
-                        Icon(
-                            painter = painterResource(Res.drawable.ic_menu),
-                            contentDescription = stringResource(Res.string.download),
-                        )
-                    }
                 }
-
             },
         ) {
             if (currentPage == 0) {

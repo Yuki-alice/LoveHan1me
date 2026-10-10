@@ -85,7 +85,7 @@ import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.animatedShape
 import lovehan1me.ui.theme.fadeScale
 import lovehan1me.ui.component.rememberHapticFeedback
-import lovehan1me.core.util.parseHtmlToAnnotatedString
+import lovehan1me.core.util.rememberThemedHtmlAnnotatedString
 
 private data class DisplayLicense(
     val name: String,
@@ -435,12 +435,15 @@ private fun LicenseContentDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         title = {
-            Text(dialog.licenseName.ifBlank { dialog.libraryName })
+            Text(
+                dialog.licenseName.ifBlank { dialog.libraryName },
+                style = MaterialTheme.typography.headlineSmallEmphasized,
+            )
         },
         text = {
             Column(modifier = Modifier.verticalScroll(rememberScrollState())) {
                 SelectionContainer {
-                    Text(text = parseHtmlToAnnotatedString(dialog.content))
+                    Text(text = rememberThemedHtmlAnnotatedString(dialog.content))
                 }
             }
         },

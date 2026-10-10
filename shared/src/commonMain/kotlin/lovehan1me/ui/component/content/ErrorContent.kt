@@ -6,7 +6,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import lovehan1me.ui.component.HapticButton as Button
+import lovehan1me.ui.component.FilledTonalButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -54,18 +54,19 @@ fun ErrorContent(
         )
         Text(
             text = resolvedTitle,
-            style = MaterialTheme.typography.titleMedium,
+            style = MaterialTheme.typography.titleMediumEmphasized,
             color = MaterialTheme.colorScheme.error,)
         if (!message.isNullOrBlank()) {
             Text(
                 text = message,
                 style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
             )
         }
         if (onRetry != null) {
-            Button(onClick = onRetry) {
+            // 重试是次级动作：tonal 按钮，别用 primary 抢主操作层级。
+            FilledTonalButton(onClick = onRetry) {
                 Text(retryText)
             }
         }

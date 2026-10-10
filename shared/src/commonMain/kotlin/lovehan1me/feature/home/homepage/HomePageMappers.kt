@@ -25,8 +25,8 @@ import lovehan1me.ranking_this_month
 import lovehan1me.ranking_today
 import lovehan1me.they_watched
 
-/** Hero 轮播中来自视频条目的数量上限，官网运营位不计入其中。 */
-const val HERO_VIDEO_ITEM_COUNT = 6
+/** Hero 轮播总上限（运营位计入），5 个：指示器可读、自动翻页一轮 25 秒内看完。 */
+const val HERO_MAX_ITEM_COUNT = 5
 
 /**
  * 构建首页 Hero 轮播数据（移植 misaka-Han1meViewer `buildHomeHeroItems`）。
@@ -34,6 +34,7 @@ const val HERO_VIDEO_ITEM_COUNT = 6
  * 官网运营位固定排首；其后从下方分类行取视频补足，使单运营位时仍可翻页。
  * 视频优先取「他們在看」，其余按传入顺序（调用方已按用户设置排好序并滤掉隐藏分组，
  * 故此处不再读设置，保证纯函数可测），跳过与运营位重复的条目。
+ * 总数封顶 [HERO_MAX_ITEM_COUNT]（运营位计入：有运营位时视频取 4，无时取 5）。
  *
  * [subtitleFormatter] 默认走 `DisplayTextLocalizer`（读语言设置，生产用）；
  * 单测注入原文拼接，避免 `SettingsRepository` 未安装（见 `HomeHeroItemsTest`）。
@@ -60,7 +61,7 @@ fun buildHomeHeroItems(
         .asSequence()
         .filter { it.videoCode != officialBanner?.videoCode }
         .distinctBy { it.videoCode }
-        .take(HERO_VIDEO_ITEM_COUNT)
+        .take(HERO_MAX_ITEM_COUNT)
         .map { video ->
             HomeHeroItem(
                 imageUrl = video.coverUrl,
@@ -70,7 +71,7 @@ fun buildHomeHeroItems(
             )
         }
         .toList()
-    return listOfNotNull(officialBanner) + videos
+    return (listOfNotNull(officialBanner) + videos).take(HERO_MAX_ITEM_COUNT)
 }
 
 private fun defaultHeroSubtitle(artist: String?, views: String?, time: String?): String? =

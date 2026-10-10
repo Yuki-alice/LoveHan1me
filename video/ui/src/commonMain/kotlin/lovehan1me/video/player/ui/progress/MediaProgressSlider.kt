@@ -21,7 +21,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.Slider
@@ -604,8 +603,8 @@ private fun ProgressSliderPreviewContent(
  * 浮窗形状: 只有时间文字时用胶囊形; 有预览帧时用圆角矩形, 避免图片角被大圆角裁掉.
  */
 @Composable
-internal fun previewPopupShape(hasFrame: Boolean): Shape =
-    if (hasFrame) RoundedCornerShape(12.dp) else CircleShape
+internal fun previewPopupShape(hasFrame: Boolean): androidx.compose.ui.graphics.Shape =
+    if (hasFrame) MaterialTheme.shapes.medium else CircleShape
 
 @Composable
 fun ProgressSliderPreviewPopup(
@@ -688,7 +687,7 @@ fun PreviewFrameAndTimeText(
                 Modifier
                     .padding(bottom = 8.dp)
                     .size(width = 160.dp, height = 90.dp)
-                    .clip(RoundedCornerShape(8.dp))
+                    .clip(MaterialTheme.shapes.small)
                     .background(Color.Black.copy(alpha = 0.3f)),
                 contentAlignment = Alignment.Center,
             ) {
@@ -719,7 +718,7 @@ fun ProgressSliderCenteredPreviewFrame(
 ) {
     if (frame == null) return
 
-    val shape = RoundedCornerShape(8.dp)
+    val shape = MaterialTheme.shapes.small
     Box(
         modifier
             .size(width = 160.dp, height = 90.dp)

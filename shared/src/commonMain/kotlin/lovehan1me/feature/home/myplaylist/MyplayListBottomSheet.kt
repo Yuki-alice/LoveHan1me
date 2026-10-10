@@ -275,7 +275,7 @@ private fun PlaylistSheetContent(
                     )
             )
             HanimeTopAppBar(
-                title = { Text(playListTitle, color = Color.White) },
+                title = { Text(playListTitle, color = HanimeDefaults.Overlay.onScrim) },
                 onBack = null,
                 colors = topAppBarColors(containerColor = Color.Transparent)
             )
@@ -297,7 +297,7 @@ private fun PlaylistSheetContent(
                         Text(
                             desc ?: "",
                             style = MaterialTheme.typography.bodyLarge.copy(
-                                color = Color.White.copy(alpha = 0.8f)
+                                color = HanimeDefaults.Overlay.onScrim.copy(alpha = 0.8f)
                             ),
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis

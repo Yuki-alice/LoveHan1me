@@ -1,20 +1,21 @@
 package lovehan1me.ui.component
 
-import androidx.compose.animation.animateColorAsState
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.unit.dp
+import lovehan1me.Res
+import lovehan1me.ic_check
+import org.jetbrains.compose.resources.painterResource
 
+/**
+ * 可选标签 —— M3 `FilterChip` 薄封装。
+ *
+ * 替代此前的自绘 Box+clickable：后者无 Role.Checkbox、无 selected 语义，
+ * TalkBack 读不出选中态。FilterChip 自带选中语义、✓ 前导图标与 M3 tonal 配色，
+ * 视觉与此前 `primaryContainer/onPrimaryContainer` 一致。
+ */
 @Composable
 fun SelectableTag(
     text: String,
@@ -22,27 +23,22 @@ fun SelectableTag(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val backgroundColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surfaceContainerHighest,
-        label = "backgroundColor"
+    val haptic = rememberHapticFeedback()
+    FilterChip(
+        selected = selected,
+        onClick = {
+            haptic()
+            onClick()
+        },
+        label = { Text(text = text) },
+        modifier = modifier,
+        leadingIcon = if (selected) {
+            {
+                Icon(
+                    painter = painterResource(Res.drawable.ic_check),
+                    contentDescription = null,
+                )
+            }
+        } else null,
     )
-
-    val contentColor by animateColorAsState(
-        targetValue = if (selected) MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSurface,
-        label = "contentColor"
-    )
-    Box(
-        modifier = modifier
-            .clip(MaterialTheme.shapes.medium)
-            .background(backgroundColor)
-            .clickable { onClick() }
-            .padding(horizontal = 16.dp, vertical = 8.dp), // 内边距
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelLarge,
-            color = contentColor
-        )
-    }
 }

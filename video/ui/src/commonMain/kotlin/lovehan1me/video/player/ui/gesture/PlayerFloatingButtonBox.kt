@@ -6,7 +6,6 @@
 package lovehan1me.video.player.ui.gesture
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -23,7 +22,8 @@ fun PlayerFloatingButtonBox(
 ) {
     Surface(
         modifier,
-        shape = RoundedCornerShape(16.dp),
+        // 16dp = M3 large。收敛到形状 token，不再散装 RoundedCornerShape。
+        shape = MaterialTheme.shapes.large,
         color = MaterialTheme.colorScheme.background.copy(0.05f),
         contentColor = Color.White,
         border = BorderStroke(0.5.dp, MaterialTheme.colorScheme.outline.slightlyWeaken()),
