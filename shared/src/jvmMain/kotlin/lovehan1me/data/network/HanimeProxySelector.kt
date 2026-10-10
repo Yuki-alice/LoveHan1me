@@ -1,6 +1,8 @@
 package lovehan1me.data.network
 
+import lovehan1me.core.domain.model.ProxyMode
 import lovehan1me.data.SettingsRepository
+import lovehan1me.data.network.egress.isRestrictedHost
 import okhttp3.internal.proxy.NullProxySelector
 import java.io.IOException
 import java.net.Proxy
@@ -81,6 +83,16 @@ class HanimeProxySelector : ProxySelector() {
          */
         const val NON_PROXY_HOSTS = "localhost|127.*|[::1]"
 
+        /**
+         * Rules 模式下 JVM 全局路径（WebView / CDP）应绕开的**已知第三方**主机。
+         *
+         * 只能列"不走代理"的名单 —— `nonProxyHosts` 表达不了"仅受限域走代理"的白名单，
+         * 所以这里是最佳努力：弹弹play 与更新/公告 CDN。自有 client 侧的分流更精确，
+         * 由 [select] 按 host 判定。
+         */
+        private const val RULES_BYPASS_HOSTS =
+            "api.dandanplay.net|hnm-1258664276.cos.ap-shanghai.myqcloud.com"
+
         private val ipv4Regex =
             Regex("^(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])$")
 
@@ -107,8 +119,12 @@ class HanimeProxySelector : ProxySelector() {
          */
         fun rebuildNetwork() {
             val properties = System.getProperties()
+            val mode = runCatching { SettingsRepository.proxyMode }.getOrDefault(ProxyMode.Global)
+            // Direct 档 = 全局也不代理：WebView / CDP / HttpURLConnection 走系统属性，
+            // 不一起关掉就是绕过本轮设置的"暗出口"（配置仍保留在设置里，随时可切回）。
+            val type = if (mode == ProxyMode.Direct) TYPE_DIRECT else SettingsRepository.proxyType
             // legacy 键（兼容）
-            when (SettingsRepository.proxyType) {
+            when (type) {
                 TYPE_HTTP, TYPE_SOCKS -> {
                     properties["proxySet"] = true.toString()
                     properties["proxyHost"] = SettingsRepository.proxyIp
@@ -121,10 +137,12 @@ class HanimeProxySelector : ProxySelector() {
                     properties["proxyPort"] = ""
                 }
             }
-            // 标准键（真正生效）
-            properties["http.nonProxyHosts"] = NON_PROXY_HOSTS
-            properties["https.nonProxyHosts"] = NON_PROXY_HOSTS
-            when (SettingsRepository.proxyType) {
+            // 标准键（真正生效）。Rules 模式把已知第三方也列入 bypass，让全局路径与
+            // select() 的分流口径对齐（nonProxyHosts 只能列"不走代理"的名单，表达不了白名单）。
+            val bypass = if (mode == ProxyMode.Rules) "$NON_PROXY_HOSTS|$RULES_BYPASS_HOSTS" else NON_PROXY_HOSTS
+            properties["http.nonProxyHosts"] = bypass
+            properties["https.nonProxyHosts"] = bypass
+            when (type) {
                 TYPE_HTTP -> {
                     properties["http.proxyHost"] = SettingsRepository.proxyIp
                     properties["http.proxyPort"] = SettingsRepository.proxyPort.toString()
@@ -178,6 +196,14 @@ class HanimeProxySelector : ProxySelector() {
             return mutableListOf(Proxy.NO_PROXY)
         }
 
+        // F5 规则分流：Direct 全直连；Rules 只让受限域走代理（第三方恒直连）。
+        // 默认 Global，保证未显式开启的用户行为零变化。
+        when (runCatching { SettingsRepository.proxyMode }.getOrDefault(ProxyMode.Global)) {
+            ProxyMode.Direct -> return mutableListOf(Proxy.NO_PROXY)
+            ProxyMode.Rules -> if (!restrictedForProxy(host)) return mutableListOf(Proxy.NO_PROXY)
+            ProxyMode.Global -> Unit
+        }
+
         val type = runCatching { SettingsRepository.proxyType }.getOrDefault(TYPE_SYSTEM)
         // 设置在实例构造后被修改（全局默认实例常驻）：惰性重绑，
         // 否则委托冻结在启动时的模式。
@@ -189,6 +215,20 @@ class HanimeProxySelector : ProxySelector() {
         return runCatching {
             delegation?.select(uri) ?: alternative.select(uri)
         }.getOrDefault(mutableListOf(Proxy.NO_PROXY))
+    }
+
+    /**
+     * Rules 模式：该 host 是否受限（应走代理）。
+     *
+     * 已知 Hanime 四站 / getchu → 受限；此外把**当前站点**也算进来 ——
+     * 自定义镜像是用户自己的域名，不在内置表里，但它与站点必须同出口。
+     * 其余（弹弹play、更新/公告 CDN 等）一律第三方 → 直连。
+     */
+    private fun restrictedForProxy(host: String?): Boolean {
+        if (host.isNullOrBlank()) return false
+        if (isRestrictedHost(host)) return true
+        val siteHost = runCatching { URI(SettingsRepository.baseUrl).host }.getOrNull()
+        return siteHost != null && siteHost.equals(host, ignoreCase = true)
     }
 
     /**

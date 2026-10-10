@@ -221,6 +221,8 @@ object SettingsRepository : SettingsStore {
     val proxyType get() = current.proxyType.id
     val proxyIp get() = current.proxyIp
     val proxyPort get() = current.proxyPort
+    /** 代理作用范围（F5 规则分流，见 [lovehan1me.core.domain.model.ProxyMode]）。 */
+    val proxyMode get() = current.proxyMode
     val downloadCountLimit get() = current.downloadCountLimit
     /** 下载限速（字节/秒）；`0` = 不限速。越界索引回落到首档。 */
     val downloadSpeedLimitBytes get() =

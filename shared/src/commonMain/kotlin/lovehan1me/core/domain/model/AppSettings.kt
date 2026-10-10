@@ -58,6 +58,23 @@ enum class ProxyType(val id: Int) {
     }
 }
 
+/**
+ * 代理作用范围（F5 规则分流）。与 [ProxyType] 正交：后者决定"用哪种代理"，
+ * 本枚举决定"谁走代理"。
+ *
+ * - [Global]：全部出站按 [ProxyType] 处理（历史行为，**默认**，保证老用户零变化）；
+ * - [Rules]：仅受限域（Hanime 四站 / getchu / 当前站点）走代理，第三方（弹弹play、
+ *   更新/公告 CDN）恒直连 —— 省带宽、不拖慢图床；
+ * - [Direct]：全部直连，但**保留** [ProxyType]/IP/端口配置，便于随时切回。
+ */
+enum class ProxyMode(val id: Int) {
+    Global(0), Rules(1), Direct(2);
+
+    companion object {
+        fun fromId(id: Int): ProxyMode = entries.firstOrNull { it.id == id } ?: Global
+    }
+}
+
 enum class DisplayDensity(val percent: Int, val scale: Float) {
     Compact(75, 0.75f),
     Default(100, 1f),
@@ -196,6 +213,8 @@ data class AppSettings(
     val proxyType: ProxyType = ProxyType.System,
     val proxyIp: String = "",
     val proxyPort: Int = -1,
+    /** 代理作用范围（F5 规则分流，见 [ProxyMode]）；默认 `Global` = 旧行为。 */
+    val proxyMode: ProxyMode = ProxyMode.Global,
     /**
      * 桌面专用：CF 验证浏览器**自报的真实 UA**（空 = 尚未采集）。
      *

@@ -3,6 +3,7 @@ package lovehan1me.data.network
 import lovehan1me.data.network.resolveMediaProxyUrl
 import lovehan1me.core.constant.HanimeConstants.HANIME_HOSTNAME
 import lovehan1me.core.domain.model.AppSettings
+import lovehan1me.core.domain.model.ProxyMode
 import lovehan1me.core.domain.model.ProxyType
 import lovehan1me.core.domain.model.SettingsStore
 import lovehan1me.data.SettingsRepository
@@ -54,17 +55,25 @@ private fun ensureStoreInstalled() {
     SettingsRepository.installIfAbsent(EgressTestStore())
 }
 
-private fun withProxy(type: ProxyType, ip: String = "", port: Int = -1, block: () -> Unit) {
+private fun withProxy(
+    type: ProxyType,
+    ip: String = "",
+    port: Int = -1,
+    mode: ProxyMode = ProxyMode.Global,
+    block: () -> Unit,
+) {
     ensureStoreInstalled()
     runBlocking {
-        SettingsRepository.update { it.copy(proxyType = type, proxyIp = ip, proxyPort = port) }
+        SettingsRepository.update {
+            it.copy(proxyType = type, proxyIp = ip, proxyPort = port, proxyMode = mode)
+        }
     }
     try {
         block()
     } finally {
         runBlocking {
             SettingsRepository.update {
-                it.copy(proxyType = ProxyType.System, proxyIp = "", proxyPort = -1)
+                it.copy(proxyType = ProxyType.System, proxyIp = "", proxyPort = -1, proxyMode = ProxyMode.Global)
             }
         }
     }
@@ -118,6 +127,38 @@ class HanimeProxySelectorTest {
         assertTrue(
             selector.select(uri).none { (it.address() as? InetSocketAddress)?.hostString == "203.0.113.7" },
         )
+    }
+
+    @Test
+    fun `Rules 模式只让受限域走代理`() = withProxy(ProxyType.Http, "203.0.113.7", 7890, ProxyMode.Rules) {
+        // 站点：按代理走
+        assertEquals(Proxy.Type.HTTP, selector.select(uri).first().type())
+        // 第三方 API（弹弹play）：直连，不经代理
+        assertEquals(
+            listOf(Proxy.NO_PROXY),
+            selector.select(URI("https://api.dandanplay.net/api/v2/search/anime")),
+        )
+        // 未知 host（图床）：同样直连，省带宽
+        assertEquals(
+            listOf(Proxy.NO_PROXY),
+            selector.select(URI("https://vdownload.hembed.com/x.mp4")),
+        )
+    }
+
+    @Test
+    fun `Rules 模式下 getchu 也走代理`() = withProxy(ProxyType.Http, "203.0.113.7", 7890, ProxyMode.Rules) {
+        assertEquals(Proxy.Type.HTTP, selector.select(URI("https://www.getchu.com/")).first().type())
+    }
+
+    @Test
+    fun `Direct 模式即便配了代理也全直连`() = withProxy(ProxyType.Http, "203.0.113.7", 7890, ProxyMode.Direct) {
+        assertEquals(listOf(Proxy.NO_PROXY), selector.select(uri))
+    }
+
+    @Test
+    fun `Global 模式保持历史行为`() = withProxy(ProxyType.Http, "203.0.113.7", 7890, ProxyMode.Global) {
+        // 默认档：第三方也照旧走代理（不是 Rules），保证老用户零变化
+        assertEquals(Proxy.Type.HTTP, selector.select(URI("https://api.dandanplay.net/")).first().type())
     }
 }
 
