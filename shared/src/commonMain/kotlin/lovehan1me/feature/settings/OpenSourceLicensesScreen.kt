@@ -64,10 +64,7 @@ import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import com.mikepenz.aboutlibraries.entity.Developer
 import com.mikepenz.aboutlibraries.entity.Library
-import com.mikepenz.aboutlibraries.entity.License
-import com.mikepenz.aboutlibraries.entity.Scm
 import com.mikepenz.aboutlibraries.ui.compose.produceLibraries
 import com.mikepenz.aboutlibraries.ui.compose.util.author
 import com.mikepenz.aboutlibraries.ui.compose.util.htmlReadyLicenseContent
@@ -104,36 +101,6 @@ private data class LicenseItem(
     val displayLicenses: List<DisplayLicense>,
 )
 
-private val MOMO_QR_LICENSE = License(
-    name = "GNU General Public License v3.0",
-    url = "https://www.gnu.org/licenses/gpl-3.0.html",
-    spdxId = "GPL-3.0-only",
-    licenseContent = "MomoQR is licensed under the GNU General Public License v3.0.\n\n" +
-            "https://www.gnu.org/licenses/gpl-3.0.html",
-    hash = "GPL-3.0-only",
-)
-
-private val MOMO_QR_LIBRARY = Library(
-    uniqueId = "github.daisukikaffuchino:momoqr",
-    artifactVersion = null,
-    name = "MomoQR",
-    description = "A modern QR code and barcode scanner built with Jetpack Compose.",
-    website = "https://github.com/daisukiKaffuChino/MomoQR",
-    developers = listOf(
-        Developer(
-            name = "daisukiKaffuChino",
-            organisationUrl = "https://github.com/daisukiKaffuChino",
-        ),
-    ),
-    organization = null,
-    scm = Scm(
-        connection = null,
-        developerConnection = null,
-        url = "https://github.com/daisukiKaffuChino/MomoQR",
-    ),
-    licenses = setOf(MOMO_QR_LICENSE),
-)
-
 @Composable
 fun OpenSourceLicensesScreen(
     searchMode: Boolean,
@@ -165,8 +132,10 @@ val libraries by produceLibraries { Res.readBytes("files/aboutlibraries.json").d
         )
     ) { mutableStateOf<SelectedLicenseDialog?>(null) }
 
+    // MomoQR 已同步移除（含 NOTICE 侧署名）：扫码登录未移植，仓内无其派生代码，
+    // 不再在应用内许可页挂名，避免与 NOTICE 自相矛盾。
     val licenseItems = remember(libraries) {
-        (libraries?.libraries.orEmpty() + MOMO_QR_LIBRARY)
+        libraries?.libraries.orEmpty()
             .distinctBy { it.uniqueId }
             .map { library ->
                 LicenseItem(

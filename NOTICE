@@ -52,24 +52,6 @@ Note: LoveHan1me has **replaced** Han1meViewer as this application's identity
 above are retained purely as license attribution and are **not** this
 application's update channel or support channel.
 
-### MomoQR  (GPLv3)
-
-This attribution is **inherited from the upstream Han1meViewer NOTICE** and is
-retained here to cover any portion of the Han1meViewer-derived client code that
-may have originated in MomoQR:
-
-    https://github.com/daisukiKaffuChino/MomoQR
-
-Scope note (verified 2026-10-07): no file in this repository carries a MomoQR
-attribution header, and the feature most plausibly tied to MomoQR — QR-code
-scanning during login — was not ported. That entry point is already inert
-upstream (`onOpenQrScanner` is stubbed to the manual-cookie screen in
-Han1meViewer). The upstream NOTICE does not identify which files are
-MomoQR-derived, so this attribution is kept rather than dropped: retaining it
-costs nothing, while removing it would be a risk if indirect derivation exists.
-
-The MomoQR-derived code is licensed under the GNU GPLv3. This attribution and
-the applicable GPLv3 terms must be retained when that code is redistributed.
 
 ### Anime4K  (MIT)
 
