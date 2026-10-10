@@ -16,7 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import lovehan1me.ui.theme.AppEmphasis
 import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
@@ -64,8 +64,7 @@ internal fun GetchuPreviewItemCard(
             ) {
                 Text(
                     item.title,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    style = AppEmphasis.groupTitle
                 )
                 item.brand?.let {
                     Text(
@@ -117,8 +116,7 @@ internal fun getchuTextSectionTitle(title: String): String {
 internal fun GetchuSectionTitle(title: String) {
     Text(
         text = title,
-        style = MaterialTheme.typography.titleMedium,
-        fontWeight = FontWeight.Bold,
+        style = AppEmphasis.sectionTitle,
         color = MaterialTheme.colorScheme.onSurface
     )
 }

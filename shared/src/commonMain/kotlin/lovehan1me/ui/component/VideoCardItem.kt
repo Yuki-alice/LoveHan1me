@@ -51,6 +51,7 @@ import lovehan1me.ic_thumb_up_off_alt
 import lovehan1me.core.domain.model.VideoItemType
 import lovehan1me.ui.component.rememberHapticFeedback
 import lovehan1me.ui.component.RetryableImage
+import lovehan1me.ui.theme.AppEmphasis
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction
 import lovehan1me.ui.transition.sharedCoverElement
@@ -262,7 +263,8 @@ fun VideoCardItem(
                     text = videoItem.title,
                     maxLines = 2,
                     minLines = 2,
-                    style = MaterialTheme.typography.titleSmall,
+                    // 列表里被扫读的第一信息，也是全项目曝光量最高的文本 —— 走强调档。
+                    style = AppEmphasis.cardTitle,
                     overflow = TextOverflow.Ellipsis,
                     color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier

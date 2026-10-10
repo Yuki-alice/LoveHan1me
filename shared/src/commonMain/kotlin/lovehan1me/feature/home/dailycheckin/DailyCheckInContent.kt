@@ -22,6 +22,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import lovehan1me.ui.component.IconButton
+import lovehan1me.ui.theme.AppEmphasis
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,7 +31,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
@@ -130,8 +130,7 @@ fun DailyCheckInContent(
         ) {
             Text(
                 text = stringResource(Res.string.checkin_calendar),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                style = AppEmphasis.pageTitle
             )
             Row(verticalAlignment = Alignment.CenterVertically) {
                 IconButton(onClick = { onEvent(DailyCheckInEvent.OnPreviousMonth) }) {

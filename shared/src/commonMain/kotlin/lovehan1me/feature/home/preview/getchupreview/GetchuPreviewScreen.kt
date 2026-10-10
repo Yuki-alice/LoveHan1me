@@ -24,7 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalInspectionMode
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import lovehan1me.ui.theme.AppEmphasis
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -72,8 +72,7 @@ fun GetchuPreviewScreen(
                             Text(
                                 text = dateLabel,
                                 modifier = Modifier.weight(1f, fill = false),
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.SemiBold,
+                                style = AppEmphasis.pageTitle,
                                 maxLines = 1,
                                 overflow = TextOverflow.Ellipsis,
                             )

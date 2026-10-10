@@ -36,7 +36,6 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import lovehan1me.ui.component.HanimeAsyncImage
@@ -58,6 +57,7 @@ import lovehan1me.retry
 import lovehan1me.view_more_replies
 import lovehan1me.core.domain.model.VideoComments
 import lovehan1me.feature.video.ReplyThread
+import lovehan1me.ui.theme.AppEmphasis
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction
 import lovehan1me.core.util.DisplayTextLocalizer
@@ -122,8 +122,8 @@ fun VideoCommentCard(
                 ) {
                     Text(
                         text = comment.username,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
+                        // 此前是 titleSmall + 手写 Bold；改走强调档。
+                        style = AppEmphasis.itemTitle,
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )

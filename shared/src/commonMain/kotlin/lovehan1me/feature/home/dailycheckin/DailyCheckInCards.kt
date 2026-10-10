@@ -30,7 +30,6 @@ import androidx.compose.ui.draw.clip
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -48,6 +47,7 @@ import lovehan1me.ic_calendar_view_week
 import lovehan1me.ic_calendar_month
 import lovehan1me.ic_alarm
 import kotlinx.datetime.LocalDate
+import lovehan1me.ui.theme.AppEmphasis
 import lovehan1me.ui.theme.HanimeDefaults
 
 /**
@@ -272,8 +272,8 @@ fun RowScope.StatItem(
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = value,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold
+            // 统计数值：此前是 titleSmall + 手写 Bold，改走强调档。
+            style = AppEmphasis.metricValue,
         )
         Text(
             text = label,

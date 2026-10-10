@@ -22,7 +22,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import lovehan1me.ui.theme.AppEmphasis
 import androidx.compose.ui.unit.dp
 import lovehan1me.ui.component.HanimeAsyncImage
 import lovehan1me.Res
@@ -87,8 +87,7 @@ fun PreviewInfoCard(
                     ) {
                         Text(
                             text = previewInfo.videoTitle.orEmpty(),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold,
+                            style = AppEmphasis.pageTitle,
                         )
                         val previewTitle = previewInfo.title
                         if (!previewTitle.isNullOrBlank()) {

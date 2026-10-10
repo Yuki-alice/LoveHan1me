@@ -25,6 +25,7 @@ import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import lovehan1me.ui.theme.AppEmphasis
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
 import lovehan1me.update_now
@@ -71,8 +72,7 @@ fun AppUpdateCard(
                 Spacer(Modifier.width(10.dp))
                 Text(
                     text = stringResource(Res.string.update_available_title, updateInfo.versionName),
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    style = AppEmphasis.sectionTitle,
                     modifier = Modifier.weight(1f),
                 )
             }

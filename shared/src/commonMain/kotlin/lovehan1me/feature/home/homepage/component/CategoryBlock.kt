@@ -13,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.resources.stringResource
 import lovehan1me.Res
@@ -22,6 +21,7 @@ import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.ui.component.VideoCardItem
 import lovehan1me.ui.adaptive.rememberCategoryMatrix
 import lovehan1me.ui.adaptive.rememberPageHorizontalMargin
+import lovehan1me.ui.theme.AppEmphasis
 import lovehan1me.ui.theme.HanimeDefaults
 
 /**
@@ -59,8 +59,8 @@ fun CategoryBlock(
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
+                // 此前是 titleMedium + 手写 Bold；改走强调档，字号不变、只换字重。
+                style = AppEmphasis.sectionTitle,
                 color = MaterialTheme.colorScheme.onSurface,
                 modifier = Modifier.weight(1f),
             )

@@ -42,7 +42,6 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalInspectionMode
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import lovehan1me.core.constant.LOCAL_DATE_TIME_FORMAT
@@ -64,6 +63,7 @@ import lovehan1me.data.database.entity.download.VideoWithCategories
 import lovehan1me.core.domain.model.DownloadHeaderNode
 import lovehan1me.ui.component.CardContainerSurface
 import lovehan1me.feature.preview.fakeDownloadedNodes
+import lovehan1me.ui.theme.AppEmphasis
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction
 import lovehan1me.core.util.formatFileSize
@@ -130,8 +130,7 @@ fun DownloadGroupHeader(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = header.groupKey,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    style = AppEmphasis.groupTitle,
                 )
                 Text(
                     text = stringResource(Res.string.video_count, header.originalVideos.size),
@@ -279,8 +278,7 @@ fun DownloadedVideoCard(
                 ) {
                     Text(
                         text = item.video.title,
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.SemiBold,
+                        style = AppEmphasis.groupTitle,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )

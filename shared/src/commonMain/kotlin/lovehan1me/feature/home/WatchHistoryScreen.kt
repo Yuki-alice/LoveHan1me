@@ -61,7 +61,6 @@ import androidx.compose.ui.layout.ContentScale
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.DrawableResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -114,6 +113,7 @@ import lovehan1me.ui.component.content.ErrorContent
 import lovehan1me.ui.component.lazy.LazyColumn
 import lovehan1me.ui.component.lazy.LazyVerticalGrid
 import lovehan1me.ui.component.rememberVideoGridColumns
+import lovehan1me.ui.theme.AppEmphasis
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction
 import kotlinx.coroutines.flow.Flow
@@ -689,8 +689,7 @@ private fun WatchHistoryCard(
             ) {
                 Text(
                     text = history.title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.SemiBold,
+                    style = AppEmphasis.itemTitle,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

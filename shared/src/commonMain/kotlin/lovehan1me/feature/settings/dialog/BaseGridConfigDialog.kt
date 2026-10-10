@@ -25,6 +25,7 @@ import lovehan1me.ui.component.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
+import lovehan1me.ui.theme.AppEmphasis
 import lovehan1me.ui.theme.HanimeDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -65,8 +66,7 @@ fun BaseGridConfigDialog(
         title = {
             Text(
                 text = title,
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.SemiBold
+                style = AppEmphasis.pageTitle
             )
         },
         text = {

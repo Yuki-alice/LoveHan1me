@@ -28,7 +28,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalUriHandler
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.font.FontWeight
+import lovehan1me.ui.theme.AppEmphasis
 import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
 import coil3.compose.AsyncImage
@@ -106,8 +106,7 @@ internal fun GetchuPreviewDetailContent(
                         ) {
                             Text(
                                 text = detail.title,
-                                style = MaterialTheme.typography.headlineSmall,
-                                fontWeight = FontWeight.Bold,
+                                style = AppEmphasis.heroTitle,
                                 color = Color.White
                             )
                         }
@@ -137,8 +136,7 @@ internal fun GetchuPreviewDetailContent(
                             detail.price?.let {
                                 Text(
                                     text = it,
-                                    style = MaterialTheme.typography.titleMedium,
-                                    fontWeight = FontWeight.SemiBold,
+                                    style = AppEmphasis.counterValue,
                                     color = MaterialTheme.colorScheme.primary // 价格高亮
                                 )
                             }

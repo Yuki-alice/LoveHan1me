@@ -24,7 +24,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
 import lovehan1me.select_all
@@ -51,6 +50,7 @@ import lovehan1me.ui.component.FilledIconButton
 import lovehan1me.ui.component.IconButton
 import lovehan1me.ui.component.content.EmptyContent
 import lovehan1me.ui.component.lazy.LazyColumn
+import lovehan1me.ui.theme.AppEmphasis
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.feature.preview.fakeDownloadedGroups
 import lovehan1me.feature.preview.fakeDownloadedNodes
@@ -291,8 +291,7 @@ private fun BatchActionBar(
                 }
                 Text(
                     text = "${selectedCount}/${totalCount}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
+                    style = AppEmphasis.counterValue,
                     color = MaterialTheme.colorScheme.onSurface,
                 )
             }

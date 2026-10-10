@@ -7,7 +7,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import lovehan1me.ui.theme.AppEmphasis
 import androidx.compose.ui.unit.dp
 import coil3.ImageLoader
 import lovehan1me.core.domain.model.GetchuPreview
@@ -28,8 +28,7 @@ internal fun GetchuPreviewContent(
             item(key = "date-${group.releaseDate}") {
                 Text(
                     text = group.releaseDate,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = AppEmphasis.groupTitle,
                     color = MaterialTheme.colorScheme.onSurface
                 )
             }

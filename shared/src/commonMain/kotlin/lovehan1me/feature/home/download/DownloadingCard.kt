@@ -33,7 +33,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import lovehan1me.ui.component.rememberHapticFeedback
@@ -54,6 +53,7 @@ import lovehan1me.core.domain.state.DownloadState
 import lovehan1me.ui.component.CardContainerSurface
 import lovehan1me.ui.component.FilledTonalIconButton
 import lovehan1me.ui.component.IconButton
+import lovehan1me.ui.theme.AppEmphasis
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction
 import lovehan1me.core.util.formatFileSize
@@ -128,8 +128,7 @@ fun DownloadingItemCard(
                 ) {
                     Text(
                         text = item.title,
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.SemiBold,
+                        style = AppEmphasis.itemTitle,
                         maxLines = 2,
                         overflow = TextOverflow.Ellipsis,
                     )

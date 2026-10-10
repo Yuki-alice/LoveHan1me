@@ -38,7 +38,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -67,6 +66,7 @@ import lovehan1me.ui.component.VideoCardItem
 import lovehan1me.ui.component.appbar.HanimeTopAppBar
 import lovehan1me.ui.component.lazy.LazyVerticalGrid
 import lovehan1me.ui.component.rememberVideoGridColumns
+import lovehan1me.ui.theme.AppEmphasis
 import lovehan1me.ui.theme.HanimeDefaults
 
 /**
@@ -149,8 +149,7 @@ fun ArtistDetailScreen(
                     ) {
                         Text(
                             text = displayName,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
+                            style = AppEmphasis.heroTitle,
                             maxLines = 2,
                             overflow = TextOverflow.Ellipsis,
                         )
@@ -318,7 +317,7 @@ private fun SectionHeader(title: String, actionLabel: String, onAction: () -> Un
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(text = title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        Text(text = title, style = AppEmphasis.sectionTitle)
         OutlinedButton(
             onClick = onAction,
             shape = HanimeDefaults.Corners.pill,
@@ -380,8 +379,7 @@ private fun PlaylistCard(summary: SitePlaylistSummary, onClick: () -> Unit) {
         }
         Text(
             text = summary.name,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
+            style = AppEmphasis.itemTitle,
             maxLines = 2,
             overflow = TextOverflow.Ellipsis,
         )

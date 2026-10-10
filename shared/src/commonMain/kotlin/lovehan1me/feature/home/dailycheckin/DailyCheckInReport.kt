@@ -25,6 +25,7 @@ import lovehan1me.ui.component.FilledIconButton
 import androidx.compose.material3.Icon
 import lovehan1me.ui.component.IconButton
 import androidx.compose.material3.MaterialTheme
+import lovehan1me.ui.theme.AppEmphasis
 import lovehan1me.ui.theme.HanimeDefaults
 import androidx.compose.material3.Text
 import lovehan1me.ui.component.HapticTextButton as TextButton
@@ -242,8 +243,7 @@ fun ContributionReportDialog(
                                         Text(text = typeEmoji(type), fontSize = 20.sp)
                                         Text(
                                             text = count.toString(),
-                                            style = MaterialTheme.typography.titleSmall,
-                                            fontWeight = FontWeight.Bold
+                                            style = AppEmphasis.metricValue
                                         )
                                         Text(
                                             text = type,
@@ -311,8 +311,7 @@ fun YearContributionView(
             }
             Text(
                 text = stringResource(Res.string.report_year_format, year),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                style = AppEmphasis.pageTitle
             )
             IconButton(
                 onClick = { onYearChange(year + 1) },
@@ -439,8 +438,7 @@ fun MonthContributionView(
             }
             Text(
                 text = stringResource(Res.string.report_year_month_format, year, month),
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                style = AppEmphasis.pageTitle
             )
             IconButton(
                 onClick = {

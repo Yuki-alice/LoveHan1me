@@ -39,7 +39,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import lovehan1me.ui.component.HanimeAsyncImage
@@ -56,6 +55,7 @@ import lovehan1me.ic_thumb_down_alt
 import lovehan1me.ic_play_arrow
 import lovehan1me.ic_access_time
 import lovehan1me.core.domain.model.HanimeVideo
+import lovehan1me.ui.theme.AppEmphasis
 import lovehan1me.ui.theme.HanimeDefaults
 import lovehan1me.ui.theme.shapeByInteraction
 import lovehan1me.core.util.DisplayTextLocalizer
@@ -212,8 +212,7 @@ internal fun ArtistSection(
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = artist.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
+                    style = AppEmphasis.groupTitle,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )

@@ -22,6 +22,7 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import lovehan1me.ui.component.IconButton
 import androidx.compose.material3.MaterialTheme
+import lovehan1me.ui.theme.AppEmphasis
 import lovehan1me.ui.theme.HanimeDefaults
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Surface
@@ -126,8 +127,7 @@ fun CheckInDialog(
                     Column {
                         Text(
                             text = date.formatYmd(),
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.Bold
+                            style = AppEmphasis.pageTitle
                         )
                     }
                     IconButton(onClick = onDismiss) {
@@ -140,8 +140,7 @@ fun CheckInDialog(
                 if (existingRecords.isNotEmpty()) {
                     Text(
                         text = stringResource(Res.string.dialog_existing_records),
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
+                        style = AppEmphasis.itemTitle,
                         modifier = Modifier.padding(start = 16.dp, top = 12.dp, bottom = 4.dp)
                     )
                     existingRecords.forEachIndexed { index, record ->
@@ -220,8 +219,7 @@ fun AddCheckInForm(
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Text(
             text = stringResource(Res.string.dialog_type_label),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
+            style = AppEmphasis.itemTitle,
             modifier = Modifier.padding(vertical = 4.dp)
         )
         FlowRow(
@@ -241,8 +239,7 @@ fun AddCheckInForm(
 
         Text(
             text = stringResource(Res.string.dialog_feeling_label),
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.Bold,
+            style = AppEmphasis.itemTitle,
             modifier = Modifier.padding(bottom = 4.dp)
         )
         OutlinedTextField(

@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import lovehan1me.ui.component.HanimeAsyncImage
+import lovehan1me.ui.theme.AppEmphasis
 import lovehan1me.Res
 import lovehan1me.sure_to_download
 import lovehan1me.sure_to_redownload
@@ -455,7 +456,7 @@ internal fun PlaylistBottomSheet(
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
                         text = stringResource(Res.string.series_video),
-                        style = MaterialTheme.typography.headlineSmall,
+                        style = AppEmphasis.dialogTitle,
                     )
                     playlist.playlistName?.takeIf { it.isNotBlank() }?.let {
                         Text(
@@ -467,6 +468,7 @@ internal fun PlaylistBottomSheet(
                 }
                 Text(
                     text = stringResource(Res.string.blank_brackets, playlist.video.size),
+                    // 次要信息（onSurfaceVariant），颜色已表达层级，不再叠加强调。
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
