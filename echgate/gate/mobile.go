@@ -15,15 +15,17 @@ func StartFlat(
 	echB64 string,
 	cacheDir string,
 	timeoutMs int64,
+	upstreamProxy string,
 ) (*Server, error) {
 	return Start(Config{
-		ListenAddr: listenAddr,
-		CfIPs:      SplitList(cfIPsCSV),
-		CfHosts:    SplitList(cfHostsCSV),
-		DohURL:     dohURL,
-		EchDomain:  echDomain,
-		EchB64:     echB64,
-		CacheDir:   cacheDir,
-		TimeoutMs:  timeoutMs,
+		ListenAddr:    listenAddr,
+		CfIPs:         SplitList(cfIPsCSV),
+		CfHosts:       SplitList(cfHostsCSV),
+		DohURL:        dohURL,
+		EchDomain:     echDomain,
+		EchB64:        echB64,
+		CacheDir:      cacheDir,
+		TimeoutMs:     timeoutMs,
+		UpstreamProxy: upstreamProxy,
 	})
 }

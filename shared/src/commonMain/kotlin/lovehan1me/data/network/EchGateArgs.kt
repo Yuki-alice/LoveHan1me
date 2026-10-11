@@ -20,6 +20,14 @@ const val ECH_GATE_TIMEOUT_SEC_DEFAULT = 15
 const val ECH_GATE_TIMEOUT_SEC_MIN = 5
 const val ECH_GATE_TIMEOUT_SEC_MAX = 120
 
+/**
+ * 网关取 ECH 配置的 DoH 端点默认值（= 网关 `--doh` 默认值，改它等于改跨进程协议的默认值）。
+ *
+ * JSON 端点（`/resolve`）：移动端 `StartFlat` 的 `dohURL` 形参不能留空，
+ * 用户没覆盖时由各端填这个（桌面走 CLI，可直接省略该 flag）。
+ */
+const val ECH_GATE_DOH_URL_DEFAULT = "https://dns.alidns.com/resolve"
+
 /** 生效的上游超时秒：坏数据钳回范围，设置未就绪回默认（判定永远不能成为请求失败的原因）。 */
 fun echGateTimeoutSec(): Int =
     runCatching { SettingsRepository.echGateTimeoutSec }

@@ -8,6 +8,11 @@ import ComposeApp
 /// Kotlin（`EchGatePortReporter.setPort`），Kotlin 侧 Ktor 插件据此改写。
 /// 是否真正改写以后端 `useEchGate` 设置为准——这里无条件起服，
 /// 无流量时网关空转，用户关掉开关即零改动（见 `installEchGate` 门控）。
+///
+/// 起服参数（DoH/超时/ech-b64/上游代理）一律经 Kotlin 桥
+/// （`EchGateStartArgs`）取生效值 —— 用户在设置页改的东西对 iOS 网关同样生效
+/// （B4-3b；此前全写死在这里，设置页对 iOS 网关无效）。本文件只保留
+/// Swift 侧自有的数据：种子 IP（Kotlin 桥 `fallbackSeedCsv`）与 cf-hosts 表。
 enum EchGateBootstrap {
     private static var server: GateServer?
 
@@ -31,11 +36,14 @@ enum EchGateBootstrap {
                 // 而 iOS 没有 HanimeDns 那套解析链可在 Kotlin 侧兜底。网关会逐 IP 拨号挑能连的。
                 EchGatePortReporter.shared.fallbackSeedCsv(),
                 cfHosts,
-                "https://dns.alidns.com/resolve",
+                // B4-3b：DoH/超时/ech-b64 跟随用户设置（Kotlin 桥给生效值）；
+                // B2-4：上游代理交给网关出站（空 = 直连模式）。
+                EchGateStartArgs.shared.dohUrl(),
                 "cloudflare-ech.com",
-                "",
+                EchGateStartArgs.shared.echB64(),
                 cacheDir,
-                15000,
+                EchGateStartArgs.shared.timeoutMs(),
+                EchGateStartArgs.shared.upstreamProxy(),
                 &err
             ) else {
                 NSLog("[EchGate] start failed: \(err?.localizedDescription ?? "unknown")")

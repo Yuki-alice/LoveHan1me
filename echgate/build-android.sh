@@ -49,7 +49,7 @@ gomobile bind \
 echo "==> $OUT"
 ls -l "$OUT"
 SOURCES="${OUT%.aar}-sources.jar"
-[ -f "$SOURCES" ] && echo "==> $SOURCES（与 AAR 成对入库，见头部注释）"
+if [ -f "$SOURCES" ]; then echo "==> $SOURCES（与 AAR 成对入库，见头部注释）"; fi
 echo "==> sha256(aar):     $(shasum -a 256 "$OUT" | awk '{print $1}')"
-[ -f "$SOURCES" ] && echo "==> sha256(sources): $(shasum -a 256 "$SOURCES" | awk '{print $1}')"
+if [ -f "$SOURCES" ]; then echo "==> sha256(sources): $(shasum -a 256 "$SOURCES" | awk '{print $1}')"; fi
 echo "==> go: $(go version)"

@@ -270,6 +270,7 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="gate_args_overridden">Overridden</string>
     <string name="gate_args_invalid_doh">DoH endpoint must start with https://</string>
     <string name="gate_args_invalid_b64">ECH config is not valid base64</string>
+    <string name="gate_args_ios_restart_note">Takes effect on next launch on iOS (the gateway is started once at launch and cannot be restarted from settings yet)</string>
     <string name="proxy_rule_custom">Custom rules</string>
     <string name="proxy_rule_custom_empty">None yet — built-in rules only</string>
     <string name="proxy_rule_custom_count">%1$d added (applies in "Restricted domains only")</string>
@@ -301,7 +302,7 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="egress_report_verdict_unstable">Egress has failures but nothing is tripped; if it persists, use "Force route" to switch</string>
     <string name="egress_report_verdict_no_data">No egress samples in the recent window (maybe all cache hits); check again after normal use</string>
     <string name="network_platform_limits_title">Not configurable on this platform</string>
-    <string name="network_platform_limits_ios">Custom DNS, HTTP/SOCKS proxy and custom hosts follow the system settings here and cannot be set in the app. The ECH gateway, route override and diagnostics below are fully available.</string>
+    <string name="network_platform_limits_ios">Custom DNS and custom hosts follow the system settings here and cannot be set in the app. HTTP/SOCKS proxy can be set below and takes effect through the local gateway (applies on next launch). The ECH gateway, route override and diagnostics below are fully available.</string>
     <string name="network_gate_section">ECH gateway</string>
     <string name="network_diag_section">Connection diagnostics</string>
     <string name="custom_hosts">Custom Hosts</string>

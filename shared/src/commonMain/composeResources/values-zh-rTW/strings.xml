@@ -284,6 +284,7 @@
     <string name="gate_args_overridden">已覆寫</string>
     <string name="gate_args_invalid_doh">DoH 端點須以 https:// 開頭</string>
     <string name="gate_args_invalid_b64">ECH 設定不是合法 base64</string>
+    <string name="gate_args_ios_restart_note">iOS 上變更下次啟動生效（閘道隨啟動拉起一次，設定頁尚無法重啟它）</string>
     <string name="proxy_rule_custom">自訂規則</string>
     <string name="proxy_rule_custom_empty">尚未新增，僅內建規則生效</string>
     <string name="proxy_rule_custom_count">已新增 %1$d 條（在「僅受限網域」檔生效）</string>
@@ -315,7 +316,7 @@
     <string name="egress_report_verdict_unstable">出口有失敗但尚未熔斷；若持續失敗可用「強制選路」換條路</string>
     <string name="egress_report_verdict_no_data">近窗口沒有出口樣本（可能都命中快取）；正常使用一會再看</string>
     <string name="network_platform_limits_title">本端不可設定</string>
-    <string name="network_platform_limits_ios">自訂 DNS、HTTP/SOCKS Proxy 與自訂 Hosts 在本端跟隨系統設定，無法在 App 內設定。下方的 ECH 閘道、強制選路與診斷功能皆完整可用。</string>
+    <string name="network_platform_limits_ios">自訂 DNS 與自訂 Hosts 在本端跟隨系統設定，無法在 App 內設定。HTTP/SOCKS Proxy 可在下方設定，經本地閘道生效（下次啟動應用）。下方的 ECH 閘道、強制選路與診斷功能皆完整可用。</string>
     <string name="network_gate_section">ECH 閘道</string>
     <string name="network_diag_section">連接診斷</string>
     <string name="doh_timeout_seconds_summary">DoH 請求的連線與讀取逾時時間，建議 5–15 秒</string>

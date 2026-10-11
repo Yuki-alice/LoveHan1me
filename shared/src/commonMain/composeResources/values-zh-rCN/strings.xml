@@ -270,6 +270,7 @@
     <string name="gate_args_overridden">已覆盖</string>
     <string name="gate_args_invalid_doh">DoH 端点须以 https:// 开头</string>
     <string name="gate_args_invalid_b64">ECH 配置不是合法 base64</string>
+    <string name="gate_args_ios_restart_note">iOS 上改动下次启动生效（网关随启动拉起一次，设置页尚不能重启它）</string>
     <string name="proxy_rule_custom">自定义规则</string>
     <string name="proxy_rule_custom_empty">未添加，仅内置规则生效</string>
     <string name="proxy_rule_custom_count">已添加 %1$d 条（在「仅受限域」档生效）</string>
@@ -301,7 +302,7 @@
     <string name="egress_report_verdict_unstable">出口有失败但尚未熔断；若持续失败可用「强制选路」换条路</string>
     <string name="egress_report_verdict_no_data">近窗口没有出口样本（可能都命中缓存）；正常使用一会再看</string>
     <string name="network_platform_limits_title">本端不可配置</string>
-    <string name="network_platform_limits_ios">自定义 DNS、HTTP/SOCKS 代理与自定义 Hosts 在本端跟随系统设置，无法在应用内配置。下面的 ECH 网关、强制选路与诊断功能均完整可用。</string>
+    <string name="network_platform_limits_ios">自定义 DNS 与自定义 Hosts 在本端跟随系统设置，无法在应用内配置。HTTP/SOCKS 代理可在下方设置，经本地网关生效（下次启动应用）。下面的 ECH 网关、强制选路与诊断功能均完整可用。</string>
     <string name="network_gate_section">ECH 网关</string>
     <string name="network_diag_section">连接诊断</string>
     <string name="custom_hosts">自定义 Hosts</string>

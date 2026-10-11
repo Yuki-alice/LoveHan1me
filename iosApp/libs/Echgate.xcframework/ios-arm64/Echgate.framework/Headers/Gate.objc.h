@@ -37,6 +37,15 @@
  * TimeoutMs 上游连接超时毫秒（<=0 则用默认值）。
  */
 @property (nonatomic) int64_t timeoutMs;
+/**
+ * UpstreamProxy 上游代理（`http(s)://[user:pass@]host:port` 或 `socks5://…`）。
+
+设置后网关进入**代理模式**（B2-4/D4-b）：出站先连代理再由它转发到目标。
+语义要求（U5 结论）：**显式关 ECH**、**不经 CF 候选 IP**、**保留 CNAME 真名降级**
+—— ECH 的目的是对本地网络隐藏 SNI，而经代理时真 SNI 本就不在本地暴露面上；
+alias 解决的是"按域名封锁"，与隐藏 SNI 无关，故保留。
+ */
+@property (nonatomic) NSString* _Nonnull upstreamProxy;
 @end
 
 /**
@@ -73,6 +82,6 @@ gobind 不支持 struct 参数与 []string 字段（Config 会被整个跳过）
 返回 (*Server, error)（对象 + 错误是支持的）。
 CLI (`main.go`) 与 gomobile (Android `.aar` / iOS framework) 共用 [Start]。
  */
-FOUNDATION_EXPORT GateServer* _Nullable GateStartFlat(NSString* _Nullable listenAddr, NSString* _Nullable cfIPsCSV, NSString* _Nullable cfHostsCSV, NSString* _Nullable dohURL, NSString* _Nullable echDomain, NSString* _Nullable echB64, NSString* _Nullable cacheDir, int64_t timeoutMs, NSError* _Nullable* _Nullable error);
+FOUNDATION_EXPORT GateServer* _Nullable GateStartFlat(NSString* _Nullable listenAddr, NSString* _Nullable cfIPsCSV, NSString* _Nullable cfHostsCSV, NSString* _Nullable dohURL, NSString* _Nullable echDomain, NSString* _Nullable echB64, NSString* _Nullable cacheDir, int64_t timeoutMs, NSString* _Nullable upstreamProxy, NSError* _Nullable* _Nullable error);
 
 #endif
