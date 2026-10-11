@@ -273,6 +273,17 @@
     <string name="egress_per_domain_thirdparty">第三方</string>
     <string name="egress_per_domain_override">強制：%1$s</string>
     <string name="egress_follow_global">跟隨全域（%1$s）</string>
+    <string name="gate_args_title">閘道參數</string>
+    <string name="gate_args_timeout">上游逾時（秒）</string>
+    <string name="gate_args_timeout_summary">上游撥號 + 取數的總預算，預設 15 秒（5–120）。</string>
+    <string name="gate_args_doh">DoH 端點（取 ECH 設定）</string>
+    <string name="gate_args_doh_summary">JSON 端點，空 = 閘道預設；須為 https，如 https://dns.alidns.com/resolve。wire 格式端點（…/dns-query）在此拿不到設定。</string>
+    <string name="gate_args_echb64">ECH 設定（base64）</string>
+    <string name="gate_args_echb64_summary">手填已知可用的 ECH 公鑰設定則跳過 DoH 獲取；空 = 自動獲取。解不開時閘道靜默退回 DoH。</string>
+    <string name="gate_args_default">預設</string>
+    <string name="gate_args_overridden">已覆寫</string>
+    <string name="gate_args_invalid_doh">DoH 端點須以 https:// 開頭</string>
+    <string name="gate_args_invalid_b64">ECH 設定不是合法 base64</string>
     <string name="proxy_rule_custom">自訂規則</string>
     <string name="proxy_rule_custom_empty">尚未新增，僅內建規則生效</string>
     <string name="proxy_rule_custom_count">已新增 %1$d 條（在「僅受限網域」檔生效）</string>

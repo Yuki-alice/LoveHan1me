@@ -121,6 +121,15 @@ import lovehan1me.egress_per_domain_cdn
 import lovehan1me.egress_per_domain_thirdparty
 import lovehan1me.egress_per_domain_override
 import lovehan1me.egress_follow_global
+import lovehan1me.gate_args_title
+import lovehan1me.gate_args_timeout
+import lovehan1me.gate_args_timeout_summary
+import lovehan1me.gate_args_doh
+import lovehan1me.gate_args_doh_summary
+import lovehan1me.gate_args_echb64
+import lovehan1me.gate_args_echb64_summary
+import lovehan1me.gate_args_default
+import lovehan1me.gate_args_overridden
 import lovehan1me.ic_delay
 import lovehan1me.ic_dns
 import lovehan1me.ic_domain
@@ -132,6 +141,9 @@ import lovehan1me.core.util.isDebugBuild
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.data.network.DohConfig
 import lovehan1me.data.network.HProxyTypes
+import lovehan1me.data.network.ECH_GATE_TIMEOUT_SEC_DEFAULT
+import lovehan1me.data.network.ECH_GATE_TIMEOUT_SEC_MAX
+import lovehan1me.data.network.ECH_GATE_TIMEOUT_SEC_MIN
 import lovehan1me.core.domain.model.ProxyMode
 import lovehan1me.core.domain.model.AutoMirrorGuard
 import lovehan1me.data.network.egress.DomainClass
@@ -268,6 +280,14 @@ fun NetworkSettingsScreen(
     perDomainForceMode: Map<DomainClass, ForceMode> = emptyMap(),
     /** 传 null = 清除该域覆盖（跟随全局）。 */
     onPerDomainForceModeChange: (DomainClass, ForceMode?) -> Unit = { _, _ -> },
+    /**
+     * B4-3a/F15：网关启动参数覆盖（超时秒 / DoH 端点 / ECH base64）。
+     * 三项全是"空/默认 = 网关默认值"语义，判定收在 commonMain `EchGateArgs.kt`。
+     */
+    echGateTimeoutSec: Int = ECH_GATE_TIMEOUT_SEC_DEFAULT,
+    echGateDohUrl: String = "",
+    echGateEchB64: String = "",
+    onSaveGateArgs: (Int, String, String) -> Unit = { _, _, _ -> },
 ) {
     var showDomainDialog by rememberSaveable { mutableStateOf(false) }
     var showProxyDialog by rememberSaveable { mutableStateOf(false) }
@@ -280,6 +300,7 @@ fun NetworkSettingsScreen(
     // B4-2：当前正在编辑哪一域的出口覆盖（存 DomainClass 名；null = 无）。
     var perDomainDialogTarget by rememberSaveable { mutableStateOf<String?>(null) }
     var showProxyRuleDialog by rememberSaveable { mutableStateOf(false) }
+    var showGateArgsDialog by rememberSaveable { mutableStateOf(false) }
     var showEgressDiagnostics by rememberSaveable { mutableStateOf(false) }
     val copyText = rememberCopyTextToClipboard()
     val forceModeName = when (forceMode) {
@@ -487,6 +508,30 @@ fun NetworkSettingsScreen(
         )
     }
 
+    // B4-3a：网关启动参数。摘要只标"偏离默认"的项 —— 全默认时就是一行"超时 Ns · 默认"，
+    // 用户一眼知道自己没动过这里；改过哪项，摘要就提示"已覆盖"，详情进弹窗看。
+    val gateArgsSummary = buildString {
+        append(stringResource(Res.string.gate_args_timeout))
+        append(": ${echGateTimeoutSec}s")
+        append(if (echGateDohUrl.isBlank() && echGateEchB64.isBlank()) {
+            "\n" + stringResource(Res.string.gate_args_default)
+        } else {
+            "\n" + stringResource(Res.string.gate_args_overridden)
+        })
+    }
+    if (showGateArgsDialog) {
+        GateArgsDialog(
+            timeoutSec = echGateTimeoutSec,
+            dohUrl = echGateDohUrl,
+            echB64 = echGateEchB64,
+            onDismiss = { showGateArgsDialog = false },
+            onConfirm = { timeout, doh, b64 ->
+                showGateArgsDialog = false
+                onSaveGateArgs(timeout, doh, b64)
+            },
+        )
+    }
+
     if (showEgressDiagnostics) {
         EgressDiagnosticsDialog(
             events = egressEvents,
@@ -666,6 +711,14 @@ fun NetworkSettingsScreen(
                     summary = state.dohSummary,
                     iconRes = Res.drawable.ic_dns,
                     onClick = { showDohDialog = true },
+                )
+                // B4-3a：网关启动参数（超时 / DoH 端点 / ECH base64）。iOS 不加 ——
+                // iOS 起服在 Swift 壳里写死，加了就是假开关（B2-2 同口径，见 B4-3b/c）。
+                SettingNavigationItem(
+                    title = stringResource(Res.string.gate_args_title),
+                    summary = gateArgsSummary,
+                    iconRes = Res.drawable.ic_router,
+                    onClick = { showGateArgsDialog = true },
                 )
             }
 
@@ -1126,6 +1179,75 @@ private fun ProxyRuleDialog(
         },
         confirmButton = {
             TextButton(onClick = { onConfirm(text) }) { Text(stringResource(Res.string.confirm)) }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }
+        },
+    )
+}
+
+/**
+ * B4-3a：网关启动参数编辑（三项全可选，空 = 网关默认值）。
+ *
+ * 超时存整型秒（保存时钳到 5–120）；DoH/b64 存原文 —— 格式校验不在这里，
+ * 在 Route 的 `onSaveGateArgs`（toast 拒绝并放弃保存），与 `onApplyProxy` 同模式。
+ */
+@Composable
+private fun GateArgsDialog(
+    timeoutSec: Int,
+    dohUrl: String,
+    echB64: String,
+    onDismiss: () -> Unit,
+    onConfirm: (Int, String, String) -> Unit,
+) {
+    var timeoutValue by rememberSaveable(timeoutSec) { mutableStateOf(timeoutSec.toString()) }
+    var dohValue by rememberSaveable(dohUrl) { mutableStateOf(dohUrl) }
+    var b64Value by rememberSaveable(echB64) { mutableStateOf(echB64) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(stringResource(Res.string.gate_args_title)) },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                OutlinedTextField(
+                    value = timeoutValue,
+                    onValueChange = { timeoutValue = it.filter(Char::isDigit).take(3) },
+                    label = { Text(stringResource(Res.string.gate_args_timeout)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    supportingText = { Text(stringResource(Res.string.gate_args_timeout_summary)) },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = dohValue,
+                    onValueChange = { dohValue = it },
+                    label = { Text(stringResource(Res.string.gate_args_doh)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    supportingText = { Text(stringResource(Res.string.gate_args_doh_summary)) },
+                    singleLine = true,
+                )
+                OutlinedTextField(
+                    value = b64Value,
+                    onValueChange = { b64Value = it },
+                    label = { Text(stringResource(Res.string.gate_args_echb64)) },
+                    modifier = Modifier.fillMaxWidth(),
+                    supportingText = { Text(stringResource(Res.string.gate_args_echb64_summary)) },
+                    minLines = 2,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                onConfirm(
+                    timeoutValue.toIntOrNull()?.coerceIn(
+                        ECH_GATE_TIMEOUT_SEC_MIN,
+                        ECH_GATE_TIMEOUT_SEC_MAX,
+                    ) ?: ECH_GATE_TIMEOUT_SEC_DEFAULT,
+                    dohValue.trim(),
+                    b64Value.trim(),
+                )
+            }) {
+                Text(stringResource(Res.string.confirm))
+            }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text(stringResource(Res.string.cancel)) }

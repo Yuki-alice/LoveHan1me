@@ -259,6 +259,17 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="egress_per_domain_thirdparty">Third-party</string>
     <string name="egress_per_domain_override">Forced: %1$s</string>
     <string name="egress_follow_global">Follow global (%1$s)</string>
+    <string name="gate_args_title">Gateway parameters</string>
+    <string name="gate_args_timeout">Upstream timeout (s)</string>
+    <string name="gate_args_timeout_summary">Total upstream dial + fetch budget. 15s by default (5–120).</string>
+    <string name="gate_args_doh">DoH endpoint (for ECH config)</string>
+    <string name="gate_args_doh_summary">JSON endpoint; empty = gateway default. Must be https, e.g. https://dns.alidns.com/resolve. Wire-format endpoints (…/dns-query) will not work here.</string>
+    <string name="gate_args_echb64">ECH config (base64)</string>
+    <string name="gate_args_echb64_summary">Pin a known-good ECH config to skip DoH fetching; empty = auto-fetch. If it cannot be decoded the gateway silently falls back to DoH.</string>
+    <string name="gate_args_default">Default</string>
+    <string name="gate_args_overridden">Overridden</string>
+    <string name="gate_args_invalid_doh">DoH endpoint must start with https://</string>
+    <string name="gate_args_invalid_b64">ECH config is not valid base64</string>
     <string name="proxy_rule_custom">Custom rules</string>
     <string name="proxy_rule_custom_empty">None yet — built-in rules only</string>
     <string name="proxy_rule_custom_count">%1$d added (applies in "Restricted domains only")</string>

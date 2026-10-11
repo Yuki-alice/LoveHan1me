@@ -8,7 +8,10 @@ import lovehan1me.data.network.EchGate
 import lovehan1me.data.network.EchGateRuntime
 import lovehan1me.data.network.EchGateStarter
 import lovehan1me.data.network.EchGateStatus
+import lovehan1me.data.network.echGateDohUrl
+import lovehan1me.data.network.echGateEchB64
 import lovehan1me.data.network.echGateSeedIps
+import lovehan1me.data.network.echGateTimeoutSec
 import java.io.File
 
 /**
@@ -28,7 +31,8 @@ import java.io.File
  * 监听回环随机端口；**ip-list 传探测过的 CF 种子**（`echGateSeedIps()`，与桌面
  * 同口径）——国内 DoH 对被阻断域名会返回假 IP（模拟器实测 hanime1.me →
  * Facebook 段、拨号超时），不传种子网关就会撞在上面；cf-hosts 取自 common 常量
- * （不再制造第三份站点表拷贝）；DoH 端点 / ECH 域 / 启动超时与 iOS 同值。
+ * （不再制造第三份站点表拷贝）；DoH 端点 / 超时 / ech-b64 跟随用户设置
+ * （B4-3a，未覆盖时回落到与 iOS 同值的默认）。
  */
 internal class AndroidEchGateStarter(
     /** ECH 公钥配置的磁盘缓存目录（应用缓存目录，秒级就绪的关键）。 */
@@ -54,12 +58,17 @@ internal class AndroidEchGateStarter(
                 echGateSeedIps().joinToString(","),
                 // 只有这些域名才配用 CF IP + ECH；其余域名由网关自己按 CNAME / 普通 TLS 走。
                 HanimeConstants.HANIME_HOSTNAME.joinToString(","),
-                DOH_URL,
+                // B4-3a：DoH 端点跟随用户覆盖（空 = 沿用默认的 AliDNS resolve）。
+                // 注意不要把 App 侧 wire 格式的 DoH 预设塞进来 —— 网关只认 JSON 端点，
+                // 判定收在 commonMain `echGateDohUrl()`（非 https 直接丢弃）。
+                echGateDohUrl() ?: DOH_URL,
                 ECH_DOMAIN,
-                // ech-b64 留空：让网关自己经 DoH 取 ECH 公钥配置，与 iOS 一致。
-                "",
+                // B4-3a：手填 ECH 配置（空 = 网关经 DoH 自取，与此前留空的行为一致）。
+                echGateEchB64() ?: "",
                 cacheDir.absolutePath,
-                STARTUP_TIMEOUT_MS,
+                // B4-3a：上游超时跟随用户设置（毫秒）。此前是写死的 15s，
+                // 与网关 `--timeout` 默认值同值，故老用户行为零变化。
+                echGateTimeoutSec() * 1000L,
             )
         }.onFailure {
             LogUtil.e(TAG, "网关起服异常", it)
@@ -101,9 +110,14 @@ internal class AndroidEchGateStarter(
     private companion object {
         const val TAG = "EchGate"
 
-        /** DoH 端点 / ECH 域 / 启动超时：与 iOS `EchGateBootstrap.swift` 同值。 */
+        /**
+         * 起服参数的默认值（用户没在设置里覆盖时用这些，与 iOS `EchGateBootstrap.swift`
+         * 的硬编码同值 —— iOS 侧改动属 B4-3b/c，需同改 Swift）。
+         *
+         * 注意 `DOH_URL` 是 JSON 端点（`/resolve`）：网关只认 JSON，
+         * 不要把 App 侧 wire 格式的 DoH 预设塞进来（见 `echGateDohUrl()`）。
+         */
         const val DOH_URL = "https://dns.alidns.com/resolve"
         const val ECH_DOMAIN = "cloudflare-ech.com"
-        const val STARTUP_TIMEOUT_MS = 15000L
     }
 }

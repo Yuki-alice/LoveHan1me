@@ -238,6 +238,12 @@ object SettingsRepository : SettingsStore {
     val proxyRuleHosts get() = current.proxyRuleHosts
     /** 自动镜像切换前置策略（B3-3b，见 [lovehan1me.core.domain.model.AutoMirrorGuard]）。 */
     val autoMirrorGuard get() = current.autoMirrorGuard
+    /** 网关上游超时秒（B4-3a，裸值；钳制收在 `echGateTimeoutSec()`）。 */
+    val echGateTimeoutSec get() = current.echGateTimeoutSec
+    /** 网关取 ECH 的 DoH 端点原文（B4-3a；空 = 网关默认，过滤收在 `echGateDohUrl()`）。 */
+    val echGateDohUrl get() = current.echGateDohUrl
+    /** 手填 ECH 配置原文（B4-3a；空 = 网关自取）。 */
+    val echGateEchB64 get() = current.echGateEchB64
     val downloadCountLimit get() = current.downloadCountLimit
     /** 下载限速（字节/秒）；`0` = 不限速。越界索引回落到首档。 */
     val downloadSpeedLimitBytes get() =

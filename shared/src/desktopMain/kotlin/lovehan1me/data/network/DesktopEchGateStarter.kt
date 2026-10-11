@@ -89,6 +89,11 @@ object DesktopEchGateStarter : EchGateStarter {
                 echGateUpstreamProxy()?.let {
                     add(EchGateContract.FLAG_UPSTREAM_PROXY); add(it)
                 }
+                // B4-3a：网关参数透传（用户没填就走网关默认值，零行为变化）。
+                // 超时恒传（整型秒，网关 Duration 写法）；DoH/b64 只在用户显式填写时传。
+                add(EchGateContract.FLAG_TIMEOUT); add("${echGateTimeoutSec()}s")
+                echGateDohUrl()?.let { add(EchGateContract.FLAG_DOH); add(it) }
+                echGateEchB64()?.let { add(EchGateContract.FLAG_ECH_B64); add(it) }
                 // stderr 并进 stdout：单独留着不读会把管道撑满，网关自己卡死。
             }
             ProcessBuilder(args).redirectErrorStream(true).start()

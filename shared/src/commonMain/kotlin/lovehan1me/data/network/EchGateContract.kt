@@ -40,6 +40,26 @@ object EchGateContract {
      */
     const val FLAG_UPSTREAM_PROXY = "--upstream-proxy"
 
+    /**
+     * 上游超时（B4-3a/F15，Go `time.Duration` 写法，如 `20s`）。
+     *
+     * 注意这是**上游整单预算**（拨号 + 取数），不是单纯建连超时
+     * （见 Go `Config.TimeoutMs` / `connTimeout` 的用法）。
+     */
+    const val FLAG_TIMEOUT = "--timeout"
+
+    /**
+     * 取 ECH 配置的 DoH 端点（B4-3a/F15）。
+     *
+     * 网关只认 **JSON 端点**（`Accept: application/dns-json`），wire 格式传了也拿不到
+     * 配置（会静默走内置兜底/普通 TLS）—— 调用方只传用户显式填的 `https://` 端点，
+     * 不要把 App 侧 wire 格式的 DoH 预设直接塞进来。
+     */
+    const val FLAG_DOH = "--doh"
+
+    /** 手填 ECH 公钥配置 base64（B4-3a/F15；解不开时网关静默回退 DoH 获取）。 */
+    const val FLAG_ECH_B64 = "--ech-b64"
+
     /** 该行是否宣告网关已就绪。 */
     fun isReadyLine(line: String): Boolean = line.startsWith(READY_PREFIX)
 

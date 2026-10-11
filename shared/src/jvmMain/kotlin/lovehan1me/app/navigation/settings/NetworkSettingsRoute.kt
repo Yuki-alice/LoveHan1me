@@ -34,6 +34,8 @@ import lovehan1me.doh_conflict_message
 import lovehan1me.doh_disabled_summary
 import lovehan1me.http_proxy
 import lovehan1me.invalid_ip_or_port
+import lovehan1me.gate_args_invalid_doh
+import lovehan1me.gate_args_invalid_b64
 import lovehan1me.loading
 import lovehan1me.node_latency_sum
 import lovehan1me.socks_proxy
@@ -86,9 +88,12 @@ import lovehan1me.site.hanime1.Parser
 import lovehan1me.data.network.CdnIpProbe
 import lovehan1me.data.network.EchGateRuntime
 import lovehan1me.data.network.DohConfig
+import lovehan1me.data.network.ECH_GATE_TIMEOUT_SEC_MAX
+import lovehan1me.data.network.ECH_GATE_TIMEOUT_SEC_MIN
 import lovehan1me.data.network.HanimeDns
 import lovehan1me.data.network.HanimeProxySelector
 import lovehan1me.data.network.NetworkConfigManager
+import lovehan1me.data.network.isPlausibleEchB64
 import lovehan1me.core.platform.rememberBackupExportLauncher
 import lovehan1me.core.platform.rememberBackupImportLauncher
 import lovehan1me.data.network.ServiceCreator
@@ -393,6 +398,9 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
     val proxyRuleHosts = SettingsRepository.proxyRuleHosts
     val autoMirrorGuard = SettingsRepository.autoMirrorGuard
     val perDomainForceMode = SettingsRepository.perDomainForceMode
+    val echGateTimeoutSec = SettingsRepository.echGateTimeoutSec
+    val echGateDohUrl = SettingsRepository.echGateDohUrl
+    val echGateEchB64 = SettingsRepository.echGateEchB64
     val proxyRule = proxyRuleSummary(
         mode = proxyMode,
         force = runCatching { SettingsRepository.egressForceMode }.getOrDefault(ForceMode.Auto),
@@ -622,6 +630,38 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
                     val next = s.perDomainForceMode.toMutableMap()
                     if (mode == null) next.remove(domain.name) else next[domain.name] = mode.name
                     s.copy(perDomainForceMode = next)
+                }
+            }
+        },
+        echGateTimeoutSec = echGateTimeoutSec,
+        echGateDohUrl = echGateDohUrl,
+        echGateEchB64 = echGateEchB64,
+        onSaveGateArgs = { timeoutSec, dohUrl, echB64 ->
+            if (dohUrl.isNotBlank() && !dohUrl.startsWith("https://")) {
+                coroutineScope.launch { AppToast.warning(getString(Res.string.gate_args_invalid_doh)) }
+                return@NetworkSettingsScreen
+            }
+            if (echB64.isNotBlank() && !isPlausibleEchB64(echB64)) {
+                coroutineScope.launch { AppToast.warning(getString(Res.string.gate_args_invalid_b64)) }
+                return@NetworkSettingsScreen
+            }
+            coroutineScope.launch {
+                SettingsRepository.update {
+                    it.copy(
+                        echGateTimeoutSec = timeoutSec.coerceIn(
+                            ECH_GATE_TIMEOUT_SEC_MIN,
+                            ECH_GATE_TIMEOUT_SEC_MAX,
+                        ),
+                        echGateDohUrl = dohUrl,
+                        echGateEchB64 = echB64,
+                    )
+                }
+                // 网关参数只在启动时收一次：改完必须重启网关才能生效。
+                // 与改代理同模式（见 onApplyProxy）；Android/iOS 同走门面，
+                // 参数接好的一端自动生效（iOS 尚未接 B4-3b/c，重启对它无害）。
+                if (SettingsRepository.useEchGate) {
+                    EchGateRuntime.stop()
+                    EchGateRuntime.start()
                 }
             }
         },

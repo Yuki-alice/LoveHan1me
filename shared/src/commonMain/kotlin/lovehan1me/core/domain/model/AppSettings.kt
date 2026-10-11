@@ -268,6 +268,29 @@ data class AppSettings(
      */
     val autoMirrorGuard: AutoMirrorGuard = AutoMirrorGuard.RequireClearance,
     /**
+     * 网关上游超时秒（B4-3a/F15）：Go `--timeout` / gomobile `timeoutMs`。
+     * 注意这是**上游整单预算**（拨号 + 取数，见 `gate.go` 的 `connTimeout` 上下文），
+     * 不是单纯的建连超时。读侧钳到 [ECH_GATE_TIMEOUT_SEC_MIN, ECH_GATE_TIMEOUT_SEC_MAX]，
+     * 常量收在 `EchGateArgs.kt`（model 层只存裸值）。
+     */
+    val echGateTimeoutSec: Int = 15,
+    /**
+     * 网关取 ECH 配置的 DoH 端点（B4-3a/F15）：Go `--doh` / gomobile `dohURL`。
+     * 空 = 网关默认值（`https://dns.alidns.com/resolve`）。
+     *
+     * ⚠️ 必须是 **JSON 端点**（网关发 `Accept: application/dns-json`），wire 格式
+     * （如 `…/dns-query` 的 RFC8484 报文）在这里拿不到 ECH —— App 侧 DoH 预设
+     * 恰是 wire 格式，所以**不跟随 App 的 DoH 设置**，此处独立填写。
+     * 存原文；读侧只认 `https://` 开头（明文 DoH 比默认值更糟，直接丢弃）。
+     */
+    val echGateDohUrl: String = "",
+    /**
+     * 手填 ECH 公钥配置 base64（B4-3a/F15）：Go `--ech-b64` / gomobile `echB64`。
+     * 空 = 网关经 DoH 自取。非空但解不开时网关静默回退 DoH（见 `resolveECHConfig`），
+     * 故读侧只做空白归一、不做格式拦截；格式校验在设置页保存时做（toast 拒绝）。
+     */
+    val echGateEchB64: String = "",
+    /**
      * 桌面专用：CF 验证浏览器**自报的真实 UA**（空 = 尚未采集）。
      *
      * 为什么不直接用常量：cf_clearance 绑定 UA，而浏览器 UA 又**不能伪造**

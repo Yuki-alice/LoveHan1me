@@ -259,6 +259,17 @@
     <string name="egress_per_domain_thirdparty">第三方</string>
     <string name="egress_per_domain_override">强制：%1$s</string>
     <string name="egress_follow_global">跟随全局（%1$s）</string>
+    <string name="gate_args_title">网关参数</string>
+    <string name="gate_args_timeout">上游超时（秒）</string>
+    <string name="gate_args_timeout_summary">上游拨号 + 取数的总预算，默认 15 秒（5–120）。</string>
+    <string name="gate_args_doh">DoH 端点（取 ECH 配置）</string>
+    <string name="gate_args_doh_summary">JSON 端点，空 = 网关默认；须为 https，如 https://dns.alidns.com/resolve。wire 格式端点（…/dns-query）在此拿不到配置。</string>
+    <string name="gate_args_echb64">ECH 配置（base64）</string>
+    <string name="gate_args_echb64_summary">手填已知可用的 ECH 公钥配置则跳过 DoH 获取；空 = 自动获取。解不开时网关静默回退 DoH。</string>
+    <string name="gate_args_default">默认</string>
+    <string name="gate_args_overridden">已覆盖</string>
+    <string name="gate_args_invalid_doh">DoH 端点须以 https:// 开头</string>
+    <string name="gate_args_invalid_b64">ECH 配置不是合法 base64</string>
     <string name="proxy_rule_custom">自定义规则</string>
     <string name="proxy_rule_custom_empty">未添加，仅内置规则生效</string>
     <string name="proxy_rule_custom_count">已添加 %1$d 条（在「仅受限域」档生效）</string>
