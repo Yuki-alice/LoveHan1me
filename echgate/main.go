@@ -67,6 +67,7 @@ func main() {
 	echB64Flag := flag.String("ech-b64", "", "ECH 公钥配置 base64；为空则经 DoH 取")
 	cacheDir := flag.String("cache-dir", "", "缓存目录；用来缓存 ECH 公钥配置，让网关**秒级就绪**（不填则不缓存）")
 	timeout := flag.Duration("timeout", 15*time.Second, "上游连接超时")
+	upstreamProxy := flag.String("upstream-proxy", "", "上游代理（http(s)://[user:pass@]host:port 或 socks5://…）；设置后进入代理模式：关 ECH、不用 CF 候选 IP、保留 CNAME 降级")
 	flag.Parse()
 
 	// 日志管道被启动方提前关闭时，写 stdout 不应以 SIGPIPE 杀死整个网关
@@ -76,14 +77,15 @@ func main() {
 	signal.Ignore(syscall.SIGPIPE)
 
 	srv, err := gate.Start(gate.Config{
-		ListenAddr: *listen,
-		CfIPs:      gate.SplitList(*cfIPsFlag),
-		CfHosts:    gate.SplitList(*cfHostsFlag),
-		DohURL:     *doh,
-		EchDomain:  *echDomain,
-		EchB64:     *echB64Flag,
-		CacheDir:   *cacheDir,
-		TimeoutMs:  timeout.Milliseconds(),
+		ListenAddr:    *listen,
+		CfIPs:         gate.SplitList(*cfIPsFlag),
+		CfHosts:       gate.SplitList(*cfHostsFlag),
+		DohURL:        *doh,
+		EchDomain:     *echDomain,
+		EchB64:        *echB64Flag,
+		CacheDir:      *cacheDir,
+		TimeoutMs:     timeout.Milliseconds(),
+		UpstreamProxy: *upstreamProxy,
 	})
 	if err != nil {
 		log.Fatalf("echgate: listen failed: %v", err)

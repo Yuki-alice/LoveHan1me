@@ -20,6 +20,7 @@ import (
 	"net"
 	"net/http"
 	"net/http/httputil"
+	"net/url"
 	"os"
 	"path/filepath"
 	"sort"
@@ -74,6 +75,13 @@ type Config struct {
 	CacheDir   string
 	// TimeoutMs 上游连接超时毫秒（<=0 则用默认值）。
 	TimeoutMs int64
+	// UpstreamProxy 上游代理（`http(s)://[user:pass@]host:port` 或 `socks5://…`）。
+	//
+	// 设置后网关进入**代理模式**（B2-4/D4-b）：出站先连代理再由它转发到目标。
+	// 语义要求（U5 结论）：**显式关 ECH**、**不经 CF 候选 IP**、**保留 CNAME 真名降级**
+	// —— ECH 的目的是对本地网络隐藏 SNI，而经代理时真 SNI 本就不在本地暴露面上；
+	// alias 解决的是"按域名封锁"，与隐藏 SNI 无关，故保留。
+	UpstreamProxy string
 }
 
 // Server 是运行中的网关。Close 后端口释放，复用方（桌面进程管理 / gomobile）
@@ -109,6 +117,9 @@ var (
 	cfIPs       []string
 	cfHosts     []string
 	connTimeout time.Duration
+
+	// upstreamProxy 非 nil = 代理模式（见 Config.UpstreamProxy）。
+	upstreamProxy *url.URL
 
 	echMu    sync.RWMutex
 	echBytes []byte
@@ -162,11 +173,26 @@ func Start(cfg Config) (*Server, error) {
 		echCachePath = filepath.Join(cfg.CacheDir, "ech-config.bin")
 	}
 
-	ech, echSrc := resolveECHConfig(cfg.EchB64, dohURL, cfg.EchDomain)
-	if len(ech) == 0 {
-		log.Printf("echgate: 未取得 ECH 配置，Cloudflare 后的站点将退回普通 TLS（很可能被重置）")
+	// 代理模式（B2-4）：配了上游代理就一切经它出站，且**显式关 ECH**（见 Config.UpstreamProxy）。
+	upstreamProxy = nil
+	if strings.TrimSpace(cfg.UpstreamProxy) != "" {
+		u, err := url.Parse(strings.TrimSpace(cfg.UpstreamProxy))
+		if err != nil || u.Host == "" {
+			return nil, fmt.Errorf("echgate: bad upstream proxy %q", cfg.UpstreamProxy)
+		}
+		upstreamProxy = u
+		log.Printf("echgate: 上游代理模式 %s（关 ECH、不经 CF 候选 IP、保留 CNAME 降级）", u.Redacted())
+	}
+
+	if upstreamProxy != nil {
+		log.Printf("echgate: 代理模式，跳过 ECH 配置获取")
 	} else {
-		log.Printf("echgate: ECH 配置就绪（来源=%s，%d 字节）", echSrc, len(ech))
+		ech, echSrc := resolveECHConfig(cfg.EchB64, dohURL, cfg.EchDomain)
+		if len(ech) == 0 {
+			log.Printf("echgate: 未取得 ECH 配置，Cloudflare 后的站点将退回普通 TLS（很可能被重置）")
+		} else {
+			log.Printf("echgate: ECH 配置就绪（来源=%s，%d 字节）", echSrc, len(ech))
+		}
 	}
 
 	// 连接池必须显式放大：默认值 MaxIdleConnsPerHost=2 意味着首页几十个并发请求
@@ -434,6 +460,11 @@ func dialOne(
 		NextProtos: upstreamALPN,
 	}
 	dialTCP := func() (net.Conn, error) {
+		// 代理模式（B2-4）：连代理并把 dialHost:port 作为隧道目标。probePlan 已把 useECH 关掉，
+		// 所以只会落到下面的普通 TLS 分支（隧道内与目标握手）；ips 里的 IP 由代理解析，本处不直接用。
+		if upstreamProxy != nil {
+			return dialThroughProxy(ctx, sni, port)
+		}
 		return d.DialContext(ctx, "tcp", net.JoinHostPort(ip, port))
 	}
 
@@ -542,6 +573,18 @@ func probePlan(host string) plan {
 	// A 查询一次供后面三档共用（应答里本来就带着整条 CNAME 链，见 lookupAWithCNAME）。
 	// 注意 IP 可能是被污染的假地址——必须用 tryHandshake 验证，不能盲信。
 	hostIPs, alias := lookupAWithCNAME(host)
+
+	// 代理模式（B2-4/D4-b）：出站经代理，**不经 CF 候选 IP**、**关 ECH**（ECH 只对本地网络隐藏 SNI，
+	// 经代理时真 SNI 本就不在本地暴露面上）。IP 交给代理解析，但**保留 CNAME 真名降级** ——
+	// alias 解决的是"按域名封锁"，与隐藏 SNI 无关，与代理模式正交。
+	if upstreamProxy != nil {
+		dialHost := host
+		if alias != "" && !strings.EqualFold(alias, host) {
+			dialHost = alias
+			log.Printf("echgate: %s 经代理，改用 CNAME 真名 %s", host, alias)
+		}
+		return plan{ips: []string{proxyDialPlaceholder}, dialHost: dialHost}
+	}
 
 	// ① Cloudflare 后的**站点域名**：候选 CF IP + ECH。
 	//

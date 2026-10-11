@@ -60,12 +60,13 @@ class EchGateContractTest {
     @Test
     fun `CLI 参数名与网关侧约定一致`() {
         assertEquals(
-            listOf("--listen", "--ip-list", "--cf-hosts", "--cache-dir"),
+            listOf("--listen", "--ip-list", "--cf-hosts", "--cache-dir", "--upstream-proxy"),
             listOf(
                 EchGateContract.FLAG_LISTEN,
                 EchGateContract.FLAG_IP_LIST,
                 EchGateContract.FLAG_CF_HOSTS,
                 EchGateContract.FLAG_CACHE_DIR,
+                EchGateContract.FLAG_UPSTREAM_PROXY,
             ),
             "改这些值等于改跨进程协议：Go 侧 flag 名必须同步改，否则网关会把它们当成位置参数",
         )

@@ -33,6 +33,13 @@ object EchGateContract {
     /** ECH 公钥配置的磁盘缓存目录；没有它每次都要先等一次 DoH 往返才 listen。 */
     const val FLAG_CACHE_DIR = "--cache-dir"
 
+    /**
+     * 上游代理（B2-4/D4-b，形如 `http://host:port` 或 `socks5://[user:pass@]host:port`）。
+     *
+     * 传了即进入**代理模式**：网关关 ECH、不经 CF 候选 IP、保留 CNAME 降级（见 Go `Config.UpstreamProxy`）。
+     */
+    const val FLAG_UPSTREAM_PROXY = "--upstream-proxy"
+
     /** 该行是否宣告网关已就绪。 */
     fun isReadyLine(line: String): Boolean = line.startsWith(READY_PREFIX)
 

@@ -73,19 +73,25 @@ object DesktopEchGateStarter : EchGateStarter {
         val ips = echGateSeedIps()
 
         val proc = runCatching {
-            ProcessBuilder(
-                exe.toString(),
-                EchGateContract.FLAG_LISTEN, "127.0.0.1:$port",
-                EchGateContract.FLAG_IP_LIST, ips.joinToString(","),
+            val args = buildList {
+                add(exe.toString())
+                add(EchGateContract.FLAG_LISTEN); add("127.0.0.1:$port")
+                add(EchGateContract.FLAG_IP_LIST); add(ips.joinToString(","))
                 // 只有这些域名才配用 CF IP + ECH；其余域名（视频 CDN、图床）由网关
                 // 自己按 CNAME / 普通 TLS 走——ECH 握手到 CF 边缘时外层 SNI 是
                 // cloudflare-ech.com，CF 会照常接受，不点名就会把非 CF 站点误判为可用。
-                EchGateContract.FLAG_CF_HOSTS, HanimeConstants.HANIME_HOSTNAME.joinToString(","),
+                add(EchGateContract.FLAG_CF_HOSTS); add(HanimeConstants.HANIME_HOSTNAME.joinToString(","))
                 // ECH 公钥配置缓存：没有它，网关要先等一次 DoH 往返才 listen（数秒），
                 // 而首页那批图片在启动瞬间就开始加载，会全部撞上"网关还没就绪"。
-                EchGateContract.FLAG_CACHE_DIR, runtimeDir().toString(),
+                add(EchGateContract.FLAG_CACHE_DIR); add(runtimeDir().toString())
+                // B2-4：配了显式 HTTP/SOCKS 代理就交给网关出站（代理模式：关 ECH、不经 CF 候选 IP）。
+                // 注意：旧版网关产物不认识这个 flag 会直接退出，故产物必须与本次改动同批重编（build.sh）。
+                echGateUpstreamProxy()?.let {
+                    add(EchGateContract.FLAG_UPSTREAM_PROXY); add(it)
+                }
                 // stderr 并进 stdout：单独留着不读会把管道撑满，网关自己卡死。
-            ).redirectErrorStream(true).start()
+            }
+            ProcessBuilder(args).redirectErrorStream(true).start()
         }.onFailure {
             EchGate.publish(EchGateStatus.Failed("网关进程启动失败"))
             LogUtil.e(TAG, "启动 ECH 网关失败", it)

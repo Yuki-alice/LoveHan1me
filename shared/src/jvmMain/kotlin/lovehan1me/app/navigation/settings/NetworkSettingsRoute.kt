@@ -590,6 +590,14 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             coroutineScope.launch {
                 SettingsRepository.update { it.copy(proxyType = lovehan1me.core.domain.model.ProxyType.fromId(type), proxyIp = ip, proxyPort = port) }
                 HanimeProxySelector.rebuildNetwork()
+                // B2-4：桌面网关把上游代理吃进启动参数（`--upstream-proxy`），运行中改代理
+                // 必须重启网关才能进/退代理模式；与 F21（改 hosts 重启网关）同模式。
+                // Android/iOS 起服器尚未接该参数（mobile.go `StartFlat` 无此形参），重启对它们
+                // 只是同模式重启一次、无害，等移动端接好参数后此处自动生效。
+                if (SettingsRepository.useEchGate) {
+                    EchGateRuntime.stop()
+                    EchGateRuntime.start()
+                }
             }
         },
         embedded = embedded,
