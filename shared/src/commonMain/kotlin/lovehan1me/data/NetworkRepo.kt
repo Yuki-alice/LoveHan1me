@@ -836,8 +836,13 @@ object NetworkRepo {
                         fireCfChallenge(call.request.url.toString(), code)
                     }
 
-                    else ->
+                    else -> {
+                        // CF 边缘错误页（如 `error code: 1034`：该边缘 IP 不服务本站）也落到这里：
+                        // 17 字节纯文本、无挑战标记，与「影片不存在」成因完全不同。单独留痕，
+                        // 否则这类问题在日志里完全不可见（2026-10-11 javchu 切站失败即此形态）。
+                        LogUtil.e("HTTP", "edge error $code ${call.request.url} body=${body.take(64)}")
                         throw HanimeNotFoundException(getString(Res.string.video_might_not_exist)) // 主要出現在影片界面，當你v數不大時會報403
+                    }
                 }
             } else throw IllegalStateException("$code ${status.description}")
             }

@@ -11,6 +11,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.runBlocking
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import java.io.File
 import java.net.Proxy
 import java.net.ServerSocket
@@ -237,7 +238,7 @@ class EchGateLiveTest {
         }
     }
 
-    /** 正例：拉起网关后，站点必须能走完 TLS+HTTP（200 穿透；403 是 CF 应用层风控，同样证明链路通了）。 */
+    /** 正例：拉起网关后，站点必须能走完 TLS+HTTP（200 穿透；403 应用层风控同样证明链路通；边缘错误不算，见 [isCfEdgeError]）。 */
     @Test
     fun `经ECH网关直连站点拿到200`() {
         assumeLiveOrSkip("经ECH网关直连站点拿到200")
@@ -246,14 +247,17 @@ class EchGateLiveTest {
 
         val (proc, port) = startGate(exe)
         try {
-            val code = clientWithGate(port).newCall(Request.Builder().url(SITE_URL).build())
+            val (code, edgeError) = clientWithGate(port)
+                .newCall(Request.Builder().url(SITE_URL).build())
                 .execute().use { resp ->
-                    println("LIVE site code=${resp.code} server=${resp.header("Server")}")
-                    resp.code
+                    val edge = isCfEdgeError(resp)
+                    println("LIVE site code=${resp.code} server=${resp.header("Server")} edgeError=$edge")
+                    resp.code to edge
                 }
             assertTrue(
-                code == 200 || code == 403,
-                "经 ECH 网关应走完 TLS+HTTP（200 穿透 / 403 CF 风控；502/异常 = 没穿透），实际=$code",
+                code == 200 || (code == 403 && !edgeError),
+                "经 ECH 网关应走完 TLS+HTTP（200 穿透 / 403 应用层风控；" +
+                    "403+error code 边缘拒绝、502/异常 = 没穿透），实际=$code edgeError=$edgeError",
             )
         } finally {
             stopGate(proc)
@@ -305,8 +309,21 @@ class EchGateLiveTest {
     }
 
     /**
+     * 403 响应是否为 CF **边缘错误页**（`error code: N`，如 1034「该边缘 IP 不服务本站」）。
+     *
+     * 它与应用层风控（大 HTML 403）语义相反：边缘错误说明请求被 CF 拦在 zone 之外、
+     * 根本没到站点，绝不能算「链路穿透」。2026-10-11 的 javchu 切站失败即此形态
+     * （网关选中了 1034 的边缘 IP），当时本类断言把一切 403 当风控，才没拦住它。
+     *
+     * `peekBody(64)` 只读前缀、不消耗原 body（1034 的体只有 17 字节）。
+     */
+    private fun isCfEdgeError(resp: Response): Boolean =
+        resp.code == 403 && resp.peekBody(64).string().trimStart().startsWith("error code:")
+
+    /**
      * 姊妹站同属一个 CF 分区策略（`--cf-hosts` 含 javchu.com）：切站后页面走的
-     * 同一条网关 ECH 路。这里证明该分区的 TLS+HTTP 同样穿透（200 穿透 / 403 风控）。
+     * 同一条网关 ECH 路。这里证明该分区的 TLS+HTTP 同样穿透（200 穿透 / 403 应用层风控；
+     * 403+`error code` 的边缘拒绝不算——见 [isCfEdgeError]）。
      */
     @Test
     fun `经ECH网关javchu拿到200`() {
@@ -316,14 +333,17 @@ class EchGateLiveTest {
 
         val (proc, port) = startGate(exe)
         try {
-            val code = clientWithGate(port).newCall(Request.Builder().url(SITE_JAVCHU_URL).build())
+            val (code, edgeError) = clientWithGate(port)
+                .newCall(Request.Builder().url(SITE_JAVCHU_URL).build())
                 .execute().use { resp ->
-                    println("LIVE javchu code=${resp.code} server=${resp.header("Server")}")
-                    resp.code
+                    val edge = isCfEdgeError(resp)
+                    println("LIVE javchu code=${resp.code} server=${resp.header("Server")} edgeError=$edge")
+                    resp.code to edge
                 }
             assertTrue(
-                code == 200 || code == 403,
-                "经 ECH 网关 javchu 应走完 TLS+HTTP（200 穿透 / 403 CF 风控），实际=$code",
+                code == 200 || (code == 403 && !edgeError),
+                "经 ECH 网关 javchu 应走完 TLS+HTTP（200 穿透 / 403 应用层风控）；" +
+                    "403+error code（边缘 IP 拒绝）不算穿透，实际=$code edgeError=$edgeError",
             )
         } finally {
             stopGate(proc)

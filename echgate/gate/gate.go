@@ -9,6 +9,7 @@
 package gate
 
 import (
+	"bytes"
 	"context"
 	"crypto/tls"
 	"encoding/base64"
@@ -673,7 +674,109 @@ func probeCandidates(ips []string, sni string, useECH bool) []string {
 	if len(out) > 0 {
 		log.Printf("echgate: %s 候选 %v（%d/%d 可用）", sni, out, len(out), len(candidates))
 	}
+	// ── 第二轮：应用层验证（仅 CF/ECH 路径）──
+	// 握手通过 ≠ 这个 IP 会服务该域：CF 部分边缘会对 zone 返回
+	// `403 error code: 1034`（Edge IP Restricted），且握手层完全看不出
+	// ——详见 filterEdgeRejects 的 KDoc（2026-10-11 javchu 切站失败的根因）。
+	if useECH && len(out) > 0 {
+		kept, rejected := filterEdgeRejects(out, sni)
+		if len(rejected) > 0 {
+			if len(kept) == 0 {
+				// 全被拒时回退原列表：让真实错误可见，而不是留一个空 plan。
+				log.Printf("echgate: %s 候选全部为边缘拒绝 %v，回退原列表（兜底）", sni, rejected)
+			} else {
+				log.Printf("echgate: %s 剔除边缘拒绝 IP %v（error code）", sni, rejected)
+				out = kept
+			}
+		}
+	}
 	return out
+}
+
+// edgeProbe 是 [filterEdgeRejects] 使用的单 IP 验证函数。做成包级变量是为了让
+// 单测能替换它——剔除/保序逻辑不引真实网络即可测（见 gate_test.go）。
+var edgeProbe = edgeRejected
+
+// filterEdgeRejects 是候选的**应用层验证**：找出「CF 边缘拒绝服务该域」的 IP。
+//
+// ## 为什么需要（2026-10-11 实测的根因）
+//
+// CF 的部分边缘 IP 对特定 zone 返回 `403 error code: 1034`（Edge IP Restricted，
+// 该边缘不服务此 zone）。实测 javchu.com：种子池里的 162.159.0.1 / 172.64.33.1 /
+// 108.162.192.1 稳定 1034，而本域 DoH 解析出的 104.21.7.70 / 172.67.187.141 正常 200；
+// hanime1.me 同样有 1034 的种子（172.64.33.1 / 108.162.192.1）。
+//
+// 这类 IP 的 **TLS(ECH) 握手完全正常**（1034 只出现在 HTTP 层），握手探测根本
+// 区分不出来；而它们一旦按「握手最快」排到 plan.ips 首位，就会吞掉该域的全部请求：
+// 403 是"成功响应"、不触发换 IP 也不触发 invalidate，表现为站点整体打不开
+// （客户端把 17 字节的 `error code: 1034` 误判成业务错误）。
+//
+// ## 判定只认精确特征
+//
+// 只剔除「403 + body 以 `error code: ` 开头」——即 CF 边缘自己的错误页：
+//   - 站点自己的 WAF 风控 403（大 HTML）**不剔除**：那是请求特征问题，换 IP 无用；
+//   - 超时 / 拿不到响应 / 其他状态码一律**保留**（宁松勿误剔，误剔会白白缩小可用集）。
+//
+// 保序：返回的 kept / rejected 都保持入参顺序（即握手延迟序），拨号优先级不变。
+func filterEdgeRejects(ips []string, sni string) (kept, rejected []string) {
+	ch := make(chan string, len(ips)) // 只回传被拒的 ip（空串 = 保留）
+	for _, ip := range ips {
+		go func(ip string) {
+			if edgeProbe(ip, sni) {
+				ch <- ip
+				return
+			}
+			ch <- ""
+		}(ip)
+	}
+	rejectedSet := make(map[string]bool, len(ips))
+	for range ips {
+		if ip := <-ch; ip != "" {
+			rejectedSet[ip] = true
+		}
+	}
+	for _, ip := range ips {
+		if rejectedSet[ip] {
+			rejected = append(rejected, ip)
+		} else {
+			kept = append(kept, ip)
+		}
+	}
+	return kept, rejected
+}
+
+// edgeRejected 对单个 IP 发一次轻量应用请求，判断它是否被 CF 边缘拒绝服务该域。
+//
+// 请求经与真实拨号完全相同的 [dialOne]（钉 IP + ECH → retry_configs → 降级），
+// 这样判定的是「实际链路上会不会给 1034」，不是另一条仿造链路的结论。
+// 只读前 64 字节 body：1034 页只有 17 字节，够判定；正常页面读到即弃，
+// 连接随 Transport 回收。
+func edgeRejected(ip, sni string) bool {
+	tr := &http.Transport{
+		DialTLSContext: func(ctx context.Context, network, addr string) (net.Conn, error) {
+			return dialOne(ctx, &net.Dialer{Timeout: connTimeout}, ip, "443", sni, true)
+		},
+		ForceAttemptHTTP2: true, // 与 upstreamALPN 配套，见其说明。
+	}
+	defer tr.CloseIdleConnections()
+	client := &http.Client{Transport: tr, Timeout: 5 * time.Second}
+	resp, err := client.Get("https://" + sni + "/")
+	if err != nil {
+		return false // 验证不了 → 保留（宁松勿误剔）。
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusForbidden {
+		return false
+	}
+	buf := make([]byte, 64)
+	n, _ := io.ReadFull(resp.Body, buf) // 短体必然 ErrUnexpectedEOF，n 仍有效。
+	return isEdgeErrorBody(buf[:n])
+}
+
+// isEdgeErrorBody 判定 body 是否为 CF 边缘错误页（如 `error code: 1034`）：
+// 纯文本、体积极小、固定前缀。站点自己的错误页/风控页不会长这样。
+func isEdgeErrorBody(body []byte) bool {
+	return bytes.HasPrefix(bytes.TrimSpace(body), []byte("error code: "))
 }
 
 // handshakeLatency 做一次 TLS 握手并返回耗时（失败返回 error）。
