@@ -114,6 +114,13 @@ import lovehan1me.auto_mirror_guard_always
 import lovehan1me.auto_mirror_guard_always_summary
 import lovehan1me.auto_mirror_guard_require_clearance
 import lovehan1me.auto_mirror_guard_require_clearance_summary
+import lovehan1me.egress_per_domain_title
+import lovehan1me.egress_per_domain_hanime
+import lovehan1me.egress_per_domain_getchu
+import lovehan1me.egress_per_domain_cdn
+import lovehan1me.egress_per_domain_thirdparty
+import lovehan1me.egress_per_domain_override
+import lovehan1me.egress_follow_global
 import lovehan1me.ic_delay
 import lovehan1me.ic_dns
 import lovehan1me.ic_domain
@@ -127,6 +134,7 @@ import lovehan1me.data.network.DohConfig
 import lovehan1me.data.network.HProxyTypes
 import lovehan1me.core.domain.model.ProxyMode
 import lovehan1me.core.domain.model.AutoMirrorGuard
+import lovehan1me.data.network.egress.DomainClass
 import lovehan1me.data.network.egress.ForceMode
 import lovehan1me.data.network.egress.ProxyRuleScope
 import lovehan1me.data.network.egress.ProxyRuleSummary
@@ -256,6 +264,10 @@ fun NetworkSettingsScreen(
     /** B3-5：自动镜像切换前置策略（[AutoMirrorGuard]）。 */
     autoMirrorGuard: AutoMirrorGuard = AutoMirrorGuard.RequireClearance,
     onAutoMirrorGuardChange: (AutoMirrorGuard) -> Unit = {},
+    /** B4-2/F14：每域出口覆盖（[DomainClass] → [ForceMode]）；缺省项跟随全局 [forceMode]。 */
+    perDomainForceMode: Map<DomainClass, ForceMode> = emptyMap(),
+    /** 传 null = 清除该域覆盖（跟随全局）。 */
+    onPerDomainForceModeChange: (DomainClass, ForceMode?) -> Unit = { _, _ -> },
 ) {
     var showDomainDialog by rememberSaveable { mutableStateOf(false) }
     var showProxyDialog by rememberSaveable { mutableStateOf(false) }
@@ -265,6 +277,8 @@ fun NetworkSettingsScreen(
     var showForceModeDialog by rememberSaveable { mutableStateOf(false) }
     var showProxyModeDialog by rememberSaveable { mutableStateOf(false) }
     var showAutoMirrorGuardDialog by rememberSaveable { mutableStateOf(false) }
+    // B4-2：当前正在编辑哪一域的出口覆盖（存 DomainClass 名；null = 无）。
+    var perDomainDialogTarget by rememberSaveable { mutableStateOf<String?>(null) }
     var showProxyRuleDialog by rememberSaveable { mutableStateOf(false) }
     var showEgressDiagnostics by rememberSaveable { mutableStateOf(false) }
     val copyText = rememberCopyTextToClipboard()
@@ -438,6 +452,30 @@ fun NetworkSettingsScreen(
         )
     }
 
+    val perDomainTarget = perDomainDialogTarget?.let { name -> DomainClass.entries.firstOrNull { it.name == name } }
+    if (perDomainTarget != null) {
+        val titleRes = when (perDomainTarget) {
+            DomainClass.Hanime -> Res.string.egress_per_domain_hanime
+            DomainClass.Getchu -> Res.string.egress_per_domain_getchu
+            DomainClass.CdnMedia -> Res.string.egress_per_domain_cdn
+            DomainClass.ThirdParty -> Res.string.egress_per_domain_thirdparty
+        }
+        NetworkChoiceDialog(
+            title = stringResource(titleRes),
+            selectedValue = perDomainForceMode[perDomainTarget]?.name ?: PER_DOMAIN_FOLLOW_GLOBAL,
+            options = buildList {
+                add(PER_DOMAIN_FOLLOW_GLOBAL to stringResource(Res.string.egress_follow_global, forceModeName))
+                ForceMode.entries.forEach { mode -> add(mode.name to forceModeDisplayName(mode)) }
+            },
+            onDismiss = { perDomainDialogTarget = null },
+            onSelect = { value ->
+                perDomainDialogTarget = null
+                // "Global" 不是枚举名 → 解析为 null = 清除覆盖（跟随全局）。
+                onPerDomainForceModeChange(perDomainTarget, ForceMode.entries.firstOrNull { it.name == value })
+            },
+        )
+    }
+
     if (showProxyRuleDialog) {
         ProxyRuleDialog(
             currentText = proxyRuleHosts,
@@ -528,6 +566,28 @@ fun NetworkSettingsScreen(
                 )
             }
 
+            // B4-2/F14：每域出口覆盖。默认全部「跟随全局」；显式覆盖优先于全局（§6.2「显式覆盖默认」），
+            // 且会把 ForceProxy/ForceDirect 真正作用到代理选择器 —— 没有这一节「hanime 走网关、
+            // getchu 走代理」这类诉求就凑不出逐域差别。
+            SettingsSectionTitle(titleRes = Res.string.egress_per_domain_title)
+            SettingsSegmentedGroup {
+                DomainClass.entries.forEach { domain ->
+                    val override = perDomainForceMode[domain]
+                    val labelRes = when (domain) {
+                        DomainClass.Hanime -> Res.string.egress_per_domain_hanime
+                        DomainClass.Getchu -> Res.string.egress_per_domain_getchu
+                        DomainClass.CdnMedia -> Res.string.egress_per_domain_cdn
+                        DomainClass.ThirdParty -> Res.string.egress_per_domain_thirdparty
+                    }
+                    SettingNavigationItem(
+                        title = stringResource(labelRes),
+                        summary = override?.let {
+                            stringResource(Res.string.egress_per_domain_override, forceModeDisplayName(it))
+                        } ?: stringResource(Res.string.egress_follow_global, forceModeName),
+                        iconRes = Res.drawable.ic_vpn,
+                        onClick = { perDomainDialogTarget = domain.name },
+                    )
+                }
             }
 
             SettingsSectionTitle(titleRes = Res.string.builtin_dns)
@@ -650,6 +710,20 @@ fun NetworkSettingsScreen(
         }
     }
 }
+
+/** 每域出口覆盖对话框里代表「跟随全局」的哨兵值（不与任何 [ForceMode] 枚举名冲突）。 */
+private const val PER_DOMAIN_FOLLOW_GLOBAL = "Global"
+
+/** [ForceMode] 的本地化名（每域覆盖对话框与摘要共用）。 */
+@Composable
+private fun forceModeDisplayName(mode: ForceMode): String = stringResource(
+    when (mode) {
+        ForceMode.Auto -> Res.string.egress_force_auto
+        ForceMode.ForceGate -> Res.string.egress_force_gate
+        ForceMode.ForceDirect -> Res.string.egress_force_direct
+        ForceMode.ForceProxy -> Res.string.egress_force_proxy
+    }
+)
 
 @Composable
 private fun NetworkChoiceDialog(

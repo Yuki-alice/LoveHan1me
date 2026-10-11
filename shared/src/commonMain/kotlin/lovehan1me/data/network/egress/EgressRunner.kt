@@ -106,7 +106,8 @@ internal suspend fun <R> runEgress(
     val domain = classifyDomain(url, purpose)
     // F12/B3-2：镜像档案只**旁路记一份**，不参与排表 —— 主链路的熔断仍按域（切站即清）。
     val mirror = mirrorHostFor(hostOfUrl(url))
-    val intent = EgressRequest(url, method, purpose, currentForceMode())
+    // B4-2/F14：强制模式按**域**取（每域覆盖 > 全局），与排表用的 domain 同源。
+    val intent = EgressRequest(url, method, purpose, currentForceMode(domain))
     val plan = EgressScheduler.plan(intent, currentEgressState(), RouteRegistry.healthOf(domain), currentEpochMillis())
     if (plan.isEmpty) throw NoRouteException(domain, describeEmptyPlan(plan))
 

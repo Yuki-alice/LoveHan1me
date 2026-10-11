@@ -66,7 +66,7 @@ actual fun defaultPlayerNetworkConfig(): PlayerNetworkConfig = object : PlayerNe
     override fun proxyUrlFor(mediaUri: String): String? {
         if (mediaUri.isGateLoopback()) return null
         val domain = classifyDomain(mediaUri, EgressPurpose.Video)
-        val force = currentForceMode()
+        val force = currentForceMode(domain)
         val state = runCatching { currentEgressState() }.getOrNull()
             ?: return resolveMediaProxyUrl()
         val plan = EgressScheduler.plan(
@@ -100,7 +100,8 @@ actual fun defaultPlayerNetworkConfig(): PlayerNetworkConfig = object : PlayerNe
      */
     override fun rewriteForGate(uri: String): Pair<String, Map<String, String>>? {
         val proxy = runCatching { currentEgressState() }.getOrNull()?.proxy ?: ProxyState.None
-        if (preferProxyOverGateForMedia(currentForceMode(), proxy, resolveMediaProxyUrl())) return null
+        val domain = classifyDomain(uri, EgressPurpose.Video)
+        if (preferProxyOverGateForMedia(currentForceMode(domain), proxy, resolveMediaProxyUrl())) return null
         return gateRewrite(uri)
     }
 

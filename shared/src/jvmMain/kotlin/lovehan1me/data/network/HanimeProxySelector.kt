@@ -2,6 +2,9 @@ package lovehan1me.data.network
 
 import lovehan1me.core.domain.model.ProxyMode
 import lovehan1me.data.SettingsRepository
+import lovehan1me.data.network.egress.DomainClass
+import lovehan1me.data.network.egress.ForceMode
+import lovehan1me.data.network.egress.GETCHU_HOST
 import lovehan1me.data.network.egress.isRestrictedHost
 import lovehan1me.data.network.egress.matchesProxyRule
 import lovehan1me.data.network.egress.parseProxyRuleHosts
@@ -199,13 +202,22 @@ class HanimeProxySelector : ProxySelector() {
             return mutableListOf(Proxy.NO_PROXY)
         }
 
-        // F5 规则分流：Rules 档只让受限域走代理（第三方恒直连）。
-        // 默认 Global，保证未显式开启的用户行为零变化。
-        // （"全直连"不在这里 —— 那是 ProxyType.Direct 的事，见 AppSettings.ProxyMode 的 KDoc。）
-        if (runCatching { SettingsRepository.proxyMode }.getOrDefault(ProxyMode.Global) == ProxyMode.Rules &&
-            !restrictedForProxy(host)
-        ) {
-            return mutableListOf(Proxy.NO_PROXY)
+        // B4-2/F14（§6.2「显式覆盖默认」）：每域强制模式**真正**作用到客户端代理。
+        // 显式 > 默认 —— 每域 ForceProxy/ForceDirect 优先于 Rules 的"第三方恒直连"。
+        // ForceGate：请求已被改写到回环网关（网关是出口），这里恒直连，代理不参与。
+        when (perDomainForceFor(host)) {
+            ForceMode.ForceDirect, ForceMode.ForceGate -> return mutableListOf(Proxy.NO_PROXY)
+            ForceMode.ForceProxy -> Unit // 落到下面按配置类型给代理（无可用代理时调度器已表空，到不了这里）
+            else -> {
+                // F5 规则分流：Rules 档只让受限域走代理（第三方恒直连）。
+                // 默认 Global，保证未显式开启的用户行为零变化。
+                // （"全直连"不在这里 —— 那是 ProxyType.Direct 的事，见 AppSettings.ProxyMode 的 KDoc。）
+                if (runCatching { SettingsRepository.proxyMode }.getOrDefault(ProxyMode.Global) == ProxyMode.Rules &&
+                    !restrictedForProxy(host)
+                ) {
+                    return mutableListOf(Proxy.NO_PROXY)
+                }
+            }
         }
 
         val type = runCatching { SettingsRepository.proxyType }.getOrDefault(TYPE_SYSTEM)
@@ -219,6 +231,30 @@ class HanimeProxySelector : ProxySelector() {
         return runCatching {
             delegation?.select(uri) ?: alternative.select(uri)
         }.getOrDefault(mutableListOf(Proxy.NO_PROXY))
+    }
+
+    /**
+     * B4-2/F14：该 host 所属 [DomainClass] 的**每域强制模式**覆盖；无覆盖返回 null。
+     *
+     * 与 `SettingsRepository.perDomainForceMode` 同源，此处只做 host → [DomainClass] 的粗分类
+     * （代理选择器拿不到 [lovehan1me.data.network.egress.EgressPurpose]，见 [isRestrictedHost] 的说明）。
+     */
+    private fun perDomainForceFor(host: String?): ForceMode? {
+        val domain = domainClassForHost(host) ?: return null
+        return runCatching { SettingsRepository.perDomainForceMode[domain] }.getOrNull()
+    }
+
+    /** host → [DomainClass]（代理选择器口径：getchu 单列，其余受限域归 Hanime，未知归 ThirdParty）。 */
+    private fun domainClassForHost(host: String?): DomainClass? {
+        if (host.isNullOrBlank()) return null
+        val h = host.lowercase()
+        if (h == GETCHU_HOST) return DomainClass.Getchu
+        val siteHost = runCatching { URI(SettingsRepository.baseUrl).host }.getOrNull()
+        return if (isRestrictedHost(h) || (siteHost != null && siteHost.equals(h, ignoreCase = true))) {
+            DomainClass.Hanime
+        } else {
+            DomainClass.ThirdParty
+        }
     }
 
     /**

@@ -346,7 +346,7 @@ object CloudflareCdp {
             EgressScheduler.tunnelUrl(
                 DomainClass.Hanime,
                 health = RouteRegistry.healthOf(DomainClass.Hanime),
-                force = currentForceMode(),
+                force = currentForceMode(DomainClass.Hanime),
             )
         }
             .getOrNull()

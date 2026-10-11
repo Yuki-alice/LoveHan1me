@@ -230,6 +230,17 @@ data class AppSettings(
      * Phase 4 设置页提供切换。
      */
     val egressForceMode: String = "Auto",
+    /**
+     * 每域出口覆盖（B4-2/F14）：`DomainClass 名 → ForceMode 名`，空 = 全部跟随 [egressForceMode]。
+     *
+     * 存名字而非枚举：model 层不反向依赖 `data.network`（与 [egressForceMode] 同理），
+     * 映射收在 `SettingsRepository.perDomainForceMode`；未知键/值读取时静默丢弃。
+     *
+     * **§6.2 优先级（显式覆盖默认）**：每域覆盖 > 全局 [egressForceMode]；每域 `ForceProxy` /
+     * `ForceDirect` 会**真正**作用到客户端代理选择器（`HanimeProxySelector`），优先于
+     * `ProxyMode.Rules` 的"第三方恒直连"。`ForceGate` 下代理不参与（请求被改写到回环网关）。
+     */
+    val perDomainForceMode: Map<String, String> = emptyMap(),
     val customHostsData: String = "",
     val useDoH: Boolean = false,
     val dohPreset: String = "alidns",

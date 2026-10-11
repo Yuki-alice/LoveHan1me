@@ -266,6 +266,13 @@
     <string name="auto_mirror_guard_require_clearance_summary">僅當目標鏡像已有 Cloudflare 驗證存檔時才自動切換；從未造訪過的網域保持不變。</string>
     <string name="auto_mirror_guard_always">始終自動切換</string>
     <string name="auto_mirror_guard_always_summary">只要目前鏡像無法連線就自動切換，接受目標網域可能彈一次驗證視窗。</string>
+    <string name="egress_per_domain_title">每域出口</string>
+    <string name="egress_per_domain_hanime">站台鏡像</string>
+    <string name="egress_per_domain_getchu">Getchu</string>
+    <string name="egress_per_domain_cdn">媒體 CDN</string>
+    <string name="egress_per_domain_thirdparty">第三方</string>
+    <string name="egress_per_domain_override">強制：%1$s</string>
+    <string name="egress_follow_global">跟隨全域（%1$s）</string>
     <string name="proxy_rule_custom">自訂規則</string>
     <string name="proxy_rule_custom_empty">尚未新增，僅內建規則生效</string>
     <string name="proxy_rule_custom_count">已新增 %1$d 條（在「僅受限網域」檔生效）</string>

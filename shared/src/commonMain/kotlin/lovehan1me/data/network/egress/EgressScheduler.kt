@@ -32,6 +32,14 @@ import io.ktor.http.Url
 /** 手动强制选路的唯一读取口（设置未就绪回 Auto；调用方不得各写一份 runCatching）。 */
 fun currentForceMode(): ForceMode =
     runCatching { SettingsRepository.egressForceMode }.getOrDefault(ForceMode.Auto)
+
+/**
+ * 每域生效的强制模式（B4-2/F14，§6.2「显式覆盖默认」）：每域覆盖 > 全局 [currentForceMode]。
+ * 设置未就绪一律回 Auto（判定永远不能成为请求失败的原因）。
+ */
+fun currentForceMode(domain: DomainClass): ForceMode =
+    runCatching { SettingsRepository.perDomainForceMode[domain] }.getOrNull() ?: currentForceMode()
+
 object EgressScheduler {
 
     fun plan(
@@ -165,7 +173,7 @@ object EgressScheduler {
         domain: DomainClass,
         state: EgressState = currentEgressState(),
         health: RouteHealth = RouteRegistry.healthOf(domain),
-        force: ForceMode = currentForceMode(),
+        force: ForceMode = currentForceMode(domain),
         nowMs: Long = currentEpochMillis(),
     ): String? {
         if (force == ForceMode.ForceDirect || force == ForceMode.ForceProxy) return null

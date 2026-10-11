@@ -56,7 +56,7 @@ val defaultPlayerMpvOptionsProvider: PlayerMpvOptionsProvider = ::defaultPlayerM
 internal fun gateRewrite(uri: String): Pair<String, Map<String, String>>? {
     val domain = classifyDomain(uri, EgressPurpose.Video)
     val plan = EgressScheduler.plan(
-        EgressRequest(uri, "GET", EgressPurpose.Video, currentForceMode()),
+        EgressRequest(uri, "GET", EgressPurpose.Video, currentForceMode(domain)),
         runCatching { currentEgressState() }.getOrNull() ?: return null,
         RouteRegistry.healthOf(domain),
     )

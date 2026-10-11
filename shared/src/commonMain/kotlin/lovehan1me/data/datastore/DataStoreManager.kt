@@ -71,6 +71,9 @@ object DataStoreManager : SettingsStore {
     /** CF clearance 按域存档整表序列化后放这个键上（见 [AppSettings.cfCookies]）。 */
     private const val KEY_CF_COOKIES = "cf_cookies"
 
+    /** 每域出口覆盖整表序列化后放这个键上（见 [AppSettings.perDomainForceMode]）。 */
+    private const val KEY_PER_DOMAIN_FORCE_MODE = "per_domain_force_mode"
+
     /** 旧版单行 clearance（一个值 + 一个 host），只用于读侧升级回落。 */
     private const val LEGACY_KEY_CF_COOKIE = "cf_cookie"
     private const val LEGACY_KEY_CF_COOKIE_HOST = "cf_cookie_host"
@@ -85,7 +88,8 @@ object DataStoreManager : SettingsStore {
         encodeDefaults = true
     }
 
-    private val cfCookiesSerializer = MapSerializer(String.serializer(), String.serializer())
+    /** `Map<String,String>` 整表序列化共用（CF clearance 表 / 每域出口覆盖表）。 */
+    private val stringMapSerializer = MapSerializer(String.serializer(), String.serializer())
 
     private lateinit var dataStore: DataStore<Preferences>
     private lateinit var authStore: DataStore<Preferences>
@@ -196,6 +200,7 @@ object DataStoreManager : SettingsStore {
         // 键已存在时 bool() 直接返回盘上的值，本默认值不参与 —— 老用户的选择不会被悄悄改掉。
         useEchGate = bool("use_ech_gate", defaults.useEchGate && !hasConfiguredProxy()),
         egressForceMode = string("egress_force_mode", defaults.egressForceMode),
+        perDomainForceMode = decodeStringMap(string(KEY_PER_DOMAIN_FORCE_MODE, "")),
         customHostsData = string("custom_hosts_data", defaults.customHostsData), useDoH = bool("use_doh", defaults.useDoH), dohPreset = string("doh_preset", defaults.dohPreset),
         dohCustomUrl = string("doh_custom_url", defaults.dohCustomUrl), dohBootstrapIps = string("doh_bootstrap_ips", defaults.dohBootstrapIps), dohTimeoutSeconds = int("doh_timeout_seconds", defaults.dohTimeoutSeconds),
         proxyType = ProxyType.fromId(int("proxy_type", defaults.proxyType.id)), proxyIp = string("proxy_ip", defaults.proxyIp), proxyPort = int("proxy_port", defaults.proxyPort), proxyMode = ProxyMode.fromId(int("proxy_mode", defaults.proxyMode.id)), proxyRuleHosts = string("proxy_rule_hosts", defaults.proxyRuleHosts), autoMirrorGuard = AutoMirrorGuard.fromId(int("auto_mirror_guard", defaults.autoMirrorGuard.id)),
@@ -252,7 +257,7 @@ object DataStoreManager : SettingsStore {
         put("app_language", appLanguage.preferenceValue); put("use_dark_mode", themeMode.value); put("app_theme_id", themeId); put("amoled_black", amoled); put("dynamic_subject_theme", dynamicSubjectTheme); put("app_contrast_level", contrastLevel.value)
         put("allow_pip_mode", allowPipMode); put("secure_mode", secureMode); put("disable_comments", disableComments); put("haptic_feedback_enabled", hapticFeedbackEnabled); put("nav_bar_style", navBarStyle.value)
         put("usage_notice_accepted_v2", usageNoticeAccepted); put("already_login", isAlreadyLogin); put("local_list_notice_dismissed", localListNoticeDismissed); put("saved_user_id", savedUserId); put("cookie", loginCookie); put(KEY_CF_COOKIES, encodeCfCookies(cfCookies)); put("desktop_browser_user_agent", desktopBrowserUserAgent)
-        put("domain_name", domainName); put("selectedBaseUrl", selectedBaseUrl); put("use_custom_mirror_site", useCustomMirrorSite); put("custom_mirror_site", customMirrorSite); put("append_custom_mirror_path", appendCustomMirrorPath); put("use_built_in_hosts", useBuiltInHosts); put("auto_built_in_hosts", autoBuiltInHosts); put("use_ech_gate", useEchGate); put("egress_force_mode", egressForceMode); put("custom_hosts_data", customHostsData); put("use_doh", useDoH); put("doh_preset", dohPreset); put("doh_custom_url", dohCustomUrl); put("doh_bootstrap_ips", dohBootstrapIps); put("doh_timeout_seconds", dohTimeoutSeconds); put("proxy_type", proxyType.id); put("proxy_ip", proxyIp); put("proxy_port", proxyPort); put("proxy_mode", proxyMode.id); put("proxy_rule_hosts", proxyRuleHosts); put("auto_mirror_guard", autoMirrorGuard.id)
+        put("domain_name", domainName); put("selectedBaseUrl", selectedBaseUrl); put("use_custom_mirror_site", useCustomMirrorSite); put("custom_mirror_site", customMirrorSite); put("append_custom_mirror_path", appendCustomMirrorPath); put("use_built_in_hosts", useBuiltInHosts); put("auto_built_in_hosts", autoBuiltInHosts); put("use_ech_gate", useEchGate); put("egress_force_mode", egressForceMode); put(KEY_PER_DOMAIN_FORCE_MODE, encodeStringMap(perDomainForceMode)); put("custom_hosts_data", customHostsData); put("use_doh", useDoH); put("doh_preset", dohPreset); put("doh_custom_url", dohCustomUrl); put("doh_bootstrap_ips", dohBootstrapIps); put("doh_timeout_seconds", dohTimeoutSeconds); put("proxy_type", proxyType.id); put("proxy_ip", proxyIp); put("proxy_port", proxyPort); put("proxy_mode", proxyMode.id); put("proxy_rule_hosts", proxyRuleHosts); put("auto_mirror_guard", autoMirrorGuard.id)
         cachedUpdateJson?.let { put("app_update_cached_json", it) }; put("app_update_ignored_version_code", ignoredVersionCode); put("update_checked_at_ms", updateCheckedAtMs)
         cachedAnnouncementJson?.let { put("announcement_cached_json", it) }; put("announcement_read_keys", readAnnouncementKeys.joinToString(",")); put("download_count_limit", downloadCountLimit); put("download_speed_limit", downloadSpeedLimitIndex); put("use_private_storage", usePrivateStorage); safDownloadPath?.let { put("saf_download_path", it) }; put("collapse_downloaded_group", collapseDownloadedGroup)
         put("switch_player_kernel", playerKernel.value); put("player_speed", playerSpeed.toString()); put("long_press_speed_times", longPressSpeedTime.toString()); put("video_language", videoLanguage); put("default_video_quality", videoQuality); put("show_played_indicator", showPlayedIndicator); put("allow_resume_playback", allowResumePlayback); put("auto_play_on_enter", autoPlayOnEnter); put("auto_play_next", autoPlayNext); put("loop_single", loopSingle)
@@ -300,7 +305,7 @@ object DataStoreManager : SettingsStore {
     ): Map<String, String> {
         if (!raw.isNullOrBlank()) {
             val decoded = runCatching {
-                storedJson.decodeFromString(cfCookiesSerializer, raw)
+                storedJson.decodeFromString(stringMapSerializer, raw)
             }.getOrNull().orEmpty()
             return decoded.lowercaseKeys().filterValues { it.isNotBlank() }
         }
@@ -310,7 +315,16 @@ object DataStoreManager : SettingsStore {
     }
 
     internal fun encodeCfCookies(value: Map<String, String>): String =
-        storedJson.encodeToString(cfCookiesSerializer, value.lowercaseKeys())
+        storedJson.encodeToString(stringMapSerializer, value.lowercaseKeys())
+
+    /** 每域出口覆盖表：缺失/坏 JSON 一律当空表（= 全部跟随全局），绝不炸设置读取。 */
+    internal fun decodeStringMap(raw: String?): Map<String, String> {
+        if (raw.isNullOrBlank()) return emptyMap()
+        return runCatching { storedJson.decodeFromString(stringMapSerializer, raw) }.getOrNull().orEmpty()
+    }
+
+    internal fun encodeStringMap(value: Map<String, String>): String =
+        storedJson.encodeToString(stringMapSerializer, value)
 
     private fun Map<String, String>.lowercaseKeys(): Map<String, String> =
         entries.associate { (host, cookie) -> host.lowercase() to cookie }

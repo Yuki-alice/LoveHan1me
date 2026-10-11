@@ -252,6 +252,13 @@ Some mirrors may not support login, may not share cookies, may fail verification
     <string name="auto_mirror_guard_require_clearance_summary">Switch automatically only when the target mirror already has a saved Cloudflare verification. Mirrors you have never visited are left alone.</string>
     <string name="auto_mirror_guard_always">Always</string>
     <string name="auto_mirror_guard_always_summary">Switch whenever the current mirror is unreachable, even if the target may show a verification page once.</string>
+    <string name="egress_per_domain_title">Per-domain routing</string>
+    <string name="egress_per_domain_hanime">Site mirrors</string>
+    <string name="egress_per_domain_getchu">Getchu</string>
+    <string name="egress_per_domain_cdn">Media CDN</string>
+    <string name="egress_per_domain_thirdparty">Third-party</string>
+    <string name="egress_per_domain_override">Forced: %1$s</string>
+    <string name="egress_follow_global">Follow global (%1$s)</string>
     <string name="proxy_rule_custom">Custom rules</string>
     <string name="proxy_rule_custom_empty">None yet — built-in rules only</string>
     <string name="proxy_rule_custom_count">%1$d added (applies in "Restricted domains only")</string>

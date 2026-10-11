@@ -392,6 +392,7 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
     val proxyMode = SettingsRepository.proxyMode
     val proxyRuleHosts = SettingsRepository.proxyRuleHosts
     val autoMirrorGuard = SettingsRepository.autoMirrorGuard
+    val perDomainForceMode = SettingsRepository.perDomainForceMode
     val proxyRule = proxyRuleSummary(
         mode = proxyMode,
         force = runCatching { SettingsRepository.egressForceMode }.getOrDefault(ForceMode.Auto),
@@ -610,6 +611,18 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             coroutineScope.launch {
                 // 策略是"每次评估时热读"（见 AutoMirrorSwitch），改完下一次触发即生效，无需重建。
                 SettingsRepository.update { it.copy(autoMirrorGuard = guard) }
+            }
+        },
+        perDomainForceMode = perDomainForceMode,
+        onPerDomainForceModeChange = { domain, mode ->
+            coroutineScope.launch {
+                // B4-2：mode == null = 清除该域覆盖（跟随全局）。选择器与调度器都是"每请求热读"，
+                // 改完即生效；不重建（nonProxyHosts 只表达默认口径，不逐域，见其 KDoc）。
+                SettingsRepository.update { s ->
+                    val next = s.perDomainForceMode.toMutableMap()
+                    if (mode == null) next.remove(domain.name) else next[domain.name] = mode.name
+                    s.copy(perDomainForceMode = next)
+                }
             }
         },
         onSaveProxyRuleHosts = { text ->

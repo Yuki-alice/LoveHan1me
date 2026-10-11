@@ -19,6 +19,7 @@ import lovehan1me.core.domain.model.cfCookieKeyFor
 import lovehan1me.core.domain.model.themeConfig
 import lovehan1me.data.network.CloudflareChallenges
 import lovehan1me.data.network.egress.ForceMode
+import lovehan1me.data.network.egress.DomainClass
 import lovehan1me.feature.danmaku.DanmakuRenderOptions
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -212,6 +213,16 @@ object SettingsRepository : SettingsStore {
     val useEchGate get() = current.useEchGate
     /** 手动强制选路（Phase 4 设置页写入；Auto = 调度器全权）。 */
     val egressForceMode get() = ForceMode.fromName(current.egressForceMode)
+    /**
+     * 每域出口覆盖（B4-2/F14），只保留**键与值都能解析**的项 —— 坏数据静默丢弃（回落到全局），
+     * 绝不炸设置读取。空 = 全部跟随 [egressForceMode]。
+     */
+    val perDomainForceMode: Map<DomainClass, ForceMode>
+        get() = current.perDomainForceMode.mapNotNull { (key, value) ->
+            val domain = DomainClass.entries.firstOrNull { it.name == key } ?: return@mapNotNull null
+            val force = ForceMode.entries.firstOrNull { it.name == value } ?: return@mapNotNull null
+            domain to force
+        }.toMap()
     val customHostsData get() = current.customHostsData
     val useDoH get() = current.useDoH
     val dohPreset get() = current.dohPreset

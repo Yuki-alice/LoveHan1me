@@ -61,6 +61,7 @@ private fun withProxy(
     port: Int = -1,
     mode: ProxyMode = ProxyMode.Global,
     ruleHosts: String = "",
+    perDomain: Map<String, String> = emptyMap(),
     block: () -> Unit,
 ) {
     ensureStoreInstalled()
@@ -72,6 +73,7 @@ private fun withProxy(
                 proxyPort = port,
                 proxyMode = mode,
                 proxyRuleHosts = ruleHosts,
+                perDomainForceMode = perDomain,
             )
         }
     }
@@ -86,6 +88,7 @@ private fun withProxy(
                     proxyPort = -1,
                     proxyMode = ProxyMode.Global,
                     proxyRuleHosts = "",
+                    perDomainForceMode = emptyMap(),
                 )
             }
         }
@@ -195,6 +198,39 @@ class HanimeProxySelectorTest {
         // 默认档：第三方也照旧走代理（不是 Rules），保证老用户零变化
         assertEquals(Proxy.Type.HTTP, selector.select(URI("https://api.dandanplay.net/")).first().type())
     }
+
+    @Test
+    fun `每域 ForceDirect 压过 Rules 让站点直连`() =
+        withProxy(
+            ProxyType.Http, "203.0.113.7", 7890, ProxyMode.Rules,
+            perDomain = mapOf("Hanime" to "ForceDirect"),
+        ) {
+            // §6.2「显式覆盖默认」：Rules 本会让站点走代理，每域 ForceDirect 应把它压成直连。
+            assertEquals(listOf(Proxy.NO_PROXY), selector.select(uri))
+        }
+
+    @Test
+    fun `每域 ForceProxy 让第三方也走代理`() =
+        withProxy(
+            ProxyType.Http, "203.0.113.7", 7890, ProxyMode.Rules,
+            perDomain = mapOf("ThirdParty" to "ForceProxy"),
+        ) {
+            // §6.2 冲突 1 的裁决：显式每域 ForceProxy 赢过 Rules 的"第三方恒直连"。
+            assertEquals(
+                Proxy.Type.HTTP,
+                selector.select(URI("https://api.dandanplay.net/")).first().type(),
+            )
+        }
+
+    @Test
+    fun `每域 ForceGate 恒直连`() =
+        withProxy(
+            ProxyType.Http, "203.0.113.7", 7890, ProxyMode.Global,
+            perDomain = mapOf("Hanime" to "ForceGate"),
+        ) {
+            // ForceGate：请求被改写到回环网关，代理不参与（§6.2 冲突 2 的裁决）。
+            assertEquals(listOf(Proxy.NO_PROXY), selector.select(uri))
+        }
 }
 
 class MediaProxyUrlTest {

@@ -65,7 +65,7 @@ internal object GateWebViewProxy {
             DomainClass.Hanime,
             state,
             RouteRegistry.healthOf(DomainClass.Hanime),
-            currentForceMode(),
+            currentForceMode(DomainClass.Hanime),
         )?.let { tunnel ->
             return ProxyConfig.Builder()
                 .addProxyRule(tunnel)
