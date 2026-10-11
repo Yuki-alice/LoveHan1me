@@ -1,5 +1,33 @@
 package lovehan1me.data.network.egress
 
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlin.concurrent.Volatile
+
+/**
+ * 网络变化后的异步处理钩子（B3-3b：自动镜像切换）。
+ *
+ * 为什么用登记制而不是在这里直接调：本文件在 `data/network/egress`，而自动切换在
+ * `site/`（依赖 egress，反向依赖会形成包循环）。登记制让上层把"网络变了要做什么"注入进来，
+ * 与 `ServiceCreator.registerConnectionPoolEvictor` 同型。
+ *
+ * 只保留最后一个（重复注册即替换）：装配是幂等的，不需要注销。
+ */
+private var asyncHandler: (suspend () -> Unit)? = null
+
+@Volatile
+private var handlerSet = false
+
+fun setNetworkChangeHandler(handler: suspend () -> Unit) {
+    asyncHandler = handler
+    handlerSet = true
+}
+
+/** 异步处理用的作用域：换网回调多在平台线程上，探测/切换不能阻塞它。 */
+private val handlerScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
 /**
  * 网络现实变化的复位入口（切网 / 断网恢复时由各端监听调用）。
  *
@@ -22,6 +50,10 @@ fun onNetworkChanged() {
     // 见 [platformOnNetworkChanged]。
     RouteRegistry.reset()
     platformOnNetworkChanged()
+    // 复位之后，同一条网络变化也触发一次"要不要换镜像"的评估（异步，不阻塞平台回调）。
+    if (handlerSet) {
+        asyncHandler?.let { handler -> handlerScope.launch { runCatching { handler() } } }
+    }
 }
 
 /**

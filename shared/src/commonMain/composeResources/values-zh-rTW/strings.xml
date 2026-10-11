@@ -261,6 +261,11 @@
     <string name="proxy_mode_rules_summary">僅站台與 getchu 走代理，第三方介面保持直連；要全部不走代理，請在上方的「代理」選直連</string>
     <string name="proxy_mode_hit_hosts">命中：%1$s</string>
     <string name="proxy_mode_shadowed">「手動強制選路」目前為%1$s，此項暫不生效</string>
+    <string name="auto_mirror_guard">自動切換鏡像</string>
+    <string name="auto_mirror_guard_require_clearance">僅在已驗證的網域</string>
+    <string name="auto_mirror_guard_require_clearance_summary">僅當目標鏡像已有 Cloudflare 驗證存檔時才自動切換；從未造訪過的網域保持不變。</string>
+    <string name="auto_mirror_guard_always">始終自動切換</string>
+    <string name="auto_mirror_guard_always_summary">只要目前鏡像無法連線就自動切換，接受目標網域可能彈一次驗證視窗。</string>
     <string name="proxy_rule_custom">自訂規則</string>
     <string name="proxy_rule_custom_empty">尚未新增，僅內建規則生效</string>
     <string name="proxy_rule_custom_count">已新增 %1$d 條（在「僅受限網域」檔生效）</string>

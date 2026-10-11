@@ -151,6 +151,37 @@ object SiteSwitcher {
     }
 
     /**
+     * 自动切换（轻量，B3-3b）：只改站点坐标 + 复位出口现实，**不递增 [generation]**。
+     *
+     * 与 [switchTo] 的四处刻意差异（见规划文档 §2.2）：
+     * 1. **不动 `selectedBaseUrl`** —— 那是"回程目标"语义（上次离开番剧站时记下的），
+     *    自动切换不该改写用户的回程意图；
+     * 2. **不清 cookie** —— 登录态是全局 `loginCookie`（对新 host 自动注入），
+     *    旧站 host-scoped cookie 存在各自 cookieMap 下天然隔离，清掉反而丢凭据；
+     * 3. **不动 CSRF 槽位** —— `CsrfTokenProvider` 本就按站分槽，自动切换天然正确；
+     * 4. **不递增 generation** —— 不重建 UI、不丢 nav 栈。用户正在看页面，不能因为
+     *    后台换了个镜像就把界面推倒重来。
+     *
+     * 代价（诚实记录）：其他 VM 可能仍持旧站数据，直到它们各自重新加载。这与既有取舍同级
+     * ——[switchTo] 的 KDoc 已声明"跨站隔离是独立议题，不在热切换范围内"。
+     *
+     * 调用约束：只由"当前域不可达"触发（见 [AutoMirrorSwitch]），且由发起方在切换后
+     * 自行刷新当前内容；不做后台静默切换。
+     */
+    suspend fun autoSwitchTo(domain: String) {
+        val target = domain.trim()
+        if (target.isBlank() || target == SettingsRepository.domainName) return
+
+        // 1) 只改站点坐标。`selectedBaseUrl` 刻意不动 —— 保留用户回程意图。
+        SettingsRepository.update { it.copy(domainName = target) }
+
+        // 2) 复位"出口现实变了"的状态：与 [switchTo] 第 2 步同源（common 层清熔断健康度，
+        //    平台层清系统代理属性 / CDN 探测缓存 / DoH 冷却），并确保网关在运行。
+        rebuildSystemProxy()
+        ensureEchGateway()
+    }
+
+    /**
      * 「切换站点」按钮的目标站点：
      *
      * - 当前在番剧站 → 去 AV 站（[HanimeConstants.AV_URL]）；

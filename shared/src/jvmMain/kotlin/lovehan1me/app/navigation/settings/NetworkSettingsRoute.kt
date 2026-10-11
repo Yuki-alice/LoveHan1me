@@ -391,6 +391,7 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
     // 读不到/解析不出一律回退到最保守的档，绝不让设置页因为一个坏值崩掉。
     val proxyMode = SettingsRepository.proxyMode
     val proxyRuleHosts = SettingsRepository.proxyRuleHosts
+    val autoMirrorGuard = SettingsRepository.autoMirrorGuard
     val proxyRule = proxyRuleSummary(
         mode = proxyMode,
         force = runCatching { SettingsRepository.egressForceMode }.getOrDefault(ForceMode.Auto),
@@ -604,6 +605,13 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
         proxyMode = proxyMode,
         proxyRule = proxyRule,
         proxyRuleHosts = proxyRuleHosts,
+        autoMirrorGuard = autoMirrorGuard,
+        onAutoMirrorGuardChange = { guard ->
+            coroutineScope.launch {
+                // 策略是"每次评估时热读"（见 AutoMirrorSwitch），改完下一次触发即生效，无需重建。
+                SettingsRepository.update { it.copy(autoMirrorGuard = guard) }
+            }
+        },
         onSaveProxyRuleHosts = { text ->
             coroutineScope.launch {
                 SettingsRepository.update { it.copy(proxyRuleHosts = text) }

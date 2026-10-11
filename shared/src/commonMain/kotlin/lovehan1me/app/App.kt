@@ -34,6 +34,8 @@ import lovehan1me.core.util.LogUtil
 import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.feature.home.homepage.HomePageViewModel
 import lovehan1me.site.SiteSwitcher
+import lovehan1me.site.AutoMirrorSwitch
+import lovehan1me.data.network.egress.setNetworkChangeHandler
 import lovehan1me.ui.theme.HanimeTheme
 import lovehan1me.ui.refresh.LocalPageRefreshHub
 import lovehan1me.ui.refresh.PageRefreshHub
@@ -182,6 +184,18 @@ private fun AppContent(
     // 共享导航必须操作同一实例，否则会出现两套互不感知的栈。
     val backStack = homeViewModel.mainBackStack
     val scope = rememberCoroutineScope()
+
+    // B3-3b：自动镜像切换的两处接线。
+    // ① 网络变化 → 让 AutoMirrorSwitch 评估是否换镜像（装配幂等，随 generation 重建即覆盖）；
+    // ② 切换发生后刷新当前内容 —— autoSwitchTo 刻意不递增 generation、不重建 UI，
+    //    所以"切完没人管"会让用户看着旧站数据。当前页没登记刷新动作时退回刷新首页。
+    val refreshHub = LocalPageRefreshHub.current
+    LaunchedEffect(Unit) {
+        setNetworkChangeHandler { AutoMirrorSwitch.run() }
+        AutoMirrorSwitch.switched.collect {
+            if (!refreshHub.refresh()) homeViewModel.getHomePage(isRefresh = true)
+        }
+    }
 
     LaunchedEffect(homeViewModel) {
         homeViewModel.sessionExpiredMessage.collect { event ->

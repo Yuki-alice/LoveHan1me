@@ -47,6 +47,10 @@ import lovehan1me.core.platform.currentEpochMillis
 import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.core.platform.isSslHandshakeException
 import lovehan1me.core.platform.sslHandshakeException
+import lovehan1me.core.util.PlatformLock
+import lovehan1me.core.util.withLock
+import lovehan1me.site.AutoMirrorSwitch
+import kotlin.concurrent.Volatile
 import lovehan1me.site.hanime1.Parser
 import lovehan1me.site.hanime1.authorPage
 import lovehan1me.site.hanime1.authorPlaylistsPage
@@ -605,20 +609,41 @@ object NetworkRepo {
     /** 等 CF 验证通过的上限：比桌面 CDP 的求解预算（120s）再宽一点，别卡在它前面放弃。 */
     private const val CF_RETRY_WAIT_MS = 150_000L
 
+    /** B3-4：失败触发的自动切换冷却，避免离线时每次失败都做一轮探测（最长 6s）而互相排队。 */
+    private const val MIRROR_RETRY_COOLDOWN_MS = 5_000L
+    private const val MIRROR_TAG = "MirrorRetry"
+
+    private val mirrorRetryLock = PlatformLock()
+
+    @Volatile
+    private var lastMirrorRetryAtMs = 0L
+
     /**
-     * 站点请求 + 状态判定 + **CF 验证通过后自动续跑一次**。
+     * 站点请求 + 状态判定 + **失败恢复**。
      *
-     * 为什么要在流里等：验证成功之前，失败的请求早就抛完了，所以"用户验完了、应用却什么都没
-     * 发生"——只能手动退回再进，观感就是弹一次窗赌一把。这里让原请求挂在通过信号上，
-     * 窗口一关页面自己就出来了。只续跑一次（再失败就照常报错），不给死循环留口子。
-     *
-     * 非 CF 错误的语义与 [HttpResponse.throwRequestException] 完全一致。
+     * 三种恢复路径：
+     * ① 传输层失败（超时 / 连接重置 / `NoRouteException`）→ 自动换镜像后**同链重试一次**
+     *    （B3-4/F11，见 [retryOnAnotherMirror]）；
+     * ② CF 挑战 → 等验证通过后续跑一次；
+     * ③ 其余非成功状态码 → 语义与 [HttpResponse.throwRequestException] 完全一致，原样抛出。
      */
     private suspend fun ioRequest(
         request: suspend () -> HttpResponse,
         permittedSuccessCode: IntArray? = null,
     ): HttpResponse {
-        val first = request()
+        val first = try {
+            request()
+        } catch (cancel: CancellationException) {
+            throw cancel
+        } catch (blocked: CloudflareBlockedException) {
+            // CF 挑战/IP 封锁是"内容层"问题（含 IPBlockedException 子类），换镜像解决不了
+            // ——绝不能当传输失败去切域，那只会把用户从一个挑战页换到另一个挑战页。
+            throw blocked
+        } catch (transport: Exception) {
+            // 传输层失败说明"当前镜像可能不可达"（不是内容问题）——这正是换镜像能救的场景。
+            // 只在真的切了域时才重试（切与不切由 AutoMirrorSwitch 内部判定：当前域可达则不切）。
+            return retryOnAnotherMirror(transport, request, permittedSuccessCode)
+        }
         if (first.isSuccessfulSiteResponse(permittedSuccessCode)) return first
         try {
             first.throwRequestException()
@@ -630,6 +655,58 @@ object NetworkRepo {
                 retried.throwRequestException()
             }
             return retried
+        }
+    }
+
+    /**
+     * 传输层失败后的"换镜像 + 同链重试一次"（B3-4/F11）。
+     *
+     * 重试用**同一条** [request] 闭包 —— 站点地址每次现取（如 `SettingsRepository.homeUrl`），
+     * 所以切完域重试自然打到新域，调用方无需感知。只重试一次、不递归（重试走裸 `request()`，
+     * 不再经过 [ioRequest]）。
+     */
+    private suspend fun retryOnAnotherMirror(
+        original: Exception,
+        request: suspend () -> HttpResponse,
+        permittedSuccessCode: IntArray?,
+    ): HttpResponse {
+        // 冷却：并发失败不应同时触发多轮探测；未到冷却窗口就直接抛原始失败。
+        if (!reserveMirrorRetry()) throw original
+
+        val outcome = try {
+            // notifyUi = false：本链自己会重试并拿到新域内容，不再发整页刷新信号与它抢
+            //（否则 getHomePage 会 cancel 在途任务）。
+            AutoMirrorSwitch.run(notifyUi = false)
+        } catch (cancel: CancellationException) {
+            throw cancel
+        } catch (e: Exception) {
+            LogUtil.d(MIRROR_TAG, "自动切换评估失败：${e.message}")
+            null
+        }
+        if (outcome !is AutoMirrorSwitch.Result.Switched) throw original
+
+        val retried = try {
+            request()
+        } catch (cancel: CancellationException) {
+            throw cancel
+        } catch (e: Exception) {
+            // 换域后仍连不上：保留最初那次失败作为对外原因（更贴近用户实际遇到的那一刻）。
+            throw original
+        }
+        if (!retried.isSuccessfulSiteResponse(permittedSuccessCode)) {
+            retried.throwRequestException()
+        }
+        return retried
+    }
+
+    /** 冷却预留：原子地"检查 + 落时间"，避免并发失败同时触发多轮探测。 */
+    private fun reserveMirrorRetry(): Boolean = mirrorRetryLock.withLock {
+        val now = currentEpochMillis()
+        if (now - lastMirrorRetryAtMs < MIRROR_RETRY_COOLDOWN_MS) {
+            false
+        } else {
+            lastMirrorRetryAtMs = now
+            true
         }
     }
 

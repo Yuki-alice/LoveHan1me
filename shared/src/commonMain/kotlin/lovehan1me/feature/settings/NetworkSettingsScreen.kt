@@ -109,6 +109,11 @@ import lovehan1me.egress_close
 import lovehan1me.egress_outlet_title
 import lovehan1me.egress_gate_retry
 import lovehan1me.egress_gate_retry_summary
+import lovehan1me.auto_mirror_guard
+import lovehan1me.auto_mirror_guard_always
+import lovehan1me.auto_mirror_guard_always_summary
+import lovehan1me.auto_mirror_guard_require_clearance
+import lovehan1me.auto_mirror_guard_require_clearance_summary
 import lovehan1me.ic_delay
 import lovehan1me.ic_dns
 import lovehan1me.ic_domain
@@ -121,6 +126,7 @@ import lovehan1me.core.util.rememberCopyTextToClipboard
 import lovehan1me.data.network.DohConfig
 import lovehan1me.data.network.HProxyTypes
 import lovehan1me.core.domain.model.ProxyMode
+import lovehan1me.core.domain.model.AutoMirrorGuard
 import lovehan1me.data.network.egress.ForceMode
 import lovehan1me.data.network.egress.ProxyRuleScope
 import lovehan1me.data.network.egress.ProxyRuleSummary
@@ -247,6 +253,9 @@ fun NetworkSettingsScreen(
     egressExportText: String = "",
     /** B4-4：诊断窗顶部的「结论层」文本（commonMain `EgressDiagnosis.formatReport` 产出）。 */
     egressReport: String = "",
+    /** B3-5：自动镜像切换前置策略（[AutoMirrorGuard]）。 */
+    autoMirrorGuard: AutoMirrorGuard = AutoMirrorGuard.RequireClearance,
+    onAutoMirrorGuardChange: (AutoMirrorGuard) -> Unit = {},
 ) {
     var showDomainDialog by rememberSaveable { mutableStateOf(false) }
     var showProxyDialog by rememberSaveable { mutableStateOf(false) }
@@ -255,6 +264,7 @@ fun NetworkSettingsScreen(
     var showCustomMirrorSiteDialog by rememberSaveable { mutableStateOf(false) }
     var showForceModeDialog by rememberSaveable { mutableStateOf(false) }
     var showProxyModeDialog by rememberSaveable { mutableStateOf(false) }
+    var showAutoMirrorGuardDialog by rememberSaveable { mutableStateOf(false) }
     var showProxyRuleDialog by rememberSaveable { mutableStateOf(false) }
     var showEgressDiagnostics by rememberSaveable { mutableStateOf(false) }
     val copyText = rememberCopyTextToClipboard()
@@ -289,6 +299,22 @@ fun NetworkSettingsScreen(
             append('\n')
             append(stringResource(Res.string.proxy_mode_shadowed, forceModeName))
         }
+    }
+
+    // B3-5：自动镜像切换前置策略。
+    val autoMirrorGuardName = when (autoMirrorGuard) {
+        AutoMirrorGuard.RequireClearance -> stringResource(Res.string.auto_mirror_guard_require_clearance)
+        AutoMirrorGuard.Always -> stringResource(Res.string.auto_mirror_guard_always)
+    }
+    val autoMirrorGuardSummary = buildString {
+        append(autoMirrorGuardName)
+        append('\n')
+        append(
+            when (autoMirrorGuard) {
+                AutoMirrorGuard.RequireClearance -> stringResource(Res.string.auto_mirror_guard_require_clearance_summary)
+                AutoMirrorGuard.Always -> stringResource(Res.string.auto_mirror_guard_always_summary)
+            }
+        )
     }
 
     if (showDomainDialog) {
@@ -394,6 +420,24 @@ fun NetworkSettingsScreen(
         )
     }
 
+    if (showAutoMirrorGuardDialog) {
+        NetworkChoiceDialog(
+            title = stringResource(Res.string.auto_mirror_guard),
+            selectedValue = autoMirrorGuard.name,
+            options = listOf(
+                AutoMirrorGuard.RequireClearance.name to stringResource(Res.string.auto_mirror_guard_require_clearance),
+                AutoMirrorGuard.Always.name to stringResource(Res.string.auto_mirror_guard_always),
+            ),
+            onDismiss = { showAutoMirrorGuardDialog = false },
+            onSelect = { name ->
+                showAutoMirrorGuardDialog = false
+                onAutoMirrorGuardChange(
+                    AutoMirrorGuard.entries.firstOrNull { it.name == name } ?: AutoMirrorGuard.RequireClearance
+                )
+            },
+        )
+    }
+
     if (showProxyRuleDialog) {
         ProxyRuleDialog(
             currentText = proxyRuleHosts,
@@ -474,6 +518,16 @@ fun NetworkSettingsScreen(
                     iconRes = Res.drawable.ic_edit_square,
                     onClick = { showProxyRuleDialog = true },
                 )
+                // B3-5：自动镜像切换前置策略。默认 RequireClearance（不打断）；
+                // 没有这一行，"主域不可达时自动换镜像"这个能力连开关都摸不到。
+                SettingNavigationItem(
+                    title = stringResource(Res.string.auto_mirror_guard),
+                    summary = autoMirrorGuardSummary,
+                    iconRes = Res.drawable.ic_domain,
+                    onClick = { showAutoMirrorGuardDialog = true },
+                )
+            }
+
             }
 
             SettingsSectionTitle(titleRes = Res.string.builtin_dns)

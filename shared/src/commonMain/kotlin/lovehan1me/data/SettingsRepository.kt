@@ -225,6 +225,8 @@ object SettingsRepository : SettingsStore {
     val proxyMode get() = current.proxyMode
     /** B2-3：用户追加的代理规则原文（见 [lovehan1me.core.domain.model.AppSettings.proxyRuleHosts]）。 */
     val proxyRuleHosts get() = current.proxyRuleHosts
+    /** 自动镜像切换前置策略（B3-3b，见 [lovehan1me.core.domain.model.AutoMirrorGuard]）。 */
+    val autoMirrorGuard get() = current.autoMirrorGuard
     val downloadCountLimit get() = current.downloadCountLimit
     /** 下载限速（字节/秒）；`0` = 不限速。越界索引回落到首档。 */
     val downloadSpeedLimitBytes get() =

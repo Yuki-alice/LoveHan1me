@@ -81,6 +81,26 @@ enum class ProxyMode(val id: Int) {
     }
 }
 
+/**
+ * 自动镜像切换的前置策略（D2-c / B3-3b）。
+ *
+ * 背景：`cf_clearance` 按 CF zone 签发，四个域名分属不同 registrable domain ⇒ 必然不同
+ * zone。自动切到"没有 clearance 存档"的域，首次请求必然撞一次 CF 挑战——那不是"无缝"。
+ *
+ * - [RequireClearance]（默认）：只在目标域**已有** clearance 存档时自动切；从未访问过的
+ *   域不切（潜台词：切过去也是弹窗，不如不切）；
+ * - [Always]：逃生舱，无条件自动切，接受目标域可能弹一次验证窗。
+ *
+ * 做成可配置而非写死：两种取舍都合理（严格=不打断 / 宽松=可达性优先），翻转只是一个枚举值。
+ */
+enum class AutoMirrorGuard(val id: Int) {
+    RequireClearance(0), Always(1);
+
+    companion object {
+        fun fromId(id: Int): AutoMirrorGuard = entries.firstOrNull { it.id == id } ?: RequireClearance
+    }
+}
+
 enum class DisplayDensity(val percent: Int, val scale: Float) {
     Compact(75, 0.75f),
     Default(100, 1f),
@@ -231,6 +251,11 @@ data class AppSettings(
      * 只在 [ProxyMode.Rules] 档生效：Global 档本就全部走代理，加了没有意义。
      */
     val proxyRuleHosts: String = "",
+    /**
+     * 自动镜像切换的前置策略（B3-3b，见 [AutoMirrorGuard]）。
+     * 默认 [AutoMirrorGuard.RequireClearance]：不在目标域没有 clearance 时贸然自动切。
+     */
+    val autoMirrorGuard: AutoMirrorGuard = AutoMirrorGuard.RequireClearance,
     /**
      * 桌面专用：CF 验证浏览器**自报的真实 UA**（空 = 尚未采集）。
      *

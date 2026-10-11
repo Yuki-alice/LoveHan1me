@@ -16,6 +16,7 @@ import lovehan1me.data.readCachedHomeHtml
 import lovehan1me.data.homePageCacheKey
 import lovehan1me.core.domain.model.HomePage
 import lovehan1me.site.hanime1.Parser
+import lovehan1me.site.AutoMirrorSwitch
 import lovehan1me.core.platform.performAccountLogout
 import lovehan1me.data.AppUpdateState
 import lovehan1me.data.DatabaseRepo
@@ -88,6 +89,10 @@ class HomePageViewModel: ViewModel() {
     fun initializeHomePage() {
         if (!SettingsRepository.usageNoticeAccepted) return
         if (initializationJob != null || _appUpdateState.value !is AppUpdateState.Checking) return
+        // B3-3b：并发做一次"该不该自动换镜像"的评估。当前域可达时零副作用（不换站）；
+        // 仅当当前域探测失败才切，切完经 AutoMirrorSwitch.switched 通知刷新当前页。
+        // 放在这里而不是 getHomePage 之前：评估要发探测请求，不该阻塞首屏。
+        launchSafely("HomePageViewModel.autoMirror") { AutoMirrorSwitch.run() }
         initializationJob = launchSafely("HomePageViewModel.initializeHomePage-1") {
             StartupTrace.mark("home-update-check-start")
             val updateResult = AppUpdateChecker.checkForUpdate()
