@@ -1,0 +1,98 @@
+name: Release Desktop Packages
+
+# Windows / Linux 安装包由 CI 打包（本机只能出 DMG：jpackage 不能交叉打包）。
+# 触发：推 v* 标签，或手动（补打历史标签用 tag 输入，如 v0.0.1）。
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "要补充产物的发布标签（如 v0.0.1）；留空 = 只传 workflow artifact"
+        required: false
+        default: ""
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write # gh release upload 需要
+
+env:
+  # workflow_dispatch 手填 tag > 标签推送事件自带的 tag；都没有则空（只留 workflow artifact）。
+  RELEASE_TAG: ${{ github.event.inputs.tag || github.ref_name }}
+
+jobs:
+  desktop-package:
+    name: Package (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            format-dir: msi
+            content-type: application/x-msi
+          - os: ubuntu-latest
+            format-dir: deb
+            content-type: application/vnd.debian.binary-package
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      # 与 ci.yml 同一步：全模块 compileSdk 统一 android-37，Gradle 配置阶段就要能解析它。
+      # API 37 起平台带 minor 版本（目录名 android-37.0），包名两个都试。
+      - name: Install Android platform (37)
+        shell: bash
+        run: |
+          SM="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+          for pkg in "platforms;android-37" "platforms;android-37.0" "build-tools;37.0.0"; do
+            if yes | "$SM" "$pkg" >/dev/null 2>&1; then
+              echo "ok    $pkg"
+            else
+              echo "note  $pkg 不可用或已安装"
+            fi
+          done
+          ls "$ANDROID_HOME/platforms" | grep -q '^android-37' || {
+            echo "::error::缺少 android-37(.x)"; exit 1; }
+
+      # 桌面打包只拉桌面编译链 + resources 里的网关二进制（echgate/ 产物已入库，无需 Go）。
+      # Windows 上也走 bash：跑的是 POSIX 的 gradlew 脚本。
+      - name: Package for current OS
+        shell: bash
+        run: ./gradlew :desktopApp:packageDistributionForCurrentOS --console=plain
+
+      - name: Collect artifacts
+        shell: bash
+        run: |
+          mkdir -p dist
+          cp -v desktopApp/build/compose/binaries/main/${{ matrix.format-dir }}/* dist/ || {
+            echo "::error::${{ matrix.format-dir }} 目录为空"; exit 1; }
+          ls -la dist
+
+      - name: Upload workflow artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: desktop-${{ matrix.format-dir }}
+          path: dist/*
+          if-no-files-found: error
+
+      - name: Upload to GitHub Release
+        if: env.RELEASE_TAG != ''
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload "$RELEASE_TAG" dist/* \
+            --repo "${{ github.repository }}" --clobber
+          echo "uploaded to release $RELEASE_TAG:"
+          gh release view "$RELEASE_TAG" --repo "${{ github.repository }}" --json assets \
+            --jq '.assets[] | "  " + .name + "  " + (.size|tostring) + " bytes"'
