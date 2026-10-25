@@ -8,11 +8,10 @@ import coil3.PlatformContext
 import coil3.compose.LocalPlatformContext
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.darwin.Darwin
 import lovehan1me.core.util.PlatformLock
 import lovehan1me.core.util.withLock
 import lovehan1me.data.network.GetchuBrandHeaders
-import lovehan1me.data.network.installEchGate
+import lovehan1me.data.network.createIosTransport
 
 // iOS 真实现（Gate4-平台能力补齐）：Darwin 引擎 + getchu 域名特化头
 //（UA/Referer/Cookie，与 jvm OkHttp 拦截器逐字一致）+ ECH 改写。
@@ -33,8 +32,13 @@ internal fun getchuImageLoaderOrNull(
     if (inspection) return null
     return getchuLoaderLock.withLock {
         getchuSingletonLoader ?: run {
-            val client = HttpClient(Darwin) {
-                installEchGate(withCookies = false)
+            // 图片链预算（30s call 档 + 同谓词重试）对齐 jvm 侧（网络优化 1.1）。
+            val client = createIosTransport(
+                purpose = lovehan1me.data.network.egress.EgressPurpose.Image,
+                withCookies = false,
+                requestTimeoutMillis = 30_000,
+                retry = true,
+            ) {
                 install(GetchuBrandHeaders)
             }
             ImageLoader.Builder(context)

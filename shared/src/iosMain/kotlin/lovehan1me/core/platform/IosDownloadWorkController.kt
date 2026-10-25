@@ -10,20 +10,14 @@ import lovehan1me.data.database.dao.Han1meDatabases
 import lovehan1me.data.database.entity.download.DownloadGroupEntity
 import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import lovehan1me.core.domain.model.HanimeVideo
-import lovehan1me.data.network.BridgeCookiesStorage
-import lovehan1me.data.network.installEchGate
 import lovehan1me.core.domain.state.DownloadState
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.darwin.Darwin
-import io.ktor.client.plugins.HttpRequestRetry
-import io.ktor.client.plugins.HttpTimeout
-import io.ktor.client.plugins.cookies.HttpCookies
 import io.ktor.client.request.header
 import io.ktor.client.request.prepareGet
 import io.ktor.client.request.url
 import io.ktor.client.statement.bodyAsChannel
+import lovehan1me.data.network.createIosTransport
 import lovehan1me.data.network.egress.EgressPurpose
-import lovehan1me.data.network.shouldRetryDarwinFailure
 import io.ktor.http.contentLength
 import io.ktor.http.isSuccess
 import io.ktor.utils.io.readAvailable
@@ -562,23 +556,14 @@ object IosDownloadWorkController : DownloadWorkController {
      * 按已落盘字节标失败、用户手动重试走 Range 续传（重试整个请求反而会重下）。
      */
     private val httpClient: HttpClient by lazy {
-        HttpClient(Darwin) {
-            installEchGate(defaultPurpose = EgressPurpose.Download)
-            install(HttpCookies) {
-                storage = BridgeCookiesStorage()
-            }
-            install(HttpTimeout) {
-                connectTimeoutMillis = 15_000
-                socketTimeoutMillis = 30_000
-            }
-            install(HttpRequestRetry) {
-                noRetry()
-                retryOnExceptionIf(maxRetries = 2) { request, cause ->
-                    shouldRetryDarwinFailure(request.method, cause)
-                }
-                constantDelay(300, 1_000, true)
-            }
-        }
+        // 网络优化 1.1：装配细节（ECH/Cookie/重试/会话钩子）收进 createIosTransport，
+        // 此处只保留下载链的档位取值。超时语义不变（对齐桌面 OkHttp connect 15s / 读空闲 30s）。
+        createIosTransport(
+            purpose = EgressPurpose.Download,
+            connectTimeoutMillis = 15_000,
+            socketTimeoutMillis = 30_000,
+            retry = true,
+        )
     }
 }
 

@@ -8,10 +8,9 @@ import coil3.PlatformContext
 import coil3.compose.LocalPlatformContext
 import coil3.network.ktor3.KtorNetworkFetcherFactory
 import io.ktor.client.HttpClient
-import io.ktor.client.engine.darwin.Darwin
 import lovehan1me.core.util.PlatformLock
 import lovehan1me.core.util.withLock
-import lovehan1me.data.network.installEchGate
+import lovehan1me.data.network.createIosTransport
 
 // iOS 真实现（Gate4-平台能力补齐）：Darwin 引擎 + 通用图片管线（ECH 改写，见帮助函数）。
 // 预览模式走默认构造（与 jvm 侧同分支）。
@@ -41,7 +40,14 @@ internal fun hanimeImageLoaderOrNull(
     return loaderLock.withLock {
         singletonLoader ?: ImageLoader.Builder(context)
             .components {
-                val client = HttpClient(Darwin) { installEchGate(withCookies = false) }
+                // 图片链预算（30s call 档 + 同谓词重试）对齐 jvm 侧，超时/重试档位不再裸漂
+                // （网络优化 1.1；预算表见 EgressBudgets.Image）。
+                val client = createIosTransport(
+                    purpose = lovehan1me.data.network.egress.EgressPurpose.Image,
+                    withCookies = false,
+                    requestTimeoutMillis = 30_000,
+                    retry = true,
+                )
                 add(KtorNetworkFetcherFactory(httpClient = client))
             }
             .build()
