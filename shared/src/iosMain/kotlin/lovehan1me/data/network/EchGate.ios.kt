@@ -27,6 +27,8 @@ internal fun HttpClientConfig<*>.installEchGate(
         // 图片链传 false：图床不需要登录态，把 hanime1_session 发过去只是平白泄漏凭据。
         if (withCookies) cookieHeaderProvider = ::echCookieHeader
         this.defaultPurpose = defaultPurpose
+        // 网络优化 1.3：冷启动"拉起中"的有界等待（单飞，非等待者零延迟走兜底）。
+        awaitGateReady = { IosGateReadiness.awaitReadyIfStarting() }
         logger = { LogUtil.d("EchGate", it) }
     }
 }

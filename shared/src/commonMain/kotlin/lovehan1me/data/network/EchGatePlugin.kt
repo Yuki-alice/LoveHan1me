@@ -29,7 +29,8 @@ import kotlin.coroutines.cancellation.CancellationException
  *    自身 `onUpstreamError` 产生，按状态码判定已足够准。
  * 2. **代理/直连步交给 NSURLSession**：恢复原 URL 直接发，系统代理生效；手填代理**不**生效
  *    （Darwin 无按请求配代理的口子，见 `ProxyCapability.ios`）—— 已知缺口，Phase 4 处理。
- * 3. **无就绪等待**：iOS 起服由 Swift 壳管，Kotlin 侧没有"拉起中"可等；没跑就诚实失败。
+ * 3. **就绪等待（1.3）**：iOS 起服由 Swift 壳管（`markStarting` 先落"拉起中"），
+ *    改写判定前经 `IosGateReadiness` 有界等待，单飞且非等待者零延迟。
  *
  * Cookie 由 [EchGatePluginConfig.cookieHeaderProvider] 按**原域名**取（与 OkHttp 同一个洞）；
  * 同时装 `HttpCookies` 时其 storage 应对网关回环 host 短路（见 iosMain `BridgeCookiesStorage`）。
@@ -38,7 +39,7 @@ class EchGatePluginConfig {
     /** 按**原 URL**取 Cookie 请求头（`k=v; k2=v2`），null/blank 不附加；iOS 传桥接实现。 */
     var cookieHeaderProvider: (suspend (originalUrl: Url) -> String?)? = null
 
-    /** 网关拉起中的有界等待（无运行时传 null）。iOS 暂无运行时，保持 null。 */
+    /** 网关拉起中的有界等待（网络优化 1.3：iOS 经 `IosGateReadiness` 注入，jvm 不走 Ktor 插件）。 */
     var awaitGateReady: (suspend () -> Boolean)? = null
 
     /** 本 client 的默认用途（决定预算档位）；各工厂按职责传，单次可用 attribute 覆盖。 */

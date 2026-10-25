@@ -22,6 +22,9 @@ enum EchGateBootstrap {
     static func startIfNeeded() {
         guard server == nil else { return }
         DispatchQueue.global(qos: .utility).async {
+            // 网络优化 1.3：先落"拉起中"，冷启动的首个请求才有就绪可等
+            // （Kotlin 侧 IosGateReadiness），不再直连抢跑。
+            EchGatePortReporter.shared.markStarting()
             let cacheDir: String = {
                 let base = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first
                 let dir = (base?.appendingPathComponent("echgate").path) ?? (NSTemporaryDirectory() as String)
@@ -47,12 +50,15 @@ enum EchGateBootstrap {
                 &err
             ) else {
                 NSLog("[EchGate] start failed: \(err?.localizedDescription ?? "unknown")")
+                // 失败也要离开 Starting：否则就绪等待者会等到上限、后续请求白等一轮。
+                EchGatePortReporter.shared.setStopped()
                 return
             }
             // addr 形如 127.0.0.1:PORT
             let port = srv.addr().split(separator: ":").last.flatMap { Int($0) } ?? -1
             guard port > 0 else {
                 NSLog("[EchGate] bad listen addr: \(srv.addr())")
+                EchGatePortReporter.shared.setStopped()
                 return
             }
             server = srv

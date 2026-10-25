@@ -18,6 +18,15 @@ import lovehan1me.core.constant.HanimeConstants
  */
 object EchGatePortReporter {
 
+    /**
+     * 网关开始拉起（网络优化 1.3）：Swift 壳在 `GateStartFlat` **之前**调用，
+     * 让冷启动的首个请求有"拉起中"可等（见 [IosGateReadiness]），
+     * 不再直连抢跑。失败/停止路径会经 publish 离开 Starting，不会卡等待者。
+     */
+    fun markStarting() {
+        EchGate.publish(EchGateStatus.Starting)
+    }
+
     /** 网关就绪，写入实际监听端口。 */
     fun setPort(port: Int) {
         EchGate.publish(EchGateStatus.Running(port))
