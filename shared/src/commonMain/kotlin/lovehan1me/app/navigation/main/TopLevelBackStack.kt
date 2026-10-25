@@ -80,18 +80,24 @@ class TopLevelBackStack<T : Any>(startKey: T) {
     fun popTo(key: T, inclusive: Boolean = false): Boolean {
         val targetEntry = topLevelStacks.entries.lastOrNull { (_, stack) -> key in stack }
             ?: return false
-        val targetIndex = targetEntry.value.indexOfLast { it == key }
+        // K/N 的 HashMap entry 是**视图**（EntryRef）：一旦随后变更 map，再读 entry.value
+        // 就抛 ConcurrentModificationException（JVM 的 Node 实现恰好容忍，随机不变式测试
+        // 在 iOS 上抓了个现行）。目标 key 与栈列表先取强引用，后面只碰它们。
+        val targetKey = targetEntry.key
+        val targetList = targetEntry.value
+        val targetIndex = targetList.indexOfLast { it == key }
         val targetSize = targetIndex + if (inclusive) 0 else 1
         if (targetSize < 1) return false
 
         val topLevelKeysToRemove = topLevelStacks.keys
-            .dropWhile { it != targetEntry.key }
+            .dropWhile { it != targetKey }
             .drop(1)
+            .toList()  // 先物化再删：边遍历 key set 边 remove 在两端都是 CME 雷区
         topLevelKeysToRemove.forEach(topLevelStacks::remove)
-        while (targetEntry.value.size > targetSize) {
-            targetEntry.value.removeAt(targetEntry.value.lastIndex)
+        while (targetList.size > targetSize) {
+            targetList.removeAt(targetList.lastIndex)
         }
-        topLevelKey = targetEntry.key
+        topLevelKey = targetKey
         updateBackStack()
         return true
     }

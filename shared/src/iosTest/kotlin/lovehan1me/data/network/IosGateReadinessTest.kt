@@ -32,6 +32,17 @@ class IosGateReadinessTest {
 
     @AfterTest
     fun resetGate() {
+        // 两个全局态都要复位，否则按字母序排在本类后面的用例
+        // （egress.scheduler.ReporterRegistryTest 等）会吃到 useEchGate=true 的
+        // 注入商店与挂着的唤醒钩子（ReporterRegistryTest 曾因此被殃及）。
+        EchGate.onStatusChanged = null
+        SettingsRepository.install(object : SettingsStore {
+            private val state = MutableStateFlow(AppSettings())
+            override val settings: MutableStateFlow<AppSettings> = state
+            override suspend fun update(transform: (AppSettings) -> AppSettings) {
+                state.value = transform(state.value)
+            }
+        })
         EchGate.publish(EchGateStatus.Idle)
     }
 
