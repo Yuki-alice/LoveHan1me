@@ -74,7 +74,7 @@ object NetworkRepo {
     fun getHomePage() = websiteIOFlow(
         request = { HanimeNetwork.hanimeService.getHomePage(SettingsRepository.homeUrl) },
         action = Parser::homePageVer2,
-        onBody = { html -> writeCachedHomeHtml(homePageCacheKey(), html) },
+        onBody = { html -> writeCachedHtml(homePageCacheKey(), html) },
     )
 
     fun getHanimeSearchResult(
@@ -93,7 +93,7 @@ object NetworkRepo {
             )
         },
         onBody = if (writeCache) {
-            { html -> writeCachedDiscoverHtml(discoverCacheKey(), html) }
+            { html -> writeCachedHtml(discoverCacheKey(), html) }
         } else {
             null
         },

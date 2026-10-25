@@ -12,7 +12,9 @@ import lovehan1me.Res
 import lovehan1me.login_state_expired
 import org.jetbrains.compose.resources.StringResource
 import lovehan1me.data.AppUpdateChecker
-import lovehan1me.data.readCachedHomeHtml
+import lovehan1me.data.readCachedHtml
+import lovehan1me.data.staleFirstFlow
+import lovehan1me.data.StaleOrFresh
 import lovehan1me.data.homePageCacheKey
 import lovehan1me.core.domain.model.HomePage
 import lovehan1me.site.hanime1.Parser
@@ -143,57 +145,64 @@ class HomePageViewModel: ViewModel() {
                 _homePageFlow.value = PageState.Success(info = cachedErrorInfo, isRefreshing = true)
             } else if (!isRefresh && current !is PageState.Success){
                 _homePageFlow.value = PageState.Loading
-                // E2：冷启动先展缓存（解析 ~0.2s），网络新鲜到达后覆盖；
-                // 坏文件解析失败就当 miss，下次成功覆盖。
-                runCatching {
-                    readCachedHomeHtml(homePageCacheKey())?.takeIf { it.isNotBlank() }?.let { html ->
-                        val cached = Parser.homePageVer2(html)
-                        if (cached is WebsiteState.Success<HomePage>) {
-                            _homePageFlow.value = PageState.Success(
-                                info = HomeData(page = cached.info),
-                                isRefreshing = false,
-                            )
-                            StartupTrace.mark("home-content-ready")
-                        }
-                    }
-                }
             }
+            val showStale = !isRefresh && current !is PageState.Success
             StartupTrace.mark("home-fetch-start")
             // 出口归因的窗口起点：与 EgressEvent.atMs 同源（都是 currentEpochMillis），
             // 取一次即可，不需要自己做时间换算。
             val homeFetchStartedAt = currentEpochMillis()
-            NetworkRepo.getHomePage().collect { networkState ->
-                when (networkState){
-                    is WebsiteState.Error -> {
-                        if (networkState.throwable is LoginStateExpiredException) {
-                            performAccountLogout()
-                            _sessionExpiredMessage.emit(
-                                SessionExpiredMessage(
-                                    message = networkState.throwable.message,
-                                    fallbackResId = Res.string.login_state_expired,
-                                )
-                            )
-                        }
-                        val previousData = (_homePageFlow.value as? PageState.Success)?.info
-                        _homePageFlow.value = PageState.Error(networkState.throwable, cachedInfo = previousData)
+            // E2：冷启动先展缓存（解析 ~0.2s），网络新鲜到达后覆盖；坏文件解析失败
+            // 就当 miss，下次成功覆盖（网络优化 3.1：骨架收编，语义不变）。
+            staleFirstFlow(
+                readStale = {
+                    if (!showStale) return@staleFirstFlow null
+                    readCachedHtml(homePageCacheKey())?.takeIf { it.isNotBlank() }?.let { html ->
+                        val cached = Parser.homePageVer2(html)
+                        if (cached is WebsiteState.Success<HomePage>) cached.info else null
                     }
-                    is WebsiteState.Success -> {
-                        AppViewModel.csrfToken = networkState.info.csrfToken
-                        networkState.info.userId.takeIf { it.isNotEmpty() }?.let { userId ->
-                            SettingsRepository.setSavedUserId(userId)
-                        }
-                        val homeData = HomeData(page = networkState.info)
-                        _homePageFlow.value = PageState.Success(info = homeData, isRefreshing = false)
-                        // 首屏内容到达（mark 首写胜出，刷新不覆盖冷启动值）。
+                },
+                network = NetworkRepo.getHomePage(),
+            ).collect { item ->
+                when (item) {
+                    is StaleOrFresh.Stale -> {
+                        _homePageFlow.value = PageState.Success(
+                            info = HomeData(page = item.value),
+                            isRefreshing = false,
+                        )
                         StartupTrace.mark("home-content-ready")
-                        // 首屏网络的出口归因：这一屏实际走了网关还是当前出口、失败几次。
-                        // 只在网络分支打（上面那条缓存分支没有网络活动，打了只会是"无出口尝试"）。
-                        StartupTrace.egress("home-fetch", homeFetchStartedAt)
-                        // 只有用户主动刷新才重拉公告：初次进页时 initializeHomePage 已经拉过一次，
-                        // 在这里再拉一次就是同一次启动发两倍请求。
-                        if (isRefresh) refreshAnnouncements()
                     }
-                    is WebsiteState.Loading -> { }
+                    is StaleOrFresh.Fresh -> when (val networkState = item.value) {
+                        is WebsiteState.Error -> {
+                            if (networkState.throwable is LoginStateExpiredException) {
+                                performAccountLogout()
+                                _sessionExpiredMessage.emit(
+                                    SessionExpiredMessage(
+                                        message = networkState.throwable.message,
+                                        fallbackResId = Res.string.login_state_expired,
+                                    )
+                                )
+                            }
+                            val previousData = (_homePageFlow.value as? PageState.Success)?.info
+                            _homePageFlow.value = PageState.Error(networkState.throwable, cachedInfo = previousData)
+                        }
+                        is WebsiteState.Success -> {
+                            AppViewModel.csrfToken = networkState.info.csrfToken
+                            networkState.info.userId.takeIf { it.isNotEmpty() }?.let { userId ->
+                                SettingsRepository.setSavedUserId(userId)
+                            }
+                            val homeData = HomeData(page = networkState.info)
+                            _homePageFlow.value = PageState.Success(info = homeData, isRefreshing = false)
+                            // 首屏内容到达（mark 首写胜出，刷新不覆盖冷启动值）。
+                            StartupTrace.mark("home-content-ready")
+                            // 首屏网络的出口归因：这一屏实际走了网关还是当前出口、失败几次。
+                            // 只在网络分支打（上面那条缓存分支没有网络活动，打了只会是"无出口尝试"）。
+                            StartupTrace.egress("home-fetch", homeFetchStartedAt)
+                            // 只有用户主动刷新才重拉公告：初次进页时 initializeHomePage 已经拉过一次，
+                            // 在这里再拉一次就是同一次启动发两倍请求。
+                            if (isRefresh) refreshAnnouncements()
+                        }
+                        is WebsiteState.Loading -> { }
+                    }
                 }
             }
         }

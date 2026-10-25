@@ -30,51 +30,32 @@ private fun fileFor(key: String, dir: String): String {
     return "$dir/$safe.html"
 }
 
+/** key 的清理前缀：`home_x` → `home_`（网络优化 3.1：同 jvm actual，一处规则）。 */
+private fun prefixOf(key: String): String = key.substringBefore('_') + "_"
+
 private fun fileSizeOf(path: String): Long {
     val attrs = NSFileManager.defaultManager.attributesOfItemAtPath(path, null)
     return (attrs?.get(NSFileSize) as? NSNumber)?.longLongValue() ?: 0L
 }
 
-actual fun readCachedHomeHtml(key: String): String? = runCatching {
+actual fun readCachedHtml(key: String): String? = runCatching {
     val dir = cacheDir() ?: return null
     val path = fileFor(key, dir)
     if (fileSizeOf(path) !in 1..MAX_CACHED_HTML_BYTES) return null
     readBytesAtPath(path)?.decodeToString()
 }.onFailure { LogUtil.w(TAG, "read cache failed: ${it.message}") }.getOrNull()
 
-actual fun writeCachedHomeHtml(key: String, html: String) {
+actual fun writeCachedHtml(key: String, html: String) {
     runCatching {
         val dir = cacheDir() ?: return
         val current = fileFor(key, dir)
-        // 只留当前 key：切站/换号的旧文件不堆积。
+        // 只留同前缀的当前 key：切站/换号的旧文件不堆积，也互不串文件。
         NSFileManager.defaultManager.contentsOfDirectoryAtPath(dir, error = null)
             ?.filterIsInstance<String>()
-            ?.filter { it.startsWith("home_") && "$dir/$it" != current }
+            ?.filter { it.startsWith(prefixOf(key)) && "$dir/$it" != current }
             ?.forEach { NSFileManager.defaultManager.removeItemAtPath("$dir/$it", error = null) }
         if (!writeBytesAtPath(current, html.encodeToByteArray())) {
             LogUtil.w(TAG, "write cache failed")
         }
     }.onFailure { LogUtil.w(TAG, "write cache failed: ${it.message}") }
-}
-
-actual fun readCachedDiscoverHtml(key: String): String? = runCatching {
-    val dir = cacheDir() ?: return null
-    val path = fileFor(key, dir)
-    if (fileSizeOf(path) !in 1..MAX_CACHED_HTML_BYTES) return null
-    readBytesAtPath(path)?.decodeToString()
-}.onFailure { LogUtil.w(TAG, "read discover cache failed: ${it.message}") }.getOrNull()
-
-actual fun writeCachedDiscoverHtml(key: String, html: String) {
-    runCatching {
-        val dir = cacheDir() ?: return
-        val current = fileFor(key, dir)
-        // 只留当前 key（`discover_` 前缀自理，不碰 `home_*` 文件）。
-        NSFileManager.defaultManager.contentsOfDirectoryAtPath(dir, error = null)
-            ?.filterIsInstance<String>()
-            ?.filter { it.startsWith("discover_") && "$dir/$it" != current }
-            ?.forEach { NSFileManager.defaultManager.removeItemAtPath("$dir/$it", error = null) }
-        if (!writeBytesAtPath(current, html.encodeToByteArray())) {
-            LogUtil.w(TAG, "write discover cache failed")
-        }
-    }.onFailure { LogUtil.w(TAG, "write discover cache failed: ${it.message}") }
 }

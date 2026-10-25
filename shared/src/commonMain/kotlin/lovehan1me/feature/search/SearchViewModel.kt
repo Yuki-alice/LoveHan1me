@@ -12,7 +12,9 @@ import lovehan1me.site.hanime1.HanimeAdvancedSearchRepo.toSearchOptionSet
 import lovehan1me.data.DatabaseRepo
 import lovehan1me.data.NetworkRepo
 import lovehan1me.data.discoverCacheKey
-import lovehan1me.data.readCachedDiscoverHtml
+import lovehan1me.data.readCachedHtml
+import lovehan1me.data.staleFirstFlow
+import lovehan1me.data.StaleOrFresh
 import lovehan1me.site.hanime1.Parser
 import lovehan1me.data.database.entity.SearchHistoryEntity
 import lovehan1me.core.platform.ioDispatcher
@@ -212,44 +214,54 @@ class SearchViewModel() : ViewModel() {
             try {
                 // 先展陈旧第一页（~0.2s 解析），再正常拉新覆盖 —— 进 tab 不再白等整轮网络。
                 // 刷新行为不变（永远拉新）；无缓存/解析失败就当 miss。
+                // （网络优化 3.1：骨架收编，闸门/合并/刷新语义仍留在本 VM。）
                 var staleReplaced = false
-                if (cacheable) {
-                    val cached = runCatching {
+                staleFirstFlow(
+                    readStale = {
+                        if (!cacheable) return@staleFirstFlow null
                         withContext(ioDispatcher) {
-                            readCachedDiscoverHtml(discoverCacheKey())?.let(Parser::hanimeSearch)
+                            readCachedHtml(discoverCacheKey())?.let(Parser::hanimeSearch)
                         }
-                    }.getOrNull()
-                    // 读缓存是挂起的：期间可能已被 cancel/restart 作废，故同样要过闸门。
-                    if (cached is PageLoadingState.Success && pagingGate.isCurrent(token)) {
-                        _searchStateFlow.value = cached
-                        _searchFlow.value = withWatched(cached.info)
-                        staleReplaced = true
-                    }
-                }
-                NetworkRepo.getHanimeSearchResult(
-                    page, query, genre,
-                    sort, broad, date,
-                    duration, tags, brands,
-                    writeCache = cacheable,
-                ).collect { state ->
-                    // 闸门：作废过的响应直接丢弃。不写流、不并列表，也不碰闸门
+                    },
+                    network = NetworkRepo.getHanimeSearchResult(
+                        page, query, genre,
+                        sort, broad, date,
+                        duration, tags, brands,
+                        writeCache = cacheable,
+                    ),
+                ).collect { item ->
+                    // 闸门：作废过的响应直接丢弃（stale 产出同样要过 —— 读缓存是挂起的，
+                    // 期间可能已被 cancel/restart 作废）。不写流、不并列表，也不碰闸门
                     // （新一轮已经在跑，finish 交给 finally，且它对过期凭证是 no-op）。
                     if (!pagingGate.isCurrent(token)) return@collect
-                    val prev = _searchStateFlow.getAndUpdate { state }
-                    if (prev is PageLoadingState.Loading) _searchFlow.value = emptyList()
-                    _searchFlow.update { prevList ->
-                        when (state) {
-                            is PageLoadingState.Success -> {
-                                val updatedList = withWatched(state.info)
-                                // 陈旧页被新鲜第一页替换（不是追加）：去重保首项，
-                                // 直接追加会把旧快照顶在前面、顺序错乱。
-                                val base =
-                                    if (staleReplaced) { staleReplaced = false; emptyList() } else prevList
-                                // B3：去重 + 封顶（超出上限丢最早的，见 SEARCH_RESULT_LIMIT 注释）。
-                                mergeSearchPage(base, updatedList)
+                    when (item) {
+                        is StaleOrFresh.Stale -> {
+                            val cached = item.value
+                            if (cached is PageLoadingState.Success) {
+                                _searchStateFlow.value = cached
+                                _searchFlow.value = withWatched(cached.info)
+                                staleReplaced = true
                             }
-                            is PageLoadingState.Loading -> emptyList()
-                            else -> prevList
+                        }
+                        is StaleOrFresh.Fresh -> {
+                            val state = item.value
+                            val prev = _searchStateFlow.getAndUpdate { state }
+                            if (prev is PageLoadingState.Loading) _searchFlow.value = emptyList()
+                            _searchFlow.update { prevList ->
+                                when (state) {
+                                    is PageLoadingState.Success -> {
+                                        val updatedList = withWatched(state.info)
+                                        // 陈旧页被新鲜第一页替换（不是追加）：去重保首项，
+                                        // 直接追加会把旧快照顶在前面、顺序错乱。
+                                        val base =
+                                            if (staleReplaced) { staleReplaced = false; emptyList() } else prevList
+                                        // B3：去重 + 封顶（超出上限丢最早的，见 SEARCH_RESULT_LIMIT 注释）。
+                                        mergeSearchPage(base, updatedList)
+                                    }
+                                    is PageLoadingState.Loading -> emptyList()
+                                    else -> prevList
+                                }
+                            }
                         }
                     }
                 }

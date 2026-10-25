@@ -15,30 +15,20 @@ private fun fileFor(key: String): File {
     return File(cacheDir(), "$safe.html")
 }
 
-actual fun readCachedHomeHtml(key: String): String? = runCatching {
+/** key 的清理前缀：`home_x` → `home_`（网络优化 3.1：清理规则由调用方语义改为 key 自描述）。 */
+private fun prefixOf(key: String): String = key.substringBefore('_') + "_"
+
+actual fun readCachedHtml(key: String): String? = runCatching {
     fileFor(key).takeIf { it.isFile && it.length() in 1..MAX_CACHED_HTML_BYTES }?.readText()
 }.onFailure { LogUtil.w(TAG, "read cache failed: ${it.message}") }.getOrNull()
 
-actual fun writeCachedHomeHtml(key: String, html: String) {
+actual fun writeCachedHtml(key: String, html: String) {
     runCatching {
         val current = fileFor(key)
-        // 只留当前 key：切站/换号的旧文件不堆积。
-        cacheDir().listFiles { file -> file.isFile && file.name.startsWith("home_") && file != current }
-            ?.forEach { it.delete() }
+        // 只留同前缀的当前 key：切站/换号的旧文件不堆积，也互不串文件。
+        cacheDir().listFiles { file ->
+            file.isFile && file.name.startsWith(prefixOf(key)) && file != current
+        }?.forEach { it.delete() }
         current.writeText(html)
     }.onFailure { LogUtil.w(TAG, "write cache failed: ${it.message}") }
-}
-
-actual fun readCachedDiscoverHtml(key: String): String? = runCatching {
-    fileFor(key).takeIf { it.isFile && it.length() in 1..MAX_CACHED_HTML_BYTES }?.readText()
-}.onFailure { LogUtil.w(TAG, "read discover cache failed: ${it.message}") }.getOrNull()
-
-actual fun writeCachedDiscoverHtml(key: String, html: String) {
-    runCatching {
-        val current = fileFor(key)
-        // 只留当前 key（`discover_` 前缀自理，不碰 `home_*` 文件）。
-        cacheDir().listFiles { file -> file.isFile && file.name.startsWith("discover_") && file != current }
-            ?.forEach { it.delete() }
-        current.writeText(html)
-    }.onFailure { LogUtil.w(TAG, "write discover cache failed: ${it.message}") }
 }
