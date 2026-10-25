@@ -1,0 +1,908 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light" data-page-node-id="w1b10eB91Dv0GRXVlqm8DD">
+<head data-page-node-id="DsEwxkWKEfWedBMXTfWoJ7">
+<meta charset="utf-8" data-page-node-id="wq9y0Ds3Yjo2kGmeQAaAqO"/>
+<meta name="viewport" content="width=device-width,initial-scale=1" data-page-node-id="xt3yCTcoTBepktFG3yBw9C"/>
+<title>LoveHan1me · 发现页 UI 复刻与设计评审</title>
+<style>
+/* ============ 主题 token（Sakura 槽 · materialkolor TonalSpot 现场色算） ============ */
+:root{
+  --primary:#8d4959; --on-primary:#ffffff; --primary-container:#ffd9df; --on-primary-container:#713342;
+  --secondary:#75565c; --secondary-container:#ffd9df; --on-secondary-container:#5b3f44;
+  --tertiary:#7a5732; --tertiary-container:#ffdcbc; --on-tertiary-container:#5f401d;
+  --error:#ba1a1a; --error-container:#ffdad6; --on-error-container:#93000a;
+  --surface:#fff8f7; --on-surface:#22191b;
+  --surface-variant:#f3dde0; --on-surface-variant:#524345;
+  --sc-lowest:#ffffff; --sc-low:#fff0f1; --sc:#fbeaeb; --sc-high:#f5e4e6; --sc-highest:#efdee0;
+  --outline:#847375; --outline-variant:#d6c2c4;
+  --inverse-surface:#382e2f; --inverse-on-surface:#feedee;
+  --page:#ffffff; --nav:#fbeaeb;
+  --scrim:rgba(0,0,0,.32);
+  --chrome-bg:#ece6e8; --chrome-fg:#2b2124; --chrome-sub:#6d5f63; --chrome-card:#ffffff; --chrome-line:#d9cdd0;
+  --anno-bg:#fff3c4; --anno-fg:#5b4700;
+}
+[data-theme="dark"]{
+  --primary:#ffb1c0; --on-primary:#551d2c; --primary-container:#713342; --on-primary-container:#ffd9df;
+  --secondary:#e4bdc3; --secondary-container:#5b3f44; --on-secondary-container:#ffd9df;
+  --tertiary:#ecbe91; --tertiary-container:#5f401d; --on-tertiary-container:#ffdcbc;
+  --error:#ffb4ab; --error-container:#93000a; --on-error-container:#ffdad6;
+  --surface:#191113; --on-surface:#efdee0;
+  --surface-variant:#524345; --on-surface-variant:#d6c2c4;
+  --sc-lowest:#140c0d; --sc-low:#22191b; --sc:#261d1f; --sc-high:#312829; --sc-highest:#3c3234;
+  --outline:#9f8c8f; --outline-variant:#524345;
+  --inverse-surface:#efdee0; --inverse-on-surface:#382e2f;
+  --page:#140c0d; --nav:#261d1f;
+  --scrim:rgba(0,0,0,.5);
+  --chrome-bg:#171215; --chrome-fg:#efdee0; --chrome-sub:#b3a4a8; --chrome-card:#221a1d; --chrome-line:#3b2f32;
+  --anno-bg:#4a3c00; --anno-fg:#ffe9a8;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Hiragino Sans GB","Noto Sans SC","Microsoft YaHei",sans-serif;background:var(--chrome-bg);color:var(--chrome-fg);line-height:1.5;transition:background .2s,color .2s}
+svg{display:block}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer}
+
+/* ============ 页面骨架（评审用，非 App 本体） ============ */
+.wrap{max-width:1280px;margin:0 auto;padding:28px 24px 80px}
+.page-head h1{font-size:24px;font-weight:700;letter-spacing:.5px}
+.page-head .sub{margin-top:6px;font-size:13px;color:var(--chrome-sub)}
+.controls{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:18px 0 8px;position:sticky;top:0;z-index:50;background:var(--chrome-bg);padding:10px 0;border-bottom:1px solid var(--chrome-line)}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;background:var(--chrome-card);border:1px solid var(--chrome-line);border-radius:12px;padding:4px}
+.tab{padding:7px 13px;border-radius:9px;font-size:13px;color:var(--chrome-sub);white-space:nowrap}
+.tab.active{background:var(--primary);color:var(--on-primary);font-weight:600}
+.tools{display:flex;gap:10px;align-items:center;margin-left:auto;font-size:13px;color:var(--chrome-sub)}
+.tools label{display:flex;gap:6px;align-items:center;cursor:pointer;user-select:none}
+.tools .tbtn{padding:7px 13px;border:1px solid var(--chrome-line);border-radius:10px;background:var(--chrome-card);font-size:13px}
+
+.stage{margin:26px 0 10px;display:flex;justify-content:center}
+.state{display:none}
+.state.active{display:block}
+.state-cap{max-width:760px;margin:14px auto 0;font-size:13px;color:var(--chrome-sub);text-align:center}
+.state-cap b{color:var(--chrome-fg)}
+
+/* ============ 设备框 ============ */
+.device{background:#0f0b0c;border-radius:52px;padding:12px;box-shadow:0 24px 60px rgba(0,0,0,.35),0 0 0 2px #2a2225}
+.device.wide{border-radius:20px;padding:10px}
+.screen{position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:var(--page);display:flex;flex-direction:column;isolation:isolate}
+.screen.wide{width:1220px;height:800px;border-radius:12px}
+.statusbar{height:44px;flex:none;display:flex;align-items:center;justify-content:space-between;padding:0 26px 0 30px;font-size:14px;font-weight:600;color:var(--on-surface);background:var(--page)}
+.statusbar .sb-icons{display:flex;gap:6px;align-items:center}
+.statusbar svg{width:17px;height:17px}
+.notch{position:absolute;top:11px;left:50%;transform:translateX(-50%);width:112px;height:32px;border-radius:20px;background:#0f0b0c;z-index:60}
+.homebar{position:absolute;bottom:8px;left:50%;transform:translateX(-50%);width:134px;height:5px;border-radius:3px;background:var(--on-surface);opacity:.85;z-index:60}
+
+.pagebody{flex:1;min-height:0;position:relative;overflow:hidden;background:var(--page)}
+
+/* ============ App 组件：搜索栏 ============ */
+.appbar{flex:none;background:var(--sc-high);border-radius:32px;box-shadow:0 2px 6px rgba(0,0,0,.16);margin:12px 12px 8px;padding:8px}
+.appbar-row{display:flex;align-items:center;padding:4px;gap:2px}
+.tf{flex:1;min-width:0;height:48px;display:flex;align-items:center;padding:0 12px;font-size:16px;color:var(--on-surface)}
+.tf .ph{color:var(--on-surface-variant)}
+.tf input{border:none;outline:none;background:none;font:inherit;color:var(--on-surface);width:100%}
+.iconbtn{flex:none;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--on-surface-variant);position:relative}
+.iconbtn::after{content:"";position:absolute;inset:8px;border-radius:50%;background:currentColor;opacity:0;transition:opacity .15s}
+.iconbtn:hover::after{opacity:.08}
+.iconbtn:active::after{opacity:.12}
+.iconbtn.sm{width:40px;height:40px}
+.iconbtn.sm::after{inset:4px}
+.iconbtn svg{width:24px;height:24px}
+.iconbtn.sm svg{width:20px;height:20px}
+.fillediconbtn{flex:none;width:56px;height:56px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--primary);color:var(--on-primary)}
+.fillediconbtn svg{width:24px;height:24px}
+
+/* ============ App 组件：已选条件条 ============ */
+.criteria{flex:none;display:flex;flex-wrap:wrap;gap:8px;padding:6px 12px}
+.chip{height:32px;display:inline-flex;align-items:center;gap:6px;padding:0 12px;border-radius:8px;font-size:14px;font-weight:500;line-height:20px;white-space:nowrap}
+.chip.sel{background:var(--secondary-container);color:var(--on-secondary-container)}
+.chip.reset{background:var(--sc-highest);color:var(--on-surface)}
+.chip.assist{background:var(--sc-high);color:var(--on-surface);border:1px solid var(--outline-variant)}
+.chip svg{width:18px;height:18px}
+
+/* ============ App 组件：视频网格 ============ */
+.gridarea{flex:1;min-height:0;overflow:hidden;padding:8px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vcard{background:var(--sc-low);border-radius:20px;overflow:hidden;display:flex;flex-direction:column}
+.cover{position:relative;aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;color:rgba(255,255,255,.5)}
+.cover .wm{width:34px;height:34px;opacity:.55}
+.cover .scrim{position:absolute;left:0;right:0;bottom:0;height:34px;display:flex;align-items:center;gap:3px;padding:0 6px;font-size:12px;font-weight:500;color:#fff;background:linear-gradient(to top,rgba(0,0,0,.62),rgba(0,0,0,0))}
+.cover .scrim svg{width:14px;height:14px}
+.cover .scrim .grow{flex:1}
+.badge-played{position:absolute;top:6px;right:6px;background:rgba(0,0,0,.65);color:#fff;font-size:11px;font-weight:700;line-height:16px;padding:2px 6px;border-radius:4px}
+.vtitle{padding:4px 10px 0;font-size:14px;font-weight:700;line-height:22px;color:var(--on-surface);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:44px}
+.vartist{padding:2px 10px 0;font-size:11px;line-height:16px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vmeta{display:flex;align-items:center;gap:2px;padding:4px 10px 10px;font-size:11px;line-height:16px;color:var(--on-surface-variant)}
+.vmeta svg{width:14px;height:14px}
+.loadmore{grid-column:1/-1;display:flex;justify-content:center;padding:14px 0 4px}
+.spinner{width:24px;height:24px;border-radius:50%;border:3px solid var(--primary);border-top-color:transparent;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* ============ App 组件：底部导航 ============ */
+.navbar{flex:none;height:80px;background:var(--nav);display:flex;justify-content:space-around;align-items:flex-start;padding-top:12px}
+.nav-item{display:flex;flex-direction:column;align-items:center;gap:4px;font-size:12px;font-weight:500;line-height:16px;color:var(--on-surface-variant);width:88px}
+.nav-item .ind{width:64px;height:32px;border-radius:16px;display:flex;align-items:center;justify-content:center}
+.nav-item svg{width:24px;height:24px}
+.nav-item.active{color:var(--on-secondary-container)}
+.nav-item.active .ind{background:var(--secondary-container)}
+
+/* ============ App 组件：空态 ============ */
+.empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;padding:24px;text-align:center}
+.empty .ill{width:150px;height:110px;border-radius:16px;background:var(--sc);display:flex;align-items:center;justify-content:center;color:var(--on-surface-variant);font-size:13px;margin-bottom:16px}
+.empty .t1{font-size:14px;line-height:22px;color:var(--on-surface)}
+.empty .t2{font-size:12px;line-height:18px;color:var(--on-surface-variant)}
+
+/* ============ App 组件：历史列表 ============ */
+.hist-label{padding:8px 16px 4px;font-size:12px;font-weight:500;line-height:16px;color:var(--on-surface-variant)}
+.hist-row{display:flex;align-items:center;gap:12px;padding:10px 16px;width:100%;text-align:left}
+.hist-row:hover{background:var(--sc-low)}
+.hist-row svg.lead{width:18px;height:18px;color:var(--on-surface-variant);flex:none}
+.hist-row .q{flex:1;min-width:0;font-size:14px;line-height:22px;color:var(--on-surface-variant);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-row .del{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--on-surface-variant);flex:none}
+.hist-row .del svg{width:16px;height:16px}
+
+/* ============ App 组件：ModalBottomSheet ============ */
+.scrimlayer{position:absolute;inset:0;background:var(--scrim);z-index:30}
+.sheet{position:absolute;left:0;right:0;bottom:0;z-index:40;max-height:92%;display:flex;flex-direction:column;background:var(--sc-low);border-radius:28px 28px 0 0;box-shadow:0 -4px 24px rgba(0,0,0,.22);animation:sheetup .28s cubic-bezier(.05,.7,.1,1)}
+@keyframes sheetup{from{transform:translateY(60px);opacity:.4}}
+.handle{width:32px;height:4px;border-radius:2px;background:var(--on-surface-variant);opacity:.4;margin:12px auto 2px;flex:none}
+.sheet-body{overflow-y:auto;padding:12px 16px 16px;display:flex;flex-direction:column;gap:12px;min-height:0}
+.sheet-title{font-size:24px;line-height:32px;font-weight:400;color:var(--on-surface)}
+.sec{display:flex;flex-direction:column;gap:8px}
+.sec-title{font-size:16px;line-height:24px;font-weight:500;color:var(--on-surface)}
+.sec-row{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.textbtn{height:40px;display:inline-flex;align-items:center;padding:0 12px;border-radius:4px;font-size:14px;font-weight:500;line-height:20px;color:var(--primary);position:relative}
+.textbtn::after{content:"";position:absolute;inset:6px 4px;border-radius:4px;background:currentColor;opacity:0;transition:opacity .15s}
+.textbtn:hover::after{opacity:.08}
+.textbtn:active::after{opacity:.12}
+.textbtn:disabled{color:var(--on-surface);opacity:.38;cursor:default}
+.textbtn:disabled::after{display:none}
+.hcard{background:var(--sc-low);border-radius:16px;box-shadow:0 1px 2px rgba(0,0,0,.14);display:flex;align-items:center;gap:8px;padding:12px;width:100%;text-align:left}
+.hcard .hq{font-size:16px;line-height:24px;font-weight:500;color:var(--on-surface)}
+.hcard .hc{font-size:12px;line-height:18px;color:var(--on-surface-variant);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.hcard .col{flex:1;min-width:0;display:flex;flex-direction:column;gap:4px}
+.preset-row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.preset-empty{font-size:12px;line-height:18px;color:var(--on-surface-variant)}
+.blocks{display:flex;flex-wrap:wrap;gap:12px}
+.fblock{flex:1 1 calc(50% - 6px);min-height:60px;border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:2px;justify-content:center;min-width:0}
+.fblock .fb-label{font-size:12px;line-height:16px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fblock .fb-value{font-size:16px;line-height:24px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.fblock.sel{background:var(--secondary-container);color:var(--on-secondary-container);box-shadow:0 1px 3px rgba(0,0,0,.12)}
+.fblock.unsel{background:var(--sc-high);color:var(--on-surface)}
+.fblock.unsel .fb-label{color:var(--on-surface-variant)}
+.tips{font-size:14px;line-height:22px;color:var(--on-surface)}
+.sheet-actions{flex:none;padding:0 16px 16px}
+.divider{height:1px;background:var(--outline-variant);margin:0 -16px 12px}
+.act-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.act-count{font-size:14px;line-height:22px;color:var(--on-surface-variant)}
+.filledbtn{width:100%;height:40px;border-radius:4px;background:var(--primary);color:var(--on-primary);display:flex;align-items:center;justify-content:center;gap:8px;font-size:14px;font-weight:500;line-height:20px;position:relative;overflow:hidden}
+.filledbtn::after{content:"";position:absolute;inset:0;background:currentColor;opacity:0;transition:opacity .15s}
+.filledbtn:hover::after{opacity:.08}
+.filledbtn:active::after{opacity:.12}
+.filledbtn svg{width:18px;height:18px}
+
+/* ============ App 组件：AlertDialog ============ */
+.dlgwrap{position:absolute;inset:0;z-index:50;display:flex;align-items:center;justify-content:center;padding:24px;background:var(--scrim)}
+.dlg{width:min(312px,100%);max-height:100%;display:flex;flex-direction:column;background:var(--sc-high);border-radius:28px;padding:24px;box-shadow:0 12px 40px rgba(0,0,0,.4)}
+.dlg-title{font-size:24px;line-height:32px;color:var(--on-surface);margin-bottom:16px}
+.dlg-content{overflow-y:auto;min-height:0;display:flex;flex-direction:column;gap:8px}
+.dlg-actions{display:flex;justify-content:flex-end;gap:8px;margin-top:20px;flex-wrap:wrap}
+.choice{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;border-radius:4px;font-size:16px;line-height:24px;width:100%;text-align:left}
+.choice.sel{background:var(--secondary-container);color:var(--on-secondary-container);font-weight:500}
+.choice svg{width:24px;height:24px;flex:none}
+.switchrow{display:flex;align-items:center;gap:12px;width:100%;text-align:left}
+.switchrow .st{flex:1;min-width:0}
+.switchrow .st1{font-size:14px;line-height:20px;font-weight:500;color:var(--on-surface)}
+.switchrow .st2{font-size:12px;line-height:18px;color:var(--on-surface-variant)}
+.switch{flex:none;width:52px;height:32px;border-radius:16px;background:var(--sc-highest);border:2px solid var(--outline);position:relative;transition:background .15s}
+.switch::after{content:"";position:absolute;top:50%;left:4px;transform:translateY(-50%);width:16px;height:16px;border-radius:50%;background:var(--outline);transition:all .15s}
+.switch.on{background:var(--primary);border-color:var(--primary)}
+.switch.on::after{left:26px;width:24px;height:24px;background:var(--on-primary)}
+.tabrow{display:flex;gap:0;overflow-x:auto;border-bottom:1px solid var(--sc-highest);scrollbar-width:none}
+.tabrow::-webkit-scrollbar{display:none}
+.dtab{flex:none;padding:12px 14px;font-size:14px;font-weight:500;line-height:20px;color:var(--on-surface-variant);position:relative;white-space:nowrap}
+.dtab.on{color:var(--primary)}
+.dtab.on::after{content:"";position:absolute;left:10px;right:10px;bottom:0;height:3px;border-radius:3px 3px 0 0;background:var(--primary)}
+.searchfield{display:flex;align-items:center;gap:10px;height:48px;padding:0 14px;border:1px solid var(--outline);border-radius:4px;color:var(--on-surface)}
+.searchfield svg{width:20px;height:20px;color:var(--on-surface-variant);flex:none}
+.searchfield .ph{color:var(--on-surface-variant);font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.taggrid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.tagchip{min-height:32px;display:inline-flex;align-items:center;justify-content:center;gap:4px;padding:4px 8px;border-radius:8px;font-size:13px;font-weight:500;line-height:18px;text-align:center}
+.tagchip svg{width:16px;height:16px;flex:none}
+.tagchip.sel{background:var(--secondary-container);color:var(--on-secondary-container)}
+.tagchip.unsel{background:var(--sc-low);color:var(--on-surface);border:1px solid var(--outline-variant)}
+.dlg-foot{font-size:12px;line-height:18px;color:var(--on-surface-variant);padding-top:4px}
+.segrow{display:flex;width:100%;height:40px}
+.seg{flex:1;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:500;line-height:20px;border:1px solid var(--outline);color:var(--on-surface);position:relative}
+.seg:first-child{border-radius:20px 0 0 20px}
+.seg:last-child{border-radius:0 20px 20px 0;border-left:none}
+.seg.on{background:var(--secondary-container);color:var(--on-secondary-container)}
+.seg.on::after{content:"";position:absolute;inset:0;border:1px solid var(--secondary);border-radius:inherit;pointer-events:none}
+.wheels{display:flex;gap:12px}
+.wheel{flex:1;min-width:0;display:flex;flex-direction:column;gap:8px}
+.wheel-title{text-align:center;font-size:14px;line-height:20px;font-weight:500;color:var(--primary)}
+.wheel-list{height:216px;overflow:hidden;display:flex;flex-direction:column;gap:6px;padding:10px 0;position:relative}
+.wheel-list::before,.wheel-list::after{content:"";position:absolute;left:0;right:0;height:28px;z-index:2;pointer-events:none}
+.wheel-list::before{top:0;background:linear-gradient(to bottom,var(--sc-high),rgba(0,0,0,0))}
+.wheel-list::after{bottom:0;background:linear-gradient(to top,var(--sc-high),rgba(0,0,0,0))}
+.witem{flex:none;min-height:38px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:15px;line-height:22px}
+.witem.sel{background:var(--primary);color:var(--on-primary);font-weight:500;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+.witem.unsel{background:var(--sc-low);color:var(--on-surface-variant)}
+
+/* ============ App 组件：宽屏（Rail + 常驻筛选栏） ============ */
+.wideframe{display:flex;width:100%;height:100%;background:var(--nav)}
+.rail{flex:none;width:80px;display:flex;flex-direction:column;align-items:center;padding:12px 0;gap:12px}
+.rail .sp{flex:1}
+.rail-item{width:56px;height:56px;border-radius:16px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font-size:11px;line-height:14px;color:var(--on-surface-variant)}
+.rail-item svg{width:24px;height:24px}
+.rail-item.active{background:var(--secondary-container);color:var(--on-secondary-container)}
+.widecontent{flex:1;min-width:0;background:var(--page);border-radius:28px 0 0 28px;display:flex;flex-direction:column;overflow:hidden}
+.widerow{flex:1;min-height:0;display:flex}
+.sidepanel{flex:none;width:240px;background:var(--sc-low);padding:12px;display:flex;flex-direction:column;gap:12px;min-height:0}
+.sidepanel .sp-title{font-size:16px;line-height:24px;font-weight:500;color:var(--on-surface);padding:2px 4px}
+.side-scroll{flex:1;min-height:0;overflow-y:auto;display:flex;flex-direction:column;gap:12px}
+.side-actions{flex:none;display:flex;flex-direction:column;gap:8px}
+.side-actions .divider{margin:0}
+.vdiv{flex:none;width:1px;background:var(--outline-variant)}
+.widemain{flex:1;min-width:0;display:flex;flex-direction:column}
+.widegrid{flex:1;min-height:0;overflow:hidden;padding:8px}
+.widegrid .grid{grid-template-columns:repeat(3,1fr)}
+
+/* ============ 规范注解 ============ */
+.anno{display:inline-flex;align-items:center;justify-content:center;min-width:16px;height:16px;padding:0 3px;margin-left:5px;border-radius:9px;background:var(--anno-bg);color:var(--anno-fg);font-size:10px;font-weight:700;line-height:16px;vertical-align:2px;cursor:default}
+body:not(.show-anno) .anno{display:none}
+.legend{max-width:860px;margin:18px auto 0;display:none;background:var(--chrome-card);border:1px solid var(--chrome-line);border-radius:14px;padding:16px 18px}
+body.show-anno .legend{display:block}
+.legend h3{font-size:14px;margin-bottom:8px}
+.legend ol{margin-left:20px;font-size:13px;color:var(--chrome-sub);display:flex;flex-direction:column;gap:5px}
+.legend b{color:var(--chrome-fg)}
+
+/* ============ 评审区 ============ */
+.review{margin-top:56px;display:flex;flex-direction:column;gap:22px}
+.review h2{font-size:20px;font-weight:700}
+.review h3{font-size:16px;font-weight:700;margin-top:6px}
+.review p,.review li{font-size:14px;color:var(--chrome-sub)}
+.review b{color:var(--chrome-fg)}
+.card{background:var(--chrome-card);border:1px solid var(--chrome-line);border-radius:16px;padding:20px 22px}
+.card ul,.card ol{margin:8px 0 0 20px;display:flex;flex-direction:column;gap:7px}
+.pri{display:inline-block;padding:1px 8px;border-radius:6px;font-size:12px;font-weight:700;margin-right:8px;vertical-align:1px}
+.pri.p0{background:#ba1a1a;color:#fff}
+.pri.p1{background:#7a5732;color:#fff}
+.pri.p2{background:#5b3f44;color:#fff}
+.issue{display:flex;flex-direction:column;gap:4px;padding:12px 0;border-bottom:1px dashed var(--chrome-line)}
+.issue:last-child{border-bottom:none}
+.issue .t{font-size:14px;font-weight:600;color:var(--chrome-fg)}
+.issue .d{font-size:13px;color:var(--chrome-sub)}
+.issue .d b{color:var(--chrome-fg)}
+table.tbl{width:100%;border-collapse:collapse;font-size:13px;margin-top:10px}
+table.tbl th,table.tbl td{border:1px solid var(--chrome-line);padding:7px 10px;text-align:left;vertical-align:top}
+table.tbl th{background:var(--chrome-bg);color:var(--chrome-fg);font-weight:600}
+table.tbl td{color:var(--chrome-sub)}
+table.tbl td b{color:var(--chrome-fg)}
+.ok{color:#1b7a3d;font-weight:700}
+.warn{color:#ba1a1a;font-weight:700}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;background:var(--chrome-bg);padding:1px 5px;border-radius:5px;color:var(--chrome-fg)}
+.footnote{margin-top:36px;font-size:12px;color:var(--chrome-sub);border-top:1px solid var(--chrome-line);padding-top:14px;display:flex;flex-direction:column;gap:4px}
+@media (max-width:900px){.screen.wide{width:960px;height:640px}.rail{width:64px}}
+</style>
+</head>
+<body data-page-node-id="OqBbExv1DF6KhmoavBE9Jw">
+
+<!-- 图标库 -->
+<svg width="0" height="0" style="position:absolute" data-page-node-id="lHVDCSgQz3nUBMiiebrADI">
+  <symbol id="i-search" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="CCR1WM5Rc3KDbJSLj9oln9"><path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z" data-page-node-id="9UbphJueKtHeHhKkEfo29z"/></symbol>
+  <symbol id="i-close" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="OA07VoOlzq8fkqA3y84qb3"><path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z" data-page-node-id="bOjIDqgW56cyxid2IwhtSq"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="HPF13akYVVmbQrn8E47tHj"><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" data-page-node-id="UM7knl26mUlgcCcaVCkdNn"/></symbol>
+  <symbol id="i-filter" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="1YhoUlHGNejDDwSTBRtIqO"><path d="M10 18h4v-2h-4v2zM3 6v2h18V6H3zm3 7h12v-2H6v2z" data-page-node-id="B2a6T7dgrF5CH9AzyrFPIJ"/></symbol>
+  <symbol id="i-delete" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="t51HRLYxr1PBBubjq5GX0M"><path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" data-page-node-id="FsjAp4y3Hqx8Ul5MEKZIpy"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="cY5DCcMU6JjXuVaV4LErjc"><path d="M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z" data-page-node-id="bkm6d7UXAhQVlizO7u0BGW"/></symbol>
+  <symbol id="i-checkcircle" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="CFtUKuAKf7pS00HsYSvDCs"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" data-page-node-id="SCPURk8FNT5996Ao6Zp6ym"/></symbol>
+  <symbol id="i-play" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="cHUvpzciTetCCLW91xmTM9"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 14.5v-9l6 4.5-6 4.5z" data-page-node-id="OePSvUXjb4enowlj69rnDA"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="Vv3PTcv4Ig7oLe1OlPz1FP"><path d="M11.99 2C6.47 2 2 6.48 2 12s4.47 10 9.99 10C17.52 22 22 17.52 22 12S17.52 2 11.99 2zM12 20c-4.42 0-8-3.58-8-8s3.58-8 8-8 8 3.58 8 8-3.58 8-8 8zm.5-13H11v6l5.25 3.15.75-1.23-4.5-2.67z" data-page-node-id="HMCmcwZzpNzH9ndFdrzXHn"/></symbol>
+  <symbol id="i-like" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="rC94wfV54SDfHVtDEf8FZR"><path d="M1 21h4V9H1v12zm22-11c0-1.1-.9-2-2-2h-6.31l.95-4.57.03-.32c0-.41-.17-.79-.44-1.06L14.17 1 7.59 7.59C7.22 7.95 7 8.45 7 9v10c0 1.1.9 2 2 2h9c.83 0 1.54-.5 1.84-1.22l3.02-7.05c.09-.23.14-.47.14-.73v-2z" data-page-node-id="OHwd7CKrkXkQGf6epGMHZz"/></symbol>
+  <symbol id="i-home" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="0DOPp971AEpEkYQPAGLAmY"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" data-page-node-id="2HdA8HikhrV9CJFbTe3gUJ"/></symbol>
+  <symbol id="i-explore" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="kH2NkeCKNVkMASFkRsXaMd"><path d="M12 10.9c-.61 0-1.1.49-1.1 1.1s.49 1.1 1.1 1.1 1.1-.49 1.1-1.1-.49-1.1-1.1-1.1zM12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm2.19 12.19L6 18l3.81-8.19L18 6l-3.81 8.19z" data-page-node-id="gYjB5FhMkwrlKTWfp0NSA0"/></symbol>
+  <symbol id="i-person" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="wIkHFyIIHcEFuUGZLMO2ex"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" data-page-node-id="8BASnyvifMHaFh6fYyYKpd"/></symbol>
+  <symbol id="i-settings" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="dvgt1o289p1tb9E70ue6FN"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z" data-page-node-id="63Mjc1LSmWuJduksBCyWrp"/></symbol>
+  <symbol id="i-wifi" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="bcvllefS6JUztuiBegkFzN"><path d="M12 21l3.6-4.8c-1-.8-2.3-1.2-3.6-1.2s-2.6.4-3.6 1.2L12 21zm0-18C7.4 3 3.2 4.7 0 7.4l2 2.7C4.5 7.7 8.1 6 12 6s7.5 1.7 10 4.1l2-2.7C20.8 4.7 16.6 3 12 3zm0 6c-3.8 0-7.2 1.4-9.5 3.7l2 2.7C6.4 13.2 9 12 12 12s5.6 1.2 7.5 3.4l2-2.7C19.2 10.4 15.8 9 12 9z" data-page-node-id="UyL8Y1RkLvMsaIwV9WxTOv"/></symbol>
+  <symbol id="i-batt" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="nnk02HzXftXh5qcpmF0lwp"><path d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" data-page-node-id="mkgYvgazGkM9dEQLEVUC6i"/></symbol>
+  <symbol id="i-signal" viewBox="0 0 24 24" fill="currentColor" data-page-node-id="UQgC6O49A53V1uFCUGXqcq"><path d="M2 22h20V2L2 22z" data-page-node-id="oYXtMv7KVLxdOl3BcBrCv7"/></symbol>
+</svg>
+
+<div class="wrap" data-page-node-id="WMbVokJTyc3KR5pjslYmJ4">
+
+  <header class="page-head" data-page-node-id="y7FpMZwW0HKBhc5EsUgEoA">
+    <h1 data-page-node-id="GDAHtVeNVBxHqnornBeEQQ">发现页 UI 复刻预览 · LoveHan1me</h1>
+    <p class="sub" data-page-node-id="AsbTae5FXD6DORTlCnUpOl">源码：<code data-page-node-id="iW6tEcZ5QtC4DNnZan7bhg">shared/.../feature/search/*</code>（SearchScreen / SearchAppBar / CollapsibleSearchCriteria / AdvancedSearchSheet / AdvancedSearchSidePanel） · 配色：默认「樱」槽 materialkolor TonalSpot 现场色算（种子 #F596AA，material-color-utilities 0.2.6 复算） · 组件规格：锁定版 material3 字节码核验（SearchBar 56dp / IconButton 56dp / Chip 32dp / AlertDialog surfaceContainerHigh）</p>
+  </header>
+
+  <div class="controls" data-page-node-id="JeVwl5JyHMXOHJpDQo5F5v">
+    <div class="tabs" id="tabs" data-page-node-id="DU7XTjCIBiwVwB7R4BGEOT">
+      <button class="tab active" data-s="s1" data-page-node-id="dQINOPBseTgKWghNUEeb0j">① 空态 · 最近搜索</button>
+      <button class="tab" data-s="s2" data-page-node-id="rJZLUPYs2mOJCW0HZvNB3X">② 结果态 · 条件条 + 网格</button>
+      <button class="tab" data-s="s3" data-page-node-id="tZEosYm1nTqHk7hnT58IFI">③ 无结果态</button>
+      <button class="tab" data-s="s4" data-page-node-id="AAsti4z8JZdLmjPMDlfcQp">④ 高级搜索弹窗 ★</button>
+      <button class="tab" data-s="s5" data-page-node-id="0JyeDcm5XC3v5hPFtqkqgO">⑤ 单选对话框（类型）</button>
+      <button class="tab" data-s="s6" data-page-node-id="12S6Md0L4shNuuHHzyWYfj">⑥ 多选对话框（标签）★</button>
+      <button class="tab" data-s="s7" data-page-node-id="uhfbQHm8xDoD03wUkjbJa8">⑦ 发布日期对话框</button>
+      <button class="tab" data-s="s8" data-page-node-id="Ly2gDslN4iGZYzklmnBsmT">⑧ 宽屏常驻筛选栏 ★</button>
+    </div>
+    <div class="tools" data-page-node-id="HWr2WiSfaW3PBDhNoLcaEy">
+      <label data-page-node-id="VQAk8C1Zffi8byZaFfCMzE"><input type="checkbox" id="annoToggle" data-page-node-id="8KR8A0MbEk3GyPEe9LvXOM"/> 显示规范注解</label>
+      <button class="tbtn" id="themeBtn" data-page-node-id="6w3qBxA3aPVAQWcpfakWTG">切换深色</button>
+    </div>
+  </div>
+
+  <section class="stage" data-page-node-id="XWmNCQmPO5y3Gu16RDAXHN">
+
+    <!-- ============ 状态 1：空态（最近搜索） ============ -->
+    <div class="state active" id="s1" data-page-node-id="5yWVL9ZX6CbIIUDNBFMNVI">
+      <div class="device" data-page-node-id="VcFSspfX4MDcpUaIFfAEQZ">
+        <div class="notch" data-page-node-id="Ebq3jwBFy1evMwGseB5jEx"></div>
+        <div class="screen" data-page-node-id="GgP77qxQTQrODtoKKv2HKl">
+          <div class="statusbar" data-page-node-id="JxL0Gm9erY1KTcNrNf0UH5"><span data-page-node-id="DDh2yPEyObQ9Hs7TqO6cAF">17:49</span><span class="sb-icons" data-page-node-id="dnHOFALjoNDaEUtOEsihsw"><svg data-page-node-id="41SKzJ86HPwfVuzam9lU0L"><use href="#i-signal" data-page-node-id="PTcEHSVLnmx4O5FckDNnaV"/></svg><svg data-page-node-id="XSuvgyon7q8l3jvvROpm4N"><use href="#i-wifi" data-page-node-id="bu5DTnU0RAkyixpTeRs97Y"/></svg><svg data-page-node-id="5TZoG8WuwSA8rGXMvkahCz"><use href="#i-batt" data-page-node-id="6e1hKIw4Qk2Hv0zhiGCcjC"/></svg></span></div>
+          <div class="appbar" data-page-node-id="7rvCGvGElbQ8yAVLJMGfCL">
+            <div class="appbar-row" data-page-node-id="b25lS2px4Gfxk9sDJ6YWJ3">
+              <div class="tf" data-page-node-id="wrNelokXhV5x8cBbhR57V1"><span class="ph" data-page-node-id="iW1q0gzpfJqE8qvTnGVFo7">请输入关键词</span></div>
+              <button class="fillediconbtn" aria-label="高级搜索" data-page-node-id="iQ6X1otpY6DvOV0VShU7YU"><svg data-page-node-id="NU6PpdcILtMWcKbO9zydSC"><use href="#i-filter" data-page-node-id="xlDACaBXmrRL8RGjETJvuj"/></svg></button>
+            </div>
+          </div>
+          <div class="pagebody" style="overflow-y:auto" data-page-node-id="2bJpOgDPU8PJB6hXbTHBfE">
+            <div class="hist-label" data-page-node-id="p5PGV3Vo55CQcST9AViKC9">最近搜索</div>
+            <div class="hist-row" data-page-node-id="J5XiLfiXjElu4B3FFQpLye"><svg class="lead" data-page-node-id="wkXOGaQgqmfpYL9faTb4GG"><use href="#i-search" data-page-node-id="AHlHdEb04OQBQAvvfSuBKW"/></svg><span class="q" data-page-node-id="DzvoHr6xmEDxcZ5pGeGCDJ">纯爱</span><span class="del" data-page-node-id="QzH5Gh51onGXalnL2Ot35b"><svg data-page-node-id="FaP0FPY6HDCFxa65T0NqDD"><use href="#i-close" data-page-node-id="PyABdeKPtodToamYjXzLFN"/></svg></span></div>
+            <div class="hist-row" data-page-node-id="gxCPjZ3eU7LkzIAiVd20mP"><svg class="lead" data-page-node-id="NUFxudgDwYRwt7xtOemnFI"><use href="#i-search" data-page-node-id="kQVCs5rXOIZOtnujFd5Av0"/></svg><span class="q" data-page-node-id="WQSbeEdcAObvLYu9B0pZ5x">泡面番 中文字幕</span><span class="del" data-page-node-id="OjGQ8tYw16bRQpCS4IA6mC"><svg data-page-node-id="Ea1VWd9DeBPu1fblT4RTYV"><use href="#i-close" data-page-node-id="B4WShyxC1pk8rHbdzDV3cF"/></svg></span></div>
+            <div class="hist-row" data-page-node-id="mJPlbs3jPbtryGMNyEfkBx"><svg class="lead" data-page-node-id="tyk4CRGbeTuZe1VpjLMhWT"><use href="#i-search" data-page-node-id="amC9stTTsUAgDtikIoH7QI"/></svg><span class="q" data-page-node-id="oj83LYWsxEAgTMTRpNOBlx">桃井工作室</span><span class="del" data-page-node-id="GSIRCsp6GKUaiKtAbwPMc9"><svg data-page-node-id="Cb0AU6UY2S3AWVLEwx2QT8"><use href="#i-close" data-page-node-id="ZbYwceKf6tVKY2hbeHGvW5"/></svg></span></div>
+            <div class="hist-row" data-page-node-id="2YISHKyZQC2WPwJ9DgFesR"><svg class="lead" data-page-node-id="EyTjMQ3BsV8wNwvo2UKrYn"><use href="#i-search" data-page-node-id="4U55YJqHxf4BJaDp2JDWWo"/></svg><span class="q" data-page-node-id="00pJNerOMZouUrICMX6n80">2026 年 3 月</span><span class="del" data-page-node-id="wGdqg7SBLnKpe4K0Iw1Mz4"><svg data-page-node-id="kTrjvFE0BPa6wtGNzhv0ri"><use href="#i-close" data-page-node-id="9sMnQjpmt34pwpur6GGN94"/></svg></span></div>
+            <div class="hist-row" data-page-node-id="PaH1xkBNDUFMFwh8Lz0szL"><svg class="lead" data-page-node-id="4WXt0OPIGabkEVUdhdCRPk"><use href="#i-search" data-page-node-id="F1Acq8LccCHFy3SFUuQjGq"/></svg><span class="q" data-page-node-id="5cBNpQuQQtwPR0FhfRpFRA">巨乳 JK</span><span class="del" data-page-node-id="eU0zht8M6z4Eha86BidVbh"><svg data-page-node-id="Hzpr3EZOF731Po2KCXmsVD"><use href="#i-close" data-page-node-id="XysFXP3PXAoBEnilHp2ja0"/></svg></span></div>
+          </div>
+          <div class="navbar" data-page-node-id="6LYHEva2UrB4WeHWGW91wp">
+            <div class="nav-item" data-page-node-id="sxAjG55ZOUwz7CUuRqA1sk"><span class="ind" data-page-node-id="xvM4WSMUjGvCBc1g3Ai890"><svg data-page-node-id="kHkC99VPE3V6Dssywhi396"><use href="#i-home" data-page-node-id="3vOIRIw0C2MFWYTZ6uikbM"/></svg></span>首页</div>
+            <div class="nav-item active" data-page-node-id="1022mFf1JdQMSRiNVDX4No"><span class="ind" data-page-node-id="bRprSxwEAbkoy894DXPBaG"><svg data-page-node-id="qAQhk2HNaUI1Us3GCHwE8h"><use href="#i-explore" data-page-node-id="ioLFb1TzPFCvO95LdZfRma"/></svg></span>发现</div>
+            <div class="nav-item" data-page-node-id="b0QSSemRNuX8wfnqvySnvX"><span class="ind" data-page-node-id="83QRUv35dAIMxEND1lrJDY"><svg data-page-node-id="iyewENRNBujtyUSfykIgIs"><use href="#i-person" data-page-node-id="Xbmls2aLwhEkdvaGLgxmhA"/></svg></span>我的</div>
+          </div>
+          <div class="homebar" data-page-node-id="oxnRLOKtzKbmNI4vTrREEf"></div>
+        </div>
+      </div>
+      <p class="state-cap" data-page-node-id="fjGIzeKKKzCAkvWLC13GVx"><b data-page-node-id="oy3jtbsEyCPJ9WMaCes2DQ">发现页 = 搜索屏（tab 模式）</b>：无返回箭头、空参进入自动 page=1 空搜（浏览全部）。聚焦输入框前展示「最近搜索」——10 条封顶、防抖 300ms、单条可删。<b data-page-node-id="VvulSEMwqb9FQ9gfBHKsnc">SearchAppBar</b> 为自绘：<code data-page-node-id="HRbYWm6febVDaSkD1JlPNS">surfaceContainerHigh</code> 单容器 + <code data-page-node-id="ihobEWLHXvGBvHuxVI5A45">extraLargeIncreased</code>(32dp) 圆角 + 4dp 阴影，行内 56dp 漏斗按钮（FilledIconButton）。</p>
+    </div>
+
+    <!-- ============ 状态 2：结果态 ============ -->
+    <div class="state" id="s2" data-page-node-id="oTmsnEWTYnh5ut0kvY3QIq">
+      <div class="device" data-page-node-id="66M4qSZa3VZgvcyypuWlk1">
+        <div class="notch" data-page-node-id="Mx5Cnk6Tk12hzp7iLyHKoS"></div>
+        <div class="screen" data-page-node-id="9Za9DUssBWeDHgoLHdrTom">
+          <div class="statusbar" data-page-node-id="86bFFlKUogYdZZWMnTx8fk"><span data-page-node-id="Dh3GI199ao7lSTIlr6CIVS">17:49</span><span class="sb-icons" data-page-node-id="Pjk8tL0Fo4EQ9UEqgYLmwq"><svg data-page-node-id="HBRx2wkvYJWW4nDGPbvzSF"><use href="#i-signal" data-page-node-id="2qVfkFDIdV7iI8XQvwAUZX"/></svg><svg data-page-node-id="bfVjxMhGia3bBGHcnEyY6n"><use href="#i-wifi" data-page-node-id="ilbcQBnlQYulPinR0kGoDA"/></svg><svg data-page-node-id="AVNSbUHXRyZvUal2NqJSOB"><use href="#i-batt" data-page-node-id="RkJRQlMN6cmxY2lmDAF6SP"/></svg></span></div>
+          <div class="appbar" data-page-node-id="RjLM2LcOItfMo1jJubd3EX">
+            <div class="appbar-row" data-page-node-id="AHSDnK4h7SpbOsNRkTqx2j">
+              <div class="tf" data-page-node-id="InH30sMJc5QAdLexALBCtr"><input value="纯爱" readonly data-page-node-id="PMc1wQfEHEaivKKbzQjyMc"/><span style="flex:1" data-page-node-id="5Hahgw3AQOYNshDL9h5f8P"></span></div>
+              <button class="iconbtn" aria-label="清除" data-page-node-id="FkgcwCoLHzhlqD7teQnvNt"><svg data-page-node-id="kJbEVZMP3CANoc99AGYPHi"><use href="#i-close" data-page-node-id="nRiNwaGx0Yh4EjFEMZokmp"/></svg></button>
+              <button class="fillediconbtn" aria-label="高级搜索" data-page-node-id="Jyp2kHrlVkKaRkpSsmv3Ab"><svg data-page-node-id="eTfADwUlcn9bpkWKatFFit"><use href="#i-filter" data-page-node-id="HMOZuK9ZX6xRF1K8LZRAYu"/></svg></button>
+            </div>
+          </div>
+          <div class="criteria" data-page-node-id="R2A98lvSHJiAreAHIZQZ7G">
+            <span class="chip sel" data-page-node-id="6Sv4ihLLdYWwuSeVzgYxeF">类型: 里番<b class="anno" data-page-node-id="MDEBTxwkWZJtkB8d1gTlXN">1</b></span>
+            <span class="chip sel" data-page-node-id="3txN5SHnkYtEFFO8z85PIc">标签 (3)</span>
+            <span class="chip sel" data-page-node-id="9yGRBsGEcm1JE5AOzP3zs1">排序方式: 最新上市</span>
+            <span class="chip sel" data-page-node-id="bTlwX81Lx8Kf1FgdZEWvk8">发布日期: 2026年3月</span>
+            <span class="chip sel" data-page-node-id="xfEQCKcKoSffMeDD9uDbQW">影片时长: 5分钟以上</span>
+            <span class="chip sel" data-page-node-id="g9ZbFZdz3FNcFBtruZsXBQ">品牌 (2)</span>
+            <span class="chip sel" data-page-node-id="jQ3ZnLXVWOKGrV1bsdA3Ba">模糊搜索</span>
+            <span class="chip reset" data-page-node-id="aiklxzqHVr6MvN5DxqYkLv">重置</span>
+          </div>
+          <div class="gridarea" data-page-node-id="gxoEBj0U16Dz23PtuhV7ey">
+            <div class="grid" data-page-node-id="0wQL9lyJsZer94swR07RDf">
+              <div class="vcard" data-page-node-id="FaDZGYt6LEC80J8imJhGqu"><div class="cover" style="background:linear-gradient(135deg,#f7c8d4,#e8a0bf 55%,#c98bab)" data-page-node-id="ZRCWAwjIAE6EvrhEb6ditr"><svg class="wm" data-page-node-id="pkVolD9GLES2e9Bsa732Xs"><use href="#i-play" data-page-node-id="hS2PCPqyZafOHy9O8lIlmN"/></svg><div class="scrim" data-page-node-id="nbsEtIPsJNjVhYVmNeDuHX"><svg data-page-node-id="H0eWAkJFypBvhb5Gt3YVoZ"><use href="#i-play" data-page-node-id="g5eZI2TH6G8fEXRABeAwLU"/></svg>12.4万<span class="grow" data-page-node-id="zpF8PeXoV5qeIdLQ2LqeYT"></span><svg data-page-node-id="PeU0l9VgTipVuOzDh6SjXC"><use href="#i-clock" data-page-node-id="6Zk0sJkftWBfFbPXOp4t2y"/></svg>24:18</div></div><div class="vtitle" data-page-node-id="ml9aGhnlZ4s3agduRgv8h9">午夜图书馆的低语 第1话</div><div class="vartist" data-page-node-id="gI80N4JEgpKxuHOhyIoGrk">绫波事务所</div><div class="vmeta" data-page-node-id="Ye7W3KEu3mDs6ICLH6dgJQ"><svg data-page-node-id="QbqiDjlSsa1JKm3Sfwj2d1"><use href="#i-like" data-page-node-id="s1HU0o3v67CBmmRSw5GL09"/></svg>98%</div></div>
+              <div class="vcard" data-page-node-id="KMclXu6BotyuGCFczOV6zT"><div class="cover" style="background:linear-gradient(135deg,#d9c6f0,#b39ddb 60%,#8e7cc3)" data-page-node-id="srwny082rq24NwKhkkXOxw"><span class="badge-played" data-page-node-id="VYtai9QuamZBfKvYS7u94b">已观看</span><svg class="wm" data-page-node-id="Pjm8CfeEJDuR45RUQPe7Mh"><use href="#i-play" data-page-node-id="2FAc3McL2mwgd09aFXJtFH"/></svg><div class="scrim" data-page-node-id="wFX3OE6mYUR6K2AY4O0XHC"><svg data-page-node-id="kttT5twpEBGIldvm7NHoHs"><use href="#i-play" data-page-node-id="l35LHS3rAhBfaDLdcXLHjW"/></svg>8.7万<span class="grow" data-page-node-id="uE4a49vgmZCrLzKo1VSJBS"></span><svg data-page-node-id="NRVoioMvBYJAHP64QYGkjn"><use href="#i-clock" data-page-node-id="q63ytP4s5C2IuPic50P1HV"/></svg>18:02</div></div><div class="vtitle" data-page-node-id="A4fvkxOntjerMOtFhNF7tn">夏日补习班的第七天</div><div class="vartist" data-page-node-id="kJSecdG5vANDiiJabg0TRY">桃井工作室</div><div class="vmeta" data-page-node-id="nK7heCAsuiY4NrPBIga0lV"><svg data-page-node-id="EMFdIHiteYk1Anx31k1zUD"><use href="#i-like" data-page-node-id="JvE5LPNyGuFQwZ91bAo5Sk"/></svg>95%</div></div>
+              <div class="vcard" data-page-node-id="sGZAVfaUe7x4qijLMJ7CH5"><div class="cover" style="background:linear-gradient(135deg,#ffd9c0,#f4b183 55%,#dd8f5f)" data-page-node-id="dyDuBePmVQIVOmW0qTGMsg"><svg class="wm" data-page-node-id="d82szKhZz8ymDiO4Mg23nA"><use href="#i-play" data-page-node-id="06C9E77gsSB0wFfdFxnHI7"/></svg><div class="scrim" data-page-node-id="cIu4kMdpe3XwCX4glcxFWb"><svg data-page-node-id="B2f77XXFzuJlN44N7DJrr0"><use href="#i-play" data-page-node-id="PLej6CrImc0HfyKd9FPKCK"/></svg>23.1万<span class="grow" data-page-node-id="cRTFDbCwkFSbbl8UJXnsOp"></span><svg data-page-node-id="Z8px7m6NRDdP8hOlKnh3No"><use href="#i-clock" data-page-node-id="KfkPsx1Hi3Z5QQCrIEtO1S"/></svg>31:45</div></div><div class="vtitle" data-page-node-id="kHrIR1YN7DiwModmv61BhB">星轨观测者与夏天的终点</div><div class="vartist" data-page-node-id="lUqivnrT3VjiSvtbRdhYbf">星野クリエイティブ</div><div class="vmeta" data-page-node-id="WBLcpRkKwenlj8aiIAMpwF"><svg data-page-node-id="rSGCtqt9BITscRlVOo1gTv"><use href="#i-like" data-page-node-id="bN1cINYqmApTKAaDDas2J4"/></svg>97%</div></div>
+              <div class="vcard" data-page-node-id="IaZgcr2kaKIqTKyNoQrroD"><div class="cover" style="background:linear-gradient(135deg,#c5e3f5,#93c6e8 55%,#6fa8d8)" data-page-node-id="r3PtxS4tTYWEVCsCEEJ7BF"><svg class="wm" data-page-node-id="AyaYZQXVCWh1z2awHXwuFu"><use href="#i-play" data-page-node-id="DBdSIdAEzFpdp0GN3tV64z"/></svg><div class="scrim" data-page-node-id="eXXJL7c0HoLN9oCHHPcwnj"><svg data-page-node-id="l7GKVKDfDP8xlOTVzEFqF5"><use href="#i-play" data-page-node-id="HWbtm6ua1ZLy0ZAzhyNlLW"/></svg>5.6万<span class="grow" data-page-node-id="kgPFWtl6AjIFzOsaVh46Ix"></span><svg data-page-node-id="E130iqYe4rxXnirRmMrPdT"><use href="#i-clock" data-page-node-id="V6A1vkJA4cdycuvFQtFase"/></svg>12:30</div></div><div class="vtitle" data-page-node-id="cS6MMsoej37pPzp5GErKc1">猫与雨铃的午后</div><div class="vartist" data-page-node-id="RWEdGZ6jyJ5ciFhrsPO9Fn">山樱动画</div><div class="vmeta" data-page-node-id="8kudOI7uMxHhpzFFK6HFlT"><svg data-page-node-id="C9u8qfIkqgZhiOFDgFEF4c"><use href="#i-like" data-page-node-id="BBE10ZpW95QGB7mcx56i8M"/></svg>92%</div></div>
+              <div class="vcard" data-page-node-id="v73yesagfnIcCCMqXAZCBq"><div class="cover" style="background:linear-gradient(135deg,#d7f0c8,#a5d68b 55%,#7fb95e)" data-page-node-id="9rZTB0rDhFlxbQHfRlvmMT"><svg class="wm" data-page-node-id="3jJjgQSNtUp1Sc9Us0T1ZG"><use href="#i-play" data-page-node-id="l7tGDGnlZaFCHPCki6i4uQ"/></svg><div class="scrim" data-page-node-id="hJaki8TRjc2xIoMeLOASiS"><svg data-page-node-id="GW61D644Y5wW9N1ZkGuKOv"><use href="#i-play" data-page-node-id="bzt2xTuNHecDLfTyQL838i"/></svg>17.9万<span class="grow" data-page-node-id="BjgUO6J2aOALHqrMKFCV6R"></span><svg data-page-node-id="WnAdqnsvyuIP3pVlhiqGTa"><use href="#i-clock" data-page-node-id="RpmNikL8ayB7Mnt6Xp5B8J"/></svg>27:11</div></div><div class="vtitle" data-page-node-id="S5418Tghhxp9Y22IE9kIo0">深海邮差</div><div class="vartist" data-page-node-id="RlB1gms3siDe6FwdVZ5X9h">汐音制作</div><div class="vmeta" data-page-node-id="yVWOjmo3ilrLBgCeEbzaNA"><svg data-page-node-id="1s79E2fndeTNhUoHpqlC5w"><use href="#i-like" data-page-node-id="zBNHZttJFpU8rkmWCKyjSr"/></svg>96%</div></div>
+              <div class="vcard" data-page-node-id="fwUOACVSz9QdTVGvIF9b1G"><div class="cover" style="background:linear-gradient(135deg,#f5d9a8,#e8bf7a 55%,#c99e52)" data-page-node-id="odu0ig50lK80B543NeWiEo"><svg class="wm" data-page-node-id="TKvPeg4oumRuRwEnCpzvgt"><use href="#i-play" data-page-node-id="413HclhmvlOdLv0bhj6I3p"/></svg><div class="scrim" data-page-node-id="Qb1XoELtDtBsuHSiEvsIdf"><svg data-page-node-id="VuNYDTVFtEtWbTY03lz59F"><use href="#i-play" data-page-node-id="pEJ1TwVz1jH2NDtTgAYfHn"/></svg>9.3万<span class="grow" data-page-node-id="QOpjo2n1BdS4QZp8zFeTDr"></span><svg data-page-node-id="SKfzZI6Kj79vfeFbHbeJXG"><use href="#i-clock" data-page-node-id="xdaBNYFUl0d2ZpnDGkzLeN"/></svg>21:08</div></div><div class="vtitle" data-page-node-id="E8N18g9RaaqmAwDphrvBoJ">暮色蛋糕店的假日</div><div class="vartist" data-page-node-id="as53epvbVpwicSg83AjH3I">绫波事务所</div><div class="vmeta" data-page-node-id="rUbL40seSm65U8hZT36NUK"><svg data-page-node-id="oAKzFM1Zv1D71Gx74zGe7Z"><use href="#i-like" data-page-node-id="QLBRCesTBpczCH9vup02Oj"/></svg>94%</div></div>
+              <div class="loadmore" data-page-node-id="Mjbc8Mkd1eLre1vx0a5knI"><div class="spinner" data-page-node-id="QXQxZBxzqGEBLtekD1EYG7"></div></div>
+            </div>
+          </div>
+          <div class="navbar" data-page-node-id="qQFdsEtctdLg61Aa7LjdnR">
+            <div class="nav-item" data-page-node-id="VEFAdtaVJwCbDZUo8mNrTx"><span class="ind" data-page-node-id="F0ljqVCoeB7VO8sW8G8BKp"><svg data-page-node-id="79AZdatPk2cicwBorHLq65"><use href="#i-home" data-page-node-id="ixj1Wysc2cs57ynBVrUEkg"/></svg></span>首页</div>
+            <div class="nav-item active" data-page-node-id="mvWEDx7EyCUIfN2dJQawhs"><span class="ind" data-page-node-id="tlR4FV6WKRbZOolSpCBMTc"><svg data-page-node-id="m8FJhNUFu4Gxtd4tOkkRUx"><use href="#i-explore" data-page-node-id="lbpBKqAHJanGXjT8toCfFQ"/></svg></span>发现</div>
+            <div class="nav-item" data-page-node-id="DgSbHYbZFzWueSMNbqoCir"><span class="ind" data-page-node-id="p6jFhz8Mk8BmEIT9Tyoqsy"><svg data-page-node-id="yDI050IWo8RrD2mFBAbJ7t"><use href="#i-person" data-page-node-id="B6knDM67bJretyvlpL4kzH"/></svg></span>我的</div>
+          </div>
+          <div class="homebar" data-page-node-id="5a7TDBGNz4FKgPuphpYXDQ"></div>
+        </div>
+      </div>
+      <p class="state-cap" data-page-node-id="rYTV7WUVfILlPqQQ877yNu"><b data-page-node-id="cH5gOkV1PXEFpZu4NgypO5">ActiveSearchCriteria</b>（可折叠条件条）：FlowRow 装 AssistChip，选中维度 <code data-page-node-id="Ugee6UXOo69qQk7V8ndMZk">secondaryContainer</code>、「重置」<code data-page-node-id="KRfcuLMk5yq4f1ryP8YwEz">surfaceContainerHighest</code>；点 chip = 移除该条件，随滚动经自定义 Layout 折叠<b class="anno" data-page-node-id="WP97x8ZjtUNoBtd7FJYVyi">2</b>。结果网格 <code data-page-node-id="KJsl0sm6ln2ghQochqHW5N">GridCells.Adaptive</code>，卡片 16:9 封面 + 已观看徽标 + 播放量/时长 scrim + 两行强调标题<b class="anno" data-page-node-id="ZOD1hLmzHQD1kGEVHC6mzI">3</b>；分页 footer 为 M3E <code data-page-node-id="7w9g73wCOCFci9W2BW9rUq">LoadingIndicator</code>（此处以 spinner 代绘）。</p>
+    </div>
+
+    <!-- ============ 状态 3：无结果态 ============ -->
+    <div class="state" id="s3" data-page-node-id="ewgYqUCnfFmzLSfkUymIfQ">
+      <div class="device" data-page-node-id="8DFETe4ayANxX8OlO7tqcG">
+        <div class="notch" data-page-node-id="DO0VoxRWqRa3Kz7MGj8H2H"></div>
+        <div class="screen" data-page-node-id="2CCRiR3Ml9QmhkqQNLRmT8">
+          <div class="statusbar" data-page-node-id="DjWFf9hm4PdPHFmlAmFieE"><span data-page-node-id="pJxve8VyQROBov1urBoOl2">17:49</span><span class="sb-icons" data-page-node-id="JUcqB99cnZdZ6Iv0FavcTt"><svg data-page-node-id="qrLG4Gi7EUPGj1C4iTEbTO"><use href="#i-signal" data-page-node-id="tw7wKjNF1E5AE6r4OKK9b1"/></svg><svg data-page-node-id="dl96gbda2HL5lq7lszX6Tn"><use href="#i-wifi" data-page-node-id="pqESjatHqu3WWAOMaIjCXG"/></svg><svg data-page-node-id="ic0OSz2ZrpAYPJXBENeLJq"><use href="#i-batt" data-page-node-id="oDUuyhQUgDp8GSM1Miieg4"/></svg></span></div>
+          <div class="appbar" data-page-node-id="BCUUMfDKYMXqEBkUJt6Fj9">
+            <div class="appbar-row" data-page-node-id="uqeAuCkasrvF6GYkA7tnOG">
+              <div class="tf" data-page-node-id="Dvk3ryL8MzFP7u0dxjptHW"><input value="不存在的番剧xyz" readonly data-page-node-id="dswDrDgyQ1pZCk3X9eAeuC"/><span style="flex:1" data-page-node-id="kAuKSfDWrWsCDAW8A1pGyZ"></span></div>
+              <button class="iconbtn" aria-label="清除" data-page-node-id="1eBQaBkRTiSunlm0RvqGNu"><svg data-page-node-id="OF7IWtPUtr6NC7ZApUNajv"><use href="#i-close" data-page-node-id="CE1FRC4SCqbDeV7N5gBdZt"/></svg></button>
+              <button class="fillediconbtn" aria-label="高级搜索" data-page-node-id="Pq9udeGVOTnCzpEdQEtBxn"><svg data-page-node-id="bNVdmPBVtv1ZkV00xUtFvs"><use href="#i-filter" data-page-node-id="dvwwT2AJyaoQqxkVM3z2On"/></svg></button>
+            </div>
+          </div>
+          <div class="pagebody" data-page-node-id="PnxKDfJkacAqVoP8a0kU2z">
+            <div class="empty" data-page-node-id="Wf5q2XAmOqz7b1ssZTmm8M">
+              <div class="ill" data-page-node-id="GfxT4qiNYC6d96mm2MqFe7">（h_chan_speechless 插画）</div>
+              <div class="t1" data-page-node-id="qkTUrH9ceRAaCeXDCCTq0F">没有找到相关内容</div>
+              <div class="t2" data-page-node-id="sph1YBBdaYsV65oGNwKJOv">换个关键词，或减少筛选条件试试</div>
+            </div>
+          </div>
+          <div class="navbar" data-page-node-id="zDB3RdwDxSGcW6TlCku8fI">
+            <div class="nav-item" data-page-node-id="0Y1z2Ze6geNPFUb8ssGLVn"><span class="ind" data-page-node-id="XXaiw52LhwAx5Seb7CJAir"><svg data-page-node-id="vIWSxEEaiFOVRrCelFH196"><use href="#i-home" data-page-node-id="cu2XLcJRgJ8iyX3YS5TmFr"/></svg></span>首页</div>
+            <div class="nav-item active" data-page-node-id="VQsgs4BC42PL58xkCw0LV9"><span class="ind" data-page-node-id="kASGwODJZ7Qt4PcBNYv2ec"><svg data-page-node-id="cQulKGWGxVPrSdUgWLCB7h"><use href="#i-explore" data-page-node-id="K5iL8Sn11ab9lZLCdeef8X"/></svg></span>发现</div>
+            <div class="nav-item" data-page-node-id="0SnazqyAyiL4cjKIbbbjy2"><span class="ind" data-page-node-id="FfldEm2hEdZMLmUE7ZGClV"><svg data-page-node-id="6Ww2maRC7WwkzYT5yD0Ftg"><use href="#i-person" data-page-node-id="yAvC6b59RKSgd0AP20T8pD"/></svg></span>我的</div>
+          </div>
+          <div class="homebar" data-page-node-id="gi8nzOppm85KtXMuc2uFnt"></div>
+        </div>
+      </div>
+      <p class="state-cap" data-page-node-id="M1kwFIsgorTOH2IyVTXEdZ"><b data-page-node-id="c1FS2YCPbqsZS1oX0Nidvx">EmptyContent</b>（150dp 插画 + 主/副文案）。加载态同页走骨架屏 <code data-page-node-id="7y9OHS8tHS7ueME2GiHLA9">SkeletonVideoGrid</code> + 随机趣味文案；错误态复用同组件附原因。<b data-page-node-id="v4jVlI3F4KAIWcX2qYAW4T">M3 空状态规范建议提供恢复动作按钮</b>（重置筛选 / 重试）——当前只有静态文案<b class="anno" data-page-node-id="thZxehaGWrFsavqTRW9fYc">4</b>。</p>
+    </div>
+
+    <!-- ============ 状态 4：高级搜索 Sheet ============ -->
+    <div class="state" id="s4" data-page-node-id="Sr1L68Zy2rOv8ROsS77iik">
+      <div class="device" data-page-node-id="WhWyYrsQ18011kpHlA33Fs">
+        <div class="notch" data-page-node-id="dAQbb8zGkBm1tNviBzpFeM"></div>
+        <div class="screen" data-page-node-id="DaWutl4PTd6g0hf1ogD8sZ">
+          <div class="statusbar" data-page-node-id="diYFlr9c7CywTefAEDMuGN"><span data-page-node-id="bSb2iQvb5C5CsQ0ANgDeeH">17:49</span><span class="sb-icons" data-page-node-id="J97bp3BXAi9sqJSnxVaTWm"><svg data-page-node-id="y5TKPyD4eSPQSMt8k7CnPD"><use href="#i-signal" data-page-node-id="cDUGOkp7cnlPjfT91pelVa"/></svg><svg data-page-node-id="qL5G8Bb4OWtUFoZTr2cJJm"><use href="#i-wifi" data-page-node-id="HmsqwxYeXlIvgsOTH3oWCs"/></svg><svg data-page-node-id="HcgH0fDnIdS6CfiSisjakB"><use href="#i-batt" data-page-node-id="LQTWqDEXI7dCefZMfPN9F9"/></svg></span></div>
+          <div style="flex:1;min-height:0;overflow:hidden;position:relative" data-page-node-id="7DyZjuTHEucOhiGLMBttMK">
+            <div class="appbar" data-page-node-id="eL0rSXxhuQee8iZ1HIVdVW">
+              <div class="appbar-row" data-page-node-id="BpAFCNxE83Xhb4cAkVZNxj">
+                <div class="tf" data-page-node-id="0wxFtO5BNBBqKt7xCabgi5"><input value="纯爱" readonly data-page-node-id="HNEJXVXxYrHsEJV1YEbGqM"/><span style="flex:1" data-page-node-id="mRECphEaGP6z1hogAn699U"></span></div>
+                <button class="iconbtn" aria-label="清除" data-page-node-id="iFcLjF7ZDiimYkHHvt1QZN"><svg data-page-node-id="nNmI27cFXO9cthlGB4U5YN"><use href="#i-close" data-page-node-id="iUXTNYwHjavlAhpIa9HEvv"/></svg></button>
+                <button class="fillediconbtn" aria-label="高级搜索" data-page-node-id="EsB3QHX2dv9LuUepXpZCo7"><svg data-page-node-id="9WssHvk7mfGNiEkRERoGMH"><use href="#i-filter" data-page-node-id="na5EiVtegyKu7M5hEQPXuq"/></svg></button>
+              </div>
+            </div>
+            <div class="criteria" data-page-node-id="TKeTSBTMJdbn2AOppjxg1T">
+              <span class="chip sel" data-page-node-id="ACAmHTj93rj8uGYilXuaRJ">类型: 里番</span><span class="chip sel" data-page-node-id="av3XQiWVMRAqG7JHKYUp9s">标签 (3)</span><span class="chip sel" data-page-node-id="D4FTG2UMCgnCtIpsv2yol1">排序方式: 最新上市</span><span class="chip sel" data-page-node-id="bcGzNMsyBV4i90R3ConpGG">发布日期: 2026年3月</span><span class="chip reset" data-page-node-id="EatNDU7QCJ51Co7vghRIHA">重置</span>
+            </div>
+            <div class="gridarea" data-page-node-id="CIrMRvx0JXljXgcOKmrj6w"><div class="grid" data-page-node-id="Jn7M0k2OuanriW5L9IVl2n">
+              <div class="vcard" data-page-node-id="wgyA1rziWuqbEUKGLo7Klv"><div class="cover" style="background:linear-gradient(135deg,#f7c8d4,#e8a0bf 55%,#c98bab)" data-page-node-id="68DGeymECIkXX1Qb7t3DGN"><svg class="wm" data-page-node-id="MwwkdwK6NpjTELpWRXj2i9"><use href="#i-play" data-page-node-id="8DZtVYAnw6aBqgvLZPE0jE"/></svg><div class="scrim" data-page-node-id="4KHVYRvE3swrLHQnMjBzXC"><svg data-page-node-id="P5JsUw5PtHBDCJQLmyUdYJ"><use href="#i-play" data-page-node-id="iZLLO2sb2S5JfyfiW9gFcu"/></svg>12.4万<span class="grow" data-page-node-id="36pIZioW0LZz2rWI3szmcj"></span><svg data-page-node-id="Oa54iKFOrAAtyLoA3sBQDL"><use href="#i-clock" data-page-node-id="Em42Eoq1tNJWSzbl3ilBdT"/></svg>24:18</div></div><div class="vtitle" data-page-node-id="usJjyyl9VHwbylgZgyyH8y">午夜图书馆的低语 第1话</div><div class="vartist" data-page-node-id="J3Qgwvd31rBDnk3YHRLoZD">绫波事务所</div><div class="vmeta" data-page-node-id="yyAMd5KomFL9OBLmYG6H35"><svg data-page-node-id="O3oLsgUGxIu2Q4Vki8NIyl"><use href="#i-like" data-page-node-id="hGJaCALcnhcnEgx7S4JnWp"/></svg>98%</div></div>
+              <div class="vcard" data-page-node-id="Cn9QLkDTyQqdsVqEOxOcxi"><div class="cover" style="background:linear-gradient(135deg,#d9c6f0,#b39ddb 60%,#8e7cc3)" data-page-node-id="UutSjeGogRK6FjjHffX0SA"><svg class="wm" data-page-node-id="pE6TTzQx60DWNSC9LAx984"><use href="#i-play" data-page-node-id="Lf9lXFPeS2S1KyPf8M5wIp"/></svg><div class="scrim" data-page-node-id="kR7GlNcoBSQA1A4lg8UBu8"><svg data-page-node-id="SVzN4VfPcHRzuawP73hJFl"><use href="#i-play" data-page-node-id="SkNDwP2uHSrrDYPKuI0VQc"/></svg>8.7万<span class="grow" data-page-node-id="agEac4s1Z6cYkuLDpzNlby"></span><svg data-page-node-id="mDdfH8tZxxI94SCzBdQ4t2"><use href="#i-clock" data-page-node-id="BlV9ojAtEEfNxHc5H5wHFY"/></svg>18:02</div></div><div class="vtitle" data-page-node-id="7oeVwjs5fCEZKjgqd5UrYy">夏日补习班的第七天</div><div class="vartist" data-page-node-id="YWnXsvKmLbfA46dw9okXmP">桃井工作室</div><div class="vmeta" data-page-node-id="MkwriXPPhvZmBPTqF9H4rR"><svg data-page-node-id="G8rkc9w5yMuK33xIhHvHIt"><use href="#i-like" data-page-node-id="0aHsZJ9OQZKDRLmu8AzkQc"/></svg>95%</div></div>
+              <div class="vcard" data-page-node-id="gj8FJgTAIUrJqjTHEz3fQO"><div class="cover" style="background:linear-gradient(135deg,#ffd9c0,#f4b183 55%,#dd8f5f)" data-page-node-id="oy2irhtbtRFGHH8Ewr4kGv"><svg class="wm" data-page-node-id="YGWIBtC25tX2qURnlTShH2"><use href="#i-play" data-page-node-id="1trtWaOJpxArpUhvYxDFTY"/></svg><div class="scrim" data-page-node-id="wDEqaAjWrPngZSGwlcMY4J"><svg data-page-node-id="BUqET02VwXHS6bto4wq7ds"><use href="#i-play" data-page-node-id="40TECq0ejcyUkjDm3sNMlv"/></svg>23.1万<span class="grow" data-page-node-id="GCh28ScANOMkszhL5AJWOu"></span><svg data-page-node-id="89yEBUgwvgrXlXSFTUZZmk"><use href="#i-clock" data-page-node-id="FEso9QKbICPS0V2sllwSdg"/></svg>31:45</div></div><div class="vtitle" data-page-node-id="lnBhe9eAWxDeqh6ZcPKNR4">星轨观测者与夏天的终点</div><div class="vartist" data-page-node-id="80JuievZoMkjYgpUv1OnV1">星野クリエイティブ</div><div class="vmeta" data-page-node-id="GRipJhAQZsAt0dkEMEG7SO"><svg data-page-node-id="hO3qdjE2ucQzldq7ddUC00"><use href="#i-like" data-page-node-id="aMSmsBWTASlJx0Z7L2oIGv"/></svg>97%</div></div>
+              <div class="vcard" data-page-node-id="6alGlxtT6Dq2aNDKGCQwYE"><div class="cover" style="background:linear-gradient(135deg,#c5e3f5,#93c6e8 55%,#6fa8d8)" data-page-node-id="dawal6BvoGJ7Xh9dgOXfs9"><svg class="wm" data-page-node-id="uAMyVCQP5HpKvPDagxt4EZ"><use href="#i-play" data-page-node-id="QlmVH6LQy5cdx3GYRgLRvm"/></svg><div class="scrim" data-page-node-id="JoqoscqMyRvr8Uzv6VycfF"><svg data-page-node-id="HdZDxV7OE2audLPAEWOKjN"><use href="#i-play" data-page-node-id="3CwVfe84WkhmrVLfN9Ubni"/></svg>5.6万<span class="grow" data-page-node-id="BB4QUAjUK5t7DWo9bzQTsz"></span><svg data-page-node-id="3BAVtYu3z7Si3Ua6I7FwHE"><use href="#i-clock" data-page-node-id="CwP0fsMIQzeP7eWWKt73k5"/></svg>12:30</div></div><div class="vtitle" data-page-node-id="Exeh8TtRb45NWIMH61zB4m">猫与雨铃的午后</div><div class="vartist" data-page-node-id="iqzMRPa11Fitb0rmSclZhZ">山樱动画</div><div class="vmeta" data-page-node-id="zC8J9ifshz9YDW1a1QDg2I"><svg data-page-node-id="tPKrDfoiRfbCdmafbYiu8R"><use href="#i-like" data-page-node-id="KvCDy2c1yTWQYPQoFyCZTR"/></svg>92%</div></div>
+            </div></div>
+          </div>
+          <div class="scrimlayer" data-page-node-id="uo1e7rsGHwUH3yh8SCOe5n"></div>
+          <div class="sheet" data-page-node-id="AAQGWhXIU1InRcOBYQE0sd">
+            <div class="handle" data-page-node-id="EGTmCrKMjtE6mPkalEZoY1"></div>
+            <div class="sheet-body" data-page-node-id="6C8hz3SVGUfRZABxx1jdBU">
+              <h2 class="sheet-title" data-page-node-id="jPBTpj7G7WDw2MwcHXso9b">高级搜索</h2>
+              <div class="sec" data-page-node-id="unuZoUWWqIVm2ILWTbgZHi">
+                <div class="sec-title" data-page-node-id="EEwXpFlpINlvSxr1RdnZdY">高级搜索组合<b class="anno" data-page-node-id="5zlbcBgLAG8TozAhIRAHmA">5</b></div>
+                <button class="hcard" data-page-node-id="CcwlqrIG8HfT43U6tDa7WV">
+                  <span class="col" data-page-node-id="2gW9oBnXLADpUBzcN2TVnH"><span class="hq" data-page-node-id="jyU8beL5RG7xCC8xAPTgxx">纯爱周末</span><span class="hc" data-page-node-id="pMdytDk5h9GZD9Nh7fNig4">类型: 里番 · 排序方式: 最新上市 · 发布日期: 2026年3月 · 标签: 纯爱、恋爱喜剧、中文字幕</span></span>
+                  <span class="iconbtn sm" data-page-node-id="C9BYdGOU8ezVfZC8UtWJb9"><svg data-page-node-id="GtHqk5xh0DHOR6ymjQh16v"><use href="#i-delete" data-page-node-id="L6tSyoKiYFremnRPhjo3zI"/></svg></span>
+                </button>
+              </div>
+              <div class="sec" data-page-node-id="qshlsSltR9Jtz4IDklCuZ9">
+                <div class="sec-row" data-page-node-id="hJgJ4utd3mp0G3BHrLcRoC">
+                  <span class="sec-title" data-page-node-id="VWTxIwNKdfcubtV7qLYVqc">筛选预设</span>
+                  <button class="textbtn" data-page-node-id="plT3ykrO1ruJ3rgbHCElr7">保存当前筛选</button>
+                </div>
+                <div class="preset-row" data-page-node-id="HnDbUFuJCFgIv4qXqcwVFV">
+                  <span class="chip assist" data-page-node-id="TAjRr3Zu6PYl1Z8Lgud0rh">我的常用</span><span class="iconbtn sm" data-page-node-id="r9PCcjSMnPH4vt1nPwo3Br"><svg data-page-node-id="nnDlrl879YHJE0Mf8AfGUh"><use href="#i-delete" data-page-node-id="IN489s0luzMV6ArQHB1L4X"/></svg></span>
+                  <span class="chip assist" data-page-node-id="GvXTyFBm4xnpK1VJKV7qT4">周末档</span><span class="iconbtn sm" data-page-node-id="pW89BcvGeaNI5LXQ6O3qmp"><svg data-page-node-id="gUrQXSeLaNBAY7ZBVZp9VZ"><use href="#i-delete" data-page-node-id="09T64p1q3EWlVNkB7LXaPY"/></svg></span>
+                </div>
+              </div>
+              <div class="blocks" data-page-node-id="seLxx9dK7TXJB1FVDAeA7Y">
+                <div class="fblock sel" data-page-node-id="ySEkF3umEBp8QgV2tuWfmf"><span class="fb-label" data-page-node-id="fvfm9G8Nq7zJ5Bpkkacg4M">类型</span><span class="fb-value" data-page-node-id="HIXA8mZ9rFrGT9jLIP8d83">里番</span></div>
+                <div class="fblock sel" data-page-node-id="RYpsonifCPbah9PmQUkNgE"><span class="fb-label" data-page-node-id="9pKajrDBBiUYWTuFLttVsH">排序方式</span><span class="fb-value" data-page-node-id="sceLjnhiW5uIljntHkndaT">最新上市</span></div>
+                <div class="fblock sel" data-page-node-id="K4PSjYHDuW9h7D96G44aaw"><span class="fb-label" data-page-node-id="jKDwkMkNcUQBRybAoVHTW1">标签</span><span class="fb-value" data-page-node-id="OSaA9VtE2Wz6ys1vR4FGhe">3 项</span></div>
+                <div class="fblock unsel" data-page-node-id="ySudr7a30HY09cOsvtFv4T"><span class="fb-label" data-page-node-id="JJ6nHJPsBWqPjHG9gEMJaV">品牌</span><span class="fb-value" data-page-node-id="ShkZyv7GefFAFcXmmdesYx">全部</span></div>
+                <div class="fblock sel" data-page-node-id="rdOeKofrn83AS3R9iZWWkg"><span class="fb-label" data-page-node-id="wMTzeJgzNJ6KdWFzQLNG1Z">发布日期</span><span class="fb-value" data-page-node-id="DRztuhsTfHYf6CpPVyWPxS">2026年3月</span></div>
+                <div class="fblock sel" data-page-node-id="GjxHM1HX9BdZWB2O0WyOAm"><span class="fb-label" data-page-node-id="BvQ4fiAXnBT5fHy5nMzFzC">影片时长</span><span class="fb-value" data-page-node-id="7NF8PPX1JrJOXRjbxEW8Q3">5分钟以上</span></div>
+              </div>
+              <p class="tips" data-page-node-id="1l3EWO1XGVWSF7fHAg9Qub">Tips:长按某单元可以清除当前你所选单元的所有tag<b class="anno" data-page-node-id="Sy5H9FUuI8wqf60shhz5SZ">6</b></p>
+            </div>
+            <div class="sheet-actions" data-page-node-id="8WsYDBRXqGoQ6QwwInLuhv">
+              <div class="divider" data-page-node-id="LWzjbEaGlYt83LvZCCKowB"></div>
+              <div class="act-row" data-page-node-id="VWLRC61uTlZkifoVzEMdrc">
+                <span class="act-count" data-page-node-id="rzo1eYIF83F2JJlIEifeWX">已选 5 项</span>
+                <button class="textbtn" data-page-node-id="L32R6goW0PMaHxFj6GoXEB">重置</button>
+              </div>
+              <button class="filledbtn" data-page-node-id="9iGGoA4OFgboQkHwHOy57e"><svg data-page-node-id="eCOmbWDMKVfZNVaZXBDeKm"><use href="#i-search" data-page-node-id="bZ0kOABxu8YjHDD1BiNZwi"/></svg>搜索</button>
+            </div>
+          </div>
+          <div class="navbar" data-page-node-id="d01iFIYT4AFDcvP1KhuwpN">
+            <div class="nav-item" data-page-node-id="jwwBc9Fh6Zor3aR39djPCI"><span class="ind" data-page-node-id="JXX5n1yVawGrrPbuKihquC"><svg data-page-node-id="SDzjgHJtZxEe7bhrmG2VaF"><use href="#i-home" data-page-node-id="c55YIBWAEZp6w65PSWtiv7"/></svg></span>首页</div>
+            <div class="nav-item active" data-page-node-id="LY8qwf1RgZ2wNs1kQ7H6CC"><span class="ind" data-page-node-id="Tr0LJiwA5hnOM2MXE2vD9T"><svg data-page-node-id="nAYygLYNTjmvj4mdjCjeyw"><use href="#i-explore" data-page-node-id="iebFwf4Is38ktjOEBpTW4O"/></svg></span>发现</div>
+            <div class="nav-item" data-page-node-id="HoFsdhN6lYVKEPMVjlE1Ul"><span class="ind" data-page-node-id="E6L2YHuozsjTfHJnZVkYKE"><svg data-page-node-id="ZhjxiTKks3PDE6ttHLphPL"><use href="#i-person" data-page-node-id="HUC6TMgGXDpVimk1oTSTqg"/></svg></span>我的</div>
+          </div>
+          <div class="homebar" data-page-node-id="imG2MhDBGd9OSdAAHkaL5E"></div>
+        </div>
+      </div>
+      <p class="state-cap" data-page-node-id="8zXcjAwKmIGjPIWB097TON"><b data-page-node-id="lkLb7mxh3HH6UKdqKjU3Si">AdvancedSearchSheet</b>（ModalBottomSheet，禁用了 HalfExpanded）：标题 → 高级搜索组合（历史卡）→ 筛选预设（chips + 独立删除钮 + 命名对话框）→ <b data-page-node-id="8jnHpAOrHF5DgoXi3U3pFl">6 个筛选维度块</b>（2 列 FlowRow，自绘 <code data-page-node-id="WHYvJdAv4pXhQYbQlhrLxq">AdvancedSearchChip</code>：选中 <code data-page-node-id="5HCHnjg5Lcpa50lQ5mKIx8">secondaryContainer</code> + 2dp tonal、未选 <code data-page-node-id="X0AKDfotRlQNiOQBepZvnb">surfaceContainerHigh</code>，维度名/当前值两行，minHeight 60dp）→ tips → 底部常驻动作区（已选 N 项 / 重置 / 通栏搜索按钮）。点块开对应对话框，长按块清该维度。</p>
+    </div>
+
+    <!-- ============ 状态 5：单选对话框 ============ -->
+    <div class="state" id="s5" data-page-node-id="8sEACfnf3ksdzAQhR3NsHG">
+      <div class="device" data-page-node-id="E7Kxdc7wuvXCx3IMJmnpWl">
+        <div class="notch" data-page-node-id="Zkz1wSsq815TIj6k1C56mO"></div>
+        <div class="screen" data-page-node-id="l3rep4lwRT9WOVFrVryDZA">
+          <div class="statusbar" data-page-node-id="3jYFpY4wvzqvpDZGGucAcb"><span data-page-node-id="bREPkkSoC226AMudCh5p9E">17:49</span><span class="sb-icons" data-page-node-id="G8xCCihFoaeNKe8Fd51Bl1"><svg data-page-node-id="AW5cfXZUjncAMqeDDXATYP"><use href="#i-signal" data-page-node-id="N2Z44Z2KcOqwKocn2Tdqed"/></svg><svg data-page-node-id="rw7oWMlzp6FKzvMmBAiCMT"><use href="#i-wifi" data-page-node-id="0IoqBYoigTPr27h9GImyP4"/></svg><svg data-page-node-id="Z0Dq6Iy5UOHHIGEOEXGKAK"><use href="#i-batt" data-page-node-id="tW1qBuaNX3xkZk6uWvpd7G"/></svg></span></div>
+          <div style="flex:1;min-height:0;position:relative;background:var(--page)" data-page-node-id="vRCTpWRL2F3PdfsvUT87KQ">
+            <div class="sheet" style="max-height:78%" data-page-node-id="y3GcZ0KxWzkO0BHeCTGeD1">
+              <div class="handle" data-page-node-id="1bdl5JbFL6lpIm8rGnDgPh"></div>
+              <div class="sheet-body" data-page-node-id="2GewrfP40eAgLRgsUzNdez">
+                <h2 class="sheet-title" style="font-size:20px;line-height:28px" data-page-node-id="K8smDTWG7NbAHE5A0RTOhT">高级搜索</h2>
+                <div class="blocks" data-page-node-id="sySxSWpEUD2Z3AP0O3BEeF">
+                  <div class="fblock sel" style="outline:2px solid var(--primary)" data-page-node-id="WkqHT0RIHNKIjSxwQCGjeg"><span class="fb-label" data-page-node-id="rYTIFEI4JJYZfz7tYFWwq4">类型</span><span class="fb-value" data-page-node-id="xvWp4mITye9gE9m1q42Apv">里番</span></div>
+                  <div class="fblock sel" data-page-node-id="TuGYlMvfH9Rgi73Ov5Pvv6"><span class="fb-label" data-page-node-id="X9QQ88mRyMUYU8viwAigiO">排序方式</span><span class="fb-value" data-page-node-id="lj90ZYpccBIxeCIdKk8rLQ">最新上市</span></div>
+                  <div class="fblock sel" data-page-node-id="61gZyd13CdELdRHrAX5jV7"><span class="fb-label" data-page-node-id="9qW0bYpym4mL1N0zUBsh2L">标签</span><span class="fb-value" data-page-node-id="tE6OYUhb1XlVUwcKcmeW7g">3 项</span></div>
+                  <div class="fblock unsel" data-page-node-id="qZkiz8IgylnchragTQA38U"><span class="fb-label" data-page-node-id="1RiefybvV0RIOvx8XBMaMB">品牌</span><span class="fb-value" data-page-node-id="CXU3W1Ua2uCyFmQpyjLXzE">全部</span></div>
+                  <div class="fblock sel" data-page-node-id="8VDcDlrH5AT6QKywxfnpbk"><span class="fb-label" data-page-node-id="2HvGDBGFXBsThHwLU5JxU2">发布日期</span><span class="fb-value" data-page-node-id="3GOK1cpCQjc1GaZOygqbmz">2026年3月</span></div>
+                  <div class="fblock sel" data-page-node-id="pVB7Ww7PnHEqWm0ChfEynf"><span class="fb-label" data-page-node-id="6nzQ8KxpWZXeuVxhhanhe0">影片时长</span><span class="fb-value" data-page-node-id="1zTMeBMFM2PwFoK9V7JuC3">5分钟以上</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dlgwrap" data-page-node-id="zeIxJjtRdyhaX3XnSoZ5pi">
+            <div class="dlg" data-page-node-id="ofPIEhOq4M3uB9sROKmbtI">
+              <div class="dlg-title" data-page-node-id="OqGLwNkFrMARS3V8R87RPC">类型</div>
+              <div class="dlg-content" style="max-height:360px" data-page-node-id="WrQHmVoCEv6XLT1oX8GZxd">
+                <button class="choice" data-page-node-id="NkWmeedB50x8mOnfgH1sUx">全部</button>
+                <button class="choice sel" data-page-node-id="QPt6mjHdj2aa1AT1FCLnHE">里番<svg data-page-node-id="6UUvWp0mO3lzw6sdFN4kTX"><use href="#i-checkcircle" data-page-node-id="x8Hs66YtoOZhNWBauOl6Ua"/></svg></button>
+                <button class="choice" data-page-node-id="TOz9O0mdkiDjp5iY84Ks1B">泡面番</button>
+                <button class="choice" data-page-node-id="cuBDBx1e9iAASPYzqLaoZ1">Motion Anime</button>
+                <button class="choice" data-page-node-id="ssGxgfiUJbgbfGrVNGwco7">3D动画</button>
+                <button class="choice" data-page-node-id="63HeECYJKl7klV8OcuXOZa">2.5D</button>
+                <button class="choice" data-page-node-id="JcMK7Lm5QtMQBxf6Dh8uvU">2D动画</button>
+                <button class="choice" data-page-node-id="CogdtRC5Fo5ttQlgWoi1fG">AI生成</button>
+                <button class="choice" data-page-node-id="Z9CNCkWqzHNo3SHUd2ZEhN">MMD</button>
+                <button class="choice" data-page-node-id="ujQGxHazMJbCjDzN3Bo29y">Cosplay</button>
+              </div>
+              <div class="dlg-actions" data-page-node-id="cBPxhDpHiX6OTFJ8YXFSqn">
+                <button class="textbtn" data-page-node-id="03u47LzK6wIP05KVZRmpaM">重置</button>
+                <button class="textbtn" data-page-node-id="Novoj92UOJRnyGYFVoDTYB">取消</button>
+              </div>
+            </div>
+          </div>
+          <div class="homebar" data-page-node-id="IjdANeD0knp0MAjGmr7MLs"></div>
+        </div>
+      </div>
+      <p class="state-cap" data-page-node-id="Lmz4YskKUM32PKazwKKFc3"><b data-page-node-id="uGGHAWwIjE2p9gDHL1JImP">单选对话框</b>：AlertDialog（<code data-page-node-id="euXJId5zSsBPzz2E4AC8AD">surfaceContainerHigh</code> 容器 + 28dp 圆角 + 24dp 内边距）+ <code data-page-node-id="LeImvjSbB0gyLYG69LOeJn">SettingChoiceItem</code> 列表（选中 = <code data-page-node-id="heH502dY29IucILs1D58JX">secondaryContainer</code> + check_circle；未选 = card 色）。「重置/取消」放 dismissButton 槽，confirmButton 为空。<b data-page-node-id="Hf9xGztB6JLGbb4WJf2Ook">未选项容器与对话框底同为 surfaceContainerHigh</b>，行边界实际不可见<b class="anno" data-page-node-id="hrYxprFcCtslktrD5EaqC8">7</b>。</p>
+    </div>
+
+    <!-- ============ 状态 6：多选对话框（标签） ============ -->
+    <div class="state" id="s6" data-page-node-id="nZsCNuxUUJBaur8yBPdH1p">
+      <div class="device" data-page-node-id="cLlZGGZURlOCm45HZJRB14">
+        <div class="notch" data-page-node-id="frFUEWZWyeDSc4sT0e6ECR"></div>
+        <div class="screen" data-page-node-id="67eiHaDBAelO2XpXBaUH5T">
+          <div class="statusbar" data-page-node-id="35O38tIvPBn24Hkabz2Xt8"><span data-page-node-id="RtjfEvjdVA4fQ30ISGBu38">17:49</span><span class="sb-icons" data-page-node-id="TT4KvSnBXQ3el6vuRP0PrA"><svg data-page-node-id="Dd9gO5nzbg3u5mABTgamkz"><use href="#i-signal" data-page-node-id="JPyOA3k2gkq1J3OBWFFsn5"/></svg><svg data-page-node-id="FcsxE5IBMhDHD05qikViQh"><use href="#i-wifi" data-page-node-id="kUFR2KoXdSCKOaLTFtt7Ls"/></svg><svg data-page-node-id="xwtAYXVrMBEgpL0hUHap4L"><use href="#i-batt" data-page-node-id="cu3gng2WCVbROvoAFUblAV"/></svg></span></div>
+          <div style="flex:1;min-height:0;position:relative;background:var(--page)" data-page-node-id="V1EctqwfhhfCEkyHcASvsc">
+            <div class="sheet" style="max-height:70%" data-page-node-id="iG1evTbOXoIydzJYoafhha">
+              <div class="handle" data-page-node-id="BifAAHikRm3AxyTAxbmkdf"></div>
+              <div class="sheet-body" data-page-node-id="EB7dLvSGP8NCahDoReBOwf">
+                <h2 class="sheet-title" style="font-size:20px;line-height:28px" data-page-node-id="1AFaLLJwHDaMG680vGFLjR">高级搜索</h2>
+                <div class="blocks" data-page-node-id="mj6SoEeqqnwagg7r3H2H7u">
+                  <div class="fblock sel" data-page-node-id="ZNCjIva6f5Uotb9gY4wWwK"><span class="fb-label" data-page-node-id="Z9J8iYPH1QmOCU1BD7kx5q">类型</span><span class="fb-value" data-page-node-id="zoTckRMuMXiumae5eVh0GV">里番</span></div>
+                  <div class="fblock sel" style="outline:2px solid var(--primary)" data-page-node-id="qhB7ZX7gntqIB4CaowdBLh"><span class="fb-label" data-page-node-id="rdeEuaaOobhrx4h5GR5P9G">标签</span><span class="fb-value" data-page-node-id="bwpYGzGzak5pgB6jUv4b3e">3 项</span></div>
+                  <div class="fblock sel" data-page-node-id="bE5SbLYqA2ntjHcHB9uTLk"><span class="fb-label" data-page-node-id="sWcvcsCiV2lVhy9TzvU7Ee">排序方式</span><span class="fb-value" data-page-node-id="8aqxZCk32cS13q85tDgGp3">最新上市</span></div>
+                  <div class="fblock unsel" data-page-node-id="PPmqADzgpoEHwpN32ZcFgS"><span class="fb-label" data-page-node-id="nZZD7iUm9kEpLINaumT0kG">品牌</span><span class="fb-value" data-page-node-id="x092XfTvBFRQ1Z0VRNNlvx">全部</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dlgwrap" data-page-node-id="LoKu0qbwMQ5Msmy3Rerk2F">
+            <div class="dlg" style="max-height:92%;padding:20px" data-page-node-id="aUHvliqukm9k0Tg8Phrtu3">
+              <div class="dlg-title" style="font-size:22px;margin-bottom:12px" data-page-node-id="xCYJsjBCDW5TqaBNQjTlx6">标签</div>
+              <div class="dlg-content" style="gap:12px" data-page-node-id="fNYqpFwmUlBb2IyhixXyko">
+                <div class="switchrow" data-page-node-id="kneSCny4yEUcPjaUfzRDZc">
+                  <span class="st" data-page-node-id="O1Mj40G4sRPYhsSfZgSgnX"><span class="st1" data-page-node-id="ZLVd4LMGjubzfan5c6L1jw">模糊搜索</span><br data-page-node-id="XmverA7rT4uJXNwl6zYZwO"/><span class="st2" data-page-node-id="nSU8HloL27jH5xTBkKhPeg">较多结果，较不精准。配对所有包含任何一个选择的标签的影片，而非全部标签</span></span>
+                  <span class="switch on" data-page-node-id="nEd8UOjoxsKWRpqV9JbPDg"></span>
+                </div>
+                <div class="tabrow" data-page-node-id="WsegAWtSDfKjoxDjzYTH17">
+                  <span class="dtab" data-page-node-id="YRMcJa32SzRsEHBdWcOtIq">影片属性 (9)</span><span class="dtab" data-page-node-id="oh5tSg3TWHJ0DjNzTpBSnM">人物关系 (9)</span><span class="dtab" data-page-node-id="02fpC6HIUcrBcHsOzTfE66">角色设定 (47)</span><span class="dtab on" data-page-node-id="oXXcpZ8fexkOQ8TdkvXWnx">外貌身材 (47)</span><span class="dtab" data-page-node-id="IRAua2VAfgOjlU3IFKbDfS">情景场所 (24)</span><span class="dtab" data-page-node-id="NoeVaImw3zBJHMZNXL74RB">故事剧情 (45)</span><span class="dtab" data-page-node-id="kPm4VSkqFXG63Co7GUaVsE">性交体位 (54)</span>
+                </div>
+                <div class="searchfield" data-page-node-id="3CV1WUkmqXolMtPeehcIL1"><svg data-page-node-id="aXpu4a6g89GNyvGrLkMQ42"><use href="#i-search" data-page-node-id="WTWk2blUdFiXPXIb7kScQe"/></svg><span class="ph" data-page-node-id="AR9G5E25JjXadZCtF0L3WC">在「外貌身材」中搜索</span></div>
+                <div class="taggrid" style="max-height:280px;overflow-y:auto" data-page-node-id="qxarbDzifKJlqYDWf69Wyv">
+                  <span class="tagchip sel" data-page-node-id="SGAHch8BCypE4M2Pi5SAeq"><svg data-page-node-id="4SbhNZGCS79aZwYkYbaaMt"><use href="#i-check" data-page-node-id="yTtnHARs6gq6ArLnESiQbF"/></svg>短发</span>
+                  <span class="tagchip unsel" data-page-node-id="5FIyT5sFoxd6lSvGLTwbp4">马尾</span>
+                  <span class="tagchip unsel" data-page-node-id="Nr7qM2PBvdWXcQktl9mwC9">双马尾</span>
+                  <span class="tagchip unsel" data-page-node-id="8l9zPTU79x37v6mBDPayJQ">丸子头</span>
+                  <span class="tagchip unsel" data-page-node-id="eYDTH0dg0VMM8Cx4Y4ZS6F">短发烫</span>
+                  <span class="tagchip sel" data-page-node-id="CGuPeUqNM2fvRJhlUgKByv"><svg data-page-node-id="f6s48UpyA1tDVNS5FXXrdK"><use href="#i-check" data-page-node-id="mfh6qJFbbRglQU3Ho4GQ4A"/></svg>巨乳</span>
+                  <span class="tagchip unsel" data-page-node-id="Bn1RZytf58DoD2QzmFMBzE">贫乳</span>
+                  <span class="tagchip unsel" data-page-node-id="OiHu3M3RExhHvi7EITQ5Cc">美乳</span>
+                  <span class="tagchip unsel" data-page-node-id="nbvGtAWXgK0vnJ2J2HIznB">黑皮肤</span>
+                  <span class="tagchip unsel" data-page-node-id="fWEjHD4SCdW3iJVlo5ZKOd">白人</span>
+                  <span class="tagchip unsel" data-page-node-id="pbcDVpc6xViIo4JICkRPnF">眼镜</span>
+                  <span class="tagchip unsel" data-page-node-id="5f5wgtjkwAf31tj7aMehZC">兽耳</span>
+                  <span class="tagchip unsel" data-page-node-id="P37GyKvuzhis1eCABqZXoI"> tail</span>
+                  <span class="tagchip unsel" data-page-node-id="dDLHTIrWEcwPAp8fO0moGj">高挑</span>
+                  <span class="tagchip unsel" data-page-node-id="LLSaYtzwdu9i7q60781Fha">丰满</span>
+                  <span class="tagchip unsel" data-page-node-id="0GbMSTDlzHqELHAvGFEeCC">苗条</span>
+                </div>
+                <div class="dlg-foot" data-page-node-id="VbibmYpADKa6vQJePcMPdE">已选 3 项</div>
+              </div>
+              <div class="dlg-actions" data-page-node-id="zhY76TMypPcSrtlVla0qAl">
+                <button class="textbtn" data-page-node-id="K5PjF9IfPhkBWHSfHFlTCB">确认</button>
+                <button class="textbtn" data-page-node-id="Iaj6YeVRDoxEwOP5elhTpV">重置</button>
+                <button class="textbtn" data-page-node-id="CXS4yej9HDk3odO4wqhClz">取消</button>
+              </div>
+            </div>
+          </div>
+          <div class="homebar" data-page-node-id="QDSLmoGGq52FtxCok4MjXt"></div>
+        </div>
+      </div>
+      <p class="state-cap" data-page-node-id="URqLgy2thCP0wCwZfiAJxH"><b data-page-node-id="SdUJo836227ieOkfSVOGSN">多选对话框</b>（最复杂的筛选器 UI）：模糊搜索 Switch（titleSmall + 说明）→ <code data-page-node-id="YxCiNBKJQGYsbhHaTXaOgN">PrimaryScrollableTabRow</code> 7 个 scope（带条目数）→ 分类内搜索框 → HorizontalPager + 3 列 <code data-page-node-id="DX0D8cah4madzJZKQ2vOWR">SelectableTag</code>（M3 FilterChip 薄封装，选中 ✓ 前导）→ 已选计数 → 确认/重置/取消。「确定」只写回工作态，真正的搜索在 Sheet 底部按钮<b class="anno" data-page-node-id="c1R97PzPAt0aA94sotH3xP">8</b>。</p>
+    </div>
+
+    <!-- ============ 状态 7：发布日期对话框 ============ -->
+    <div class="state" id="s7" data-page-node-id="HFqjrow0ZMUupU17NrZiGH">
+      <div class="device" data-page-node-id="ILBGEugvAOQys9whz01Bdg">
+        <div class="notch" data-page-node-id="Prd7ZnZusRsK5t7Ld8YZTp"></div>
+        <div class="screen" data-page-node-id="5ouMN8YjCpHSSepfXC1U8p">
+          <div class="statusbar" data-page-node-id="yxNVv9kqiQCXyDe1IWfwK9"><span data-page-node-id="BMrjVfB5J0ImbqBAbF1NVr">17:49</span><span class="sb-icons" data-page-node-id="EdSRkJ5bxHfy9y7bXdbaQR"><svg data-page-node-id="VSDx7obNE5B0Tq5BkcQtIq"><use href="#i-signal" data-page-node-id="SWgSzYugjGHcJH5eOQrE7r"/></svg><svg data-page-node-id="Ji2pJK5Ku2JzCFLTcAOaD5"><use href="#i-wifi" data-page-node-id="PhJVJoXJtAGe6iVOYyPA7r"/></svg><svg data-page-node-id="dkEOYeGYAFEBc5mMeMGT4K"><use href="#i-batt" data-page-node-id="Oav9T6iPbx3VudWCMhtnEF"/></svg></span></div>
+          <div style="flex:1;min-height:0;position:relative;background:var(--page)" data-page-node-id="4YppNPA2mMWjWpBALiFJhx">
+            <div class="sheet" style="max-height:70%" data-page-node-id="bQG0sFzAno0Qj2NSLF04PI">
+              <div class="handle" data-page-node-id="LyOuD9YSXn9gdwejjb4NMD"></div>
+              <div class="sheet-body" data-page-node-id="ewgp8Bd7lFpzWCvtyvKGLN">
+                <h2 class="sheet-title" style="font-size:20px;line-height:28px" data-page-node-id="6WSGC4M2hMz1eDWDbgoucw">高级搜索</h2>
+                <div class="blocks" data-page-node-id="SKZVfpCx4gEdyxg7S0A0tU">
+                  <div class="fblock sel" data-page-node-id="nDXDKcbPxAbcBCEugimBAU"><span class="fb-label" data-page-node-id="AEa89ZvWFtbpIq4rAo7FxB">类型</span><span class="fb-value" data-page-node-id="ys1BsM46A4GZyn02yD5HE6">里番</span></div>
+                  <div class="fblock sel" style="outline:2px solid var(--primary)" data-page-node-id="LZirsxt6YfBDSLetTPqJd9"><span class="fb-label" data-page-node-id="2q6phfCPXhC5KS8GZODKEv">发布日期</span><span class="fb-value" data-page-node-id="3VwpKiCHYq3d5IRDM1yGcq">2026年3月</span></div>
+                  <div class="fblock unsel" data-page-node-id="fUsIRRDHw3kUddxAONH0G5"><span class="fb-label" data-page-node-id="gCgfGY1A3GLMFvtcbZ9PsC">品牌</span><span class="fb-value" data-page-node-id="j4vuJuoBSFdAXnT1Roq7yC">全部</span></div>
+                  <div class="fblock unsel" data-page-node-id="wcZl0UsI6sosNv0LlnfW02"><span class="fb-label" data-page-node-id="VoY270x5Bn6akXr5Dk8AoQ">影片时长</span><span class="fb-value" data-page-node-id="7zkQBrpyrWUsM02cZCOZyG">全部</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="dlgwrap" data-page-node-id="EVHoHfdSXX97aznf7PvGU3">
+            <div class="dlg" style="max-height:88%" data-page-node-id="gkZYulxNOpZ4hntsOF9Tki">
+              <div class="dlg-title" data-page-node-id="SoMV8TPAW7iw5BZNEe3XGs">发布日期</div>
+              <div class="dlg-content" style="gap:12px" data-page-node-id="qoRU3mgun5TAAbIKELQnOq">
+                <div class="segrow" data-page-node-id="hYBSIEUrhRHpbZmE54LasR">
+                  <span class="seg on" data-page-node-id="v9As79HNkdeLp5V5QnpOrc">具体年月</span><span class="seg" data-page-node-id="JSyQxMaqACrR85tcR9L3wx">大致范围</span>
+                </div>
+                <div style="display:flex;justify-content:center" data-page-node-id="jvxOkvIzlDzDvK2DU4j46s"><button class="textbtn" style="color:var(--on-surface)" data-page-node-id="2fHB3DSF1oj7hAwgo6xg8n">切换至年月</button></div>
+                <div class="wheels" data-page-node-id="51w8O5LmMolU31u1S8oRkJ">
+                  <div class="wheel" data-page-node-id="nFDE0jrcjq0VHBoGxno6lX">
+                    <div class="wheel-title" data-page-node-id="9EUawGqdBeHzqpeYsHzDZ3">年</div>
+                    <div class="wheel-list" data-page-node-id="oqODc4W0vfN0k6ZnlWUFhX">
+                      <span class="witem unsel" data-page-node-id="tiQGtzUuCje22hKRAzv69P">1990</span><span class="witem unsel" data-page-node-id="wq9KEMB5DthLEyXHjcgdex">1991</span><span class="witem unsel" data-page-node-id="kOlASksIvORepAkwl2owtv">1992</span><span class="witem unsel" data-page-node-id="oWasXbc1IchLSIUwemzOd9">1993</span><span class="witem unsel" data-page-node-id="AMBPQNYHlLSYSwSLyb1hds">1994</span><span class="witem unsel" data-page-node-id="VcAccdTSrsYtfXYQq7coD9">1995</span>
+                    </div>
+                  </div>
+                  <div class="wheel" data-page-node-id="gMfitLVEcpi1EKWAkQ1MAt">
+                    <div class="wheel-title" data-page-node-id="VrWnqKdv0NLI8XEPXe42Wi">月</div>
+                    <div class="wheel-list" data-page-node-id="KUQlPLCXLx20FzDGlco074">
+                      <span class="witem unsel" data-page-node-id="vI955c0YsezNcQSc9Fj9Nv">1 月</span><span class="witem unsel" data-page-node-id="SXGPDxRcunuS4tMXhTURqE">2 月</span><span class="witem sel" data-page-node-id="knMYx0vviq7LHGOxDNu4jz">3 月</span><span class="witem unsel" data-page-node-id="KWbkenOj6Y4ROOwWCLwHIm">4 月</span><span class="witem unsel" data-page-node-id="IWi7NDw3tEXDIpKET2dgrP">5 月</span><span class="witem unsel" data-page-node-id="xkaJulQvJDZ41xcmdVkuOk">6 月</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div class="dlg-actions" data-page-node-id="Vr5xk5YETGsJAGwqGTf5x5">
+                <button class="textbtn" data-page-node-id="isw9IXV0xeCaseO02fempf">确认</button>
+                <button class="textbtn" data-page-node-id="rSA989H4xtDPqMMaXAkkPv">重置</button>
+                <button class="textbtn" data-page-node-id="e3Zb1EpGycCNB1erhbg0PX">取消</button>
+              </div>
+            </div>
+          </div>
+          <div class="homebar" data-page-node-id="6COasX0hOzUW7L6V35DW2K"></div>
+        </div>
+      </div>
+      <p class="state-cap" data-page-node-id="mXc2LCnDf6dltXzsdB0Hdh"><b data-page-node-id="N8e6Mz6D48wttcHTiBpVa8">发布日期对话框</b>：<code data-page-node-id="EMHgNiEiKu2nC0oEGEphEm">SingleChoiceSegmentedButtonRow</code> 切换「具体年月 / 大致范围」（P1 #10 修复后的正确用法——旧版两个同貌 FilledTonalButton 无选中反馈）；具体年月走自绘 <code data-page-node-id="4qjwOpazZJvRiDB4zb0Nfh">WheelLikeColumn</code>（LazyColumn + fading edges，选中项 <code data-page-node-id="E2GoNOYnOMfbQt9XKgctWY">primary</code> 容器）；大致范围是 <code data-page-node-id="3JgwLd2QgTGl5t1HGEUh2Y">SettingChoiceItem</code> 列表（过去24小时/2天/1周/1月/3月/1年）。年份范围 1990–2026 共 37 项<b class="anno" data-page-node-id="vj2yWrYfFYwBAdZgDa8Gy6">9</b>。</p>
+    </div>
+
+    <!-- ============ 状态 8：宽屏常驻筛选栏 ============ -->
+    <div class="state" id="s8" data-page-node-id="dBLglGZqeJAyCjyqObEAIH">
+      <div class="device wide" data-page-node-id="T8seAqZPXIpC0D7PnVYuyE">
+        <div class="screen wide" data-page-node-id="DsHpAy1ZZiKkcMU452CKnn">
+          <div class="wideframe" data-page-node-id="nGYhG4vCqZl8leLLG3iaSC">
+            <div class="rail" data-page-node-id="exnAbwY7Wg7g1TMeXpDO6l">
+              <div class="rail-item" data-page-node-id="5HYT0Qbeh2j5MhYhVCMSji"><svg data-page-node-id="SbPDF2V2HbHbn18qfBzALE"><use href="#i-home" data-page-node-id="F0tm2gvqazCr5ZfFrkKMwB"/></svg>首页</div>
+              <div class="rail-item active" data-page-node-id="3EmaXqhPmQ36vBb1s1yYAD"><svg data-page-node-id="CpQ64Q2bEEuABkQZQY01mE"><use href="#i-explore" data-page-node-id="VBn5IjLLUkjc2FJ27mZlkY"/></svg>发现</div>
+              <div class="rail-item" data-page-node-id="SlK56qtAf0x7TpFFxXrKRt"><svg data-page-node-id="ABWNjyzDvz6K3tqMGoVhys"><use href="#i-person" data-page-node-id="xDQG9KhhT9Ovq9O1f4eQwb"/></svg>我的</div>
+              <div class="sp" data-page-node-id="cZSklRrVrfnwNMNp8YvSee"></div>
+              <div class="rail-item" data-page-node-id="7XEspt1Z9aYorQKDYNGPfP"><svg data-page-node-id="3K4QGsf2dZouvGg3mX6WrB"><use href="#i-settings" data-page-node-id="aLsRlfLewzRvgjQ4P7p5Bu"/></svg>设置</div>
+            </div>
+            <div class="widecontent" data-page-node-id="YEjTGVFe1maC53rq6kkGI2">
+              <div class="widerow" data-page-node-id="6SMSavH5GrYfPTElXGrpCe">
+                <div class="sidepanel" data-page-node-id="CaBoO2BKvdIcd2dInAmrsO">
+                  <div class="sp-title" data-page-node-id="1PS8st8n2ItLePHjz35i61">高级搜索</div>
+                  <div class="side-scroll" data-page-node-id="fJHUYEZL7xWCh76Xfnkaf7">
+                    <div class="sec" data-page-node-id="wYdvpN3FhMZzVDNhMtzX1l">
+                      <div class="sec-row" data-page-node-id="YxVWRFTRG0VmzZqEJE9pp0"><span class="sec-title" style="font-size:14px" data-page-node-id="VgthL42hlzxvESTuk0wBuL">筛选预设</span><button class="textbtn" style="height:32px;padding:0 8px;font-size:13px" data-page-node-id="2jZhtNWZhzDYPlXUNYr8Qb">保存当前筛选</button></div>
+                      <div class="preset-row" data-page-node-id="oa5tfGK1SKywNDx1iWlTJf"><span class="chip assist" data-page-node-id="xKC2qsmY5NTkrgXpH0LWCb">我的常用</span><span class="iconbtn sm" data-page-node-id="v8Yd9Kf7bb2mh6QnIOCF0l"><svg data-page-node-id="raxn1YhFz5hyUmvyJltf8d"><use href="#i-delete" data-page-node-id="9ZuPhRWZt2jVKiUQN9VyVO"/></svg></span></div>
+                    </div>
+                    <div class="blocks" style="gap:8px" data-page-node-id="ow8nKKCd8WM4G7vTCH9Uyn">
+                      <div class="fblock sel" style="flex-basis:100%" data-page-node-id="avny4038Dh2DKrQNSjsHY0"><span class="fb-label" data-page-node-id="rRawY5y8cZdXVhdek7ZkFa">类型</span><span class="fb-value" data-page-node-id="CswZcJv1WrCslRx9xyIC1W">里番</span></div>
+                      <div class="fblock sel" style="flex-basis:100%" data-page-node-id="FMUUUDX1V2ybg4C5f1exJ2"><span class="fb-label" data-page-node-id="2DESFBecnvvGfGNM6Vrc02">排序方式</span><span class="fb-value" data-page-node-id="1oDz2tlCtVK4ooZEeYFGOu">最新上市</span></div>
+                      <div class="fblock sel" style="flex-basis:100%" data-page-node-id="nVUUq3jEFkCDIOlve39YVu"><span class="fb-label" data-page-node-id="Do6ZEYXA7blcSvc73gPD8n">标签</span><span class="fb-value" data-page-node-id="8ThJQPZ1B81uBrgRVaZOAK">3 项</span></div>
+                      <div class="fblock unsel" style="flex-basis:100%" data-page-node-id="EDfnSyaTMLmvJuhFGNiZlo"><span class="fb-label" data-page-node-id="NapSQsf0wycuZlwqex774c">品牌</span><span class="fb-value" data-page-node-id="6D88uYjH65sV98l5fDgKwq">全部</span></div>
+                      <div class="fblock sel" style="flex-basis:100%" data-page-node-id="X16ZmuXCFVZ0woXT1U5GUF"><span class="fb-label" data-page-node-id="VGuBJFpoRIy4JfBL8fGOI0">发布日期</span><span class="fb-value" data-page-node-id="grkPMF1i7Mxwa6VQDoRnIE">2026年3月</span></div>
+                      <div class="fblock unsel" style="flex-basis:100%" data-page-node-id="M59andP4qBhW4FPgIoS2ho"><span class="fb-label" data-page-node-id="FIOL5tQVAqSfAAUvy10H09">影片时长</span><span class="fb-value" data-page-node-id="FhBlInnFtwmtiXZQQIx7Ys">全部</span></div>
+                    </div>
+                    <p class="tips" style="font-size:12px;line-height:18px" data-page-node-id="RpPBIq3jZ7JLG38B9u3JY2">Tips:长按某单元可以清除当前你所选单元的所有tag</p>
+                  </div>
+                  <div class="side-actions" data-page-node-id="S6BuBZeiDifGhpJr0G96tC">
+                    <div class="divider" data-page-node-id="0CkLY9ICyG6dyxAKqqBvi3"></div>
+                    <div class="act-row" data-page-node-id="xwj4eqUhc4nDIYFzDpB5i0"><span class="act-count" data-page-node-id="QIhqHSF1OpiKD19Qnm0chw">已选 5 项</span><button class="textbtn" style="height:32px;padding:0 8px" data-page-node-id="cGzhUFWoMnowWE6A2ByJqE">重置</button></div>
+                    <button class="filledbtn" data-page-node-id="Izjd3VbQHFP1ucUZkNhomc"><svg data-page-node-id="hHBRAfft6mBfx2DnIb98VW"><use href="#i-search" data-page-node-id="bJ5KC9AwD2z3KMM8u6YHjO"/></svg>搜索</button>
+                  </div>
+                </div>
+                <div class="vdiv" data-page-node-id="KUVgkicGzwgthtu3eidOJV"></div>
+                <div class="widemain" data-page-node-id="WN9AezahvLMTyU7nGyk0g6">
+                  <div class="appbar" data-page-node-id="SWDj280OVSwxwEroPoQCGh">
+                    <div class="appbar-row" data-page-node-id="ELvA2s0eAeTtygCoyCffYh">
+                      <div class="tf" data-page-node-id="AexfdnowAIGUVZQ3KETUqq"><input value="纯爱" readonly data-page-node-id="TKu5wBLpVGKmwanekQskBY"/><span style="flex:1" data-page-node-id="wgULhdunsrvLXevbUYK5yS"></span></div>
+                      <button class="iconbtn" aria-label="清除" data-page-node-id="S8upEWkGAcq7LJgdfrezh8"><svg data-page-node-id="kTU982E7FTiOWPUhRMw3vB"><use href="#i-close" data-page-node-id="uCIBAioskeOWCqpn6TfQT8"/></svg></button>
+                    </div>
+                  </div>
+                  <div class="criteria" data-page-node-id="UPenAM8eQKL06yi7wZGbUX">
+                    <span class="chip sel" data-page-node-id="08rIOpiqu82Zl8pVETnbCJ">类型: 里番</span><span class="chip sel" data-page-node-id="uqHku9WQGF1stA1fA14KJw">标签 (3)</span><span class="chip sel" data-page-node-id="ynM5ACySMmDehwYJfpQrBu">排序方式: 最新上市</span><span class="chip sel" data-page-node-id="NKAuBpdHAEYtNoZVHKkFvK">发布日期: 2026年3月</span><span class="chip sel" data-page-node-id="2gtHF3RAXq1OVBDCUsyo1S">模糊搜索</span><span class="chip reset" data-page-node-id="nuzXh6gzOaXVbBQTUbDIAe">重置</span>
+                  </div>
+                  <div class="widegrid" data-page-node-id="P0qBf14LdWFePFmv3B4H4Z">
+                    <div class="grid" data-page-node-id="CBchOXPcHwfGq4W1EdpumD">
+                      <div class="vcard" data-page-node-id="l0sGVxNCHJTBRfDPjfRIEv"><div class="cover" style="background:linear-gradient(135deg,#f7c8d4,#e8a0bf 55%,#c98bab)" data-page-node-id="JeKHHenmq7JGC2WEQVvFh2"><svg class="wm" data-page-node-id="tkUEUoNsRnayBg0oLh1lnI"><use href="#i-play" data-page-node-id="wz5ydJHYnW8wMklhCB9oY4"/></svg><div class="scrim" data-page-node-id="H0vSbVU18uttByCRltGS2s"><svg data-page-node-id="rITc7judTAyp1TKu1I6h9D"><use href="#i-play" data-page-node-id="Ldi6cHyQeOkiiHSyBLOQLP"/></svg>12.4万<span class="grow" data-page-node-id="cbyJhoAM5G5SKvEBM9H0BX"></span><svg data-page-node-id="LmtOiIM7NWENQuhz2zHKWC"><use href="#i-clock" data-page-node-id="hGZGMYaao1ICJNEVPiKlbs"/></svg>24:18</div></div><div class="vtitle" data-page-node-id="743mcl7VB7NkcQi03kEmeS">午夜图书馆的低语 第1话</div><div class="vartist" data-page-node-id="d0SVQ4gPhhMfx6rKXWz9Ya">绫波事务所</div><div class="vmeta" data-page-node-id="FCcER6bqN6G92lCH5lL19f"><svg data-page-node-id="iAKHr6KwswlMA2yGmwCpqz"><use href="#i-like" data-page-node-id="AKWdltpnMEDBD5UmRLdpln"/></svg>98%</div></div>
+                      <div class="vcard" data-page-node-id="FGM3SpvcAStzzcYgNT1wYr"><div class="cover" style="background:linear-gradient(135deg,#d9c6f0,#b39ddb 60%,#8e7cc3)" data-page-node-id="IS7oF5vr0Sp7cKCKUo9Ies"><svg class="wm" data-page-node-id="vKkyfyHb2WLV0zX3AfsNNj"><use href="#i-play" data-page-node-id="s44WNA1wvvDzElVJq7nCpC"/></svg><div class="scrim" data-page-node-id="ZnBasfzm5AVO7S7hlvLHJ3"><svg data-page-node-id="FcjnkmkrkyxjUwCv7Woc21"><use href="#i-play" data-page-node-id="AXsaeGg6PEBe2CJlSPC1K2"/></svg>8.7万<span class="grow" data-page-node-id="JUUmk94OsCrIP56jZNHC2F"></span><svg data-page-node-id="23E03IyQSPnfDfOObAi75d"><use href="#i-clock" data-page-node-id="cQA0WajZ0jOHIp2UrTDeE5"/></svg>18:02</div></div><div class="vtitle" data-page-node-id="GqRBPH8E8LHYbozMUFwp2L">夏日补习班的第七天</div><div class="vartist" data-page-node-id="74LxE9Nw2deHnJZYDjMmeY">桃井工作室</div><div class="vmeta" data-page-node-id="PTFlE0WxdZzbTRWjaganJ8"><svg data-page-node-id="EiraF1gKf8nE1cMPrapxad"><use href="#i-like" data-page-node-id="W2hmVsBCCKZOTOAbABbXG4"/></svg>95%</div></div>
+                      <div class="vcard" data-page-node-id="Uq9AvRNPrJThKXXSOKx1UE"><div class="cover" style="background:linear-gradient(135deg,#ffd9c0,#f4b183 55%,#dd8f5f)" data-page-node-id="tMeM7lfKdsg5PYlUGPQpqb"><svg class="wm" data-page-node-id="p37BPagmaV3paCh23qi3ql"><use href="#i-play" data-page-node-id="QFtY7weXJvxO21v2C3eQYA"/></svg><div class="scrim" data-page-node-id="MrsqiXyFEJhqwrREWVijvO"><svg data-page-node-id="8ab82HSp18IycSWG2qk0c5"><use href="#i-play" data-page-node-id="DqcqSTPEwR0QJEoybx6TUF"/></svg>23.1万<span class="grow" data-page-node-id="ZrtQ9a7qsGx895ng8sNRON"></span><svg data-page-node-id="jEfyvijgSED16pq3C3phET"><use href="#i-clock" data-page-node-id="Yo34dQOCscDuA3I6TrPR5N"/></svg>31:45</div></div><div class="vtitle" data-page-node-id="Au1bW6fFaAPLk0le4yO4Ex">星轨观测者与夏天的终点</div><div class="vartist" data-page-node-id="RKyRMtn3X4fCXmVyBqjmuw">星野クリエイティブ</div><div class="vmeta" data-page-node-id="dXrFlmLovXYWlwsNRxXJpS"><svg data-page-node-id="iVKwJzyADOapaDUkCjhiwY"><use href="#i-like" data-page-node-id="wgenBPXtBIDLgP6XEPF8bC"/></svg>97%</div></div>
+                      <div class="vcard" data-page-node-id="ZLwrCb1KYKpSEXC6MH6fVr"><div class="cover" style="background:linear-gradient(135deg,#c5e3f5,#93c6e8 55%,#6fa8d8)" data-page-node-id="zFcyJGGweAg5gH3sDILEYg"><svg class="wm" data-page-node-id="LRnC584EG5RrILMRl8lXEx"><use href="#i-play" data-page-node-id="9YBXRbfZTmtze5eiSOVyWe"/></svg><div class="scrim" data-page-node-id="FEUrNWRMfnNG6sFs3Jqi0f"><svg data-page-node-id="MfKDEvTFJLhMzR7BTkdXi9"><use href="#i-play" data-page-node-id="jBQYNCIzpopCERvyGQviFD"/></svg>5.6万<span class="grow" data-page-node-id="8swfZG8RYDpf3Px2U2p719"></span><svg data-page-node-id="KjxL6tM4SmIexMc4MO0c1U"><use href="#i-clock" data-page-node-id="6lqslAfDE9inrGXNQg1Rla"/></svg>12:30</div></div><div class="vtitle" data-page-node-id="B4ERNKyEPEi1DnOJ0LVPjt">猫与雨铃的午后</div><div class="vartist" data-page-node-id="LMZQe8ilE3TCBdoeWKE7YZ">山樱动画</div><div class="vmeta" data-page-node-id="q4t0f4AgVyYNbzIsmuQ7E3"><svg data-page-node-id="Hr7TwOiBFxptKVBIukwMQ8"><use href="#i-like" data-page-node-id="FgDKxEFeFpVfdRei1lXbnx"/></svg>92%</div></div>
+                      <div class="vcard" data-page-node-id="9vWMj68PoEHQUQFg2300Di"><div class="cover" style="background:linear-gradient(135deg,#d7f0c8,#a5d68b 55%,#7fb95e)" data-page-node-id="oHb6RcbaMdQ8pWA2rtbkSF"><svg class="wm" data-page-node-id="o672zuc3dFUAh19fwNBD3A"><use href="#i-play" data-page-node-id="bJM607G8WJ9F7De38aUyXm"/></svg><div class="scrim" data-page-node-id="e2FIBuXJ0Wyb7GpVor9Y1j"><svg data-page-node-id="In4GnlCIEchHD9WVQwj0Gk"><use href="#i-play" data-page-node-id="XzRICnnnEYBqjN9M3HcAXB"/></svg>17.9万<span class="grow" data-page-node-id="JRaBhqeH0Ajv8oBgCrzy5i"></span><svg data-page-node-id="d8tEv8Ld397NLDUOnpSenX"><use href="#i-clock" data-page-node-id="Z7foz4zPZKRrCLgF6mSRnc"/></svg>27:11</div></div><div class="vtitle" data-page-node-id="BW7kEG2tymuSBvalNFEDt6">深海邮差</div><div class="vartist" data-page-node-id="mHeSlirc9sofyvinWRC1zJ">汐音制作</div><div class="vmeta" data-page-node-id="EcCLvZn2UnidiKSrkfLL3m"><svg data-page-node-id="k3JRREUC9hftkS7YEAySh0"><use href="#i-like" data-page-node-id="i5JBeb6UXYuw4NNtCdxtze"/></svg>96%</div></div>
+                      <div class="vcard" data-page-node-id="LCJLDfiwMDzobsH2D8a4DB"><div class="cover" style="background:linear-gradient(135deg,#f5d9a8,#e8bf7a 55%,#c99e52)" data-page-node-id="b7NUO1gHmlMJkLETexqhex"><svg class="wm" data-page-node-id="ZLUy06wyLxYPaiZKUfbtGy"><use href="#i-play" data-page-node-id="x6IIH0AS3gSOGHgt5FB5iH"/></svg><div class="scrim" data-page-node-id="pZ1Xq87y56TvcaokFmMQQR"><svg data-page-node-id="x9pqPwSdxFBayX38AW6ZYB"><use href="#i-play" data-page-node-id="lR957Lixs2Aa6ntee0ZdN5"/></svg>9.3万<span class="grow" data-page-node-id="D2o4OaLkHOIhfeWi6kPn0g"></span><svg data-page-node-id="jI5RVyR9Cwl2EWOOa56bY3"><use href="#i-clock" data-page-node-id="CionRDeiNBAE0GfjsX3nmu"/></svg>21:08</div></div><div class="vtitle" data-page-node-id="1lEa7dLxv12VAzPVINJ6n6">暮色蛋糕店的假日</div><div class="vartist" data-page-node-id="KTTRMXuccoZ3w9DkI2MRby">绫波事务所</div><div class="vmeta" data-page-node-id="Sj8yGB0QWpeVROZWqglZcO"><svg data-page-node-id="TCBJAdzWD5uIqo9Feohg21"><use href="#i-like" data-page-node-id="muPJZbTl0jYEyBOhUgArjE"/></svg>94%</div></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="state-cap" data-page-node-id="GQFyAUVFOqoBPp8n7KqdzN"><b data-page-node-id="Hla1DcEvHCTWx52D7nluTH">宽屏（内容宽 ≥ 900dp）</b>：左 240dp <code data-page-node-id="NPtvxy2r13k2HXUYbESsHL">AdvancedSearchSidePanel</code>（<code data-page-node-id="x0uZV9XynJFNAhyAjFwXPG">surfaceContainerLow</code>，单列条件块 + 预设 + 主操作钉底）与右侧结果区并排；顶栏漏斗按钮隐藏（筛选直接在左栏改）。窗口 ≥600dp 另有 <code data-page-node-id="UXYe6fRpLcqVGH9JAjRhfA">WideNavigationRail</code>（Medium 折叠 80dp / ExtraLarge 展开 220dp）。两侧共用同一 <code data-page-node-id="pM09Pgqq9iszsvQIsPV9Qh">FilterBlockSpec</code>，无第二份「算 6 个标题」的重复代码<b class="anno" data-page-node-id="B54ZAEiFIdCVGwkCg8FCAr">10</b>。</p>
+    </div>
+
+  </section>
+
+  <!-- 注解图例 -->
+  <div class="legend" data-page-node-id="Bb7FyFH6ndYBexD6KG7qdF">
+    <h3 data-page-node-id="DZdIHlZHKFGiipVQ590Sf7">规范注解图例（编号对应预览中的黄色标记）</h3>
+    <ol data-page-node-id="Rg352aQCDYHv0JEnxlnaeS">
+      <li data-page-node-id="C8rDVcDG1Mxt37eEgEGWNR"><b data-page-node-id="yV7vyEYWcZYVDdpw6Mx93z">条件条 chip 角色误用</b>：可移除的已选项在 M3 中属 FilterChip（selected 语义 + ✓ 前导 + secondaryContainer 容器）；AssistChip 语义是「点击触发一个动作」。且无 ✕ 视觉提示，用户无从知道「点 chip = 移除该条件」。</li>
+      <li data-page-node-id="yNORcpY6NzMt4XgYElmEKB"><b data-page-node-id="Lw2C9KW6QdS6avozd5V0TI">条件条装卸无过渡</b>：<code data-page-node-id="Wocl9zogWvXxMM89G0FgMd">if (filter.isNotEmpty())</code> 直接装/卸，清掉最后一个条件时整条瞬闪；建议 AnimatedVisibility + motionScheme。</li>
+      <li data-page-node-id="xh9s6YndrY7LZPcsRklLMM"><b data-page-node-id="OA8p5laTl3ZWAQCNbp1x5r">视频卡</b>：16:9 封面 / 已观看徽标 / 播放量+时长 scrim / 两行强调标题（AppEmphasis.cardTitle）/ surfaceContainerLow 容器 / 20dp 圆角——与 M3 卡片规范一致，无需改动。</li>
+      <li data-page-node-id="hg3Q30JIZZ7UisYuugAlpd"><b data-page-node-id="AW3TQgQMwukwYmeOjY0tEK">空态无恢复动作</b>：M3 empty state 规范 = 插画 + 标题 + 说明 + 动作按钮；建议补「重置筛选 / 重试」。</li>
+      <li data-page-node-id="GFQl1GRcFOU0YQFCed8wLk"><b data-page-node-id="VnDk9TA4RwjPNTGn8pM2Cg">Sheet 首屏信息序</b>：历史组合 + 预设先于 6 个核心筛选维度，进 sheet 的第一诉求（改筛选）被挤到首屏外。</li>
+      <li data-page-node-id="ibpu2BmooUBZ0jkhEEcrXq"><b data-page-node-id="aeVi6HhP817tRVZWBjVdeU">维度块（AdvancedSearchChip）三连问题</b>：① selected 仅换色、无 ✓（M3E：状态不得仅靠颜色传达）；② 长按清除只有底部一行 tips 提示，可发现性弱；③ tips 文案中英混排未本地化；④ 两列时值（如「2026年3月」）必截断。</li>
+      <li data-page-node-id="5QS7qFxaerlBvYqGEqsNI3"><b data-page-node-id="z37DDbl9qTgpcUamGBux1C">单选列表两处规格问题</b>：① 未选项容器色 = card = surfaceContainerHigh，与对话框底同色，行边界不可见；② 单选用了 check_circle 图标（多选视觉语言），M3 单选应为 RadioButton。</li>
+      <li data-page-node-id="1b9aiLg0scpraO7tvGM7lv"><b data-page-node-id="6OtYFRZF7Ba1BxKnauFm4f">多选标签 = 复杂任务</b>：7 tab + 搜索 + 200+ 选项 + 开关塞在 AlertDialog 里，超出 dialog 的轻量定位；M3 指南建议改全屏对话框（full-screen dialog）。</li>
+      <li data-page-node-id="h38UVXh2FNxkr0KQeZVuBs"><b data-page-node-id="uE1Qeau7d3viuzrlQerb5E">年月滚轮打开即停在 1990</b>：LazyColumn 无初始滚动位置，当前选中值（默认今年）在 37 项之外不可见；且无居中高亮带 / 无滚动吸附。</li>
+      <li data-page-node-id="VEJTWSTOY0d7kHrFysdqYN"><b data-page-node-id="y036F8Jq4PeXjNTEW5poXo">宽屏常驻栏</b>：与底栏弹窗同一 FilterBlockSpec 复用、主操作钉底、240dp 单列避免长值截断——响应式处理正确，保持。</li>
+    </ol>
+  </div>
+
+  <!-- ============ 评审 ============ -->
+  <section class="review" data-page-node-id="5jTjF9rMTGUv3zPnSednSh">
+    <h2 data-page-node-id="MDRwNTn1n6qG0C74D88org">发现页 UI 设计评价与改进意见</h2>
+
+    <div class="card" data-page-node-id="9YWCzXP1yM7CEsC4I03IJc">
+      <h3 data-page-node-id="mLYouczV5HM3voiXnoruRz">一、总体评价</h3>
+      <p data-page-node-id="uNZIKGYtvSB6z5uLI8rCnW">发现页（<code data-page-node-id="L26tgwTR8dn280qKFO4eva">SearchScreen</code> + 筛选器家族）是这套项目里<b data-page-node-id="qcSmwwoqOgqbA2hRtVPRWY">设计系统执行力最强</b>的页面之一：色板全部由 materialkolor 从种子色现场算（三端同源）、间距/圆角/字阶全部 token 化、筛选器做到了「6 维度 + 预设 + 历史 + 模糊配对」的完整闭环，且窄屏（ModalBottomSheet）与宽屏（240dp 常驻栏）双形态共用同一份 <code data-page-node-id="QPsC5N44NafJqWxs7noGG8">FilterBlockSpec</code>。问题集中在<b data-page-node-id="BH7fvA4ZCFTaaHu3V6rivr">官方组件语义的替换</b>（AssistChip/FilterChip、自绘 chip、单选图标）与<b data-page-node-id="ZrAw7NN8K7UIs7i7CN4ouB">若干规格偏离</b>（自绘搜索栏 80dp vs 官方 56dp、滚轮打开位置、空态动作缺失），多数可在不动信息架构的前提下修复。</p>
+    </div>
+
+    <div class="card" data-page-node-id="WhgbHcDr3BeVauaZcaBAhx">
+      <h3 data-page-node-id="7TPIRvkkviTOPw2Yp1xKiO">二、做得好的地方（保持）</h3>
+      <ul data-page-node-id="Piq76YOmbaMlhAg3J1nL0Y">
+        <li data-page-node-id="UduPHoUIHw1EZcqR9BL57s"><b data-page-node-id="dQ6eaaMxxgHrsjjbsWceAU">token 纪律</b>：间距唯一真源 <code data-page-node-id="gQKjHsJooGrGGHGUhBDohi">HanimeDefaults.Spacing</code>（4/8/12/16/24/32）、圆角显式阶梯 <code data-page-node-id="GtYCFMmTChIVipU9PuPdBh">AppShapes</code>（4/8/12/16/20/28/32/48）、强调字阶 15 档全量 Bold 并收敛到 <code data-page-node-id="suliwmGCnzfgseG3nDAJjD">AppEmphasis</code> 语义层——业务层不直写 typography。</li>
+        <li data-page-node-id="QiUwHEZxalSOlb6Y6P7gEe"><b data-page-node-id="9BlBcHWytm4fvfknmICy8E">tonal 优先</b>：筛选选中态统一 <code data-page-node-id="cGYiTii3GkyJGsmQNQOGPF">secondaryContainer/onSecondaryContainer</code> tonal 配对，不用 alpha 叠加；搜索栏从「双 Surface 叠 tint」收敛为单容器（注释记录了理由）。</li>
+        <li data-page-node-id="lZd1p2f2aI610Lh87j2bnG"><b data-page-node-id="Hpw183qBIULUW39FJ3zaCE">动效走 motionScheme</b>：历史列表进出场、chip 颜色切换、按压形变插值（<code data-page-node-id="75VY9qd2nzQrQDnXvoFQHi">shapeByInteraction</code>）全部走 <code data-page-node-id="QQla56ITA1drd7IogexaaS">fastEffectsSpec/fastSpatialSpec</code>，无硬编码 tween。</li>
+        <li data-page-node-id="iLZAAXW9RUL1sAIrtl4cR3"><b data-page-node-id="NrwFOkJnv8Cbz6FONCfBEB">对比度实测全部过 AA</b>：见下方色值表（最低 6.50:1，outline 4.27:1 属非文本 3:1 档，通过）。</li>
+        <li data-page-node-id="0iZl4vpVUnLhhiv557BuCn"><b data-page-node-id="ErHsQnKmng4bFwde2tod7V">无障碍基本盘</b>：<code data-page-node-id="9x0KCGId0qtqA3AgGC9H2v">SelectableTag</code> 用官方 FilterChip（自带 Role.Checkbox + ✓ 前导），替代了此前的自绘 Box+clickable；全项目 haptic 反馈统一收口。</li>
+        <li data-page-node-id="R0VCSnkM03XRtdVHw6TR9M"><b data-page-node-id="6efr5M06VyHeQpkKfUAyt1">状态完备</b>：骨架屏 + 趣味加载文案 / 空态 / 错误态（带原因）/ 下拉刷新 / 分页 footer（M3E LoadingIndicator）都有专门实现。</li>
+        <li data-page-node-id="jMHo42RqgMUXumQEp57jHc"><b data-page-node-id="Bv6eyB28Aqb4XMyEJFcwfI">M3E 组件选型正确处</b>：<code data-page-node-id="oVHclqy0CdZlcuWYnVhk3P">PrimaryScrollableTabRow</code> 分类页、<code data-page-node-id="DkpWOlWT01ElFYI140iFIJ">SingleChoiceSegmentedButtonRow</code> 日期模式切换（P1 #10：旧版两个同貌按钮无选中反馈，已修）、<code data-page-node-id="AHSmYFCuD0iGktDxaGT5B3">Switch</code> + 两行说明、<code data-page-node-id="3vKwiVZyd7bbZ4ushqvplQ">ShortNavigationBar</code>/<code data-page-node-id="yxkWx8S4uhCfVvFUDdrZeJ">WideNavigationRail</code>。</li>
+        <li data-page-node-id="BUSbCC98l3Qc3jxoBJUXCE"><b data-page-node-id="QvzHrTWkTvDBnx3u6ogPEm">工程质量细节</b>：发布日期 chip 曾误绑 <code data-page-node-id="LT8X8hA8bcJ8m5NiO9hKTk">onClearDuration</code>（点「发行日期」连带清掉「时长」）——这类修复都留在注释里，可追溯。</li>
+      </ul>
+    </div>
+
+    <div class="card" data-page-node-id="1MfX6ENFvRluECTYzsD5W4">
+      <h3 data-page-node-id="WioMj4EHSVEDkljHo62tHh">三、改进意见（按优先级；依据 = M3/M3E 规范或锁定版字节码核验值）</h3>
+
+      <div class="issue" data-page-node-id="OhvlvBh8r6pHBbuFNECN1A"><span class="pri p0" data-page-node-id="ypGEsgBnGDPatVY40Yxlcp">P0</span><span class="t" data-page-node-id="bPLApGBi4XlnswRTzDpLTj">1. 已选条件条：AssistChip → FilterChip（selected + trailing ✕）</span>
+        <p class="d" data-page-node-id="tyCmkWgnM1lVYTZCUzZ12r"><b data-page-node-id="KeNlpe67xBBwwXLh9rkzFr">问题</b>：点 chip = 移除该条件，但 AssistChip 无 ✕ 提示、无 selected 语义，TalkBack 读不出「已选中/可清除」。<b data-page-node-id="7DC0wMfjErdSwqDb9TFNNd">依据</b>：M3 chip 家族分工——AssistChip = 点击触发动作；FilterChip = 选中/取消选中（selected 容器即 secondaryContainer，与现配色一致）。<b data-page-node-id="H5RChwARyQQ2gl9OLRRZ9s">改法</b>：<code data-page-node-id="bM7V6r0F1uxRGGw0eHxtpb">FilterChip(selected=true, onClick=onClearX, label=…, trailingIcon={Icon(close)})</code>，切换零视觉回归；「重置」保留 AssistChip（它确实是动作）。</p></div>
+
+      <div class="issue" data-page-node-id="YogrBQQn0CUEnA45556Ox7"><span class="pri p0" data-page-node-id="Yw0mWWxHmXR67xBUHYXNv8">P0</span><span class="t" data-page-node-id="UcmYONsx7jU06QwNDlF4fW">2. 高级筛选维度块：补 ✓ 前导（或改 FilterChip / ListItem 规格）</span>
+        <p class="d" data-page-node-id="5KwEXhDHJH6xeLsGVhqMdX"><b data-page-node-id="9aGZ0xnygELPRuUYoPSeA1">问题</b>：<code data-page-node-id="zjoY7vB2DnR7Eb7VrKaJU1">AdvancedSearchChip</code> 选中仅换容器色，无任何勾选标记；色觉障碍 / 高对比度用户不可辨。<b data-page-node-id="EkD5Jy3X6tRf67txfQqJWM">依据</b>：M3 FilterChip selected 必有 ✓ leading icon；M3E 规范「状态不得仅靠颜色传达」。<b data-page-node-id="GCCBKEatE5MGa2j6x9sg4C">改法</b>：选中时补 18dp ✓ 前导；或按 M3 两行 ListItem 规格（72dp：headline=维度名 / supporting=值 / trailing=✕）重构，天然获得官方形态与触控目标。</p></div>
+
+      <div class="issue" data-page-node-id="CrbalQMSol5W4WhKHSXlTu"><span class="pri p0" data-page-node-id="cM5YvhM7u8A0yWwCEulnRl">P0</span><span class="t" data-page-node-id="GZwGgcjxjfzC1wEt9JOhTW">3. 顶栏搜索栏自绘且超规格：≈80dp vs 官方 SearchBar 56dp</span>
+        <p class="d" data-page-node-id="c6kzedeunyWmAAoc9I6Tjs"><b data-page-node-id="7SYEjjp2x0kr4iqHc6iDH9">问题</b>：实测高度 = 8(容器)+4(行)+56(56dp 漏斗钮)+4+8 ≈ 80dp，比 M3E SearchBar（<code data-page-node-id="i9kNbWiJADxEdVMkbZy4al">SearchBarTokens.ContainerHeight = 56dp</code>，字节码核验）高 43%；且缺 leading 放大镜图标（M3 SearchBar 强制 leading icon）、clear 按钮在输入框外。<b data-page-node-id="YnC3uejumBT3B7Fk7xxLZP">改法</b>：首选迁移 M3E <code data-page-node-id="DRUEEgAMxo8vWiJje9U4Iy">SearchBar/DockedSearchBar</code>（自带 56dp、full 圆角、展开动画与 suggestions 槽）；保留自绘则至少补 leading icon、clear 内移、高度压到 56dp。</p></div>
+
+      <div class="issue" data-page-node-id="P3JuLFn8ihkXX2WFFkYWsg"><span class="pri p1" data-page-node-id="7nlgplkTk0otDgegfpDZ3J">P1</span><span class="t" data-page-node-id="wqSZ2DXOIy4yznDdTyk9Cx">4. Sheet 首屏信息序：核心筛选维度被历史/预设挤到首屏外</span>
+        <p class="d" data-page-node-id="HGE6a1yMBhsBi9JFwlJMLs"><b data-page-node-id="u9ggwno6uMKy9btn1UGV1r">依据</b>：M3 bottom sheet 内容应「任务优先」+ 渐进披露。<b data-page-node-id="WCCGmtVaMJEUFxafs5FUPY">改法</b>：6 个维度块上移并加区标题（「筛选条件」）；历史组合收成一行入口（「最近使用 ▾」）或移到结果页条件条附近；预设保留一行横滑。</p></div>
+
+      <div class="issue" data-page-node-id="n3ZjQoLDEe05bHSvywIrs5"><span class="pri p1" data-page-node-id="MzaqQMnysv3I9Jy1fUVREm">P1</span><span class="t" data-page-node-id="6pglwcS8yWmpv34qcwQrza">5. 维度顺序两处不一致</span>
+        <p class="d" data-page-node-id="TSNvm0OUzLtPAcdwVYCsuR">结果条件条序（类型/标签/排序/日期/时长/品牌/模糊）≠ Sheet blocks 序（类型/排序/标签/品牌/日期/时长）。同一组信息两种序列，用户每次重新扫描。统一为同一顺序（建议按站点字段序或使用频率）。</p></div>
+
+      <div class="issue" data-page-node-id="Yix8kBdZTF3PZ0Urxhmein"><span class="pri p1" data-page-node-id="JORbC1F9Ke9CSabrnyIk7L">P1</span><span class="t" data-page-node-id="diygfcl7ZoClERbAhRGtgX">6. 多选标签对话框改全屏对话框（full-screen dialog）</span>
+        <p class="d" data-page-node-id="1GVVK3nIrAkzOUi0O7XPzW"><b data-page-node-id="QRTYqLXMYjQHJsSEhWwShW">依据</b>：M3 对话框指南——简短确认用 AlertDialog，复杂任务（长列表 + 多步操作）用全屏对话框（头部标题 + 全高内容 + 底部动作）。当前 7 tab + 分类搜索 + 200+ 选项 + 开关塞在 312dp 宽的 dialog 里，pager 可视区仅 ~320dp 高。</p></div>
+
+      <div class="issue" data-page-node-id="pePza2PanBf0ApXyzPh8BB"><span class="pri p1" data-page-node-id="pgn4sDNmlWDiyrtrGsIqHl">P1</span><span class="t" data-page-node-id="tBN0scR62bmQUEMaWa1CJX">7. 单选列表：图标与容器两处规格问题</span>
+        <p class="d" data-page-node-id="5cOvoAnZVnyDIWYLI8E2iI"><b data-page-node-id="5cGgY3ilLmGRZVA7z6NHBH">问题</b>：① 未选项容器 = <code data-page-node-id="CQV3dCYZa33oYEj58EHejX">HanimeDefaults.Colors.card</code> = surfaceContainerHigh，与 AlertDialog 底（<code data-page-node-id="WqgMG1dXJN9i8q1B5k7JGQ">DialogTokens.ContainerColor = SurfaceContainerHigh</code>，字节码核验）同色，行边界完全不可见；② 单选用 check_circle（多选视觉语言）。<b data-page-node-id="nFgUpeFW7ksOx5q4nGEPhJ">改法</b>：未选项给 <code data-page-node-id="ddOqRXaYNbYGCPoAYPflcE">surfaceContainerLowest</code> 或 1dp outlineVariant 边框；单选改 M3 <code data-page-node-id="tk7kGptGxGYRVjo5CwyScg">RadioButton</code>。</p></div>
+
+      <div class="issue" data-page-node-id="tPLkEVpQ17iT9s7WPCteck"><span class="pri p1" data-page-node-id="kUoymiFZWxtOEazLiZ2H5h">P1</span><span class="t" data-page-node-id="NbH6vqORgYS5H54lAGDQca">8. 年月滚轮：打开停在 1990 + 无吸附/居中高亮</span>
+        <p class="d" data-page-node-id="Y9vdwD4y3gghrtygTL7rjK"><b data-page-node-id="F05phELgrYd7KtJAuSvvlw">问题</b>：<code data-page-node-id="4cvy1eP7MmxHotFcPBfUvB">WheelLikeColumn</code> 的 LazyColumn 无初始滚动位置，弹窗打开时列表在首项（1990），当前选中值（默认今年 2026）在 37 项之外，用户看不到当前值；也没有 wheel 惯用的「选中行居中 + 上下渐隐 + 点击居中」。<b data-page-node-id="6RzlRMrAFzZ1GgypwFyFWE">改法</b>：<code data-page-node-id="BwURtEtCHoY8ZQ3Uj264qB">rememberLazyListState(initialFirstVisibleItemIndex = indexOf(selected))</code> + 居中高亮带 + <code data-page-node-id="3j4NiVhGqbLMo3MPQStNPK">snapToItem</code> 吸附；或年份加「最近 5 年」快捷跳转。</p></div>
+
+      <div class="issue" data-page-node-id="8B4YtkLAB6Gd8DotCKlNFT"><span class="pri p1" data-page-node-id="unhjiki80livqen00Nk2nA">P1</span><span class="t" data-page-node-id="t7NE1fanx2plZ47puFIclq">9. 空态 / 错误态补恢复动作</span>
+        <p class="d" data-page-node-id="DKYnSsHeYfgBSV44c6zHRK"><b data-page-node-id="lkhLaEb8tXXBx4rjOeZMWE">依据</b>：M3 empty state 规范 = 插画 + 标题 + 说明 + 动作按钮。<b data-page-node-id="W35NLm3QsNH9b1hudJYhKf">改法</b>：空态给「重置筛选」/「修改关键词」TextButton，错误态给「重试」——都走已有的 HapticTextButton。</p></div>
+
+      <div class="issue" data-page-node-id="uERpX2WWovCJ7zfz2BrTt8"><span class="pri p1" data-page-node-id="b3YuWtVGCrFq2Mpfdesx4K">P1</span><span class="t" data-page-node-id="yDetSe0EAHb8JdAjRH0Xc6">10. 长按清除的可发现性</span>
+        <p class="d" data-page-node-id="RV6EfP3QgxtpcRglUgN4wj">项目自己在预设区注释里承认「同一块界面再叠一层长按语义会让用户不敢点」，但维度块仍用长按清除，仅靠底部 tips 一行小字告知。建议选中态直接露出 ✕（与第 2 条一并解决），长按退为快捷方式；tips 同步改为中文。</p></div>
+
+      <div class="issue" data-page-node-id="lhONDXJGqJ8x02Jm8mSdMx"><span class="pri p2" data-page-node-id="FFsLaDy0h5gb3kJ3V8vOVQ">P2</span><span class="t" data-page-node-id="GmMIdhE6VSVWjAlPxzTLJi">11. 文案本地化与准确性</span>
+        <p class="d" data-page-node-id="V44xsorbV1WVHeGYH4Ew5c">① <code data-page-node-id="KlMWYknkkCVeJmmtCExZSr">search_options_tips</code> 中英混排（「Tips:长按某单元…所有tag」）→「提示：长按某个维度可清除该维度已选的全部标签」；② <code data-page-node-id="4407SYfLAsKw4INAGkA18z">switch_to_year</code>「切换至年」→「仅按年筛选」；③ 未选时值显示「全部」，但服务端空参可能有默认排序——建议显示「站点默认」或具体默认值名（需与 wire 行为核对）；④ 历史卡条件串「 · 」连接 2 行截断，建议 chips 化或点击展开。</p></div>
+
+      <div class="issue" data-page-node-id="ZIB9CGQq3aLMehF07e4qyG"><span class="pri p2" data-page-node-id="kFGCvWiHn3tX4KRgpSu0x2">P2</span><span class="t" data-page-node-id="S646rVlqEthIWKEut0NElL">12. 动效与细节打磨</span>
+        <p class="d" data-page-node-id="sWioTOJHMbKZicmIU57Ht2">① 条件条进出无过渡（见注解 2）；② ModalBottomSheet 禁用 HalfExpanded，内容多时无法「半展开瞄一眼」，建议放开；③ Sheet 内层再包 <code data-page-node-id="f3TGDnoMCrY0XEu2lXLElC">Surface</code>（默认 surface 色）属冗余一层——与搜索栏刚修掉的「双 Surface 叠 tint」同型，建议直接给 ModalBottomSheet 内容上色；④ dialog 内「重置」与「取消」同槽相邻，重置是即时生效的破坏性操作，建议移出或加 error 色/二次确认。</p></div>
+
+      <div class="issue" data-page-node-id="0VUA6C4fj66TeWeeYgw9X4"><span class="pri p2" data-page-node-id="nLoHolq919Sa2AOBsisLzy">P2</span><span class="t" data-page-node-id="0hIM8gaoaGiF4SLDcmdHkS">13. 两列维度块的值截断</span>
+        <p class="d" data-page-node-id="kAuw9NfM7HlsKXZT2BegDy">390dp 屏两列时块宽 ≈150dp，「发布日期: 2026 年 3 月」必截断（组件注释已承认）。改法：值允许 2 行（minLines=2 + maxLines=2）保信息完整，或窄屏改单列（块高 +60dp，但一屏可见维度减少，需权衡）。</p></div>
+    </div>
+
+    <div class="card" data-page-node-id="NP98STLIdt2VRhQT5FbgQL">
+      <h3 data-page-node-id="zAKtnA8KOWHlMORnIcYzUO">四、复刻色值与对比度实测（樱 · 浅色）</h3>
+      <p data-page-node-id="07qv3XPasf1pbBI4WxW99c">由 <code data-page-node-id="EP85KGcvBSAMdVayy3rsnp">material-color-utilities 0.2.6</code> 对种子 <code data-page-node-id="ZFm4ncVUY0sFgnGh6AGVTK">#F596AA</code>（TonalSpot、contrast 0.0）复算，与 App 默认槽一致：</p>
+      <table class="tbl" data-page-node-id="2GUWsrE8M3tF6rcYqkcwVM">
+        <tr data-page-node-id="vRdkRfYrJibGYtjk39h66I"><th data-page-node-id="A7BEgs4AkT7BiQDFyPsNVF">角色</th><th data-page-node-id="Lm8YNRTJHW4Qaq91s6zdwn">色值</th><th data-page-node-id="zvrB7Pj1LnBlJhCYOYiK6O">用途（发现页）</th></tr>
+        <tr data-page-node-id="XX8pYgKs7x854u3xFwyTsv"><td data-page-node-id="cGJZtfQvnUj6oCSDkHfYjO">primary / onPrimary</td><td data-page-node-id="yyceTAgpChr7TGSwWNhabQ"><code data-page-node-id="8N0Ag3o1TKvVggH2MGobqQ">#8d4959</code> / <code data-page-node-id="EHLAREHIwzw58js1jLRrPD">#ffffff</code></td><td data-page-node-id="kqpg1uILtzMeaReJ8SOcBO">漏斗按钮、滚轮选中项、主按钮（对比度 6.50:1 ✅）</td></tr>
+        <tr data-page-node-id="awHIOTv8d1GpPRvHgkhP8B"><td data-page-node-id="Hg02TL3yU1vcYAiDMFoiBf">secondaryContainer / onSecondaryContainer</td><td data-page-node-id="w7tXqOkD8EIF1VXGALR5Tf"><code data-page-node-id="yUEYyE1WrF9JcLIk9FPDEt">#ffd9df</code> / <code data-page-node-id="zr9VmpjDi2TFpRSGfqnM4n">#5b3f44</code></td><td data-page-node-id="zx2BfXeuuCRAw5toLaslpq">已选 chip / 选中维度块 / 单选选中行 / 底栏指示器（7.25:1 ✅）</td></tr>
+        <tr data-page-node-id="i9xQDAvGrkFqZ0TD7k6Gcv"><td data-page-node-id="rWQCOaBo3pVnt7BZ57Gd1M">surfaceContainerHigh</td><td data-page-node-id="H8WECTjNpmsVxK1fALDbNH"><code data-page-node-id="sTSBkbD9oA1liFA8Kj2u6p">#f5e4e6</code></td><td data-page-node-id="3gPYHxanaq2dAYH437boUo">搜索栏容器、未选维度块、对话框容器</td></tr>
+        <tr data-page-node-id="43QCP2Ewd45ZKzuaTBEqjr"><td data-page-node-id="bFCQV84xhBgsPOQaFAonfN">surfaceContainerLow</td><td data-page-node-id="lgOOkQdhSPeTDvmHwtMtPT"><code data-page-node-id="RiYE3yLrshm0HFPhNiPf1j">#fff0f1</code></td><td data-page-node-id="PvhQBv6KoZzMCnBI5lhAhA">视频卡容器、ModalBottomSheet 容器、宽屏常驻栏底</td></tr>
+        <tr data-page-node-id="Bpu3B4eXzEQGB0qCWnvwZQ"><td data-page-node-id="svQsfXdYfrssNH3H8Cp75Q">surfaceContainerLowest</td><td data-page-node-id="ISFodLX7rCdyEPgZoTXwsH"><code data-page-node-id="7Mp4YwstCZaDlVz5yWzq9Z">#ffffff</code></td><td data-page-node-id="EekXft0G85SOLCHYiNQ9be">页面底色（pageSurface）</td></tr>
+        <tr data-page-node-id="03uhdC7JnTdkDrTj0oqS13"><td data-page-node-id="41C96OKBFRZjCuaSmB9zgA">onSurface / onSurfaceVariant</td><td data-page-node-id="wURsePiJIfqG6W9m8SnPxz"><code data-page-node-id="qeXe3cLMt9M4yBHaNB4SlV">#22191b</code> / <code data-page-node-id="Fy6UqzX25hoMoE8iU0tsHu">#524345</code></td><td data-page-node-id="WnN7xAiS7oxGuAvdyvF3Kc">标题 / 副信息（16.37:1 / 8.91:1 ✅）</td></tr>
+        <tr data-page-node-id="Gn6IvcUHxUV7mlbeEAhuyp"><td data-page-node-id="OVsnR63MdbI8jof9xphnjE">outlineVariant</td><td data-page-node-id="OC9BZdE0FPH0hmnA7uP4Ak"><code data-page-node-id="IMdRrOggXBfbcgI1zYFcOo">#d6c2c4</code></td><td data-page-node-id="0R6Azn4qNzV6ZlWP7q4NJK">分隔线、未选 FilterChip 边框</td></tr>
+      </table>
+      <p style="margin-top:8px" data-page-node-id="94OTUppeYQvHvRbwHivb2B">深色方案全套角色同样齐备（预览可切换），无硬编码色散落。</p>
+    </div>
+
+    <div class="card" data-page-node-id="y5bpTpXZdUkzzUZjWF3WAL">
+      <h3 data-page-node-id="yvlW5JqOw9Bm2Ca0GphVX8">五、复刻映射（HTML ↔ 源码）</h3>
+      <table class="tbl" data-page-node-id="lGtyh6YhfPUaPscYpB7PF1">
+        <tr data-page-node-id="AIDeQEZBuEZrNH6EMdQe9q"><th data-page-node-id="G1CEq4oH3S5P6Yzf0EGWU4">预览元素</th><th data-page-node-id="S9KAVzjahurBdDaGCB1wnp">源码</th></tr>
+        <tr data-page-node-id="HOfEuBbhXOdSTO0INYNWQX"><td data-page-node-id="6ntzPed9z3JFHxvEEefq3d">搜索栏 / 漏斗按钮</td><td data-page-node-id="KygMKwIBVC7bK1vzsrPPRx"><code data-page-node-id="97EjLsltYrVv4bP0mUrCgG">SearchAppBar.kt</code>（BasicTextField + Surface + FilledIconButton）</td></tr>
+        <tr data-page-node-id="pT9DwHbH3m18B6dgz0tS72"><td data-page-node-id="qqGNoXGosD46ujFHxLQAGB">已选条件条 + 滚动折叠</td><td data-page-node-id="DnpW9f25IjDiICbuaTeDaY"><code data-page-node-id="weFCHNczVAvRR1M873ENnn">CollapsibleSearchCriteria.kt</code>（ActiveSearchCriteria / CollapsibleSearchCriteria 自定义 Layout）</td></tr>
+        <tr data-page-node-id="Uyr3YQ7cLEhjQyhGrZXS3A"><td data-page-node-id="ps7cAB86ZepI6vFNoGFAIq">结果网格 / 卡片 / 分页</td><td data-page-node-id="BxNFRQfw4ZCLOQwxDI06Cl"><code data-page-node-id="YNQxow4P2d6GXwx9FW8jEi">SearchResultsGrid.kt</code> + <code data-page-node-id="E9XHkbwP65OLD5EQHeXCDA">VideoCardItem.kt</code></td></tr>
+        <tr data-page-node-id="GjZ0SzDQPuAxIT9Oo5QoHe"><td data-page-node-id="PjIfYU1gxtWhlyysoi3l3y">空态 / 错误态 / 骨架屏</td><td data-page-node-id="Pf1FZbLqnF1i9Syw2IFnpD"><code data-page-node-id="OUfE1BrGJvCCa9xW3oQOpu">SearchStateIndicator.kt</code> + <code data-page-node-id="qWA9TVhNCJO2YGZ2vh2YrD">EmptyContent.kt</code></td></tr>
+        <tr data-page-node-id="Cx0z0je5X5M9ukBQinD9xM"><td data-page-node-id="V4Tlirbzsc2rEA71GgeWHj">高级搜索弹窗</td><td data-page-node-id="SYKHUMlee0MWTV80Q3st0D"><code data-page-node-id="AgwECdUD8Y3gRIPrR5OxtD">AdvancedSearchSheet.kt</code>（AdvancedSearchSheet / AdvancedSearchChip / AdvancedSearchActionSection）</td></tr>
+        <tr data-page-node-id="gAXz35HJ4q2aDlvXfbPq39"><td data-page-node-id="DUUH1NLy5cSm9BBJ6qjoMX">预设区 / 命名对话框</td><td data-page-node-id="bdFt3B0LeyhWJatNyBTFpe"><code data-page-node-id="uA7jytGnlHZ6oHN17UKJF1">SearchPresetSection.kt</code> + <code data-page-node-id="JqHF0Qh6VDbJSzO5ciJTUU">SearchFilterPresetStore.kt</code></td></tr>
+        <tr data-page-node-id="XzvN0ONZcC0wHpD8qAURZa"><td data-page-node-id="WXpzc6vJDG47G4hMV1pMtc">单选 / 多选 / 日期对话框</td><td data-page-node-id="MuUZhHIxm22DMkzsyWdIT3"><code data-page-node-id="l0K5h7mwdAFuLGMHZbP5HZ">AdvancedSearchSheet.kt</code>（SingleChoice / MultiChoice / ReleaseDate + WheelLikeColumn）</td></tr>
+        <tr data-page-node-id="qEdNbJq5xFZazfHpoQHDDI"><td data-page-node-id="EM2CR4VbJ106lBL4BWYeU1">宽屏常驻筛选栏</td><td data-page-node-id="R3I0AWgd5kZtcUwigxQtc0"><code data-page-node-id="NEoj6HXAwwmvRBkzWJuGw5">AdvancedSearchSidePanel</code>（同文件）+ <code data-page-node-id="6EMgAGnaqb34ELHsZDizJL">SearchRoute.kt</code>（≥900dp 分支）</td></tr>
+        <tr data-page-node-id="CzyAmhS7gj8CHG9L22OzbD"><td data-page-node-id="etAe4E4Ut1htTdTu3wkXFd">底栏 / 侧栏</td><td data-page-node-id="AC3MewTxRchLr3UWKDhFAc"><code data-page-node-id="iA1zbQhHKtBAkPpYU4XLWM">MainScaffold.kt</code>（ShortNavigationBar / WideNavigationRail）</td></tr>
+      </table>
+    </div>
+
+    <div class="footnote" data-page-node-id="uJ5zmkREjBnTrbqS7XBp2y">
+      <span data-page-node-id="XXyynuzeUYaYgXIPGSPL9a">注 1：本预览为静态复刻，交互（点开/长按/滚动折叠/分页）以源码行为为准在文案中说明。</span>
+      <span data-page-node-id="j3PIHO6U9o6qKUQHcQqFTm">注 2：组件规格值（SearchBar 56dp、Medium IconButton 56dp、Chip 32dp、AlertDialog 容器 surfaceContainerHigh + 28dp 圆角、FilterChip 默认容器色）均从项目锁定的 <code data-page-node-id="PYne8kRtakwAbV8wfHvPnw">material3 1.5.0-alpha25</code> aar 字节码核验，非记忆值。</span>
+      <span data-page-node-id="VaD7uS3mK2R6GOPv1SV6rD">注 3：对比度为 WCAG 2.1 计算值（material-color-utilities <code data-page-node-id="tog86kF4XME0eLHeYGRrss">get_contrast_ratio</code>）。</span>
+    </div>
+  </section>
+</div>
+
+<script>
+(function(){
+  var tabs = document.querySelectorAll('.tab');
+  var states = document.querySelectorAll('.state');
+  tabs.forEach(function(t){
+    t.addEventListener('click', function(){
+      tabs.forEach(function(x){x.classList.remove('active')});
+      t.classList.add('active');
+      var id = t.getAttribute('data-s');
+      states.forEach(function(s){ s.classList.toggle('active', s.id === id); });
+      window.scrollTo({top:0, behavior:'smooth'});
+    });
+  });
+  var tb = document.getElementById('themeBtn');
+  tb.addEventListener('click', function(){
+    var root = document.documentElement;
+    var dark = root.getAttribute('data-theme') === 'dark';
+    root.setAttribute('data-theme', dark ? 'light' : 'dark');
+    tb.textContent = dark ? '切换深色' : '切换浅色';
+  });
+  var at = document.getElementById('annoToggle');
+  at.addEventListener('change', function(){
+    document.body.classList.toggle('show-anno', at.checked);
+  });
+})();
+</script>
+</body>
+</html>
