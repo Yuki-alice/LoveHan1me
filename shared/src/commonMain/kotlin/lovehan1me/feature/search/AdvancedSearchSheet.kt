@@ -9,7 +9,6 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -18,7 +17,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
-import lovehan1me.ui.component.FilledIconButton
+import androidx.compose.material3.HorizontalDivider
+import lovehan1me.ui.component.HapticButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -35,6 +35,7 @@ import lovehan1me.ui.component.HapticTextButton as TextButton
 import androidx.compose.material3.SheetValue
 import androidx.compose.material3.rememberBottomSheetState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateMapOf
@@ -68,18 +69,16 @@ import lovehan1me.type
 import lovehan1me.video_attr
 import lovehan1me.switch_to_year
 import lovehan1me.switch_to_year_month
-import lovehan1me.type
-import lovehan1me.tag
+import lovehan1me.year
+import lovehan1me.month
 import lovehan1me.specific_y_m
-import lovehan1me.sort_option
 import lovehan1me.search_options_tips
 import lovehan1me.search
-import lovehan1me.save
+import lovehan1me.confirm
 import lovehan1me.reset
 import lovehan1me.release_date
 import lovehan1me.pair_widely_alert
 import lovehan1me.pair_widely
-import lovehan1me.duration
 import lovehan1me.cancel
 import lovehan1me.approximate_range
 import lovehan1me.advanced_search_combination
@@ -266,7 +265,7 @@ private fun buildFilterBlocks(
         ),
         FilterBlockSpec(
             label = labels.releaseDate,
-            value = viewModel.getSearchDate(),
+            value = viewModel.displaySearchDate(),
             checked = viewModel.year != null || viewModel.month != null || viewModel.approxTime != null,
             onClear = {
                 viewModel.year = null
@@ -346,6 +345,10 @@ fun AdvancedSearchSheet(
             SheetValue.Expanded,
         ),
     )
+    // ModalBottomSheet 不会自动展开：Hidden 初值 + 无 show() = 内容整体在屏外、
+    // scrim 也不显示（与 PlaylistBottomSheet 同一接线，见其 LaunchedEffect show）。
+    // show() 已展开时是 no-op，重复进出 composition 不会误触。
+    LaunchedEffect(Unit) { sheetState.show() }
     val labels = rememberFilterLabels()
     val presets by SettingsRepository.searchFilterPresetsFlow.collectAsStateWithLifecycle()
     val tagScopes = remember(viewModel.tags) { buildTagScopeSections(viewModel.tags) }
@@ -383,76 +386,88 @@ fun AdvancedSearchSheet(
                 .padding(horizontal = 8.dp, vertical = 8.dp),
             shape = MaterialTheme.shapes.extraLarge,
         ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                contentPadding = PaddingValues(bottom = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-            ) {
-                item {
-                    Text(
-                        text = stringResource(Res.string.advanced_search),
-                        style = MaterialTheme.typography.headlineSmall,
-                    )
-                }
-                if (histories.isNotEmpty()) {
+            // 主操作常驻底部：历史/预设一多，搜索按钮曾被顶出首屏，
+            // 用户滚到底才找得到唯一的"应用"出口。滚动区只放内容。
+            Column(modifier = Modifier.fillMaxWidth()) {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f)
+                        .padding(horizontal = 16.dp),
+                    contentPadding = PaddingValues(top = 12.dp, bottom = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                ) {
                     item {
-                        AdvancedSearchHistorySection(
-                            histories = histories,
-                            onDeleteHistory = { history ->
+                        Text(
+                            text = stringResource(Res.string.advanced_search),
+                            style = MaterialTheme.typography.headlineSmall,
+                        )
+                    }
+                    if (histories.isNotEmpty()) {
+                        item {
+                            AdvancedSearchHistorySection(
+                                histories = histories,
+                                viewModel = viewModel,
+                                onDeleteHistory = { history ->
+                                    scope.launch {
+                                        HanimeAdvancedSearchRepo.deleteHistory(history.id)
+                                    }
+                                },
+                                onSelectHistory = { history ->
+                                    applySnapshotAndSearch(viewModel, history.toSnapshot())
+                                    onDismiss()
+                                },
+                            )
+                        }
+                    }
+                    item {
+                        SearchPresetSection(
+                            presets = presets,
+                            // 至少要选中一个筛选维度才让存：空条件存成预设没意义，纯关键词搜索由历史负责。
+                            // 判据取自 blocks（它读取的是 Compose State，筛选态一变就重算）。
+                            canSave = selectedDimensionCount > 0,
+                            onApply = { preset -> applySnapshotAndSearch(viewModel, preset.snapshot) },
+                            onSave = { name ->
                                 scope.launch {
-                                    HanimeAdvancedSearchRepo.deleteHistory(history.id)
+                                    SearchFilterPresetStore.save(name, viewModel.currentFilterSnapshot())
                                 }
                             },
-                            onSelectHistory = { history ->
-                                applySnapshotAndSearch(viewModel, history.toSnapshot())
-                                onDismiss()
+                            onDelete = { preset ->
+                                scope.launch { SearchFilterPresetStore.remove(preset.id) }
                             },
+                            columns = 2,
+                        )
+                    }
+                    item {
+                        AdvancedSearchFiltersSection(
+                            blocks = blocks,
+                            // 底栏弹窗是满宽：两列（默认值），一行一个反而过高。
+                            columns = 2,
+                            onClear = ::updateSelection,
+                        )
+                    }
+                    item {
+                        Text(
+                            text = stringResource(Res.string.search_options_tips),
+                            style = MaterialTheme.typography.bodyMedium,
                         )
                     }
                 }
-                item {
-                    SearchPresetSection(
-                        presets = presets,
-                        // 至少要选中一个筛选维度才让存：空条件存成预设没意义，纯关键词搜索由历史负责。
-                        // 判据取自 blocks（它读取的是 Compose State，筛选态一变就重算）。
-                        canSave = selectedDimensionCount > 0,
-                        onApply = { preset -> applySnapshotAndSearch(viewModel, preset.snapshot) },
-                        onSave = { name ->
-                            scope.launch {
-                                SearchFilterPresetStore.save(name, viewModel.currentFilterSnapshot())
-                            }
-                        },
-                        onDelete = { preset ->
-                            scope.launch { SearchFilterPresetStore.remove(preset.id) }
-                        },
-                        columns = 2,
-                    )
-                }
-                item {
-                    AdvancedSearchFiltersSection(
-                        blocks = blocks,
-                        // 底栏弹窗是满宽：两列（默认值），一行一个反而过高。
-                        columns = 2,
-                        onClear = ::updateSelection,
-                    )
-                }
-                item {
-                    AdvancedSearchActionSection(
-                        selectedCount = selectedDimensionCount,
-                        onReset = {
-                            updateSelection {
-                                blocks.forEach { it.onClear() }
-                                viewModel.broad = false
-                            }
-                        },
-                        onSearch = {
-                            triggerSearchWithHistory(viewModel)
-                            onDismiss()
-                        },
-                    )
-                }
+                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+                AdvancedSearchActionSection(
+                    selectedCount = selectedDimensionCount,
+                    onReset = {
+                        updateSelection {
+                            blocks.forEach { it.onClear() }
+                            viewModel.broad = false
+                        }
+                    },
+                    onSearch = {
+                        triggerSearchWithHistory(viewModel)
+                        onDismiss()
+                    },
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                )
             }
         }
     }
@@ -501,7 +516,6 @@ fun AdvancedSearchSidePanel(
     Column(
         modifier = modifier
             .fillMaxHeight()
-            .verticalScroll(rememberScrollState())
             .padding(horizontal = 12.dp, vertical = 12.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp),
     ) {
@@ -509,29 +523,41 @@ fun AdvancedSearchSidePanel(
             text = stringResource(Res.string.advanced_search),
             style = MaterialTheme.typography.titleMedium,
         )
-        SearchPresetSection(
-            presets = presets,
-            // 与底栏弹窗同一判据：至少一个筛选维度被选中才允许保存。
-            canSave = selectedDimensionCount > 0,
-            onApply = { preset -> applySnapshotAndSearch(viewModel, preset.snapshot) },
-            onSave = { name ->
-                scope.launch {
-                    SearchFilterPresetStore.save(name, viewModel.currentFilterSnapshot())
-                }
-            },
-            onDelete = { preset ->
-                scope.launch { SearchFilterPresetStore.remove(preset.id) }
-            },
-            // 240dp 常驻栏：单列，两列会把预设名压到只剩两三个字。
-            columns = 1,
-        )
-        AdvancedSearchFiltersSection(
-            blocks = blocks,
-            // 常驻栏只有 240dp 宽：两列会把「发行日期: 2026 年 3 月」压成两行截断，
-            // 单列 + 值独占一行反而能让整个栏更窄。
-            columns = 1,
-            onClear = ::updateSelection,
-        )
+        // 中段滚动、主操作钉底（与底栏弹窗同一布局口径）。
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
+        ) {
+            SearchPresetSection(
+                presets = presets,
+                // 与底栏弹窗同一判据：至少一个筛选维度被选中才允许保存。
+                canSave = selectedDimensionCount > 0,
+                onApply = { preset -> applySnapshotAndSearch(viewModel, preset.snapshot) },
+                onSave = { name ->
+                    scope.launch {
+                        SearchFilterPresetStore.save(name, viewModel.currentFilterSnapshot())
+                    }
+                },
+                onDelete = { preset ->
+                    scope.launch { SearchFilterPresetStore.remove(preset.id) }
+                },
+                // 240dp 常驻栏：单列，两列会把预设名压到只剩两三个字。
+                columns = 1,
+            )
+            AdvancedSearchFiltersSection(
+                blocks = blocks,
+                // 常驻栏只有 240dp 宽：两列会把「发行日期: 2026 年 3 月」压成两行截断，
+                // 单列 + 值独占一行反而能让整个栏更窄。
+                columns = 1,
+                onClear = ::updateSelection,
+            )
+            Text(
+                text = stringResource(Res.string.search_options_tips),
+                style = MaterialTheme.typography.bodyMedium,
+            )
+        }
         AdvancedSearchActionSection(
             selectedCount = selectedDimensionCount,
             onReset = {
@@ -793,7 +819,9 @@ private fun AdvancedSearchMultiChoiceDialog(
                 updateSelection { state.onSave(selected.toSet(), broad) }
                 onDismiss()
             }) {
-                Text(stringResource(Res.string.save))
+                // "确定"而非"保存"：这里只是把选择写回筛选工作态，
+                // 真正的搜索发生在 sheet 底部按钮；"保存"会让人误以为存成了预设。
+                Text(stringResource(Res.string.confirm))
             }
         },
         dismissButton = {
@@ -860,7 +888,7 @@ private fun AdvancedSearchReleaseDateDialog(
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         WheelLikeColumn(
-                            title = "Year",
+                            title = stringResource(Res.string.year),
                             values = (SEARCH_YEAR_RANGE_START..SEARCH_YEAR_RANGE_END).toList(),
                             selectedValue = selectedYear,
                             modifier = Modifier.weight(1f),
@@ -869,7 +897,7 @@ private fun AdvancedSearchReleaseDateDialog(
                         )
                         if (!yearOnly) {
                             WheelLikeColumn(
-                                title = "Month",
+                                title = stringResource(Res.string.month),
                                 values = (1..12).toList(),
                                 selectedValue = selectedMonth,
                                 modifier = Modifier.weight(1f),
@@ -907,7 +935,8 @@ private fun AdvancedSearchReleaseDateDialog(
                 }
                 onDismiss()
             }) {
-                Text(stringResource(Res.string.save))
+                // 同上："确定"而非"保存"。
+                Text(stringResource(Res.string.confirm))
             }
         },
         dismissButton = {
@@ -978,6 +1007,7 @@ private fun AdvancedSearchDialogDismissButtons(
 @Composable
 private fun AdvancedSearchHistorySection(
     histories: List<HanimeAdvancedSearchHistoryEntity>,
+    viewModel: SearchViewModel,
     onDeleteHistory: (HanimeAdvancedSearchHistoryEntity) -> Unit,
     onSelectHistory: (HanimeAdvancedSearchHistoryEntity) -> Unit,
 ) {
@@ -986,17 +1016,69 @@ private fun AdvancedSearchHistorySection(
             text = stringResource(Res.string.advanced_search_combination),
             style = MaterialTheme.typography.titleMedium,
         )
+        // 全标签一次拍平供各行反查（200+ 项；只在 tags 变化时重算）。
+        val allTagOptions = remember(viewModel.tags) { viewModel.tags.values.flatten() }
         LazyColumn(
             modifier = Modifier.heightIn(max = 300.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp),
         ) {
             items(histories, key = { it.id }) { history ->
                 AdvancedSearchHistoryCard(
-                    history = history,
+                    query = history.query,
+                    conditions = historyDisplayConditions(history, viewModel, allTagOptions),
                     onDelete = { onDeleteHistory(history) },
                     onClick = { onSelectHistory(history) },
                 )
             }
+        }
+    }
+}
+
+/**
+ * 历史行的展示条件：各维度 wire key → 当前语言显示名。
+ *
+ * 历史/快照存的是 wire 值（searchKey、逗号串、`getSearchDate()` 拼串），
+ * 直接展示会冒内部 key（如简中环境下的「裏番」）；这里逐维度反查
+ * `.value`，查不到回退原文（跨版本 key 变更时不断展）。
+ */
+@Composable
+private fun historyDisplayConditions(
+    history: HanimeAdvancedSearchHistoryEntity,
+    viewModel: SearchViewModel,
+    allTagOptions: List<SearchOption>,
+): List<String> {
+    val type = stringResource(Res.string.type)
+    val sortOption = stringResource(Res.string.sort_option)
+    val pairWidely = stringResource(Res.string.pair_widely)
+    val releaseDate = stringResource(Res.string.release_date)
+    val duration = stringResource(Res.string.duration)
+    val tag = stringResource(Res.string.tag)
+    val brand = stringResource(Res.string.brand)
+    return buildList {
+        history.genre?.takeIf { it.isNotBlank() }?.let {
+            add("$type: ${viewModel.genres.displayFor(it)}")
+        }
+        history.sort?.takeIf { it.isNotBlank() }?.let {
+            add("$sortOption: ${viewModel.sortOptions.displayFor(it)}")
+        }
+        if (history.broad == true) add(pairWidely)
+        history.date?.takeIf { it.isNotBlank() }?.let {
+            add("$releaseDate: ${viewModel.timeList.displayFor(it)}")
+        }
+        history.duration?.takeIf { it.isNotBlank() }?.let {
+            add("$duration: ${viewModel.durations.displayFor(it)}")
+        }
+        history.tags?.takeIf { it.isNotBlank() }?.let { raw ->
+            val names = raw.split(",")
+                .mapNotNull { key -> key.takeIf { it.isNotBlank() } }
+                .map { allTagOptions.displayFor(it) }
+            if (names.isNotEmpty()) add("$tag: ${names.joinToString("、")}")
+        }
+        history.brands?.takeIf { it.isNotBlank() }?.let { raw ->
+            val names = raw.split(",")
+                .mapNotNull { key -> key.takeIf { it.isNotBlank() } }
+                .map { viewModel.brands.displayFor(it) }
+            if (names.isNotEmpty()) add("$brand: ${names.joinToString("、")}")
         }
     }
 }
@@ -1039,11 +1121,11 @@ private fun AdvancedSearchActionSection(
     selectedCount: Int,
     onReset: () -> Unit,
     onSearch: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
     Column(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(12.dp),
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -1061,18 +1143,18 @@ private fun AdvancedSearchActionSection(
                 }
             }
         }
-        Text(
-            text = stringResource(Res.string.search_options_tips),
-            style = MaterialTheme.typography.bodyMedium,
-        )
-        FilledIconButton(
+        // 主操作通栏文字按钮：60dp 纯图标圆钮只有一个"放大镜"隐喻，
+        // 旁边一堆文字按钮衬托下，它作为唯一的"应用"出口反而最不起眼。
+        HapticButton(
             onClick = onSearch,
-            modifier = Modifier.size(60.dp),
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Icon(
                 painter = painterResource(Res.drawable.ic_search),
-                contentDescription = stringResource(Res.string.search),
+                contentDescription = null,
+                modifier = Modifier.padding(end = 8.dp),
             )
+            Text(stringResource(Res.string.search))
         }
     }
 }

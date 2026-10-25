@@ -221,7 +221,8 @@ fun SearchScreen(
             genre = viewModel.genre,
             sort = viewModel.sort,
             duration = viewModel.duration,
-            releaseDate = viewModel.getSearchDate(),
+            // 展示用本地化串；判空/请求仍走 wire 值（见 hasAdvancedFilters/getSearchDate）。
+            releaseDate = viewModel.displaySearchDate(),
             tagCount = tagFlatten(viewModel.tagMap).size,
             brandCount = brandFlatten(viewModel.brandMap).size,
             broad = viewModel.broad,

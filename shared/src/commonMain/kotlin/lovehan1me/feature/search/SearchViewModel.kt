@@ -290,6 +290,18 @@ class SearchViewModel() : ViewModel() {
         }
     }
 
+    /**
+     * 发行日期的展示串：近似档（`approxTime` 存的是 wire key，如「過去 24 小時」）
+     * 按 App 语言本地化；具体年月沿用 "YYYY 年 M 月" 拼法。
+     *
+     * 请求参数与快照存储仍用 [getSearchDate] 的 wire 值（服务端只认 key），
+     * 条件 chips / 筛选块 / 历史卡的展示统一走这里。
+     */
+    fun displaySearchDate(): String? {
+        val wire = getSearchDate() ?: return null
+        return timeList.find { it.searchKey == wire }?.value?.takeIf { it.isNotBlank() } ?: wire
+    }
+
     fun insertAdvancedSearchHistory(
         query: String?, genre: String?,
         sort: String?, broad: Boolean, date: String?,

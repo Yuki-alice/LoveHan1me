@@ -24,6 +24,8 @@
     <string name="brand">Brand</string>
     <string name="release_date">Release Date</string>
     <string name="duration">Video duration</string>
+    <string name="year">Year</string>
+    <string name="month">Month</string>
     <string name="confirm">Confirm</string>
     <string name="cancel">Cancel</string>
     <string name="clear">Clear</string>

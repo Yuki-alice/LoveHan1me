@@ -11,47 +11,27 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import org.jetbrains.compose.resources.painterResource
 import org.jetbrains.compose.resources.stringResource
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
-import lovehan1me.type
-import lovehan1me.tag
-import lovehan1me.sort_option
-import lovehan1me.release_date
-import lovehan1me.pair_widely
-import lovehan1me.duration
 import lovehan1me.delete
-import lovehan1me.brand
 import lovehan1me.ic_delete
-import lovehan1me.data.database.entity.HanimeAdvancedSearchHistoryEntity
 
+/**
+ * 高级搜索历史卡：关键词（大字）+ 条件行（小字，`·` 连接）。
+ *
+ * 条件串由调用方按当前 App 语言算好传进来（各维度 key → `.value` 反查）：
+ * 卡片只负责展示，不读 ViewModel、不碰 wire 值。
+ */
 @Composable
 fun AdvancedSearchHistoryCard(
-    history: HanimeAdvancedSearchHistoryEntity,
+    query: String?,
+    conditions: List<String>,
     onDelete: () -> Unit,
     onClick: () -> Unit,
 ) {
-    val type = stringResource(Res.string.type)
-    val sortOption = stringResource(Res.string.sort_option)
-    val pairWidely = stringResource(Res.string.pair_widely)
-    val releaseDate = stringResource(Res.string.release_date)
-    val duration = stringResource(Res.string.duration)
-    val tag = stringResource(Res.string.tag)
-    val brand = stringResource(Res.string.brand)
-    val conditions = remember(history) {
-        buildList {
-            history.genre?.takeIf { it.isNotBlank() }?.let { add("$type: $it") }
-            history.sort?.takeIf { it.isNotBlank() }?.let { add("$sortOption: $it") }
-            if (history.broad == true) add(pairWidely)
-            history.date?.takeIf { it.isNotBlank() }?.let { add("$releaseDate: $it") }
-            history.duration?.takeIf { it.isNotBlank() }?.let { add("$duration: $it") }
-            if (!history.tags.isNullOrBlank()) add("$tag: ${history.tags}")
-            if (!history.brands.isNullOrBlank()) add("$brand: ${history.brands}")
-        }.joinToString(" || ")
-    }
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shape = MaterialTheme.shapes.large,
@@ -67,16 +47,16 @@ fun AdvancedSearchHistoryCard(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(4.dp),
             ) {
-                history.query?.takeIf { it.isNotBlank() }?.let {
+                query?.takeIf { it.isNotBlank() }?.let {
                     Text(
                         text = it,
                         style = MaterialTheme.typography.titleMedium,
                         color = MaterialTheme.colorScheme.onSurface,
                     )
                 }
-                if (conditions.isNotBlank()) {
+                if (conditions.isNotEmpty()) {
                     Text(
-                        text = conditions,
+                        text = conditions.joinToString(" · "),
                         style = MaterialTheme.typography.bodySmall,
                         maxLines = 2,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,

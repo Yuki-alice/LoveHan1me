@@ -27,7 +27,7 @@ import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import lovehan1me.Res
 import lovehan1me.search_video_hint
-import lovehan1me.clear_checkin
+import lovehan1me.clear
 import lovehan1me.back
 import lovehan1me.advanced_search
 import lovehan1me.ic_filter_list
@@ -133,7 +133,7 @@ fun SearchAppBar(
                 IconButton(onClick = { onQueryChange("") }) {
                     Icon(
                         painterResource(Res.drawable.ic_close),
-                        contentDescription = stringResource(Res.string.clear_checkin),
+                        contentDescription = stringResource(Res.string.clear),
                         tint = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }

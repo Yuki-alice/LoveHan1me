@@ -179,7 +179,7 @@ internal fun ActiveSearchCriteria(
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         filter.genre?.let {
-            val label = viewModel.genres.find { option -> option.searchKey == it }?.name ?: it
+            val label = viewModel.genres.displayFor(it)
             AssistChip(
                 onClick = onClearGenre,
                 label = { Text("${stringResource(Res.string.type)}: $label") },
@@ -198,7 +198,7 @@ internal fun ActiveSearchCriteria(
             )
         }
         filter.sort?.let {
-            val label = viewModel.sortOptions.find { option -> option.searchKey == it }?.name ?: it
+            val label = viewModel.sortOptions.displayFor(it)
             AssistChip(
                 onClick = onClearSort,
                 label = { Text("${stringResource(Res.string.sort_option)}: $label") },
@@ -218,7 +218,7 @@ internal fun ActiveSearchCriteria(
             )
         }
         filter.duration?.let {
-            val label = viewModel.durations.find { option -> option.searchKey == it }?.name ?: it
+            val label = viewModel.durations.displayFor(it)
             AssistChip(
                 onClick = onClearDuration,
                 label = { Text("${stringResource(Res.string.duration)}: $label") },
@@ -258,6 +258,16 @@ internal fun ActiveSearchCriteria(
 // ─────────────────────────────────────────────
 // 辅助
 // ─────────────────────────────────────────────
+
+/**
+ * searchKey → 本地化显示串（`.value` 按 App 语言取值，见 [SearchOption]）。
+ *
+ * 条件 chips 曾用 `.name`（JSON 原始名，大量条目根本没有该字段）→ 回退显示
+ * searchKey（如简中环境下冒出「裏番」繁体 key）。展示层统一走这里；
+ * 历史卡的 key 反查也复用它。
+ */
+internal fun List<SearchOption>.displayFor(searchKey: String): String =
+    find { it.searchKey == searchKey }?.value?.takeIf { it.isNotBlank() } ?: searchKey
 
 internal fun tagFlatten(map: Map<*, Set<SearchOption>>): Set<String> {
     val r = mutableSetOf<String>(); for (options in map.values) {
