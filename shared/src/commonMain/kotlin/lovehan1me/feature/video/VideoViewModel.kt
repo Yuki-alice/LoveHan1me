@@ -23,11 +23,13 @@ import lovehan1me.data.database.entity.download.HanimeDownloadEntity
 import lovehan1me.core.domain.model.HanimeInfo
 import lovehan1me.core.domain.model.HanimeVideo
 import lovehan1me.core.platform.VideoCacheStore
+import lovehan1me.core.platform.toPlayableLocalUri
 import lovehan1me.core.platform.videoCacheStore
 import lovehan1me.core.domain.state.VideoLoadingState
 import lovehan1me.core.domain.state.WebsiteState
 import lovehan1me.data.network.CsrfTokenProvider.csrfToken
 import lovehan1me.core.util.TagLocalizer
+import lovehan1me.site.hanime1.ResolutionLinkMap
 import androidx.lifecycle.ViewModel
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -37,6 +39,9 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import lovehan1me.ui.foundation.launchSafely
@@ -244,10 +249,11 @@ class VideoViewModel(
     }
 
     fun buildLocalPlayInfo(localPath: String? = null): HanimeVideo {
+        val playable = localPath?.toPlayableLocalUri().orEmpty()
         val resolution = HanimeResolution()
         resolution.parseResolution(
             HanimeResolution.RES_1080P,
-            resLink = localPath?:"",
+            resLink = playable,
             type = "video/mp4"
         )
         return HanimeVideo(
@@ -276,6 +282,12 @@ class VideoViewModel(
         PlayerTrace.mark("fetch-start")
         launchSafely("VideoViewModel.getHanimeVideo") {
             PlayerTrace.mark("fetch-coroutine-start")
+            // 本地播放（带 localUri 的下载项）：缓存直链 + 网络简介合并，见
+            // [collectLocalWithNetworkMeta]（简介只读不断播，离线回落缓存）。
+            if (fromDownload && localUri != null) {
+                collectLocalWithNetworkMeta(videoCode, localUri)
+                return@launchSafely
+            }
             val flow = if (fromDownload) {
                 cacheStore.load(videoCode).map { hv ->
                     if (hv == null) {
@@ -293,7 +305,7 @@ class VideoViewModel(
                         val resolution = HanimeResolution()
                         resolution.parseResolution(
                             HanimeResolution.RES_1080P,
-                            resLink = localUri,
+                            resLink = localUri.toPlayableLocalUri(),
                             type = "video/mp4"
                         )
                         VideoLoadingState.Success(
@@ -321,6 +333,86 @@ class VideoViewModel(
                 }
             }
         }
+    }
+
+    /**
+     * 本地播放的简介合并：先以缓存最小信息秒播（离线可用），网络简介到货后把
+     * 中文标题/简介/tags/作者/上传时间/播放量等元数据补全，直链始终锁定本地文件。
+     *
+     * 系列影片（`playlist`）与相关影片（`relatedHanimes`）按下载页约定剥掉——
+     * 简介 UI 对 `fromDownload` 本就隐藏这两区（见 `VideoIntroductionScreen`），
+     * 且本地文件没有"下一集"可连（`VideoRouteHostScreen` 的连播入口依赖 playlist）。
+     *
+     * 缺文件（缓存无行）直接 `NoContent`，不碰网络（与此前行为一致）。
+     * 本地会话不写简介内存缓存：写进去会被在线页 `restoreFromCacheIfExists`
+     * 秒展、把本地直链闪一下带回去。
+     */
+    private suspend fun collectLocalWithNetworkMeta(videoCode: String, localUri: String) {
+        val playable = localUri.toPlayableLocalUri()
+        if (cacheStore.load(videoCode).firstOrNull() == null) {
+            _hanimeVideoStateFlow.value = VideoLoadingState.NoContent
+            return
+        }
+        combine(
+            cacheStore.load(videoCode),
+            NetworkRepo.getHanimeVideo(videoCode),
+        ) { cached, netState ->
+            mergeLocalPlaybackState(cached, netState, playable)
+        }.distinctUntilChanged().collect { emitState ->
+            _hanimeVideoStateFlow.value = emitState
+            if (emitState is VideoLoadingState.Success) {
+                PlayerTrace.mark("fetch-end")
+                _hanimeVideoFlow.update { emitState.info }
+                csrfToken = emitState.info.csrfToken
+            }
+        }
+    }
+
+    /**
+     * 本地合并的纯规则（供单测）：网络元数据 + 本地直链，系列/相关剥掉。
+     *
+     * @param cached 缓存快照（null=行缺失；调用方已保证首帧非空，这里只防抖动）
+     * @param netState 网络简介状态
+     * @param playable 归一化后的本地可播 URI（缓存无直链时的兜底）
+     */
+    internal fun mergeLocalPlaybackState(
+        cached: HanimeVideo?,
+        netState: VideoLoadingState<HanimeVideo>,
+        playable: String,
+    ): VideoLoadingState<HanimeVideo> {
+        // 直链唯一真相：缓存行的真实清晰度 + 本地文件；缓存抖动时才用单档兜底。
+        val localUrls = cached?.videoUrls?.takeIf { it.isNotEmpty() }
+            ?: singleLocalUrlMap(playable)
+        return when {
+            netState is VideoLoadingState.Success -> VideoLoadingState.Success(
+                netState.info.copy(
+                    videoUrls = localUrls,
+                    // 本地封面优先（离线可显）；没随下封面时用网络的。
+                    coverUrl = cached?.coverUrl?.takeIf { it.isNotBlank() }
+                        ?: netState.info.coverUrl,
+                    playlist = null,
+                    relatedHanimes = emptyList(),
+                ).withLocalizedLabels()
+            )
+
+            cached != null -> VideoLoadingState.Success(
+                cached.copy(videoUrls = localUrls).withLocalizedLabels()
+            )
+
+            netState is VideoLoadingState.Loading -> VideoLoadingState.Loading
+            else -> netState
+        }
+    }
+
+    /** 缓存抖动/缺质量标签时的单档本地直链兜底（与既有覆盖逻辑同形）。 */
+    private fun singleLocalUrlMap(playable: String): ResolutionLinkMap {
+        val resolution = HanimeResolution()
+        resolution.parseResolution(
+            HanimeResolution.RES_1080P,
+            resLink = playable,
+            type = "video/mp4"
+        )
+        return resolution.toResolutionLinkMap()
     }
 
     fun restoreFromCacheIfExists(code: String): Boolean {

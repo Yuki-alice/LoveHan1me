@@ -68,4 +68,32 @@ interface DownloadWorkController {
      * @return true=已入库（调用方刷新列表），false=失败或非受支持格式。
      */
     suspend fun importExternalFile(tempPath: String): Boolean = false
+
+    /**
+     * 用系统默认应用打开已下载视频（下载页「外部播放器」按钮的跨端回退）。
+     *
+     * Android 由壳层经 `ACTION_VIEW` + FileProvider 实现（本方法不走）；
+     * 桌面/iOS 没有统一注入槽位，走这里：
+     * - 桌面：`java.awt.Desktop.open(File)`；
+     * - iOS：系统分享面板（`UIActivityViewController`，可“用 VLC 打开”）。
+     *
+     * @param videoUriPath DB 行的 `videoUri` 原始值（含遗留 `local://` 占位，各端自行还原）。
+     * @return 打开结局（调用方按结局分别处理：缺文件→删库确认框，不支持→toast）。
+     */
+    suspend fun openVideoExternally(videoUriPath: String): ExternalOpenOutcome =
+        ExternalOpenOutcome.Unsupported
+}
+
+/**
+ * [DownloadWorkController.openVideoExternally] 的调用方可见结局。
+ */
+enum class ExternalOpenOutcome {
+    /** 已调起（桌面 open 返回 / iOS 分享面板已呈现；用户取消也算已调起，不报错）。 */
+    Opened,
+
+    /** 文件不存在（调用方应走与 Android `onNotExist` 同款的删库确认框）。 */
+    FileMissing,
+
+    /** 平台不支持或没有可打开的应用（调用方 toast `action_not_support`）。 */
+    Unsupported,
 }

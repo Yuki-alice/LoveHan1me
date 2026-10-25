@@ -31,10 +31,26 @@ class VideoCacheLookupTest {
         // 本地封面优先于远端
         assertEquals("/local/cover.jpg", video.coverUrl)
         assertTrue(video.videoUrls.containsKey("1080P"))
-        assertEquals("/local/12345/测试标题 [1080P].mp4", video.videoUrls["1080P"]?.link)
+        // 裸绝对路径归一化为 file://（mpv/Exo 照播，iOS AVPlayer 只认 file://）
+        assertEquals("file:///local/12345/测试标题 [1080P].mp4", video.videoUrls["1080P"]?.link)
         // 简介类元数据为空（与 Android 兜底一致，播放仅需标题/链接/封面）
         assertNull(video.introduction)
         assertTrue(video.tags.isEmpty())
+    }
+
+    @Test
+    fun `content 与远端串原样透传`() {
+        val content = entity().copy(videoUri = "content://media/external/video/42").toCachedVideo()
+        assertEquals("content://media/external/video/42", content.videoUrls["1080P"]?.link)
+        val remote = entity().copy(videoUri = "https://example.com/v.mp4").toCachedVideo()
+        assertEquals("https://example.com/v.mp4", remote.videoUrls["1080P"]?.link)
+    }
+
+    @Test
+    fun `长度未知时进度为零不抛除零`() {
+        assertEquals(0, entity().copy(length = 0L, downloadedLength = 0L).progress)
+        assertEquals(0, entity().copy(length = 0L, downloadedLength = 50L).progress)
+        assertEquals(50, entity().copy(length = 100L, downloadedLength = 50L).progress)
     }
 
     @Test

@@ -27,6 +27,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import lovehan1me.app.App
 import lovehan1me.HanimeCacheManager
 import lovehan1me.Res
+import lovehan1me.action_not_support
 import lovehan1me.detect_ha1_related_link_in_clipboard
 import lovehan1me.enter
 import lovehan1me.ext_player
@@ -118,6 +119,7 @@ private fun platformScreens(activity: MainActivityHost): PlatformScreens = Platf
     download = {
         val context = androidx.compose.ui.platform.LocalContext.current
         val externalPlayerChooserTitle = stringResource(Res.string.ext_player)
+        val externalPlayerNotSupported = stringResource(Res.string.action_not_support)
         DownloadRouteScreen(
             onBack = onBack,
             onNavigateToVideo = { code -> backStack.add(VideoRoute(code)) },
@@ -130,11 +132,19 @@ private fun platformScreens(activity: MainActivityHost): PlatformScreens = Platf
                         clipData = ClipData.newRawUri("video", externalUri)
                         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     }
-                    context.startActivity(
-                        Intent.createChooser(intent, externalPlayerChooserTitle).apply {
-                            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-                        },
-                    )
+                    runCatching {
+                        context.startActivity(
+                            Intent.createChooser(intent, externalPlayerChooserTitle).apply {
+                                addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                            },
+                        )
+                    }.onFailure {
+                        // 无可处理该 Intent 的应用时此前直接崩溃；降级为 toast，
+                        // 不误删库（onNotExist 只代表文件缺失，不代表没播放器）。
+                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Main).launch {
+                            lovehan1me.core.util.AppToast.warning(externalPlayerNotSupported)
+                        }
+                    }
                 }
             },
             onImportDownloaded = {},

@@ -39,9 +39,11 @@ import lovehan1me.ui.component.ConfirmDialog
 import lovehan1me.feature.home.DownloadScreen
 import lovehan1me.feature.home.download.DownloadEvent
 import lovehan1me.feature.library.DownloadViewModel
+import lovehan1me.core.platform.ExternalOpenOutcome
 import lovehan1me.core.platform.downloadWorkController
 import lovehan1me.core.platform.ioDispatcher
 import lovehan1me.core.platform.rememberBackupImportLauncher
+import lovehan1me.core.platform.toPlayableLocalUri
 import lovehan1me.core.util.AppToast
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -120,13 +122,45 @@ fun DownloadRouteScreen(
             }
 
             is DownloadEvent.OnOpenDownloadedVideo -> onNavigateToVideo(event.video.video.videoCode)
-            is DownloadEvent.OnLocalPlayback -> onNavigateToLocalVideo(
-                event.video.video.videoCode, event.video.video.videoUri
-            )
+            is DownloadEvent.OnLocalPlayback -> {
+                // 本地播放走“缓存优先”：DB 行 + 文件双判定在各端 videoCacheStore 里做，
+                // 这里只负责把 DB 原始 videoUri 归一化成引擎可播的 file:// 后下发。
+                // 缺文件时 VideoViewModel 会 emit NoContent（播放页错误卡），与此前一致；
+                // 若需删库确认框，调用方点删除即可（外部打开缺文件才弹确认框，避免误杀）。
+                val playable = event.video.video.videoUri.toPlayableLocalUri()
+                // 遗留 `local://` 占位未经 resolver 还原时不下发死链：直接提示缺文件，
+                // 引导用户走删除/重新下载（各端 initialize/首播自愈后该分支即消失）。
+                if (playable.startsWith("local://")) {
+                    showVideoNotExistConfirm = event.video
+                } else {
+                    onNavigateToLocalVideo(event.video.video.videoCode, playable)
+                }
+            }
 
-            is DownloadEvent.OnExternalPlayback -> onExternalPlayback?.invoke(
-                event.video.video.videoUri,
-            ) { showVideoNotExistConfirm = event.video }
+            is DownloadEvent.OnExternalPlayback -> {
+                if (onExternalPlayback != null) {
+                    onExternalPlayback.invoke(
+                        event.video.video.videoUri,
+                    ) { showVideoNotExistConfirm = event.video }
+                } else {
+                    // 桌面/iOS 无壳层注入：走控制器跨端回退（Desktop.open / 分享面板）。
+                    scope.launch(ioDispatcher) {
+                        val outcome = runCatching {
+                            downloadWorkController().openVideoExternally(event.video.video.videoUri)
+                        }.getOrDefault(ExternalOpenOutcome.Unsupported)
+                        withContext(Dispatchers.Main) {
+                            when (outcome) {
+                                ExternalOpenOutcome.Opened -> Unit
+                                ExternalOpenOutcome.FileMissing ->
+                                    showVideoNotExistConfirm = event.video
+
+                                ExternalOpenOutcome.Unsupported ->
+                                    AppToast.warning(getString(Res.string.action_not_support))
+                            }
+                        }
+                    }
+                }
+            }
 
             is DownloadEvent.OnDeleteDownloadedVideo -> showDeleteVideoConfirm = event.video
 

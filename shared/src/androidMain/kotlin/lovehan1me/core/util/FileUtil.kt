@@ -32,6 +32,16 @@ fun Context.getDownloadedHanimeVideoUri(
     uri: String,
     onFileNotFound: (() -> Unit)? = null,
 ): Uri? {
+    if (uri.isBlank()) {
+        onFileNotFound?.invoke()
+        return null
+    }
+    // 遗留/跨端占位（桌面/iOS 历史 `local://`）在 Android 侧无对应文件，直接走缺文件分支
+    // （调用方弹删库确认框），避免 File("local://…") 误判或 FileProvider 抛异常。
+    if (uri.startsWith("local://")) {
+        onFileNotFound?.invoke()
+        return null
+    }
     val videoUri = uri.toUri()
     if (videoUri.scheme == ContentResolver.SCHEME_CONTENT) {
         try {
@@ -48,10 +58,22 @@ fun Context.getDownloadedHanimeVideoUri(
         return videoUri
     }
 
-    val videoFile = File(videoUri.path ?: "")
-    if (!videoFile.exists()) {
+    val videoFile = when (videoUri.scheme) {
+        null, ContentResolver.SCHEME_FILE -> File(videoUri.path ?: uri)
+        // content:// 已在上分支 return；http(s) 等远端串不可能是已下载产物，直接缺文件。
+        else -> {
+            onFileNotFound?.invoke()
+            return null
+        }
+    }
+    if (!videoFile.isFile) {
         onFileNotFound?.invoke()
         return null
     }
-    return FileProvider.getUriForFile(this, FILE_PROVIDER_AUTHORITY, videoFile)
+    return runCatching {
+        FileProvider.getUriForFile(this, FILE_PROVIDER_AUTHORITY, videoFile)
+    }.getOrElse {
+        onFileNotFound?.invoke()
+        null
+    }
 }

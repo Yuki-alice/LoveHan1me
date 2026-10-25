@@ -109,6 +109,9 @@ object IosDownloadWorkController : DownloadWorkController {
         // 全新库 download_groups 为空会导致外键拒绝：先播种再恢复（对齐桌面的播种顺序）
         runCatching { Han1meDatabases.download.downloadGroupDao.insertDefaultGroup() }
             .onFailure { LogUtil.w(TAG, "insertDefaultGroup failed in initialize", it) }
+        // 存量自愈：历史 `local://` 占位行回填真实绝对路径（桌面端同因，见其注释）。
+        runCatching { repairLegacyVideoUri() }
+            .onFailure { LogUtil.w(TAG, "repairLegacyVideoUri failed", it) }
         runCatching {
             Han1meDatabases.download.hanimeDownloadDao.loadAllDownloadingHanimeOnce()
                 .filter { it.state == DownloadState.Downloading || it.state == DownloadState.Queued }
@@ -172,7 +175,8 @@ object IosDownloadWorkController : DownloadWorkController {
             title = video.title,
             addDate = Clock.System.now().toEpochMilliseconds(),
             videoCode = videoCode,
-            videoUri = "local://$videoCode",
+            // 落盘即写绝对路径（与桌面同因：`local://` 占位会导致缓存解析恒 false → NoContent）。
+            videoUri = "${downloadDir()}/$videoCode/${sanitizeFileName(video.title)} [$q].$suffix",
             coverUri = null,
             quality = q,
             videoUrl = link,
@@ -236,8 +240,6 @@ object IosDownloadWorkController : DownloadWorkController {
             val videoCode = child.trim()
             if (videoCode.isBlank()) return@forEach
             files.forEach { name ->
-                // suffix 由 videoUri 反解（"local://code" 无点 → 恒 mp4），
-                // 非 mp4 会解析到不存在的路径，故只收 mp4。
                 if (!name.endsWith(".mp4", ignoreCase = true)) return@forEach
                 val parsed = DownloadedVideoName.parse(name) ?: return@forEach
                 if (dao.find(videoCode, parsed.second) != null) return@forEach
@@ -250,7 +252,8 @@ object IosDownloadWorkController : DownloadWorkController {
                         title = parsed.first,
                         addDate = fileModifiedAt(full),
                         videoCode = videoCode,
-                        videoUri = "local://$videoCode",
+                        // 落盘即写绝对路径（此前写 `local://` 占位导致缓存解析恒 false）。
+                        videoUri = full,
                         coverUri = null,
                         quality = parsed.second,
                         videoUrl = EMPTY_STRING,
@@ -363,6 +366,65 @@ object IosDownloadWorkController : DownloadWorkController {
     }
 
     /**
+     * 把 DB 行的 `videoUri` 还原为本地绝对路径（含遗留 `local://` 占位兼容，对齐桌面）。
+     *
+     * @return 存在的文件绝对路径；不存在返回 null。
+     */
+    internal fun resolveVideoFile(videoUriPath: String, quality: String?, title: String?): String? {
+        val fm = NSFileManager.defaultManager
+        if (!videoUriPath.startsWith("local://")) {
+            val raw = videoUriPath.removePrefix("file://")
+            return raw.takeIf { fm.fileExistsAtPath(it) }
+        }
+        val code = videoUriPath.removePrefix("local://").substringBefore('?').trim()
+        if (code.isBlank()) return null
+        if (!title.isNullOrBlank() && !quality.isNullOrBlank()) {
+            val expected = "${videoFolderPath(code)}/${sanitizeFileName(title)} [$quality].mp4"
+            if (fm.fileExistsAtPath(expected)) return expected
+            fm.contentsOfDirectoryAtPath(videoFolderPath(code), null)
+                ?.filterIsInstance<String>()
+                ?.firstOrNull { it.contains("[$quality]") }
+                ?.let { return "${videoFolderPath(code)}/$it" }
+        }
+        return fm.contentsOfDirectoryAtPath(videoFolderPath(code), null)
+            ?.filterIsInstance<String>()
+            ?.firstOrNull { it.endsWith(".mp4", ignoreCase = true) }
+            ?.let { "${videoFolderPath(code)}/$it" }
+    }
+
+    /** 存量自愈：把 `local://` 行回填为真实绝对路径（见 initialize 调用处）。 */
+    private suspend fun repairLegacyVideoUri() {
+        val dao = Han1meDatabases.download.hanimeDownloadDao
+        val legacy = runCatching { dao.getAll() }.getOrDefault(emptyList())
+            .filter { it.videoUri.startsWith("local://") }
+        legacy.forEach { entity ->
+            val path = resolveVideoFile(entity.videoUri, entity.quality, entity.title)
+            if (path != null) {
+                runCatching { dao.update(entity.copy(videoUri = path)) }
+            }
+        }
+    }
+
+    override suspend fun openVideoExternally(videoUriPath: String): ExternalOpenOutcome =
+        withContext(Dispatchers.Default) {
+            val dao = Han1meDatabases.download.hanimeDownloadDao
+            val entity = runCatching {
+                dao.getAll().firstOrNull { it.videoUri == videoUriPath }
+            }.getOrNull()
+            val path = resolveVideoFile(videoUriPath, entity?.quality, entity?.title)
+                ?: return@withContext ExternalOpenOutcome.FileMissing
+            try {
+                val url = platform.Foundation.NSURL.fileURLWithPath(path)
+                // 分享面板已呈现即算成功（用户取消不报错；iPad 无锚点时 present 返回 false，
+                // 但文件仍在「文件」App 可见，按已调起处理，调用方 toast 提示位置即可）。
+                lovehan1me.core.util.presentActivitySheet(listOf(url))
+                ExternalOpenOutcome.Opened
+            } catch (_: Exception) {
+                ExternalOpenOutcome.Unsupported
+            }
+        }
+
+    /**
      * suspend 以保证注册同步（对齐桌面 `jobs[key] = scope.launch{}` 的同步语义：
      * 调用方 addTask/initialize/resume 均为 suspend 上下文；若改为异步注册，
      * 紧随的 pauseTask 会因查不到 job 而漏取消）。
@@ -459,7 +521,15 @@ object IosDownloadWorkController : DownloadWorkController {
             val fresh = dao.find(entity.videoCode, entity.quality)
             if (fresh != null) {
                 val finalLength = maxOf(fresh.length, downloaded)
-                dao.update(fresh.copy(length = finalLength, downloadedLength = finalLength, state = DownloadState.Finished))
+                // 完成即回填真实落盘路径（addTask 已预写；存量 local:// 行在此自愈）。
+                dao.update(
+                    fresh.copy(
+                        length = finalLength,
+                        downloadedLength = finalLength,
+                        state = DownloadState.Finished,
+                        videoUri = filePath,
+                    )
+                )
                 LogUtil.d(TAG, "finished: ${entity.title} (${finalLength} bytes)")
             }
         } catch (e: kotlinx.coroutines.CancellationException) {

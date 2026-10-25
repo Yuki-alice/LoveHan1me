@@ -92,6 +92,11 @@ object DesktopDownloadWorkController : DownloadWorkController {
         // 全新桌面库按 v5 直接建表不走 Migration4To5，download_groups 为空会导致外键拒绝
         runCatching { Han1meDatabases.download.downloadGroupDao.insertDefaultGroup() }
             .onFailure { LogUtil.w(TAG, "insertDefaultGroup failed in initialize", it) }
+        // 存量修复：历史版本 addTask 落盘写的是 `local://<code>` 占位（finish 也未回填），
+        // 导致缓存解析（File("local://…").isFile ≡ false）恒判文件缺失、本地播放进 NoContent。
+        // 此处把能还原的逐行回填为绝对路径；还原不了的保留（播放时仍提示缺文件）。
+        runCatching { repairLegacyVideoUri() }
+            .onFailure { LogUtil.w(TAG, "repairLegacyVideoUri failed", it) }
         runCatching {
             Han1meDatabases.download.hanimeDownloadDao.loadAllDownloadingHanimeOnce()
                 .filter { it.state == DownloadState.Downloading || it.state == DownloadState.Queued }
@@ -156,7 +161,12 @@ object DesktopDownloadWorkController : DownloadWorkController {
             title = video.title,
             addDate = Instant.now().toEpochMilli(),
             videoCode = videoCode,
-            videoUri = "local://$videoCode",
+            // 落盘即写绝对路径（缓存解析/本地播放/外部打开三处直接 stat 该字段）：
+            // 历史占位 `local://` 已证明会连环炸（解析恒 false → NoContent），不再使用。
+            videoUri = File(
+                File(downloadDir(), videoCode),
+                "${sanitizeFileName(video.title)} [$q].$suffix",
+            ).absolutePath,
             coverUri = null,
             quality = q,
             videoUrl = link,
@@ -212,6 +222,73 @@ object DesktopDownloadWorkController : DownloadWorkController {
 
     /** 设置页展示用（与落盘同源，不分头写第二份目录推导）。 */
     internal fun currentDownloadDir(): File = downloadDir()
+
+    /**
+     * 把 DB 行的 `videoUri` 还原为本地文件（含遗留 `local://` 占位兼容）。
+     *
+     * - 绝对路径 / `file://`：直接 stat；
+     * - `local://<code>`：按落盘约定重算期望文件名，命中则返回；标题被外部改名时
+     *   退化为目录扫描（`[quality]` 优先，否则首个视频文件），扫不到返回 null。
+     */
+    internal fun resolveVideoFile(videoUriPath: String, quality: String?, title: String?): File? {
+        val raw = videoUriPath.removePrefix("file://")
+        if (!raw.startsWith("local://")) {
+            val f = File(raw)
+            return f.takeIf { it.isFile }
+        }
+        val code = raw.removePrefix("local://").substringBefore('?').trim()
+        if (code.isBlank()) return null
+        val dir = File(downloadDir(), code)
+        if (!dir.isDirectory) return null
+        if (!title.isNullOrBlank() && !quality.isNullOrBlank()) {
+            // 后缀从 title 反解不到时按 mp4 试（历史占位 suffix 恒 mp4，与落盘一致）。
+            val expected = File(dir, "${sanitizeFileName(title)} [$quality].mp4")
+            if (expected.isFile) return expected
+            dir.listFiles()?.firstOrNull {
+                it.isFile && it.name.contains("[$quality]")
+            }?.let { return it }
+        }
+        return dir.listFiles()?.firstOrNull {
+            it.isFile && it.extension.lowercase() in setOf("mp4", "mkv", "webm", "mov", "m4v")
+        }
+    }
+
+    /** 存量自愈：把 `local://` 行回填为真实绝对路径（见 initialize 调用处）。 */
+    private suspend fun repairLegacyVideoUri() {
+        val dao = Han1meDatabases.download.hanimeDownloadDao
+        // 全量直读一次（未完成 + 已完成都在 HanimeDownloadEntity 同表，state 区分即可）；
+        // downloaded 流是 StateFlow 快照，initialize 时可能尚未订阅，直读最稳。
+        val legacy = runCatching { dao.getAll() }.getOrDefault(emptyList())
+            .filter { it.videoUri.startsWith("local://") }
+        legacy.forEach { entity ->
+            val file = resolveVideoFile(entity.videoUri, entity.quality, entity.title)
+            if (file != null) {
+                runCatching { dao.update(entity.copy(videoUri = file.absolutePath)) }
+            }
+        }
+    }
+
+    override suspend fun openVideoExternally(videoUriPath: String): ExternalOpenOutcome =
+        withContext(Dispatchers.IO) {
+            val dao = Han1meDatabases.download.hanimeDownloadDao
+            // videoUri → (quality,title) 需要反查 DB 做遗留还原；查不到则按裸路径试。
+            val entity = runCatching {
+                dao.getAll().firstOrNull { it.videoUri == videoUriPath }
+            }.getOrNull()
+            val file = resolveVideoFile(videoUriPath, entity?.quality, entity?.title)
+                ?: return@withContext ExternalOpenOutcome.FileMissing
+            try {
+                if (!java.awt.Desktop.isDesktopSupported() ||
+                    !java.awt.Desktop.getDesktop().isSupported(java.awt.Desktop.Action.OPEN)
+                ) {
+                    return@withContext ExternalOpenOutcome.Unsupported
+                }
+                java.awt.Desktop.getDesktop().open(file)
+                ExternalOpenOutcome.Opened
+            } catch (_: Exception) {
+                ExternalOpenOutcome.Unsupported
+            }
+        }
 
     private fun sanitizeFileName(name: String) =
         name.replace(Regex("[\\\\/:*?\"<>|]"), "_").take(120).ifBlank { "video" }
@@ -349,7 +426,17 @@ object DesktopDownloadWorkController : DownloadWorkController {
             val fresh = dao.find(entity.videoCode, entity.quality)
             if (fresh != null) {
                 val finalLength = maxOf(fresh.length, downloaded)
-                dao.update(fresh.copy(length = finalLength, downloadedLength = finalLength, state = DownloadState.Finished))
+                // 完成即回填真实落盘路径（addTask 已预写；存量 local:// 行在此自愈，
+                // 避免缓存解析拿到占位符进 NoContent）。
+                val realPath = file.absolutePath
+                dao.update(
+                    fresh.copy(
+                        length = finalLength,
+                        downloadedLength = finalLength,
+                        state = DownloadState.Finished,
+                        videoUri = realPath,
+                    )
+                )
                 LogUtil.d(TAG, "finished: ${entity.title} (${finalLength} bytes)")
             }
         } catch (e: kotlinx.coroutines.CancellationException) {

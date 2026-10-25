@@ -91,9 +91,12 @@ data class HanimeDownloadEntity(
 ) {
     /**
      * 下载进度
+     *
+     * 新任务刚入库时 `length == 0`（总长度尚未经 HEAD/首包回填），直接除会抛
+     * ArithmeticException 导致下载中列表整页崩溃；此时进度按 0 处理。
      */
     @get:IntRange(from = 0, to = 100)
-    val progress get() = (downloadedLength * 100 / length).toInt()
+    val progress get() = if (length <= 0L) 0 else (downloadedLength * 100 / length).toInt().coerceIn(0, 100)
 
     val isDownloading get() = state == DownloadState.Downloading
 
