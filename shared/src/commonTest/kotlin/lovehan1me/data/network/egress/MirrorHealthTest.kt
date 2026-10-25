@@ -18,6 +18,13 @@ class MirrorHealthTest {
     private val mirrorA = HanimeConstants.HANIME_HOSTNAME[0]
     private val mirrorB = HanimeConstants.HANIME_HOSTNAME[1]
 
+    /** 上报会喂进全局事件流/注册表；不清会殃及字母序后位用例的 `.single()` 断言。 */
+    @kotlin.test.AfterTest
+    fun tearDown() {
+        EgressEvents.clear()
+        RouteRegistry.reset()
+    }
+
     /** 阻断类一次即熔（见 [RouteHealth.FAILURE_THRESHOLD] 上方的语义注释）。 */
     private fun meltGate(mirror: String?, times: Int = 3) {
         repeat(times) {

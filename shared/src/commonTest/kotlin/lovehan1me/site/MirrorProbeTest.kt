@@ -22,6 +22,13 @@ class MirrorProbeTest {
     private val b = "hanime1.com"
     private val c = "hanimeone.me"
 
+    /** 上报会喂进全局事件流/注册表；不清会殃及字母序后位用例的 `.single()` 断言。 */
+    @kotlin.test.AfterTest
+    fun tearDown() {
+        lovehan1me.data.network.egress.EgressEvents.clear()
+        lovehan1me.data.network.egress.RouteRegistry.reset()
+    }
+
     private fun melt(host: String) {
         repeat(3) {
             EgressReporter.report(DomainClass.Hanime, RouteId.Gate, AttemptOutcome.Blocked, 10L, now, mirror = host)
