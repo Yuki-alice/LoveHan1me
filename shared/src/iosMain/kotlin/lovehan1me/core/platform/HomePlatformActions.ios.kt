@@ -63,7 +63,7 @@ actual fun applyAppLanguage(language: AppLanguage) {
 
 private const val APPLE_LANGUAGES_KEY = "AppleLanguages"
 
-actual fun appVersionDisplay(): String = "1.0"
+actual fun appVersionDisplay(): String = "0.0.1"
 
 actual fun supportsPerAppLinks(): Boolean = false
 
@@ -78,7 +78,7 @@ actual suspend fun openBackupSource(uri: String): okio.Source? = runCatching {
     TempFileSource(uri)
 }.getOrNull()
 
-actual fun appVersionNameRaw(): String = "1.0"
+actual fun appVersionNameRaw(): String = "0.0.1"
 actual fun appVersionCodeRaw(): Int = 1
 
 actual suspend fun writeBackupText(uri: String, content: String): Boolean {

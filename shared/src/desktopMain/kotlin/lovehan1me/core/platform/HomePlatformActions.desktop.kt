@@ -49,7 +49,7 @@ actual fun applyAppLanguage(language: AppLanguage) {
     LogUtil.d("Language", "桌面默认 Locale -> $target（appLanguage=${language.preferenceValue}）")
 }
 
-actual fun appVersionDisplay(): String = "0.1.0" // 与 desktopApp nativeDistributions.packageVersion 对齐
+actual fun appVersionDisplay(): String = "0.0.1" // 桌面包 packageVersion 受 jpackage 首位非零限制恒为 1.0.0，与代码版本不联动（见 desktopApp/build.gradle.kts 注释）
 
 actual fun supportsPerAppLinks(): Boolean = false
 
@@ -59,7 +59,7 @@ actual suspend fun openBackupSink(uri: String): okio.Sink? =
 actual suspend fun openBackupSource(uri: String): okio.Source? =
     runCatching { java.io.File(uri).source() }.getOrNull()
 
-actual fun appVersionNameRaw(): String = "0.1.0"
+actual fun appVersionNameRaw(): String = "0.0.1"
 actual fun appVersionCodeRaw(): Int = 1
 
 actual suspend fun writeBackupText(uri: String, content: String): Boolean = runCatching {

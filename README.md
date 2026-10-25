@@ -56,7 +56,7 @@ LoveHan1me 是一个使用 Kotlin Multiplatform 从零重写的跨平台客户�
 | iOS | iOS 15+ |
 | Windows / macOS / Linux | 需 64 位系统 |
 
-本仓库**尚无正式发布版本**，可自行从源码构建：
+当前版本 **v0.0.1**（首个公开预览版，变更见 [CHANGELOG](CHANGELOG.md)）：从 [GitHub Releases](https://github.com/Yuki-alice/LoveHan1me/releases) 下载，或自行从源码构建：
 
 ```bash
 ./gradlew :app:assembleRelease                              # Android
