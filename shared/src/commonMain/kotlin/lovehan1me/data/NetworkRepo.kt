@@ -24,6 +24,7 @@ import io.ktor.client.statement.HttpResponse
 import io.ktor.client.statement.bodyAsText
 import io.ktor.http.isSuccess
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -718,6 +719,35 @@ object NetworkRepo {
         permitted?.contains(status.value) == true || status.isSuccess()
 
     /**
+     * 状态流统一骨架（网络优化 3.2）：`ioRequest → bodyAsText → onBody 写透 → 解析 emit`，
+     * 失败统一映射（[errorOf] 各绑各的状态构造器，`handleException` 在骨架内只跑一遍）。
+     *
+     * 行为等价基线（合并前逐项对照过）：
+     * - emit 时机：整页一次（成功一帧 / 失败一帧），无中间 Loading 帧；
+     * - onBody 位置：**在 action 之前**（首页/发现页缓存写透先落盘，老调用点零改动）；
+     * - catch：只在 flow 层兜（[ioRequest] 内部的 CF 续跑/换镜像重试不受影响）；
+     * - flowOn(ioDispatcher)：请求 + 解析都在 IO 上；
+     * - permittedSuccessCode：仅 website 链需要（302 等），page 链恒 null。
+     *
+     * [websiteIOFlow] / [pageIOFlow] 收敛为本骨架的两个命名入口；[videoIOFlow] 因
+     * PlayerTrace 打点要卡在 ioRequest 与解析的精确两侧，保留独立薄封装。
+     */
+    private fun <S> stateIOFlow(
+        request: suspend () -> HttpResponse,
+        permittedSuccessCode: IntArray?,
+        onBody: (suspend (String) -> Unit)?,
+        action: suspend (String) -> S,
+        errorOf: (Throwable) -> S,
+    ): Flow<S> = flow {
+        val requestResult = ioRequest(request, permittedSuccessCode)
+        val text = requestResult.bodyAsText()
+        onBody?.invoke(text)
+        emit(action.invoke(text))
+    }.catch { e ->
+        emit(errorOf(handleException(e)))
+    }.flowOn(ioDispatcher)
+
+    /**
      * 用于单网页的情况
      *
      * @param permittedSuccessCode 用于处理特殊情况，比如[NetworkRepo.modifyPlaylist]需要302成功
@@ -731,14 +761,9 @@ object NetworkRepo {
         onBody: (suspend (String) -> Unit)? = null,
         // P4：action 改 suspend（Parser.homePageVer2 用 composeResources getString 需要）
         action: suspend (String) -> WebsiteState<T>,
-    ) = flow {
-        val requestResult = ioRequest(request, permittedSuccessCode)
-        val text = requestResult.bodyAsText()
-        onBody?.invoke(text)
-        emit(action.invoke(text))
-    }.catch { e ->
-        emit(WebsiteState.Error(handleException(e)))
-    }.flowOn(ioDispatcher)
+    ): Flow<WebsiteState<T>> = stateIOFlow(
+        request, permittedSuccessCode, onBody, action,
+    ) { WebsiteState.Error(it) }
 
     /**
      * 用于有page分页的情况
@@ -749,14 +774,9 @@ object NetworkRepo {
         // 老调用点的 trailing lambda 绑的仍是 action，零改动。默认 null。
         onBody: (suspend (String) -> Unit)? = null,
         action: (String) -> PageLoadingState<T>,
-    ) = flow {
-        val requestResult = ioRequest(request)
-        val text = requestResult.bodyAsText()
-        onBody?.invoke(text)
-        emit(action.invoke(text))
-    }.catch { e ->
-        emit(PageLoadingState.Error(handleException(e)))
-    }.flowOn(ioDispatcher)
+    ): Flow<PageLoadingState<T>> = stateIOFlow(
+        request, permittedSuccessCode = null, onBody = onBody, action = action,
+    ) { PageLoadingState.Error(it) }
 
     /**
      * 用于影片界面
