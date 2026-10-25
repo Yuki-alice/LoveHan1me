@@ -19,10 +19,11 @@ Kotlin Multiplatform 从零重写的跨平台第三方客户端：**一套代码
 | 附件 | 平台 |
 |---|---|
 | `LoveHan1me-v0.0.1.apk` | Android 10+（arm64-v8a） |
-| `LoveHan1me-1.0.0.dmg` | macOS（Apple Silicon / Intel jlink 运行时） |
+| `LoveHan1me-1.0.0.dmg` | macOS（jlink 运行时；包版本受 jpackage 首位非零限制为 1.0.0，与代码版本 0.0.1 同一次发布） |
+| `LoveHan1me-1.0.0.msi` | Windows 10+ x64（GitHub Actions 打包） |
+| `lovehan1me_1.0.0_amd64.deb` | Linux x64（GitHub Actions 打包） |
 
 **iOS**：本版不发布 TestFlight/商店包；从源码构建（`cd iosApp && xcodegen generate`，需 macOS + Xcode）。
-**Windows / Linux**：本版暂未附带安装包，从源码构建 `./gradlew :desktopApp:packageDistributionForCurrentOS`（Msi / Deb）。后续版本补齐跨平台产物。
 
 ## 已知限制（首发如实声明）
 
