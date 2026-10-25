@@ -9,6 +9,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -19,15 +20,19 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExperimentalMaterial3ExpressiveApi
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import lovehan1me.ui.theme.HanimeDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.zIndex
+import kotlinx.coroutines.launch
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import org.jetbrains.compose.resources.stringResource
 import lovehan1me.core.constant.HA1_GITHUB_URL
@@ -37,6 +42,10 @@ import lovehan1me.checking_for_updates
 import lovehan1me.i_understand
 import lovehan1me.data.AppUpdateState
 import lovehan1me.data.SettingsRepository
+import lovehan1me.egress_force_auto
+import lovehan1me.egress_force_direct
+import lovehan1me.egress_force_gate
+import lovehan1me.ui.component.content.ErrorContent
 import lovehan1me.core.domain.model.Announcement
 import lovehan1me.core.domain.model.AnnouncementSeverity
 import lovehan1me.core.domain.model.AppUpdateInfo
@@ -53,6 +62,8 @@ import lovehan1me.feature.home.homepage.component.AppUpdateCard
 import lovehan1me.ui.component.rememberRandomLoadingHint
 import lovehan1me.core.util.toNetworkErrorMessageRes
 import lovehan1me.core.util.isDebugBuild
+import lovehan1me.core.platform.rebuildSystemProxy
+import lovehan1me.data.network.egress.ForceMode
 import lovehan1me.feature.home.homepage.component.HomeTopBar
 
 /**
@@ -175,11 +186,24 @@ fun SharedHomeScreen(
                         pageState.isFirstPageLoading,
                     isError = pageState.isFirstPageError,
                     isEmpty = pageState.isFirstPageError || pageState.isFirstPageEmpty,
-                    errorMessage = (pageState as? PageState.Error)?.throwable
-                        ?.toNetworkErrorMessageRes()
-                        ?.let { stringResource(it) }
-                        ?: "",
-                    onRetry = { viewModel.getHomePage(isRefresh = false) },
+                    // 网络优化 3.3：错误态注入出口逃生舱 —— 重试救不了时，一条路里
+                    // 完成"写强制选路 + 复位熔断档案 + 重载"，不再逼用户去设置页排障。
+                    error = {
+                        Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            ErrorContent(
+                                message = (pageState as? PageState.Error)?.throwable
+                                    ?.toNetworkErrorMessageRes()
+                                    ?.let { stringResource(it) }
+                                    ?: "",
+                                onRetry = { viewModel.getHomePage(isRefresh = false) },
+                                secondaryActions = {
+                                    EgressEscapeActions(
+                                        onApplied = { viewModel.getHomePage(isRefresh = false) },
+                                    )
+                                },
+                            )
+                        }
+                    },
                     loadingMessage = if (!showSimulatedUpdate && updateState is AppUpdateState.Checking) {
                         stringResource(Res.string.checking_for_updates)
                     } else {
@@ -272,6 +296,40 @@ private fun BlockingAnnouncementPage(
             ) {
                 Text(stringResource(Res.string.i_understand))
             }
+        }
+    }
+}
+
+/**
+ * 首页错误态的出口逃生舱（网络优化 3.3）：重试救不了时的三条强制选路。
+ *
+ * 一条路里完成「写 `egressForceMode`（调度器每请求热读，下一请求即生效）+
+ * `rebuildSystemProxy()`（复位各域熔断档案）+ 重载首页」，不再逼用户去设置页排障。
+ * 三个动作复用设置页既有的三语档位名；仅首页注入，其他复用 [PageContent]
+ * 的页面后续按需注入。
+ */
+@Composable
+private fun EgressEscapeActions(onApplied: () -> Unit) {
+    val scope = rememberCoroutineScope()
+    fun apply(mode: ForceMode) {
+        scope.launch {
+            SettingsRepository.update { it.copy(egressForceMode = mode.name) }
+            rebuildSystemProxy()
+            onApplied()
+        }
+    }
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TextButton(onClick = { apply(ForceMode.ForceDirect) }) {
+            Text(stringResource(Res.string.egress_force_direct))
+        }
+        TextButton(onClick = { apply(ForceMode.ForceGate) }) {
+            Text(stringResource(Res.string.egress_force_gate))
+        }
+        TextButton(onClick = { apply(ForceMode.Auto) }) {
+            Text(stringResource(Res.string.egress_force_auto))
         }
     }
 }

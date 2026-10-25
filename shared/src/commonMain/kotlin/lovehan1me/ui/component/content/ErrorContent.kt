@@ -30,6 +30,8 @@ import org.jetbrains.compose.resources.stringResource
  * @param title 错误标题，默认为"加载失败"
  * @param message 错误详情，为 null 或空白时不显示
  * @param onRetry 重试回调，为 null 时不显示重试按钮
+ * @param secondaryActions 次级动作槽（网络优化 3.3：出口逃生舱等页面级出口注入用）。
+ *   默认 null = 零改动；渲染在重试按钮之下，语义是"重试救不了时的另一条路"。
  */
 @Composable
 fun ErrorContent(
@@ -38,6 +40,7 @@ fun ErrorContent(
     message: String? = null,
     onRetry: (() -> Unit)? = null,
     retryText: String = stringResource(Res.string.retry),
+    secondaryActions: (@Composable () -> Unit)? = null,
 ) {
     val resolvedTitle = title ?: stringResource(Res.string.load_failed_retry)
     Column(
@@ -69,6 +72,9 @@ fun ErrorContent(
             FilledTonalButton(onClick = onRetry) {
                 Text(retryText)
             }
+        }
+        if (secondaryActions != null) {
+            secondaryActions()
         }
     }
 }
