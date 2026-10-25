@@ -22,17 +22,20 @@
 
 | # | 阶段 | 依赖 | 状态 | 证据 |
 |---|------|------|------|------|
-| 1.1 | iOS 传输层统一装配 + 图片链超时/重试 | — | 待办 | |
-| 1.2 | iOS 应用内代理（HTTP/SOCKS） | 1.1 | 待办 | |
-| 1.3 | iOS 冷启动网关就绪等待 | — | 待办 | |
-| 1.4 | 错误分类结构化 NetworkFailure | — | 待办 | |
-| 3.1 | stale-first 缓存下沉 | — | 待办 | |
-| 3.2 | NetworkRepo 请求骨架收敛 | — | 待办 | |
-| 3.3 | 错误页出口逃生舱 | 1.4 | 待办 | |
+| 1.1 | iOS 传输层统一装配 + 图片链超时/重试 | — | ✅* | `createIosTransport` 一处装配（ech/IosTransport.kt），5 处裸 Darwin client 收编；图片链补 30s call 档 + 同谓词重试；存相册 client 进程级单例。`grep HttpClient(Darwin)` 生产代码零残留；三端编译 + desktopTest 绿。⚠️ iOS 冒烟（封面/getchu 图/存相册/下载）待真机 |
+| 1.2 | iOS 应用内代理（HTTP/SOCKS） | 1.1 | ✅* | `proxyDictionaryFor` 四模式 + 例外表恒含回环（键用字符串字面量——C 常量 iOS SDK 未导出，值即其名）；`createIosTransport` 构造期注入；`HanimeNetwork.rebuildTransports()` + `platformRebuildSystemProxy` iOS actual 接管（改代理/备份导入即生效）；设置页文案改即时生效。`ProxyDictionaryTest` 6 用例（iosSimulatorArm64Test 绿）。⚠️ 真机手工验收未做：HTTP 代理请求出现在代理日志 / Direct 空字典能否真关系统代理 / SOCKS 兼容性（预案见阶段 1.2）|
+| 1.3 | iOS 冷启动网关就绪等待 | — | ✅* | `EchGatePortReporter.markStarting()`（Swift 起服前落拉起中，失败路径显式落 Stopped）+ `IosGateReadiness`（单飞有界等待 5s，onStatusChanged 钩子唤醒 + 双检防丢唤）+ `installEchGate` 注入 `awaitGateReady`。`IosGateReadinessTest` 5 用例（模拟器绿）。⚠️ 冷启动日志"等待而非抢跑"待真机确认 |
+| 1.4 | 错误分类结构化 NetworkFailure | — | ✅* | common `NetworkFailure` sealed（Dns/Timeout/Ssl/Connect/ConnectionReset/Offline/Http/Parse/NoRoute/Other）+ `toNetworkFailure()` 三层判定 + jvm/ios actual；文案映射签名/资源不变，Other 走旧关键词兜底零回归。commonTest 13 + desktopTest 6 + iosTest 9 用例全绿（iOS 断网 -1009 → 连接中断，动机用例）。⚠️ iOS 飞行模式/桌面断网目视未验 |
+| 3.1 | stale-first 缓存下沉 | — | ✅ | 4 expect 收敛为 `readCachedHtml`/`writeCachedHtml`（清理按 key 前缀自理）+ `staleFirstFlow` 薄骨架（stale/fresh 双类型分派，闸门/合并/刷新留在 VM）；首页/发现页迁移。desktopTest 真文件系统用例（前缀清理不串文件/尺寸护栏/路径逃逸）+ 全量绿 |
+| 3.2 | NetworkRepo 请求骨架收敛 | — | ✅ | websiteIOFlow/pageIOFlow 合一为 `stateIOFlow`（errorOf 绑定状态构造器），行为等价清单（emit 时机/onBody 位置/catch/flowOn/permittedSuccessCode）逐项对照；videoIOFlow 保留 PlayerTrace 薄封装。desktopTest 全量绿 |
+| 3.3 | 错误页出口逃生舱 | 1.4 | ✅* | `ErrorContent.secondaryActions` 插槽（默认 null 零改动，向后兼容）；首页错误态注入强制直连/强制网关/恢复自动（写 egressForceMode + rebuildSystemProxy 复位熔断 + 重载）。三端编译 + desktopTest 绿。⚠️ 模拟被墙 → 点按钮恢复的手工验收待做 |
 
 推荐执行顺序：**1.1 → 1.4 → 3.1 → 1.2 → 1.3 → 3.2 → 3.3**。
 （先统一 iOS 装配以解锁 1.2 并顺带修复图片链；错误分类独立且解锁 3.3；缓存下沉用户可感知、
 低风险；随后是代理、就绪等待、内部重构、逃生舱收尾。）
+
+> **2026-10-25 收口**：七阶段按推荐顺序全部落地（各阶段独立提交，`feat(net)` / `refactor(net)` / `feat(ui)`）。
+> ⚠️ 标记项 = 完成判据里的真机/手工验收仍未做，随发布前实测一并收口；iOS 手工验收清单见各阶段原文。
 
 ## 验收协议（每阶段走完才算完成）
 
