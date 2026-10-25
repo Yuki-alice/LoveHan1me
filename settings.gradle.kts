@@ -49,12 +49,20 @@ dependencyResolutionManagement {
             forRepository { mavenCentral() }
             filter { includeGroup("io.coil-kt.coil3") }
         }
-        // 国内镜像优先：google()/mavenCentral() 直连在国内极慢，镜像命中可大幅缩短首次构建
-        maven { url = uri("https://maven.aliyun.com/repository/google") }
-        maven { url = uri("https://maven.aliyun.com/repository/public") }
-        maven { url = uri("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/") }
-        maven { url = uri("https://repo.huaweicloud.com/repository/maven/") }
-        // 官方源兜底（镜像缺包时回落）
+        // 国内镜像优先：google()/mavenCentral() 直连在国内极慢，镜像命中可大幅缩短首次构建。
+        // ⚠️ CI（GitHub runner）上整组跳过：aliyun 对部分请求回 502，而 Gradle 的仓库亲和性
+        //    让"从镜像拿到元数据的模块"被钉死在该镜像、5xx 不回落 → 整个解析判死
+        //    （2026-10-25 release-desktop 实测 compose.ui 1.12.0.pom 502 ×29）。
+        //    插件仓库从没放过 aliyun（见 pluginManagement 注释），是同一教训的依赖仓库面。
+        if (System.getenv("CI").toBoolean() || System.getenv("GITHUB_ACTIONS").toBoolean()) {
+            logger.lifecycle("CI detected: skipping CN mirrors (aliyun/tencent/huawei), resolving from official repos only")
+        } else {
+            maven { url = uri("https://maven.aliyun.com/repository/google") }
+            maven { url = uri("https://maven.aliyun.com/repository/public") }
+            maven { url = uri("https://mirrors.cloud.tencent.com/nexus/repository/maven-public/") }
+            maven { url = uri("https://repo.huaweicloud.com/repository/maven/") }
+        }
+        // 官方源兜底（镜像缺包时回落；CI 上是唯一源）
         google()
         mavenCentral()
         maven { url = uri("https://jitpack.io/") }
