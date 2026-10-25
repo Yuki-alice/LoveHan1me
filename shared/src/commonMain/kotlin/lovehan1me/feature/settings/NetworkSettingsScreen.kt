@@ -209,7 +209,8 @@ data class EgressEventUi(
     val detail: String,
 )
 
-enum class ProxyTypeOption(val value: Int) {
+/** 代理四档（网络优化 1.2 提为 internal：iOS 自绘设置页的代理入口复用同一对话框）。 */
+internal enum class ProxyTypeOption(val value: Int) {
     Direct(HProxyTypes.TYPE_DIRECT),
     System(HProxyTypes.TYPE_SYSTEM),
     Http(HProxyTypes.TYPE_HTTP),
@@ -796,7 +797,7 @@ private fun NetworkChoiceDialog(
 }
 
 @Composable
-private fun ProxyDialog(
+internal fun ProxyDialog(
     initialType: Int,
     initialIp: String,
     initialPort: Int,

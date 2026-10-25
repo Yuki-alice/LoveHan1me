@@ -6,6 +6,7 @@ import io.ktor.client.engine.darwin.Darwin
 import io.ktor.client.plugins.HttpRequestRetry
 import io.ktor.client.plugins.HttpTimeout
 import io.ktor.client.plugins.cookies.HttpCookies
+import lovehan1me.data.SettingsRepository
 import lovehan1me.data.network.egress.EgressPurpose
 import platform.Foundation.NSURLSessionConfiguration
 
@@ -41,8 +42,22 @@ internal fun createIosTransport(
     configure: HttpClientConfig<*>.() -> Unit = {},
 ): HttpClient = HttpClient(Darwin) {
     val sessionHook = sessionConfiguration
+    // 应用内代理（网络优化 1.2）：会话配置在创建时被拷贝，注入必须发生在构造期；
+    // 改代理后由 HanimeNetwork.rebuildTransports() 换新客户端生效。
+    // 只对进网关的客户端注入（plain 干净 client 不吃应用代理，对齐 jvm plain 语义）；
+    // System 档返回 null = 不设该键（跟随系统）。
+    val appProxyDict = if (withEchGate) runCatching {
+        proxyDictionaryFor(
+            SettingsRepository.proxyType,
+            SettingsRepository.proxyIp,
+            SettingsRepository.proxyPort,
+        )
+    }.getOrNull() else null
     engine {
-        sessionHook?.let { configureSession(it) }
+        configureSession {
+            if (appProxyDict != null) connectionProxyDictionary = appProxyDict
+            sessionHook?.invoke(this)
+        }
     }
     if (withEchGate) {
         // ECH 网关插件必须装在 HttpCookies 之前：改写先发生，storage 随后对回环短路。

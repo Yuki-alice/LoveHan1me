@@ -36,6 +36,7 @@ import kotlinx.coroutines.launch
 import lovehan1me.Res
 import lovehan1me.copy_to_clipboard
 import lovehan1me.core.platform.currentEpochMillis
+import lovehan1me.core.platform.rebuildSystemProxy
 import lovehan1me.core.domain.model.AutoMirrorGuard
 import lovehan1me.core.domain.model.ProxyType
 import lovehan1me.core.util.AppToast
@@ -116,6 +117,7 @@ import lovehan1me.gate_args_invalid_doh
 import lovehan1me.gate_args_invalid_b64
 import lovehan1me.gate_args_ios_restart_note
 import lovehan1me.proxy
+import lovehan1me.proxy_ios_live_note
 import lovehan1me.direct
 import lovehan1me.system_proxy
 import lovehan1me.http
@@ -153,8 +155,8 @@ import org.jetbrains.compose.resources.stringResource
  *
  * 现在的原则：**能做的全给，做不到的单独一行说清楚是哪几项**。
  * 自定义 DNS / 自定义 Hosts 在 iOS 确实配不了（跟随系统设置），
- * 这一条如实写；HTTP/SOCKS 代理可在应用内配（B2-4：经本地网关转发出站，
- * 下次启动生效）；其余（网关开关、三态、强制选路、诊断导出）与 jvm 端同源。
+ * 这一条如实写；HTTP/SOCKS 代理可在应用内配（1.2：会话级注入，改后立即生效）；
+ * 其余（网关开关、三态、强制选路、诊断导出）与 jvm 端同源。
  *
  * ## 判定本体不在本文件
  * 三态与事件行由 commonMain `egressStatusSnapshot` / `recentEgressRows` 给出，
@@ -336,13 +338,13 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
             )
         }
 
-        // B2-4：iOS 应用内代理（经本地网关转发出站）。Darwin 引擎吃不到手填代理，
-        // 但网关进程内起服后由它代为出站 —— 开关在这里，生效在网关（下次启动）。
+        // 应用内代理（网络优化 1.2：会话级注入，改后经 rebuildSystemProxy 重建传输层
+        // 立即生效，不再依赖网关转交/下次启动；网关回环流量经例外表绕开用户代理）。
         item {
             SettingsRow(
                 title = stringResource(Res.string.proxy),
                 summary = iosProxySummary() + "\n" +
-                    stringResource(Res.string.gate_args_ios_restart_note),
+                    stringResource(Res.string.proxy_ios_live_note),
                 onClick = { showProxyDialog = true },
             )
         }
@@ -434,13 +436,15 @@ actual fun NetworkSettingsRouteScreen(embedded: Boolean) {
                     return@IosProxyDialog
                 }
                 showProxyDialog = false
-                // iOS 无 JVM 系统属性/Darwin 按请求配代理的口子，唯一生效通道是
-                // 下次启动的网关（代理模式转交）。Darwin 直发流量不受它影响 ——
-                // 行摘要里的下次启动注记说的是同一件事。
+                // 网络优化 1.2：应用内代理走 NSURLSession 会话级注入（见 createIosTransport），
+                // 会话配置在客户端创建时拷贝 —— 持久化后调 rebuildSystemProxy()（common 门面，
+                // iOS actual = HanimeNetwork.rebuildTransports）换新客户端，立即生效。
+                // 网关回环地址在例外表里，改写后的网关请求不会被塞回用户代理。
                 scope.launch {
                     SettingsRepository.update {
                         it.copy(proxyType = type, proxyIp = ip, proxyPort = port)
                     }
+                    rebuildSystemProxy()
                 }
             },
         )

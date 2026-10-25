@@ -318,7 +318,8 @@
     <string name="egress_report_verdict_unstable">出口有失敗但尚未熔斷；若持續失敗可用「強制選路」換條路</string>
     <string name="egress_report_verdict_no_data">近窗口沒有出口樣本（可能都命中快取）；正常使用一會再看</string>
     <string name="network_platform_limits_title">本端不可設定</string>
-    <string name="network_platform_limits_ios">自訂 DNS 與自訂 Hosts 在本端跟隨系統設定，無法在 App 內設定。HTTP/SOCKS Proxy 可在下方設定，經本地閘道生效（下次啟動應用）。下方的 ECH 閘道、強制選路與診斷功能皆完整可用。</string>
+    <string name="network_platform_limits_ios">自訂 DNS 與自訂 Hosts 在本端跟隨系統設定，無法在 App 內設定。HTTP/SOCKS Proxy 可在下方設定，App 內即時生效（變更後重建傳輸層；系統 Proxy 由系統設定決定）。下方的 ECH 閘道、強制選路與診斷功能皆完整可用。</string>
+    <string name="proxy_ios_live_note">App 內 Proxy 變更後立即生效（重建傳輸層）；系統 Proxy 由系統設定決定。</string>
     <string name="network_gate_section">ECH 閘道</string>
     <string name="network_diag_section">連接診斷</string>
     <string name="doh_timeout_seconds_summary">DoH 請求的連線與讀取逾時時間，建議 5–15 秒</string>

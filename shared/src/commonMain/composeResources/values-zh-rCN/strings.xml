@@ -304,7 +304,8 @@
     <string name="egress_report_verdict_unstable">出口有失败但尚未熔断；若持续失败可用「强制选路」换条路</string>
     <string name="egress_report_verdict_no_data">近窗口没有出口样本（可能都命中缓存）；正常使用一会再看</string>
     <string name="network_platform_limits_title">本端不可配置</string>
-    <string name="network_platform_limits_ios">自定义 DNS 与自定义 Hosts 在本端跟随系统设置，无法在应用内配置。HTTP/SOCKS 代理可在下方设置，经本地网关生效（下次启动应用）。下面的 ECH 网关、强制选路与诊断功能均完整可用。</string>
+    <string name="network_platform_limits_ios">自定义 DNS 与自定义 Hosts 在本端跟随系统设置，无法在应用内配置。HTTP/SOCKS 代理可在下方设置，应用内即时生效（改动后重建传输层；系统代理由系统设置决定）。下面的 ECH 网关、强制选路与诊断功能均完整可用。</string>
+    <string name="proxy_ios_live_note">应用内代理改动后立即生效（重建传输层）；系统代理由系统设置决定。</string>
     <string name="network_gate_section">ECH 网关</string>
     <string name="network_diag_section">连接诊断</string>
     <string name="custom_hosts">自定义 Hosts</string>
